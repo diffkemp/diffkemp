@@ -20,10 +20,10 @@ def main():
     ap = __make_argument_parser()
     args = ap.parse_args()
 
-    firstSliced = slice_module(args.first, args.parameter, args.verbose)
-    secondSliced = slice_module(args.second, args.parameter, args.verbose)
+    first_sliced = slice_module(args.first, args.parameter, args.verbose)
+    second_sliced = slice_module(args.second, args.parameter, args.verbose)
 
-    result = compare(firstSliced, secondSliced, args.function, args.verbose)
+    result = compare(first_sliced, second_sliced, args.function, args.verbose)
     if result == Result.EQUAL:
         print("Semantics of the module parameter is same")
     elif result == Result.NOT_EQUAL:
@@ -32,7 +32,7 @@ def main():
         print("Unable to determine changes in semantics of the parameter")
     else:
         print("Internal error")
-    return result;
+    return result
 
 
 if __name__ == "__main__":
