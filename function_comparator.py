@@ -9,7 +9,7 @@ class Result(Enum):
     ERROR = -1
 
 
-def compare(first, second, function, verbose=False):
+def compare_function(first, second, function, verbose=False):
     print("Comparing function %s" % function)
 
     stderr = None
