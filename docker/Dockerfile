@@ -10,10 +10,12 @@ RUN dnf update -y && \
       flex \
       gcc-c++ \
       gcc \
+      gdb \
       git \
       gmp-devel \
       ninja-build \
       python \
+      vim \
       xz
 # Download and build Z3
 RUN curl -SL https://github.com/Z3Prover/z3/archive/z3-$Z3_VERSION.tar.gz | tar xz && \
@@ -42,6 +44,9 @@ RUN mv llvm-diffkemp llvm && \
              -DLLVM_ENABLE_ASSERTIONS=ON \
              -DCMAKE_INSTALL_PREFIX=/usr/local \
              -DLLVM_PARALLEL_LINK_JOBS=1 \
-             -DLLVM_TARGETS_TO_BUILD=X86 && \
+             -DLLVM_TARGETS_TO_BUILD=X86 \
+			 -DLLVM_BUILD_LLVM_DYLIB=ON && \
     ninja -j4 && ninja install
+# Install Python dependencies
+RUN pip install llvmcpy
 
