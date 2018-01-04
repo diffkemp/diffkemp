@@ -13,6 +13,8 @@
 #include <llvm/Analysis/CFG.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
+#include <llvm/Transforms/Utils/Local.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 using namespace llvm;
 
@@ -117,77 +119,32 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         std::vector<Instruction *> toRemove;
         int b = 0;
         for (auto &BB : Fun) {
-            // First, solve the terminator instruction
-            if (IncludedBasicBlocks.find(&BB) != IncludedBasicBlocks.end()) {
-                auto TermInst = BB.getTerminator();
-                if (IncludedInstrs.find(TermInst) == IncludedInstrs.end()) {
-                    TermInst->eraseFromParent();
-                    IRBuilder<> builder(&BB);
-                    auto newTerm = builder.CreateBr(
-                            SuccessorsMap.find(&BB)->second);
-                    IncludedInstrs.insert(newTerm);
+            // Create new terminator if the current one is to be removed
+            // The new terminator will be used to correctly redirect all
+            // incoming edges to the following block
+            auto TermInst = BB.getTerminator();
+            if (IncludedInstrs.find(TermInst) == IncludedInstrs.end()) {
+                for (auto TermSucc : TermInst->successors()) {
+                    TermSucc->removePredecessor(&BB);
                 }
-            } else {
-                // If the block is to be skipped, redirect all incoming edges to
-                // successors of the block
-                std::vector<BasicBlock *> predecessors;
-                for (auto Pred : llvm::predecessors(&BB))
-                    predecessors.push_back(Pred);
-
-                for (auto Pred : predecessors) {
-                    if (IncludedBasicBlocks.find(Pred) ==
-                        IncludedBasicBlocks.end())
-                        continue;
-
-                    auto Term = Pred->getTerminator();
-                    unsigned numSucc = Term->getNumSuccessors();
-                    for (unsigned i = 0; i < numSucc; ++i) {
-                        if (Term->getSuccessor(i) == &BB) {
-                            Term->setSuccessor(i,
-                                               SuccessorsMap.find(&BB)->second);
-                        }
-                    }
-                }
-
-                if (!predecessors.empty()) {
-                    // TODO support multiple or none predecessors
-                    BB.replaceSuccessorsPhiUsesWith(*predecessors.begin());
-                }
+                TermInst->eraseFromParent();
+                IRBuilder<> builder(&BB);
+                auto newTerm = builder.CreateBr(
+                        SuccessorsMap.find(&BB)->second);
+                IncludedInstrs.insert(newTerm);
             }
-
             // Collect and clear all instruction that can be removed
             for (auto &Inst : BB) {
-                if (IncludedInstrs.find(&Inst) == IncludedInstrs.end()) {
+                if (IncludedInstrs.find(&Inst) == IncludedInstrs.end() &&
+                    !Inst.isTerminator()) {
 #ifdef DEBUG
                     errs() << "Clearing ";
                     Inst.dump();
 #endif
-                    for (unsigned i = 0; i < Inst.getNumOperands(); ++i) {
-                        clearOperand(Inst, i);
-                    }
-                    if (auto CallInstr = dyn_cast<CallInst>(
-                            &Inst)) {
-                        for (unsigned i = 0;
-                             i < CallInstr->getNumArgOperands(); ++i) {
-                            clearArgOperand(*CallInstr, i);
-                        }
-                    }
+                    Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
                     toRemove.push_back(&Inst);
-                } else if (auto PhiInstr = dyn_cast<PHINode>(
-                        &Inst)) {
-                    std::vector<BasicBlock *> blocksToRemove;
-                    for (auto &incomingBB : PhiInstr->blocks()) {
-                        if (IncludedBasicBlocks.find(incomingBB) ==
-                            IncludedBasicBlocks.end()) {
-                            blocksToRemove.push_back(incomingBB);
-                        }
-                    }
-                    for (auto blockToRemove: blocksToRemove) {
-                        PhiInstr->removeIncomingValue(blockToRemove);
-                    }
                 }
             }
-
         }
 
         // Erase instructions
@@ -196,18 +153,37 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         }
         // Erase basic blocks
         std::vector<BasicBlock *> BBToRemove;
-        for (auto &BB : Fun) {
-            if (IncludedBasicBlocks.find(&BB) == IncludedBasicBlocks.end())
-                BBToRemove.push_back(&BB);
+        for (auto BB_it = Fun.begin(); BB_it != Fun.end();) {
+            BasicBlock *BB = &*BB_it++;
+            if (IncludedBasicBlocks.find(BB) == IncludedBasicBlocks.end()) {
+                if (BB == &BB->getParent()->getEntryBlock()) {
+                    // First block is simply deleted, incoming edges represent
+                    // loop-back edges that will be deleted as well and hence
+                    // can be removed
+                    for (auto Pred : predecessors(BB)) {
+                        auto PredTerm = Pred->getTerminator();
+                        unsigned succ_cnt = PredTerm->getNumSuccessors();
+                        for (unsigned succ = 0; succ < succ_cnt; ++succ) {
+                            if (PredTerm->getSuccessor(succ) == BB) {
+                                PredTerm->setSuccessor(succ, Pred);
+                            }
+                        }
+                    }
+                    DeleteDeadBlock(BB);
+                } else {
+                    // When removing other than a first block, we need to
+                    // redirect incoming edges into the successor (a block that
+                    // is not included is guaranteed to have one successor).
+                    bool removed = TryToSimplifyUncondBranchFromEmptyBlock(BB);
+                    assert(removed);
+                }
+            }
         }
-        for (auto BB : BBToRemove)
-            BB->removeFromParent();
 
 #ifdef DEBUG
-        std::cerr << "Function " << Fun.getName().str() << " after cleanup:"
-                  << std::endl;
+        errs() << "Function " << Fun.getName().str() << " after cleanup:\n";
         Fun.dump();
-        std::cerr << std::endl;
+        errs() << "\n";
 #endif
     }
     return !DependentInstrs.empty();
@@ -362,24 +338,6 @@ void ParamDependencySlicer::mockReturn(BasicBlock *ReturnBB, Type *RetType) {
     errs() << "New return: ";
     NewReturn->dump();
 #endif
-}
-
-void ParamDependencySlicer::clearOperand(
-        Instruction &Inst, unsigned index) {
-    if (index < Inst.getNumOperands()) {
-        auto Op = Inst.getOperand(index);
-        if (Op && isa<Instruction>(Op))
-            Inst.setOperand(index, nullptr);
-    }
-}
-
-void ParamDependencySlicer::clearArgOperand(
-        CallInst &Inst, unsigned index) {
-    if (index < Inst.getNumArgOperands()) {
-        auto Op = Inst.getArgOperand(index);
-        if (Op && isa<Instruction>(Op))
-            Inst.setArgOperand(index, nullptr);
-    }
 }
 
 void ParamDependencySlicer::getAnalysisUsage(AnalysisUsage &usage) const {

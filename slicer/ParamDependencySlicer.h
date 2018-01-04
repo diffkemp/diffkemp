@@ -63,9 +63,6 @@ private:
 
     void mockReturn(BasicBlock *ReturnBB, Type *RetType);
 
-    void clearOperand(Instruction &Inst, unsigned index);
-    void clearArgOperand(CallInst &Inst, unsigned index);
-
     static bool isLlreveIntrinsic(const Function &f);
 };
 
