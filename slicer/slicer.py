@@ -2,6 +2,14 @@ from os import path
 from subprocess import Popen, PIPE
 
 
+class SlicerException(Exception):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "Slicing has failed"
+
+
 def slice_module(file, parameter, verbose):
     print("Slicing %s" % file)
 
@@ -19,4 +27,7 @@ def slice_module(file, parameter, verbose):
                  file],
                 stdout=PIPE, stderr=stderr)
     opt.wait()
+    if opt.returncode != 0:
+        raise SlicerException()
+
     return out_file

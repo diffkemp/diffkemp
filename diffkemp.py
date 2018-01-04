@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from module_comparator import compare_modules, Statistics
 from function_comparator import Result
 from slicer.slicer import slice_module
+import sys
 
 
 def __make_argument_parser():
@@ -20,14 +21,19 @@ def main():
     ap = __make_argument_parser()
     args = ap.parse_args()
 
-    first_sliced = slice_module(args.first, args.parameter, args.verbose)
-    second_sliced = slice_module(args.second, args.parameter, args.verbose)
+    try:
+        first_sliced = slice_module(args.first, args.parameter, args.verbose)
+        second_sliced = slice_module(args.second, args.parameter, args.verbose)
 
-    stat = compare_modules(first_sliced, second_sliced, args.parameter,
-                           args.verbose)
-    stat.report()
+        stat = compare_modules(first_sliced, second_sliced, args.parameter,
+                               args.verbose)
+        stat.report()
 
-    result = stat.overall_result()
+        result = stat.overall_result()
+    except Exception as e:
+        result = Result.ERROR
+        sys.stderr.write(str(e) + "\n")
+
     if result == Result.EQUAL:
         print("Semantics of the module parameter is same")
     elif result == Result.NOT_EQUAL:
