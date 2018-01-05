@@ -32,7 +32,7 @@ class Statistics():
             return Result.NOT_EQUAL
         if len(self.unknown) > 0:
             return Result.UNKNOWN
-        return Result.ERROR
+        return Result.EQUAL
 
 
 def _dependent_functions(module_file, param):
@@ -55,7 +55,7 @@ def compare_modules(first, second, parameter, verbose=False):
     second_functions = _dependent_functions(second, parameter)
     stat = Statistics()
     for fun in first_functions & second_functions:
-        result = compare_function(first, second, fun)
+        result = compare_function(first, second, fun, verbose)
         stat.log_result(result, fun)
     return stat
 
