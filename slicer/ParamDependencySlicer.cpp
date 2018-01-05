@@ -126,7 +126,8 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
             auto TermInst = BB.getTerminator();
             if (IncludedInstrs.find(TermInst) == IncludedInstrs.end()) {
                 for (auto TermSucc : TermInst->successors()) {
-                    TermSucc->removePredecessor(&BB);
+                    if (TermSucc != SuccessorsMap.find(&BB)->second)
+                        TermSucc->removePredecessor(&BB, true);
                 }
                 TermInst->eraseFromParent();
                 IRBuilder<> builder(&BB);
