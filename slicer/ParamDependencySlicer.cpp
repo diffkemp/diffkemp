@@ -27,6 +27,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     AffectedBasicBlocks.clear();
     IncludedBasicBlocks.clear();
     SuccessorsMap.clear();
+    uses_param = false;
 
 #ifdef DEBUG
     errs() << "Function: " << Fun.getName().str() << "\n";
@@ -79,7 +80,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
 
     // Second phase - determine which additional instructions we need to
     // produce a valid CFG
-    if (!DependentInstrs.empty()) {
+    if (uses_param) {
         // Recursively add all instruction operands to included
         for (auto &Inst : DependentInstrs) {
             if (isa<PHINode>(Inst)) continue;
@@ -115,7 +116,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     }
 
     // Third phase - remove unneeded instructions and keep the control flow
-    if (!DependentInstrs.empty()) {
+    if (uses_param) {
         std::vector<Instruction *> toRemove;
         int b = 0;
         for (auto &BB : Fun) {
@@ -186,7 +187,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         errs() << "\n";
 #endif
     }
-    return !DependentInstrs.empty();
+    return uses_param;
 }
 
 std::vector<const BasicBlock *>
@@ -227,6 +228,7 @@ bool ParamDependencySlicer::checkDependency(const Use *Op) {
     bool result = false;
     if (auto Global = dyn_cast<GlobalVariable>(Op)) {
         if (Global->getName() == ParamName) {
+            uses_param = true;
             result = true;
         }
     } else if (auto OpInst = dyn_cast<Instruction>(Op)) {

@@ -43,6 +43,9 @@ private:
     // Mapping block to its successor (for single-successor blocks only)
     std::map<const BasicBlock *, BasicBlock *> SuccessorsMap = {};
 
+    // We only do the slicing if the function uses the parameter
+    bool uses_param = false;
+
     // Functions for adding to sets
     void addAllInstrs(const std::vector<const BasicBlock *> BBs);
     bool addToSet(const Instruction *Inst,
