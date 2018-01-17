@@ -48,5 +48,5 @@ RUN mv llvm-diffkemp llvm && \
 			 -DLLVM_BUILD_LLVM_DYLIB=ON && \
     ninja -j4 && ninja install
 # Install Python dependencies
-RUN pip install llvmcpy
+RUN pip install llvmcpy enum34
 
