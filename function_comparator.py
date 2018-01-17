@@ -18,7 +18,7 @@ def compare_function(first, second, function, verbose=False):
 
     llreve_process = Popen(["build/llreve/reve/reve/llreve", first, second,
                             "--fun=" + function,
-                            "-muz", "--ir-input"],
+                            "-muz", "--ir-input", "--bitvect"],
                            stdout=PIPE, stderr=stderr)
 
     z3_process = Popen(["z3", "fixedpoint.engine=duality", "-in"],
