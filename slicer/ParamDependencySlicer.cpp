@@ -176,8 +176,11 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
                     // When removing other than a first block, we need to
                     // redirect incoming edges into the successor (a block that
                     // is not included is guaranteed to have one successor).
-                    bool removed = TryToSimplifyUncondBranchFromEmptyBlock(BB);
-                    assert(removed);
+                    if (canRemoveBlock(BB)) {
+                        bool removed =
+                                TryToSimplifyUncondBranchFromEmptyBlock(BB);
+                        assert(removed);
+                    }
                 }
             }
         }
@@ -313,14 +316,18 @@ std::set<BasicBlock *> ParamDependencySlicer::includedSuccessors(
     // If both are reachable, one of them might be reachable through loop only
     // and we need to keep the other one
     // TODO this should use loop analysis
-    if (result.empty() && bothReachable) {
-        if (!isPotentiallyReachable(TrueSucc, Terminator.getParent())) {
-            result.insert(TrueSucc);
-        } else if (!isPotentiallyReachable(FalseSucc,
-                                           Terminator.getParent())) {
-            result.insert(FalseSucc);
+    if (result.empty()) {
+        if (bothReachable) {
+            if (!isPotentiallyReachable(TrueSucc, Terminator.getParent())) {
+                result.insert(TrueSucc);
+            } else if (!isPotentiallyReachable(FalseSucc,
+                                               Terminator.getParent())) {
+                result.insert(FalseSucc);
+            } else {
+                result.insert(TrueSucc == ExitBlock ? FalseSucc : TrueSucc);
+            }
         } else {
-            result.insert(TrueSucc);
+            result.insert(TrueSucc == ExitBlock ? FalseSucc : TrueSucc);
         }
     }
 
@@ -350,4 +357,26 @@ void ParamDependencySlicer::getAnalysisUsage(AnalysisUsage &usage) const {
 bool ParamDependencySlicer::isLlreveIntrinsic(const Function &f) {
     return f.getName() == "__mark" || f.getName() == "__splitmark" ||
            f.getName() == "__criterion";
+}
+
+bool ParamDependencySlicer::canRemoveBlock(const BasicBlock *bb) {
+    if (bb->getTerminator()->getNumSuccessors() != 1)
+        return false;
+
+    for (const PHINode &Phi : bb->getTerminator()->getSuccessor(0)->phis()) {
+        for (unsigned i = 0; i < Phi.getNumIncomingValues(); ++i) {
+            if (Phi.getIncomingBlock(i) == bb)
+                continue;
+            for (auto Pred : predecessors(bb)) {
+                if (Phi.getBasicBlockIndex(Pred) < 0)
+                    continue;
+
+                auto PredPhiValue = Phi.getIncomingValueForBlock(Pred);
+                if (PredPhiValue != Phi.getIncomingValueForBlock(bb))
+                    return false;
+            }
+        }
+    }
+
+    return true;
 }
