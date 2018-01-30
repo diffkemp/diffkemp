@@ -49,4 +49,5 @@ RUN mv llvm-diffkemp llvm && \
     ninja -j4 && ninja install
 # Install Python dependencies
 RUN pip install llvmcpy enum34
+ENV PYTHONPATH /diffkemp:/usr/lib/python2.7:/usr/lib/python3.6
 
