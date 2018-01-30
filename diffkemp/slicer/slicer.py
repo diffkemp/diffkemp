@@ -21,7 +21,7 @@ def slice_module(file, parameter, verbose):
         stderr = open('/dev/null', 'w')
 
     opt = Popen(["opt", "-S",
-                 "-load", "build/slicer/libParDepSlicer.so",
+                 "-load", "build/diffkemp/slicer/libParDepSlicer.so",
                  "-paramdep-slicer", "-param-name=" + parameter,
                  "-o", "".join(out_file),
                  file],

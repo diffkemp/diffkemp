@@ -16,7 +16,7 @@ def compare_function(first, second, function, verbose=False):
     if not verbose:
         stderr = open('/dev/null', 'w')
 
-    llreve_process = Popen(["build/llreve/reve/reve/llreve", first, second,
+    llreve_process = Popen(["build/diffkemp/llreve/reve/reve/llreve", first, second,
                             "--fun=" + function,
                             "-muz", "--ir-input", "--bitvect"],
                            stdout=PIPE, stderr=stderr)
