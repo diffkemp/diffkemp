@@ -17,7 +17,7 @@ def __make_argument_parser():
     return ap
 
 
-def main():
+def run_from_cli():
     ap = __make_argument_parser()
     args = ap.parse_args()
 
@@ -42,6 +42,3 @@ def main():
         print("Unable to determine changes in semantics of the parameter")
     return result
 
-
-if __name__ == "__main__":
-    main()
