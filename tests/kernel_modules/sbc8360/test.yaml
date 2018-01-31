@@ -1,0 +1,7 @@
+module: sbc8360
+param: nowayout
+
+functions:
+    sbc8360_open: equal
+    sbc8360_write: not_equal
+

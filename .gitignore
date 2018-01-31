@@ -33,6 +33,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# py.test files
+.cache
+
 ### C++ part ###
 
 # Prerequisites
