@@ -10,11 +10,15 @@ class SlicerException(Exception):
         return "Slicing has failed"
 
 
+def sliced_name(file):
+    name, ext = path.splitext(file)
+    return name + "-sliced" + ext
+
+
 def slice_module(file, parameter, verbose):
     print("Slicing %s" % file)
 
-    name, ext = path.splitext(file)
-    out_file = name + "-sliced" + ext
+    out_file = sliced_name(file)
 
     stderr = None
     if not verbose:

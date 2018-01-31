@@ -8,6 +8,16 @@ class Result(Enum):
     UNKNOWN = 5
     ERROR = -1
 
+    @staticmethod
+    def from_string(string):
+        if string == "equal":
+            return Result.EQUAL
+        if string == "not_equal":
+            return Result.NOT_EQUAL
+        if string == "unknown":
+            return Result.UNKNOWN
+        return Result.ERROR
+
 
 def compare_function(first, second, function, verbose=False):
     print("Comparing function %s" % function)
