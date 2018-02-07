@@ -81,6 +81,7 @@ class ParamDependencySlicer : public FunctionPass {
     void mockReturn(BasicBlock *ReturnBB, Type *RetType);
 
     bool canRemoveBlock(const BasicBlock *bb);
+    bool canRemoveFirstBlock(const BasicBlock *bb);
 
     static bool isLlreveIntrinsic(const Function &f);
 };

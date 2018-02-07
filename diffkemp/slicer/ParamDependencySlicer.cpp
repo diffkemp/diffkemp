@@ -162,16 +162,18 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
                     // First block is simply deleted, incoming edges represent
                     // loop-back edges that will be deleted as well and hence
                     // can be removed
-                    for (auto Pred : predecessors(BB)) {
-                        auto PredTerm = Pred->getTerminator();
-                        unsigned succ_cnt = PredTerm->getNumSuccessors();
-                        for (unsigned succ = 0; succ < succ_cnt; ++succ) {
-                            if (PredTerm->getSuccessor(succ) == BB) {
-                                PredTerm->setSuccessor(succ, Pred);
+                    if (canRemoveFirstBlock(BB)) {
+                        for (auto Pred : predecessors(BB)) {
+                            auto PredTerm = Pred->getTerminator();
+                            unsigned succ_cnt = PredTerm->getNumSuccessors();
+                            for (unsigned succ = 0; succ < succ_cnt; ++succ) {
+                                if (PredTerm->getSuccessor(succ) == BB) {
+                                    PredTerm->setSuccessor(succ, Pred);
+                                }
                             }
                         }
+                        DeleteDeadBlock(BB);
                     }
-                    DeleteDeadBlock(BB);
                 } else {
                     // When removing other than a first block, we need to
                     // redirect incoming edges into the successor (a block that
@@ -401,6 +403,17 @@ bool ParamDependencySlicer::canRemoveBlock(const BasicBlock *bb) {
         }
     }
 
+    return true;
+}
+
+bool ParamDependencySlicer::canRemoveFirstBlock(const BasicBlock *bb) {
+    // We cannot remove the first block if it has a successor that is included
+    // and has incoming edges (since first block cannot have incoming edges)
+    for (const auto &Succ : bb->getTerminator()->successors()) {
+        if (IncludedBasicBlocks.find(Succ) != IncludedBasicBlocks.end() &&
+            pred_begin(Succ) != pred_end(Succ))
+            return false;
+    }
     return true;
 }
 
