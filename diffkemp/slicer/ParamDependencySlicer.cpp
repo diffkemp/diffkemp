@@ -71,7 +71,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
                 Instr.dump();
 #endif
                 if (auto BranchInstr = dyn_cast<BranchInst>(&Instr)) {
-                    auto affectedBBs = affectedBasicBlocks(*BranchInstr, Fun);
+                    auto affectedBBs = affectedBasicBlocks(BranchInstr);
                     addAllInstrs(affectedBBs);
                 }
             }
@@ -194,22 +194,35 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     return uses_param;
 }
 
-std::vector<const BasicBlock *>
-ParamDependencySlicer::affectedBasicBlocks(const BranchInst &Branch,
-                                           const Function &Fun) {
+std::vector<const BasicBlock *> ParamDependencySlicer::affectedBasicBlocks(
+        BranchInst *Branch) {
     // A condition affects those blocks that are reachable through one branch
-    // only
-    std::vector<const BasicBlock *> result;
-    if (Branch.isConditional()) {
-        auto succTrue = Branch.getSuccessor(0);
-        auto succFalse = Branch.getSuccessor(1);
-        if (succTrue->getParent() != &Fun || succFalse->getParent() != &Fun)
-            return result;
-        for (auto &otherBB : Fun)
-            if (isPotentiallyReachable(succTrue, &otherBB) !=
-                isPotentiallyReachable(succFalse, &otherBB))
-                result.push_back(&otherBB);
+    // only: hence it is a difference of union and intersection of sets of
+    // blocks reachable from individual branches
+    std::set<const BasicBlock *> reachableUnion;
+    std::set<const BasicBlock *> reachableIntersection;
+    bool first = true;
+    if (Branch->isConditional()) {
+        for (auto Succ : Branch->successors()) {
+            auto reachable = reachableBlocksThroughSucc(Branch, Succ);
+
+            // Compute union with blocks reachable from other branches
+            uniteWith(reachableUnion, reachable);
+
+            // Compute intersection with blocks reachable from other branches
+            if (first) {
+                reachableIntersection = std::move(reachable);
+                first = false;
+            } else {
+                intersectWith(reachableIntersection, reachable);
+            }
+        }
     }
+    std::vector<const BasicBlock *> result;
+    std::set_difference(reachableUnion.begin(), reachableUnion.end(),
+                        reachableIntersection.begin(),
+                        reachableIntersection.end(),
+                        std::back_inserter(result));
     return result;
 }
 
@@ -285,7 +298,7 @@ bool ParamDependencySlicer::addAllOpsToIncluded(
 }
 
 std::set<BasicBlock *> ParamDependencySlicer::includedSuccessors(
-        const TerminatorInst &Terminator,
+        TerminatorInst &Terminator,
         const BasicBlock *ExitBlock) {
 
     // If block has multiple successors, choose which must be included
@@ -294,44 +307,51 @@ std::set<BasicBlock *> ParamDependencySlicer::includedSuccessors(
     if (Terminator.getNumSuccessors() == 1)
         return {Terminator.getSuccessor(0)};
 
-    std::set<BasicBlock *> result;
     auto TrueSucc = Terminator.getSuccessor(0);
     auto FalseSucc = Terminator.getSuccessor(1);
 
-    bool bothReachable = false;
-    for (auto &InclBB : IncludedBasicBlocks) {
-        if (InclBB == ExitBlock) continue;
+    // Find all included blocks (except exit block) that are reachable through
+    // true edge
+    auto reachableTrue = reachableBlocksThroughSucc(&Terminator, TrueSucc);
+    intersectWith(reachableTrue, IncludedBasicBlocks);
+    reachableTrue.erase(ExitBlock);
+    // Find all included blocks (except exit block) that are reachable through
+    // false edge
+    auto reachableFalse = reachableBlocksThroughSucc(&Terminator, FalseSucc);
+    intersectWith(reachableFalse, IncludedBasicBlocks);
+    reachableFalse.erase(ExitBlock);
 
-        bool TrueReach = isPotentiallyReachable(TrueSucc, InclBB);
-        bool FalseReach = isPotentiallyReachable(FalseSucc, InclBB);
-        if (TrueReach != FalseReach) {
-            if (TrueReach && !FalseReach)
-                result.insert(TrueSucc);
-            else
-                result.insert(FalseSucc);
-        } else if (TrueReach)
-            bothReachable = true;
+    if (reachableTrue != reachableFalse) {
+        // If one successor covers all included blocks reachable from the other
+        // successor, choose it
+        if (std::includes(reachableTrue.begin(), reachableTrue.end(),
+                          reachableFalse.begin(), reachableFalse.end()))
+            return {TrueSucc};
+        if (std::includes(reachableFalse.begin(), reachableFalse.end(),
+                          reachableTrue.begin(), reachableTrue.end()))
+            return {FalseSucc};
+        // If neither of successors covers all blocks reachable by the other,
+        // we have to follow both
+        return {TrueSucc, FalseSucc};
     }
 
-    // If both are reachable, one of them might be reachable through loop only
-    // and we need to keep the other one
+    // If sets of included blocks reachable through both successors are same
+    // and non-empty, we need to decide which successor to keep.
+    // One of them might reach other blocks through loop only and than we need
+    // to keep the other one
     // TODO this should use loop analysis
-    if (result.empty()) {
-        if (bothReachable) {
-            if (!isPotentiallyReachable(TrueSucc, Terminator.getParent())) {
-                result.insert(TrueSucc);
-            } else if (!isPotentiallyReachable(FalseSucc,
-                                               Terminator.getParent())) {
-                result.insert(FalseSucc);
-            } else {
-                result.insert(TrueSucc == ExitBlock ? FalseSucc : TrueSucc);
-            }
+    if (!reachableTrue.empty()) {
+        if (!isPotentiallyReachable(TrueSucc, Terminator.getParent())) {
+            return {TrueSucc};
+        } else if (!isPotentiallyReachable(FalseSucc,
+                                           Terminator.getParent())) {
+            return {FalseSucc};
         } else {
-            result.insert(TrueSucc == ExitBlock ? FalseSucc : TrueSucc);
+            return {TrueSucc == ExitBlock ? FalseSucc : TrueSucc};
         }
+    } else {
+        return {TrueSucc == ExitBlock ? FalseSucc : TrueSucc};
     }
-
-    return result;
 }
 
 void ParamDependencySlicer::mockReturn(BasicBlock *ReturnBB, Type *RetType) {
@@ -363,6 +383,9 @@ bool ParamDependencySlicer::canRemoveBlock(const BasicBlock *bb) {
     if (bb->getTerminator()->getNumSuccessors() != 1)
         return false;
 
+    // If a removal of bb would result in a situation that there exists a phi
+    // node Phi with two different incoming values for the same incoming
+    // block (which is a predecessor Pred of bb), we cannot remove bb
     for (const PHINode &Phi : bb->getTerminator()->getSuccessor(0)->phis()) {
         for (unsigned i = 0; i < Phi.getNumIncomingValues(); ++i) {
             if (Phi.getIncomingBlock(i) == bb)
@@ -379,4 +402,49 @@ bool ParamDependencySlicer::canRemoveBlock(const BasicBlock *bb) {
     }
 
     return true;
+}
+
+std::set<const BasicBlock *> ParamDependencySlicer::reachableBlocks(
+        const BasicBlock *Src, Function &Fun) {
+    std::set<const BasicBlock *> result;
+    for (auto &BB : Fun) {
+        if (Src != &BB &&
+            isPotentiallyReachable(Src, &BB, nullptr, nullptr, false))
+            result.insert(&BB);
+    }
+    return result;
+}
+
+std::set<const BasicBlock *> ParamDependencySlicer::reachableBlocksThroughSucc(
+        TerminatorInst *Terminator, BasicBlock *Succ) {
+    // Replace terminator by unconditional branch and find all blocks reachable
+    // through the new branch (one that omits all other successors)
+    auto NewBranch = BranchInst::Create(Succ, Terminator);
+    Terminator->removeFromParent();
+    auto reachable = reachableBlocks(NewBranch->getParent(),
+                                     *Succ->getParent());
+
+    // Restore original terminator
+    Terminator->insertBefore(NewBranch);
+    NewBranch->eraseFromParent();
+
+    return reachable;
+}
+
+void ParamDependencySlicer::intersectWith(
+        std::set<const BasicBlock *> &set,
+        const std::set<const BasicBlock *> &other) {
+    std::set<const BasicBlock *> tmpSet;
+    std::set_intersection(set.begin(), set.end(), other.begin(), other.end(),
+                          std::inserter(tmpSet, tmpSet.begin()));
+    set = std::move(tmpSet);
+}
+
+void ParamDependencySlicer::uniteWith(
+        std::set<const BasicBlock *> &set,
+        const std::set<const BasicBlock *> &other) {
+    std::set<const BasicBlock *> tmpSet;
+    std::set_union(set.begin(), set.end(), other.begin(), other.end(),
+                   std::inserter(tmpSet, tmpSet.begin()));
+    set = std::move(tmpSet);
 }

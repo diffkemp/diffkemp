@@ -22,7 +22,7 @@ static cl::opt<std::string> ParamName("param-name",
  * the parameter passed as command line option.
  */
 class ParamDependencySlicer : public FunctionPass {
-public:
+  public:
     static char ID;
 
     ParamDependencySlicer() : FunctionPass(ID) {}
@@ -31,7 +31,7 @@ public:
 
     virtual void getAnalysisUsage(AnalysisUsage &usage) const override;
 
-private:
+  private:
     // Instructions directly dependent on the parameter
     std::set<const Instruction *> DependentInstrs = {};
     // Instructions that must be included
@@ -55,12 +55,26 @@ private:
     bool addAllOpsToIncluded(const Instruction *Inst);
 
     // Computing affected and included basic blocks
-    auto affectedBasicBlocks(const BranchInst &Branch,
-                             const Function &Fun)
+    auto affectedBasicBlocks(BranchInst *Branch)
         -> std::vector<const BasicBlock *>;
-    auto includedSuccessors(const TerminatorInst &Terminator,
+
+    auto includedSuccessors(TerminatorInst &Terminator,
                             const BasicBlock *ExitBlock)
         -> std::set<BasicBlock *>;
+
+    // Computing reachable blocks
+    auto reachableBlocks(const BasicBlock *Src, Function &Fun)
+        -> std::set<const BasicBlock *>;
+
+    auto reachableBlocksThroughSucc(TerminatorInst *Terminator,
+                                    BasicBlock *Succ)
+        -> std::set<const BasicBlock *>;
+
+    // Set operations
+    void intersectWith(std::set<const BasicBlock *> &set,
+                       const std::set<const BasicBlock *> &other);
+    void uniteWith(std::set<const BasicBlock *> &set,
+                   const std::set<const BasicBlock *> &other);
 
     bool checkDependency(const Use *Op);
 
