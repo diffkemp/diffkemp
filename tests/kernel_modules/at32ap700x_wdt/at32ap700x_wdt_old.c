@@ -38,8 +38,6 @@
 #define TIMEOUT_MAX		2
 #define TIMEOUT_DEFAULT		TIMEOUT_MAX
 
-extern int __mark(int);
-
 /* module parameters */
 static int timeout =  TIMEOUT_DEFAULT;
 module_param(timeout, int, 0);
@@ -285,7 +283,6 @@ static ssize_t at32_wdt_write(struct file *file, const char __user *data,
 			 * character
 			 */
 			for (i = 0; i != len; i++) {
-                __mark(42);
 				char c;
 				if (get_user(c, data + i))
 					return -EFAULT;
