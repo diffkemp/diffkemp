@@ -1,0 +1,6 @@
+module: wireless
+param: cfg80211_disable_40mhz_24ghz
+
+functions:
+    wiphy_register: equal
+
