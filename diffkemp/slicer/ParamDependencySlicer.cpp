@@ -59,6 +59,13 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
                 for (auto incomingBB : PhiInstr->blocks()) {
                     if (IncludedBasicBlocks.find(incomingBB) !=
                         IncludedBasicBlocks.end()) {
+                        auto *Val =
+                                PhiInstr->getIncomingValueForBlock(incomingBB);
+                        if (auto *ValInstr = dyn_cast<Instruction>(Val)) {
+                            if (DependentInstrs.find(ValInstr) ==
+                                DependentInstrs.end())
+                                continue;
+                        }
                         dependent = true;
                     }
                 }
