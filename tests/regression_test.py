@@ -27,8 +27,16 @@ class TaskSpec:
             self.param = spec["param"]
 
             self.functions = dict()
-            for fun, result in spec["functions"].iteritems():
-                self.functions[fun] = Result.from_string(result)
+            self.only_old = list()
+            self.only_new = list()
+            for fun, desc in spec["functions"].iteritems():
+                try:
+                    self.functions[fun] = Result[desc.upper()]
+                except KeyError:
+                    if desc == "only_old":
+                        self.only_old.append(fun)
+                    elif desc == "only_new":
+                        self.only_new.append(fun)
 
             module = spec["module"]
             module_path = os.path.join(base_path, module)
@@ -73,8 +81,12 @@ class TestClass(object):
     def test_dependent_functions(self, task_spec):
         result_old = _dependent_functions(task_spec.old_sliced, task_spec.param)
         result_new = _dependent_functions(task_spec.new_sliced, task_spec.param)
-        function_names = set(task_spec.functions.keys())
-        assert result_old == function_names and result_new == function_names
+        function_names_old = set(task_spec.functions.keys() +
+                                 task_spec.only_old)
+        function_names_new = set(task_spec.functions.keys() +
+                                 task_spec.only_new)
+        assert (result_old == function_names_old and
+                result_new == function_names_new)
 
     def test_function_comparison(self, task_spec):
         for fun, expected in task_spec.functions.iteritems():
