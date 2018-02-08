@@ -1,0 +1,7 @@
+module: snd
+param: cards_limit
+
+functions:
+    snd_request_card: error
+    alsa_sound_init: equal
+
