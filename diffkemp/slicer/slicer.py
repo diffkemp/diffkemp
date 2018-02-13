@@ -15,10 +15,11 @@ def sliced_name(file):
     return name + "-sliced" + ext
 
 
-def slice_module(file, parameter, verbose):
+def slice_module(file, parameter, out_file=None, verbose=False):
     print("Slicing %s" % file)
 
-    out_file = sliced_name(file)
+    if not out_file:
+        out_file = sliced_name(file)
 
     stderr = None
     if not verbose:

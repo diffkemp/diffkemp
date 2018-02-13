@@ -1,7 +1,16 @@
 module: snd
-param: cards_limit
 
-functions:
-    snd_request_card: error
-    alsa_sound_init: equal
+params: 
+  - param: cards_limit
+    functions: 
+      alsa_sound_init: equal
+      snd_request_card: error
+      
+  - param: major
+    functions: 
+      alsa_sound_exit: equal
+      alsa_sound_init: not_equal
+      snd_register_device_for_dev: only_old
+      snd_register_device: only_new
+      snd_unregister_device: only_old
 

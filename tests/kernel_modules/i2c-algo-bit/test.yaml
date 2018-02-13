@@ -1,6 +1,7 @@
 module: i2c-algo-bit
-param: bit_test
 
-functions:
-    __i2c_bit_add_bus: not_equal
+params:
+  - param: bit_test
+    functions:
+      __i2c_bit_add_bus: not_equal
 

@@ -1,7 +1,8 @@
 module: ip6table_filter
-param: forward
 
-functions:
-    ip6table_filter_net_init: not_equal
-    ip6table_filter_table_init: only_new
+params:
+  - param: forward
+    functions:
+      ip6table_filter_net_init: not_equal
+      ip6table_filter_table_init: only_new
 

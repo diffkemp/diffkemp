@@ -1,7 +1,8 @@
 module: memstick
-param: cmd_retries
 
-functions:
-    memstick_next_req: equal
-    memstick_new_req: equal
+params:
+  - param: cmd_retries
+    functions:
+      memstick_next_req: equal
+      memstick_new_req: equal
 

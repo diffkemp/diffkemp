@@ -10,73 +10,77 @@ import yaml
 
 base_path = "tests/kernel_modules"
 
-def collect_task_spec_files():
+def collect_task_specs():
     result = list()
     for taskdir in os.listdir(base_path):
         task_spec_file = os.path.join(base_path, taskdir, "test.yaml")
-        if os.path.isfile(task_spec_file):
-            result.append((taskdir, task_spec_file))
+        if not os.path.isfile(task_spec_file):
+            continue
+        with open(task_spec_file, "r") as spec_file:
+            spec_yaml = yaml.load(spec_file)
+            for param in spec_yaml["params"]:
+                spec = param
+                spec["module"] = spec_yaml["module"]
+                spec_id = spec["module"] + "-" + spec["param"]
+                result.append((spec_id, spec))
     return result
-spec_files = collect_task_spec_files()
+specs = collect_task_specs()
 
 
 class TaskSpec:
-    def __init__(self, spec_file_path):
-        with open(spec_file_path, "r") as spec_file:
-            spec = yaml.load(spec_file)
-            self.param = spec["param"]
+    def __init__(self, spec):
+        self.param = spec["param"]
 
-            self.functions = dict()
-            self.only_old = list()
-            self.only_new = list()
-            for fun, desc in spec["functions"].iteritems():
-                try:
-                    self.functions[fun] = Result[desc.upper()]
-                except KeyError:
-                    if desc == "only_old":
-                        self.only_old.append(fun)
-                    elif desc == "only_new":
-                        self.only_new.append(fun)
+        self.functions = dict()
+        self.only_old = list()
+        self.only_new = list()
+        for fun, desc in spec["functions"].iteritems():
+            try:
+                self.functions[fun] = Result[desc.upper()]
+            except KeyError:
+                if desc == "only_old":
+                    self.only_old.append(fun)
+                elif desc == "only_new":
+                    self.only_new.append(fun)
 
-            module = spec["module"]
-            module_path = os.path.join(base_path, module)
-            self.old = os.path.join(module_path, module + "_old.bc")
-            self.new = os.path.join(module_path, module + "_new.bc")
-            self.old_sliced = os.path.join(module_path,
-                                           module + "_old-sliced.bc")
-            self.new_sliced = os.path.join(module_path,
-                                           module + "_new-sliced.bc")
+        module = spec["module"]
+        module_path = os.path.join(base_path, module)
+        self.old = os.path.join(module_path, module + "_old.bc")
+        self.new = os.path.join(module_path, module + "_new.bc")
+        self.old_sliced = os.path.join(module_path, module + "_old-sliced-" +
+                                                    spec["param"] + ".bc")
+        self.new_sliced = os.path.join(module_path, module + "_new-sliced-" +
+                                                    spec["param"] + ".bc")
 
 
-@pytest.fixture(params=[x[1] for x in spec_files],
-                ids=[x[0] for x in spec_files])
+@pytest.fixture(params=[x[1] for x in specs],
+                ids=[x[0] for x in specs])
 def task_spec(request):
         return TaskSpec(request.param)
 
 
 class TestClass(object):
-    def _run_slicer(self, module, param):
-        sliced_module = slicer.sliced_name(module)
+    def _run_slicer(self, module, param, out_file):
         # Delete the sliced file if exists
         try:
-            os.remove(sliced_module)
+            os.remove(out_file)
         except OSError:
             pass
 
         # Slice the module
-        slicer.slice_module(module, param, False)
+        slicer.slice_module(module, param, out_file, False)
         # Check that the slicer has produced a file
-        assert os.path.exists(sliced_module)
+        assert os.path.exists(out_file)
 
         # Check that the produced file contains a valid LLVM bitcode
-        opt = Popen(["opt", "-verify", sliced_module],
+        opt = Popen(["opt", "-verify", out_file],
                     stdout=open("/dev/null", "w"))
         opt.wait()
         assert opt.returncode == 0
 
     def test_slicer(self, task_spec):
-        self._run_slicer(task_spec.old, task_spec.param)
-        self._run_slicer(task_spec.new, task_spec.param)
+        self._run_slicer(task_spec.old, task_spec.param, task_spec.old_sliced)
+        self._run_slicer(task_spec.new, task_spec.param, task_spec.new_sliced)
 
     def test_dependent_functions(self, task_spec):
         result_old = _dependent_functions(task_spec.old_sliced, task_spec.param)

@@ -1,7 +1,8 @@
 module: intel8x0
-param: buggy_irq
 
-functions:
-    snd_intel8x0_probe: equal
-    snd_intel8x0_create: error
+params:
+  - param: buggy_irq
+    functions:
+      snd_intel8x0_probe: equal
+      snd_intel8x0_create: error
 
