@@ -54,6 +54,12 @@ class ParamDependencySlicer : public FunctionPass {
     bool addToIncluded(const Instruction *Inst);
     bool addAllOpsToIncluded(const Instruction *Inst);
 
+    // Functions for searching sets
+    inline bool isDependent(const Instruction *Instr);
+    inline bool isIncluded(const Instruction *Instr);
+    inline bool isAffected(const BasicBlock *BB);
+    inline bool isIncluded(const BasicBlock *BB);
+
     // Computing affected and included basic blocks
     auto affectedBasicBlocks(BranchInst *Branch)
         -> std::vector<const BasicBlock *>;

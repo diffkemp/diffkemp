@@ -35,7 +35,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
 
     // First phase - determine which instructions are dependent on the parameter
     for (auto &BB : Fun) {
-        if (AffectedBasicBlocks.find(&BB) != AffectedBasicBlocks.end())
+        if (isAffected(&BB))
             continue;
         for (auto &Instr : BB) {
             bool dependent = false;
@@ -57,13 +57,11 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
             if (auto PhiInstr = dyn_cast<PHINode>(&Instr)) {
                 // Phi instructions
                 for (auto incomingBB : PhiInstr->blocks()) {
-                    if (IncludedBasicBlocks.find(incomingBB) !=
-                        IncludedBasicBlocks.end()) {
+                    if (isIncluded(incomingBB)) {
                         auto *Val =
                                 PhiInstr->getIncomingValueForBlock(incomingBB);
                         if (auto *ValInstr = dyn_cast<Instruction>(Val)) {
-                            if (DependentInstrs.find(ValInstr) ==
-                                DependentInstrs.end())
+                            if (!isDependent(ValInstr))
                                 continue;
                         }
                         dependent = true;
@@ -98,7 +96,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         auto RetBB = ExitNodeAnalysis.getReturnBlock();
         for (auto &BB : Fun) {
             auto Term = BB.getTerminator();
-            if (DependentInstrs.find(Term) != DependentInstrs.end()) continue;
+            if (isDependent(Term)) continue;
             if (Term->getNumSuccessors() == 0) continue;
 
             // If there is just one necessary successor, put it into the
@@ -117,7 +115,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         IncludedInstrs.insert(DependentInstrs.begin(), DependentInstrs.end());
 
         // If the return instruction is to be removed, we need to mock it
-        if (IncludedInstrs.find(RetBB->getTerminator()) == IncludedInstrs.end())
+        if (!isIncluded(RetBB->getTerminator()))
             mockReturn(RetBB, Fun.getReturnType());
         addToIncluded(RetBB->getTerminator());
     }
@@ -131,7 +129,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
             // The new terminator will be used to correctly redirect all
             // incoming edges to the following block
             auto TermInst = BB.getTerminator();
-            if (IncludedInstrs.find(TermInst) == IncludedInstrs.end()) {
+            if (!isIncluded(TermInst)) {
                 for (auto TermSucc : TermInst->successors()) {
                     if (TermSucc != SuccessorsMap.find(&BB)->second)
                         TermSucc->removePredecessor(&BB, true);
@@ -144,8 +142,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
             }
             // Collect and clear all instruction that can be removed
             for (auto &Inst : BB) {
-                if (IncludedInstrs.find(&Inst) == IncludedInstrs.end() &&
-                    !Inst.isTerminator()) {
+                if (!isIncluded(&Inst) && !Inst.isTerminator()) {
 #ifdef DEBUG
                     errs() << "Clearing ";
                     Inst.dump();
@@ -164,7 +161,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         std::vector<BasicBlock *> BBToRemove;
         for (auto BB_it = Fun.begin(); BB_it != Fun.end();) {
             BasicBlock *BB = &*BB_it++;
-            if (IncludedBasicBlocks.find(BB) == IncludedBasicBlocks.end()) {
+            if (!isIncluded(BB)) {
                 if (BB == &BB->getParent()->getEntryBlock()) {
                     // First block is simply deleted, incoming edges represent
                     // loop-back edges that will be deleted as well and hence
@@ -258,7 +255,7 @@ bool ParamDependencySlicer::checkDependency(const Use *Op) {
             result = true;
         }
     } else if (auto OpInst = dyn_cast<Instruction>(Op)) {
-        if (DependentInstrs.find(OpInst) != DependentInstrs.end()) {
+        if (isDependent(OpInst)) {
             result = true;
         }
     }
@@ -270,7 +267,7 @@ bool ParamDependencySlicer::addToDependent(const Instruction *Instr) {
 }
 
 bool ParamDependencySlicer::addToIncluded(const Instruction *Inst) {
-    if (DependentInstrs.find(Inst) == DependentInstrs.end())
+    if (!isDependent(Inst))
         return addToSet(Inst, IncludedInstrs);
     else
         return false;
@@ -417,8 +414,7 @@ bool ParamDependencySlicer::canRemoveFirstBlock(const BasicBlock *bb) {
     // We cannot remove the first block if it has a successor that is included
     // and has incoming edges (since first block cannot have incoming edges)
     for (const auto &Succ : bb->getTerminator()->successors()) {
-        if (IncludedBasicBlocks.find(Succ) != IncludedBasicBlocks.end() &&
-            pred_begin(Succ) != pred_end(Succ))
+        if (isIncluded(Succ) && pred_begin(Succ) != pred_end(Succ))
             return false;
     }
     return true;
@@ -467,4 +463,20 @@ void ParamDependencySlicer::uniteWith(
     std::set_union(set.begin(), set.end(), other.begin(), other.end(),
                    std::inserter(tmpSet, tmpSet.begin()));
     set = std::move(tmpSet);
+}
+
+bool ParamDependencySlicer::isDependent(const Instruction *Instr) {
+    return DependentInstrs.find(Instr) != DependentInstrs.end();
+}
+
+bool ParamDependencySlicer::isIncluded(const Instruction *Instr) {
+    return IncludedInstrs.find(Instr) != IncludedInstrs.end();
+}
+
+bool ParamDependencySlicer::isAffected(const BasicBlock *BB) {
+    return AffectedBasicBlocks.find(BB) != AffectedBasicBlocks.end();
+}
+
+bool ParamDependencySlicer::isIncluded(const BasicBlock *BB) {
+    return IncludedBasicBlocks.find(BB) != IncludedBasicBlocks.end();
 }
