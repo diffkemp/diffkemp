@@ -26,6 +26,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     IncludedInstrs.clear();
     AffectedBasicBlocks.clear();
     IncludedBasicBlocks.clear();
+    IncludedParams.clear();
     SuccessorsMap.clear();
     uses_param = false;
 
@@ -120,7 +121,18 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         addToIncluded(RetBB->getTerminator());
     }
 
-    // Third phase - remove unneeded instructions and keep the control flow
+    // Third phase - add useful debug info
+    if (uses_param) {
+        for (auto &BB : Fun) {
+            for (auto &Inst : BB) {
+                if (isIncludedDebugInfo(Inst)) {
+                    addToIncluded(&Inst);
+                }
+            }
+        }
+    }
+
+    // Fourth phase - remove unneeded instructions and keep the control flow
     if (uses_param) {
         std::vector<Instruction *> toRemove;
         int b = 0;
@@ -299,6 +311,8 @@ bool ParamDependencySlicer::addAllOpsToIncluded(
                 addAllOpsToIncluded(OpInst);
             }
         }
+        if (auto OpParam = dyn_cast<Argument>(Op))
+            IncludedParams.insert(OpParam);
     }
     return added;
 }
@@ -465,6 +479,11 @@ void ParamDependencySlicer::uniteWith(
     set = std::move(tmpSet);
 }
 
+bool ParamDependencySlicer::isDebugInfo(const Function &f) {
+    return f.getIntrinsicID() == llvm::Intrinsic::dbg_declare ||
+           f.getIntrinsicID() == llvm::Intrinsic::dbg_value;
+}
+
 bool ParamDependencySlicer::isDependent(const Instruction *Instr) {
     return DependentInstrs.find(Instr) != DependentInstrs.end();
 }
@@ -479,4 +498,27 @@ bool ParamDependencySlicer::isAffected(const BasicBlock *BB) {
 
 bool ParamDependencySlicer::isIncluded(const BasicBlock *BB) {
     return IncludedBasicBlocks.find(BB) != IncludedBasicBlocks.end();
+}
+
+bool ParamDependencySlicer::isIncluded(const Argument *Param) {
+    return IncludedParams.find(Param) != IncludedParams.end();
+}
+
+bool ParamDependencySlicer::isIncludedDebugInfo(const Instruction &Inst) {
+    if (auto CallInstr = dyn_cast<CallInst>(&Inst)) {
+        if (!CallInstr->getCalledFunction() ||
+            !isDebugInfo(*CallInstr->getCalledFunction()))
+            return false;
+        const Value *Var =
+                dyn_cast<ValueAsMetadata>(
+                        dyn_cast<MetadataAsValue>(CallInstr->getOperand(0))
+                                ->getMetadata())
+                        ->getValue();
+        if (auto InstrVar = dyn_cast<Instruction>(Var)) {
+            return isIncluded(InstrVar);
+        }
+        if (auto Param = dyn_cast<Argument>(Var))
+            return isIncluded(Param);
+    }
+    return false;
 }

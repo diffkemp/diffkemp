@@ -40,6 +40,8 @@ class ParamDependencySlicer : public FunctionPass {
     std::set<const BasicBlock *> AffectedBasicBlocks = {};
     // Basic blocks that must be included
     std::set<const BasicBlock *> IncludedBasicBlocks = {};
+    // Function parameters to be included
+    std::set<const Argument *> IncludedParams = {};
     // Mapping block to its successor (for single-successor blocks only)
     std::map<const BasicBlock *, BasicBlock *> SuccessorsMap = {};
 
@@ -59,6 +61,7 @@ class ParamDependencySlicer : public FunctionPass {
     inline bool isIncluded(const Instruction *Instr);
     inline bool isAffected(const BasicBlock *BB);
     inline bool isIncluded(const BasicBlock *BB);
+    inline bool isIncluded(const Argument *Param);
 
     // Computing affected and included basic blocks
     auto affectedBasicBlocks(BranchInst *Branch)
@@ -89,7 +92,10 @@ class ParamDependencySlicer : public FunctionPass {
     bool canRemoveBlock(const BasicBlock *bb);
     bool canRemoveFirstBlock(const BasicBlock *bb);
 
+    bool isIncludedDebugInfo(const Instruction &Inst);
+
     static bool isLlreveIntrinsic(const Function &f);
+    static bool isDebugInfo(const Function &f);
 };
 
 // Register the pass
