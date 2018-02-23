@@ -169,6 +169,13 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         for (auto &Inst : toRemove) {
             Inst->eraseFromParent();
         }
+        // Clear BBs except first that have no incoming edges
+        for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
+            BasicBlock *BB = &*BB_it++;
+            if (pred_begin(BB) == pred_end(BB)) {
+                DeleteDeadBlock(BB);
+            }
+        }
         // Erase basic blocks
         std::vector<BasicBlock *> BBToRemove;
         for (auto BB_it = Fun.begin(); BB_it != Fun.end();) {
