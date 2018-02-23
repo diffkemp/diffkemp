@@ -1,0 +1,7 @@
+module: sndcard
+
+params: 
+  - param: autoclock
+    functions: 
+      snd_usb_audio_create: equal
+
