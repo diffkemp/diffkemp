@@ -22,8 +22,10 @@ def run_from_cli():
     args = ap.parse_args()
 
     try:
-        first_sliced = slice_module(args.first, args.parameter, args.verbose)
-        second_sliced = slice_module(args.second, args.parameter, args.verbose)
+        first_sliced = slice_module(args.first, args.parameter,
+                                    verbose=args.verbose)
+        second_sliced = slice_module(args.second, args.parameter,
+                                     verbose=args.verbose)
 
         stat = compare_modules(first_sliced, second_sliced, args.parameter,
                                args.verbose)
