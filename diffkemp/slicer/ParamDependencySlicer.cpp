@@ -87,6 +87,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     // Second phase - determine which additional instructions we need to
     // produce a valid CFG
     if (uses_param) {
+        errs() << "Second phase\n";
         // Recursively add all instruction operands to included
         for (auto &Inst : DependentInstrs) {
             if (isa<PHINode>(Inst)) continue;
@@ -516,16 +517,15 @@ bool ParamDependencySlicer::isIncludedDebugInfo(const Instruction &Inst) {
         if (!CallInstr->getCalledFunction() ||
             !isDebugInfo(*CallInstr->getCalledFunction()))
             return false;
-        const Value *Var =
-                dyn_cast<ValueAsMetadata>(
-                        dyn_cast<MetadataAsValue>(CallInstr->getOperand(0))
-                                ->getMetadata())
-                        ->getValue();
-        if (auto InstrVar = dyn_cast<Instruction>(Var)) {
-            return isIncluded(InstrVar);
+        const auto *VarMD = dyn_cast<MetadataAsValue>(
+                CallInstr->getOperand(0))->getMetadata();
+        if (const auto *Var = dyn_cast<ValueAsMetadata>(VarMD)) {
+            if (auto InstrVar = dyn_cast<Instruction>(Var->getValue())) {
+                return isIncluded(InstrVar);
+            }
+            if (auto Param = dyn_cast<Argument>(Var->getValue()))
+                return isIncluded(Param);
         }
-        if (auto Param = dyn_cast<Argument>(Var))
-            return isIncluded(Param);
     }
     return false;
 }
