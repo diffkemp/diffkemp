@@ -9,15 +9,19 @@ class Result(Enum):
     ERROR = -1
 
 
-def compare_function(first, second, function, verbose=False):
-    print("Comparing function %s" % function)
+def compare_functions(first, second, funFirst, funSecond, verbose=False):
+    if funFirst != funSecond:
+        print("Comparing functions %s and %s" % (funFirst, funSecond))
+    else:
+        print("Comparing function %s" % funFirst)
 
     stderr = None
     if not verbose:
         stderr = open('/dev/null', 'w')
 
-    llreve_process = Popen(["build/diffkemp/llreve/reve/reve/llreve", first, second,
-                            "--fun=" + function,
+    llreve_process = Popen(["build/diffkemp/llreve/reve/reve/llreve",
+                            first, second,
+                            "--fun=" + funFirst + "," + funSecond,
                             "-muz", "--ir-input", "--bitvect", "--infer-marks"],
                            stdout=PIPE, stderr=stderr)
 
