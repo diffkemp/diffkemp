@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
-from diffkemp.function_comparator import compare_function, Result
-from diffkemp.module_comparator import _dependent_functions
+from diffkemp.function_comparator import compare_functions, Result
+from diffkemp.function_coupling import FunctionCouplings
 from diffkemp.slicer import slicer
 import os
 import pytest
@@ -32,16 +32,18 @@ class TaskSpec:
         self.param = spec["param"]
 
         self.functions = dict()
-        self.only_old = list()
-        self.only_new = list()
+        self.only_old = set()
+        self.only_new = set()
         for fun, desc in spec["functions"].iteritems():
+            if isinstance(fun, str):
+                fun = (fun, fun)
             try:
                 self.functions[fun] = Result[desc.upper()]
             except KeyError:
                 if desc == "only_old":
-                    self.only_old.append(fun)
+                    self.only_old.add(fun[0])
                 elif desc == "only_new":
-                    self.only_new.append(fun)
+                    self.only_new.add(fun[0])
 
         module = spec["module"]
         module_path = os.path.join(base_path, module)
@@ -82,20 +84,19 @@ class TestClass(object):
         self._run_slicer(task_spec.old, task_spec.param, task_spec.old_sliced)
         self._run_slicer(task_spec.new, task_spec.param, task_spec.new_sliced)
 
-    def test_dependent_functions(self, task_spec):
-        result_old = _dependent_functions(task_spec.old_sliced, task_spec.param)
-        result_new = _dependent_functions(task_spec.new_sliced, task_spec.param)
-        function_names_old = set(task_spec.functions.keys() +
-                                 task_spec.only_old)
-        function_names_new = set(task_spec.functions.keys() +
-                                 task_spec.only_new)
-        assert (result_old == function_names_old and
-                result_new == function_names_new)
+    def test_couplings(self, task_spec):
+        couplings = FunctionCouplings(task_spec.old_sliced,
+                                      task_spec.new_sliced)
+        couplings.infer_for_param(task_spec.param)
+
+        assert couplings.main == set(task_spec.functions.keys())
+        assert couplings.uncoupled_first == task_spec.only_old
+        assert couplings.uncoupled_second == task_spec.only_new
 
     def test_function_comparison(self, task_spec):
-        for fun, expected in task_spec.functions.iteritems():
-            result = compare_function(task_spec.old_sliced,
-                                      task_spec.new_sliced,
-                                      fun)
+        for funPair, expected in task_spec.functions.iteritems():
+            result = compare_functions(task_spec.old_sliced,
+                                       task_spec.new_sliced,
+                                       funPair[0], funPair[1])
             assert result == expected
 
