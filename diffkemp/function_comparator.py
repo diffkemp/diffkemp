@@ -6,17 +6,15 @@ import sys
 class Result(Enum):
     EQUAL = 0
     NOT_EQUAL = 1
+    EQUAL_UNDER_ASSUMPTIONS = 2
     UNKNOWN = 5
     ERROR = -1
 
+    def __str__(self):
+        return self.name.lower().replace("_", " ")
 
-def compare_functions(first, second, funFirst, funSecond, coupled,
-                      verbose=False):
-    if funFirst != funSecond:
-        print("Comparing functions %s and %s" % (funFirst, funSecond))
-    else:
-        print("Comparing function %s" % funFirst)
 
+def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
     stderr = None
     if not verbose:
         stderr = open('/dev/null', 'w')
@@ -27,7 +25,7 @@ def compare_functions(first, second, funFirst, funSecond, coupled,
                "-muz", "--ir-input", "--bitvect", "--infer-marks",
                "--disable-auto-coupling"]
     for c in coupled:
-        command.append("--couple-functions=%s,%s" % (c[0], c[1]))
+        command.append("--couple-functions=%s,%s" % (c.first, c.second))
 
     if verbose:
         sys.stderr.write(" ".join(command) + "\n")
@@ -52,3 +50,37 @@ def compare_functions(first, second, funFirst, funSecond, coupled,
         result = Result.ERROR
 
     return result
+
+
+def compare_functions(first, second, funFirst, funSecond, coupled,
+                      verbose=False):
+    print ""
+    if funFirst != funSecond:
+        sys.stdout.write("Comparing functions %s and %s" % (funFirst,
+                                                            funSecond))
+    else:
+        sys.stdout.write("Comparing function %s" % funFirst)
+    sys.stdout.write("...")
+    sys.stdout.flush()
+
+    assumption_levels = sorted(set([c.diff for c in coupled]))
+    if not assumption_levels:
+        assumption_levels = [0]
+
+    for assume_level in assumption_levels:
+        assumptions = [c for c in coupled if c.diff <= assume_level]
+        result = _run_llreve_z3(first, second, funFirst, funSecond,
+                                assumptions, verbose)
+        if result == Result.EQUAL:
+            if assume_level > 0:
+                result = Result.EQUAL_UNDER_ASSUMPTIONS
+            break
+
+    print result
+    if result == Result.EQUAL_UNDER_ASSUMPTIONS:
+        print "  Used assumptions:"
+        for assume in [a for a in assumptions if a.diff > 0]:
+            print "    Functions %s and %s are same" % (assume.first,
+                                                        assume.second)
+    return result
+

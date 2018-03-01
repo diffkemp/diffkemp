@@ -2,12 +2,6 @@ from llvmcpy.llvm import *
 import itertools
 
 
-# Rule for testing that one function name is prefix/suffix of the other
-def prefix_rule(fun1, fun2):
-    return (fun1.startswith(fun2) or fun1.endswith(fun2) or
-            fun2.startswith(fun1) or fun2.endswith(fun1))
-
-
 class FunctionCollector():
     def __init__(self, module_file):
         # Parse LLVM module
@@ -70,10 +64,49 @@ class FunctionCollector():
         return result
 
 
+# Rules defining similarity of function names, used when coupling functions.
+# Each rule returns a number that indicates how similar functions are. The
+# lower the number is, the higher similarity it represents. 
+#   0 denotes identity,
+#  -1 denotes no similarity under that rule
+
+# Compares names for equality
+def same(name_first, name_second):
+    if name_first == name_second:
+        return 0
+    return -1
+
+# Checks if one name is substring of another, returns number of characters in
+# which names differ.
+def substring(name_first, name_second):
+    if name_first in name_second:
+        return len(name_second) - len(name_first)
+    if name_second in name_first:
+        return len(name_first) - len(name_second)
+    return -1
+
+# Rules sorted by importance
+rules = [same, substring]
+
+
+# A couple of functions with difference value (similarity)
+class FunCouple():
+    def __init__(self, first, second, diff):
+        self.first = first
+        self.second = second
+        self.diff = diff
+
+    def __hash__(self):
+        return hash(self.first) ^ hash(self.second)
+
+
 # Determine which functions from the set are not coupled with anything in 
 # couplings
 def uncoupled(functions, couplings):
-    coupled = set(itertools.chain.from_iterable(couplings))
+    coupled = set()
+    for c in couplings:
+        coupled.add(c.first)
+        coupled.add(c.second)
     return functions - coupled
 
 
@@ -95,18 +128,21 @@ class FunctionCouplings():
     def _infer_from_sets(self, functions_first, functions_second):
         couplings = set()
 
-        # First couple all functions that have same name
-        for fun in functions_first & functions_second:
-            couplings.add((fun,fun))
-
-        uncoupled_first = uncoupled(functions_first, couplings)
-        uncoupled_second = uncoupled(functions_second, couplings)
-        # Now try to apply some predefined naming rules to the rest of 
-        # functions and find other couplings
-        for fun in uncoupled_first:
-            candidates = [f for f in uncoupled_second if prefix_rule(f, fun)]
-            if len(candidates) == 1:
-                couplings.add((fun, candidates[0]))
+        uncoupled_first = functions_first
+        uncoupled_second = functions_second
+        # Apply rules by their priority until all functions are coupled or
+        # no more rules are left.
+        for rule in rules:
+            for fun in uncoupled_first:
+                candidates = [(f, rule(fun, f)) for f in uncoupled_second
+                                                if rule(fun, f) >= 0]
+                if len(candidates) == 1:
+                    couplings.add(FunCouple(fun, candidates[0][0],
+                                            candidates[0][1]))
+            uncoupled_first = uncoupled(uncoupled_first, couplings)
+            uncoupled_second = uncoupled(uncoupled_second, couplings)
+            if (not uncoupled_first or not uncoupled_second):
+                break
 
         return couplings
 

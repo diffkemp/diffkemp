@@ -29,6 +29,7 @@ def run_from_cli():
 
         stat = compare_modules(first_sliced, second_sliced, args.parameter,
                                args.verbose)
+        print ""
         stat.report()
 
         result = stat.overall_result()
