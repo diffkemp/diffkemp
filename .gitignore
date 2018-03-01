@@ -35,6 +35,7 @@ venv.bak/
 
 # py.test files
 .cache
+.pytest_cache
 
 ### C++ part ###
 
@@ -79,4 +80,6 @@ cmake-build-debug/
 *.swp
 
 # Temporary files from regression tests. Used for debugging purposes only.
-*-sliced.bc
+*-sliced*.bc
+*.smt2
+*.pdf
