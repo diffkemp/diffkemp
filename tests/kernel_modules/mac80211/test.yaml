@@ -1,0 +1,7 @@
+module: mac80211
+
+params: 
+  - param: beacon_loss_count
+    functions: 
+      ieee80211_set_associated: equal
+      
