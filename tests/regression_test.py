@@ -89,7 +89,8 @@ class TestClass(object):
                                       task_spec.new_sliced)
         couplings.infer_for_param(task_spec.param)
 
-        assert couplings.main == set(task_spec.functions.keys())
+        coupled = set([(c.first, c.second) for c in couplings.main])
+        assert coupled == set(task_spec.functions.keys())
         assert couplings.uncoupled_first == task_spec.only_old
         assert couplings.uncoupled_second == task_spec.only_new
 
