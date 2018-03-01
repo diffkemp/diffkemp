@@ -94,9 +94,13 @@ class TestClass(object):
         assert couplings.uncoupled_second == task_spec.only_new
 
     def test_function_comparison(self, task_spec):
+        couplings = FunctionCouplings(task_spec.old_sliced,
+                                      task_spec.new_sliced)
+        couplings.infer_for_param(task_spec.param)
         for funPair, expected in task_spec.functions.iteritems():
             result = compare_functions(task_spec.old_sliced,
                                        task_spec.new_sliced,
-                                       funPair[0], funPair[1])
+                                       funPair[0], funPair[1],
+                                       couplings.called)
             assert result == expected
 
