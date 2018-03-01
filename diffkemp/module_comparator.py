@@ -42,7 +42,7 @@ def compare_modules(first, second, parameter, verbose=False):
     couplings.infer_for_param(parameter)
     for (fun_first, fun_second) in couplings.main:
         result = compare_functions(first, second, fun_first, fun_second,
-                                   verbose)
+                                   couplings.called, verbose)
         stat.log_result(result, fun_first)
     return stat
 

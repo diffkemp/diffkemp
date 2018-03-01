@@ -1,5 +1,6 @@
 from subprocess import Popen, PIPE
 from enum import Enum
+import sys
 
 
 class Result(Enum):
@@ -9,7 +10,8 @@ class Result(Enum):
     ERROR = -1
 
 
-def compare_functions(first, second, funFirst, funSecond, verbose=False):
+def compare_functions(first, second, funFirst, funSecond, coupled,
+                      verbose=False):
     if funFirst != funSecond:
         print("Comparing functions %s and %s" % (funFirst, funSecond))
     else:
@@ -19,11 +21,18 @@ def compare_functions(first, second, funFirst, funSecond, verbose=False):
     if not verbose:
         stderr = open('/dev/null', 'w')
 
-    llreve_process = Popen(["build/diffkemp/llreve/reve/reve/llreve",
-                            first, second,
-                            "--fun=" + funFirst + "," + funSecond,
-                            "-muz", "--ir-input", "--bitvect", "--infer-marks"],
-                           stdout=PIPE, stderr=stderr)
+    command = ["build/diffkemp/llreve/reve/reve/llreve",
+               first, second,
+               "--fun=" + funFirst + "," + funSecond,
+               "-muz", "--ir-input", "--bitvect", "--infer-marks",
+               "--disable-auto-coupling"]
+    for c in coupled:
+        command.append("--couple-functions=%s,%s" % (c[0], c[1]))
+
+    if verbose:
+        sys.stderr.write(" ".join(command) + "\n")
+
+    llreve_process = Popen(command, stdout=PIPE, stderr=stderr)
 
     z3_process = Popen(["z3", "fixedpoint.engine=duality", "-in"],
                        stdin=llreve_process.stdout,

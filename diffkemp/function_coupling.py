@@ -16,6 +16,18 @@ class FunctionCollector():
         self._module = context.parse_ir(buffer)
 
 
+    # List of standard functions that are supported, so they should not be
+    # included in couplings
+    supported_names = ["malloc", "calloc", "kmalloc", "kzalloc",
+                       "llvm.dbg.value", "llvm.dbg.declare"]
+    @staticmethod
+    def supported_fun(llvm_fun):
+        name = llvm_fun.get_name()
+        if name:
+            return name in FunctionCollector.supported_names
+        return False
+
+
     # Find names of all functions that are (recursively) called by given 
     # function
     @staticmethod
@@ -27,9 +39,9 @@ class FunctionCollector():
                     continue
                 called = instr.get_called()
                 if called.get_name():
-                    if called.is_declaration():
+                    if not FunctionCollector.supported_fun(called):
                         result.add(called.get_name())
-                    else:
+                    if not called.is_declaration():
                         result.update(FunctionCollector._called_by_one(called))
 
         return result
