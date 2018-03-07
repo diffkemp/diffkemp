@@ -1,0 +1,7 @@
+module: devio
+
+params:
+  - param: usbfs_memory_mb
+    functions:
+      usbfs_increase_memory_usage: not_equal
+
