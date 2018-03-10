@@ -55,6 +55,8 @@ class ParamDependencySlicer : public FunctionPass {
     bool addToDependent(const Instruction *Instr);
     bool addToIncluded(const Instruction *Inst);
     bool addAllOpsToIncluded(const Instruction *Inst);
+    bool addStoresToIncluded(const Instruction *Alloca,
+                             const Instruction *Use);
 
     // Functions for searching sets
     inline bool isDependent(const Instruction *Instr);

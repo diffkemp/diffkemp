@@ -308,6 +308,8 @@ bool ParamDependencySlicer::addAllOpsToIncluded(
 #endif
                 added = true;
                 addAllOpsToIncluded(OpInst);
+                if (isa<LoadInst>(Inst) && isa<AllocaInst>(OpInst))
+                    addStoresToIncluded(OpInst, Inst);
             }
         }
         if (auto OpParam = dyn_cast<Argument>(Op))
@@ -560,4 +562,22 @@ bool ParamDependencySlicer::checkPhiDependency(const PHINode &Phi) {
         }
     }
     return false;
+}
+
+bool ParamDependencySlicer::addStoresToIncluded(const Instruction *Alloca,
+                                                const Instruction *Use) {
+    bool added = false;
+    const Instruction *Current = Alloca->getNextNode();
+    while (Current != Use) {
+        if (auto Store = dyn_cast<StoreInst>(Current)) {
+            if (Store->getPointerOperand() == Alloca) {
+                if (addToIncluded(Store)) {
+                    added = true;
+                    addAllOpsToIncluded(Store);
+                }
+            }
+        }
+        Current = Current->getNextNode();
+    }
+    return added;
 }
