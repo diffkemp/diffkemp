@@ -57,17 +57,8 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
             }
             if (auto PhiInstr = dyn_cast<PHINode>(&Instr)) {
                 // Phi instructions
-                for (auto incomingBB : PhiInstr->blocks()) {
-                    if (isIncluded(incomingBB)) {
-                        auto *Val =
-                                PhiInstr->getIncomingValueForBlock(incomingBB);
-                        if (auto *ValInstr = dyn_cast<Instruction>(Val)) {
-                            if (!isDependent(ValInstr))
-                                continue;
-                        }
-                        dependent = true;
-                    }
-                }
+                if (checkPhiDependency(*PhiInstr))
+                    dependent = true;
             }
 
             if (dependent) {
@@ -525,6 +516,47 @@ bool ParamDependencySlicer::isIncludedDebugInfo(const Instruction &Inst) {
             }
             if (auto Param = dyn_cast<Argument>(Var->getValue()))
                 return isIncluded(Param);
+        }
+    }
+    return false;
+}
+
+bool ParamDependencySlicer::checkPhiDependency(const PHINode &Phi) {
+    Value *Val = nullptr;
+    // Check if there are two incoming dependent blocks with different values
+    bool has_included = false;
+    for (auto incomingBB : Phi.blocks()) {
+        if (isIncluded(incomingBB)) {
+            has_included = true;
+            auto *BBVal = Phi.getIncomingValueForBlock(incomingBB);
+            if (!Val)
+                Val = BBVal;
+            else {
+                if (BBVal != Val)
+                    return true;
+            }
+        }
+    }
+    if (!has_included)
+        return false;
+    // If there are no such two blocks, check if there is another block with
+    // a  different incoming value that is possibly not removed in future
+    for (auto incomingBB : Phi.blocks()) {
+        if (!isIncluded(incomingBB)) {
+            auto *BBVal = Phi.getIncomingValueForBlock(incomingBB);
+            if (BBVal != Val) {
+                for (auto included : IncludedBasicBlocks) {
+                    if (included->getTerminator()->getNumSuccessors() == 2) {
+                        if (isPotentiallyReachable(
+                                included->getTerminator()->getSuccessor(0),
+                                incomingBB) !=
+                            isPotentiallyReachable(
+                                included->getTerminator()->getSuccessor(1),
+                                incomingBB))
+                            return true;
+                    }
+                }
+            }
         }
     }
     return false;

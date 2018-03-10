@@ -71,6 +71,8 @@ class ParamDependencySlicer : public FunctionPass {
                             const BasicBlock *ExitBlock)
         -> std::set<BasicBlock *>;
 
+    bool checkPhiDependency(const PHINode &Phi);
+
     // Computing reachable blocks
     auto reachableBlocks(const BasicBlock *Src, Function &Fun)
         -> std::set<const BasicBlock *>;
