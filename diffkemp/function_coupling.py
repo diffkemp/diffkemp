@@ -12,7 +12,7 @@ class FunctionCollector():
 
     # List of standard functions that are supported, so they should not be
     # included in couplings
-    supported_names = ["malloc", "calloc", "kmalloc", "kzalloc",
+    supported_names = ["malloc", "calloc", "kmalloc", "kzalloc", "__kmalloc",
                        "llvm.dbg.value", "llvm.dbg.declare"]
     @staticmethod
     def supported_fun(llvm_fun):
@@ -35,8 +35,19 @@ class FunctionCollector():
                 if called.get_name():
                     if not FunctionCollector.supported_fun(called):
                         result.add(called.get_name())
-                    if not called.is_declaration():
-                        result.update(FunctionCollector._called_by_one(called))
+                    result.update(FunctionCollector._called_by_one(called))
+
+                for opIndex in range(0, instr.get_num_operands()):
+                    op = instr.get_operand(opIndex)
+                    if op.get_kind() != FunctionValueKind:
+                        continue
+
+                    if op.get_name():
+                        if not FunctionCollector.supported_fun(op):
+                            result.add(op.get_name())
+                        result.update(FunctionCollector._called_by_one(op))
+
+
 
         return result
 
