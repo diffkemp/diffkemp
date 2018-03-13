@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from argparse import ArgumentParser
+from module_analyser import check_modules
 from module_comparator import compare_modules, Statistics
 from function_comparator import Result
 from slicer.slicer import slice_module
@@ -22,6 +23,8 @@ def run_from_cli():
     args = ap.parse_args()
 
     try:
+        check_modules(args.first, args.second, args.parameter)
+
         first_sliced = slice_module(args.first, args.parameter,
                                     verbose=args.verbose)
         second_sliced = slice_module(args.second, args.parameter,
@@ -35,7 +38,7 @@ def run_from_cli():
         result = stat.overall_result()
     except Exception as e:
         result = Result.ERROR
-        sys.stderr.write(str(e) + "\n")
+        sys.stderr.write("Error: %s\n" % str(e))
 
     if result == Result.EQUAL:
         print("Semantics of the module parameter is same")
