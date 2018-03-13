@@ -6,3 +6,11 @@ params:
       snd_intel8x0_probe: equal
       snd_intel8x0_create: equal
 
+  - param: buggy_semaphore
+    functions:
+      snd_intel8x0_create: equal
+
+  - param: xbox
+    functions:
+      snd_intel8x0_create: equal
+
