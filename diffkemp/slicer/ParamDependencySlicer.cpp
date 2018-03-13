@@ -568,7 +568,7 @@ bool ParamDependencySlicer::addStoresToIncluded(const Instruction *Alloca,
                                                 const Instruction *Use) {
     bool added = false;
     const Instruction *Current = Alloca->getNextNode();
-    while (Current != Use) {
+    while (Current && Current != Use) {
         if (auto Store = dyn_cast<StoreInst>(Current)) {
             if (Store->getPointerOperand() == Alloca) {
                 if (addToIncluded(Store)) {
