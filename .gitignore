@@ -83,3 +83,6 @@ cmake-build-debug/
 *-sliced*.bc
 *.smt2
 *.pdf
+
+# Kernel sources directory
+kernel/
