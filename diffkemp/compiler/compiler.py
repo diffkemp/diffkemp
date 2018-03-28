@@ -1,11 +1,11 @@
 import os
+import re
 import sys
 import tarfile
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
+from subprocess import Popen, PIPE
 from urllib import urlretrieve
-
-kernel_base_path = "kernel"
 
 # Progress bar for downloading
 pbar = None
@@ -23,15 +23,31 @@ def show_progress(count, block_size, total_size):
         pbar = None
 
 
+def _strip_bash_quotes(gcc_param):
+    if "\'" in gcc_param:
+        return gcc_param.translate(None, "\'")
+    else:
+        return gcc_param.translate(None, "\"")
+
+
+class CompilerException(Exception):
+    pass
+
+
 class KernelModuleCompiler:
-    def __init__(self, kernel_version):
+    kernel_base_path = "kernel"
+
+    def __init__(self, kernel_version, module_path, module_name):
+        self.kernel_base_path = os.path.abspath(self.kernel_base_path)
         self.kernel_version = kernel_version
+        self.kernel_path = os.path.join(self.kernel_base_path,
+                                        "linux-%s" % self.kernel_version)
+        self.module_path = module_path
+        self.object_file = "%s.o" % module_name
 
 
     def get_kernel_source(self):
-        kernel_path = os.path.join(kernel_base_path,
-                                   "linux-%s" % self.kernel_version)
-        if not os.path.isfile(kernel_path):
+        if not os.path.isdir(self.kernel_path):
             url = "https://www.kernel.org/pub/linux/kernel/"
 
             # version directory
@@ -44,20 +60,130 @@ class KernelModuleCompiler:
             url += tarname
 
             # Download the tarball with kernel sources
-            print "Downloading kernel version %s..." % self.kernel_version
-            urlretrieve(url, os.path.join(kernel_base_path, tarname),
+            print "Downloading kernel version %s" % self.kernel_version
+            urlretrieve(url, os.path.join(self.kernel_base_path, tarname),
                         show_progress)
 
             # Extract kernel sources
-            print "Extracting..."
-            os.chdir(kernel_base_path)
+            print "Extracting"
+            os.chdir(self.kernel_base_path)
             tar = tarfile.open(tarname, "r:gz")
             tar.extractall()
             tar.close
 
             os.remove(tarname)
-            print "Done."
+            print "Done"
             print("Kernel sources for version %s are in directory %s" %
-                  (self.kernel_version, kernel_path))
+                  (self.kernel_version, self.kernel_path))
 
+
+    def configure_kernel(self):
+        # Run `make defconfig`
+        os.chdir(self.kernel_path)
+        print "Configuring kernel"
+        make = Popen(["make", "defconfig"], stdout=PIPE)
+        make.wait()
+        if make.returncode != 0:
+            raise CompilerException("`make config` has failed")
+
+
+    def clear_object(self):
+        # Remove .o file
+        # This is needed so that make runs gcc and we can reuse arguments
+        os.chdir(self.kernel_path)
+        print "Clearing object file %s" % self.object_file
+        object_file = os.path.join(self.module_path, self.object_file)
+        try:
+            os.remove(object_file)
+        except OSError:
+            pass
+
+
+    def _symlink_gcc_header(self, major_version):
+        # Symlink include/linux/compiler-gccX.h for current GCC version with
+        # most recent header in the downloaded kernel
+        include_path = os.path.join(self.kernel_path, "include/linux")
+        dest_file = os.path.join(include_path,
+                                 "compiler-gcc%d.h" % major_version)
+        if not os.path.isfile(dest_file):
+            regex = re.compile("^compiler-gcc(\d+)\.h$")
+            max_major = 0
+            for file in os.listdir(include_path):
+                match = regex.match(file)
+                if match and int(match.group(1)) > max_major:
+                    max_major = int(match.group(1))
+
+            if max_major > 0:
+                src_file = os.path.join(include_path,
+                                        "compiler-gcc%d.h" % max_major)
+                os.symlink(src_file, dest_file)
+
+
+    def build_object(self):
+        # Build .o
+        os.chdir(self.kernel_path)
+
+        self._symlink_gcc_header(7)
+
+        print "Compiling object file %s" % self.object_file
+        object_file = os.path.join(self.module_path, self.object_file)
+        make = Popen(["make", "V=1", object_file], stdout=PIPE)
+        make.wait()
+        if make.returncode != 0:
+            raise CompilerException("Compiling module with gcc has failed")
+        # Return contents of stdout
+        return make.communicate()[0]
+
+
+    def build_ir(self, gcc_command, verbose=False):
+        # Build .bc (LLVM IR) using parameters of the GCC command
+        os.chdir(self.kernel_path)
+
+        command = ["clang", "-S", "-emit-llvm", "-O0"]
+        for param in gcc_command.split():
+            if (param == "gcc" or
+                (param.startswith("-W") and "-MD" not in param) or
+                param.startswith("-f") or
+                param.startswith("-m") or
+                param.startswith("-O") or
+                param == "-DCC_HAVE_ASM_GOTO"):
+                continue
+
+            if param.endswith(".o"):
+                self.ir_file = "%s.bc" % param[:-2]
+                command.append(self.ir_file)
+                continue
+
+            command.append(_strip_bash_quotes(param))
+
+        print "Compiling LLVM IR file %s" % self.ir_file
+
+        stderr = None
+        if not verbose:
+            stderr = open('/dev/null', 'w')
+
+        clang_process = Popen(command, stdout=PIPE, stderr=stderr)
+        clang_process.wait()
+        if clang_process.returncode != 0:
+            raise CompilerException("Compiling module with clang has failed")
+
+
+    def compile_to_ir(self, verbose=False):
+        cwd = os.getcwd()
+        print "Kernel version %s" % self.kernel_version
+        print "-----------"
+        try:
+            self.get_kernel_source()
+            self.configure_kernel()
+
+            self.clear_object()
+            make_output = self.build_object()
+            self.build_ir(make_output.split("\n")[-2], verbose)
+
+            print ""
+            return os.path.join(self.kernel_path, self.ir_file)
+        except:
+            raise
+        finally:
+            os.chdir(cwd)
 
