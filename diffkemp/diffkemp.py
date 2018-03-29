@@ -16,6 +16,8 @@ def __make_argument_parser():
     ap.add_argument("parameter")
     ap.add_argument("src_version")
     ap.add_argument("dest_version")
+    ap.add_argument("-d", "--debug", help="compile module with -g",
+                    action="store_true")
     ap.add_argument("-v", "--verbose", help="increase output verbosity",
                     action="store_true")
     return ap
@@ -30,13 +32,13 @@ def run_from_cli():
         first_mod_compiler = KernelModuleCompiler(args.src_version,
                                                   args.module_dir,
                                                   args.module_name)
-        first_mod = first_mod_compiler.compile_to_ir(args.verbose)
+        first_mod = first_mod_compiler.compile_to_ir(args.debug, args.verbose)
 
         # Compile new module
         second_mod_compiler = KernelModuleCompiler(args.dest_version,
                                                   args.module_dir,
                                                   args.module_name)
-        second_mod = second_mod_compiler.compile_to_ir(args.verbose)
+        second_mod = second_mod_compiler.compile_to_ir(args.debug, args.verbose)
 
         # Check modules
         check_modules(first_mod, second_mod, args.parameter)

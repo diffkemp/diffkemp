@@ -44,6 +44,8 @@ class KernelModuleCompiler:
                                         "linux-%s" % self.kernel_version)
         self.module_path = module_path
         self.object_file = "%s.o" % module_name
+        self.src_file = os.path.join(self.kernel_path, self.module_path,
+                                     "%s.c" % module_name)
 
 
     def get_kernel_source(self):
@@ -135,11 +137,13 @@ class KernelModuleCompiler:
         return make.communicate()[0]
 
 
-    def build_ir(self, gcc_command, verbose=False):
+    def build_ir(self, gcc_command, debug=False, verbose=False):
         # Build .bc (LLVM IR) using parameters of the GCC command
         os.chdir(self.kernel_path)
 
         command = ["clang", "-S", "-emit-llvm", "-O0"]
+        if debug:
+            command.append("-g")
         for param in gcc_command.split():
             if (param == "gcc" or
                 (param.startswith("-W") and "-MD" not in param) or
@@ -162,13 +166,26 @@ class KernelModuleCompiler:
         if not verbose:
             stderr = open('/dev/null', 'w')
 
+        print " ".join(command)
         clang_process = Popen(command, stdout=PIPE, stderr=stderr)
         clang_process.wait()
         if clang_process.returncode != 0:
             raise CompilerException("Compiling module with clang has failed")
 
 
-    def compile_to_ir(self, verbose=False):
+    def opt_ir(self):
+        os.chdir(self.kernel_path)
+        print "Optimizing LLVM IR file"
+        opt_process = Popen(["opt", "-S", "-mem2reg", "-loop-simplify",
+                             "-simplifycfg", "-lowerswitch",
+                             self.ir_file,
+                             "-o", self.ir_file])
+        opt_process.wait()
+        if opt_process.returncode != 0:
+            raise CompilerException("Running opt on module failed")
+
+
+    def compile_to_ir(self, debug=False, verbose=False):
         cwd = os.getcwd()
         print "Kernel version %s" % self.kernel_version
         print "-----------"
@@ -178,7 +195,8 @@ class KernelModuleCompiler:
 
             self.clear_object()
             make_output = self.build_object()
-            self.build_ir(make_output.split("\n")[-2], verbose)
+            self.build_ir(make_output.split("\n")[-2], debug, verbose)
+            self.opt_ir()
 
             print ""
             return os.path.join(self.kernel_path, self.ir_file)
@@ -186,4 +204,8 @@ class KernelModuleCompiler:
             raise
         finally:
             os.chdir(cwd)
+
+
+    def get_module_src_file(self):
+        return self.src_file
 
