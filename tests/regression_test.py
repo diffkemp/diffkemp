@@ -1,28 +1,40 @@
 #! /usr/bin/env python
 
+from diffkemp.compiler import compiler
 from diffkemp.function_comparator import compare_functions, Result
 from diffkemp.function_coupling import FunctionCouplings
 from diffkemp.slicer import slicer
+import glob
 import os
 import pytest
+import shutil
 from subprocess import Popen
 import yaml
 
-base_path = "tests/kernel_modules"
+specs_path = "tests/test_specs"
+tasks_path = "tests/kernel_modules"
 
 def collect_task_specs():
     result = list()
-    for taskdir in os.listdir(base_path):
-        task_spec_file = os.path.join(base_path, taskdir, "test.yaml")
-        if not os.path.isfile(task_spec_file):
-            continue
-        with open(task_spec_file, "r") as spec_file:
+    cwd = os.getcwd()
+    os.chdir(specs_path)
+    for spec_file_path in glob.glob("*.yaml"):
+        with open(spec_file_path, "r") as spec_file:
             spec_yaml = yaml.load(spec_file)
             for param in spec_yaml["params"]:
                 spec = param
-                spec["module"] = spec_yaml["module"]
-                spec_id = spec["module"] + "-" + spec["param"]
+                spec["module_name"] = spec_yaml["module"]
+                spec["path"] = spec_yaml["path"]
+                spec["filename"] = spec_yaml["filename"]
+                spec["old_kernel"] = spec_yaml["old_kernel"]
+                spec["new_kernel"] = spec_yaml["new_kernel"]
+                if "debug" in spec_yaml:
+                    spec["debug"] = True
+                else:
+                    spec["debug"] = False
+                spec_id = spec["module_name"] + "-" + spec["param"]
                 result.append((spec_id, spec))
+    os.chdir(cwd)
     return result
 specs = collect_task_specs()
 
@@ -30,6 +42,11 @@ specs = collect_task_specs()
 class TaskSpec:
     def __init__(self, spec):
         self.param = spec["param"]
+        self.module_path = spec["path"]
+        self.module_filename = spec["filename"]
+        self.old_kernel = spec["old_kernel"]
+        self.new_kernel = spec["new_kernel"]
+        self.debug = spec["debug"]
 
         self.functions = dict()
         self.only_old = set()
@@ -45,20 +62,46 @@ class TaskSpec:
                 elif desc == "only_new":
                     self.only_new.add(fun[0])
 
-        module = spec["module"]
-        module_path = os.path.join(base_path, module)
-        self.old = os.path.join(module_path, module + "_old.bc")
-        self.new = os.path.join(module_path, module + "_new.bc")
-        self.old_sliced = os.path.join(module_path, module + "_old-sliced-" +
-                                                    spec["param"] + ".bc")
-        self.new_sliced = os.path.join(module_path, module + "_new-sliced-" +
-                                                    spec["param"] + ".bc")
+        module = spec["module_name"]
+        self.task_dir = os.path.join(tasks_path, module)
+        self.old = os.path.join(self.task_dir, module + "_old.bc")
+        self.new = os.path.join(self.task_dir, module + "_new.bc")
+        self.old_sliced = os.path.join(self.task_dir, module + "_old-sliced-" +
+                                                      spec["param"] + ".bc")
+        self.new_sliced = os.path.join(self.task_dir, module + "_new-sliced-" +
+                                                      spec["param"] + ".bc")
+
+
+def prepare_task(spec):
+    # Create task dir
+    if not os.path.isdir(spec.task_dir):
+        os.mkdir(spec.task_dir)
+
+    # Compile old module
+    if not os.path.isfile(spec.old):
+        c = compiler.KernelModuleCompiler(spec.old_kernel, spec.module_path,
+                                          spec.module_filename)
+        ir_file = c.compile_to_ir(spec.debug)
+        shutil.copyfile(ir_file, spec.old)
+        # Copy .c file
+        shutil.copyfile(c.get_module_src_file(), spec.old[:-3] + ".c")
+
+    # Compile new module
+    if not os.path.isfile(spec.new):
+        c = compiler.KernelModuleCompiler(spec.new_kernel, spec.module_path,
+                                          spec.module_filename)
+        ir_file = c.compile_to_ir(spec.debug)
+        shutil.copyfile(ir_file, spec.new)
+        # Copy .c file
+        shutil.copyfile(c.get_module_src_file(), spec.new[:-3] + ".c")
 
 
 @pytest.fixture(params=[x[1] for x in specs],
                 ids=[x[0] for x in specs])
 def task_spec(request):
-        return TaskSpec(request.param)
+    spec = TaskSpec(request.param)
+    prepare_task(spec)
+    return spec
 
 
 class TestClass(object):
