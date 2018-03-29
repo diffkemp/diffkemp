@@ -1,4 +1,8 @@
 module: ip6table_filter
+path: net/ipv6/netfilter
+filename: ip6table_filter
+old_kernel: "3.10"
+new_kernel: "4.11"
 
 params:
   - param: forward

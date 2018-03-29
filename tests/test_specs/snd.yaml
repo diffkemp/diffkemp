@@ -1,4 +1,8 @@
 module: snd
+path: sound/core
+filename: sound
+old_kernel: "3.10"
+new_kernel: "4.11"
 
 params: 
   - param: cards_limit
@@ -12,4 +16,5 @@ params:
       alsa_sound_init: not_equal
       !!python/tuple [snd_register_device_for_dev, snd_register_device]: error
       snd_unregister_device: only_old
+
 
