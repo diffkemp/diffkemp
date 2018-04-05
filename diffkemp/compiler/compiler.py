@@ -166,7 +166,8 @@ class KernelModuleCompiler:
         if not verbose:
             stderr = open('/dev/null', 'w')
 
-        print " ".join(command)
+        if verbose:
+            print " ".join(command)
         clang_process = Popen(command, stdout=PIPE, stderr=stderr)
         clang_process.wait()
         if clang_process.returncode != 0:
