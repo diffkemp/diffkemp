@@ -1,0 +1,11 @@
+module: i2c-algo-bit
+path: drivers/i2c/algos
+filename: i2c-algo-bit
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: bit_test
+    functions:
+      __i2c_bit_add_bus: equal
+
