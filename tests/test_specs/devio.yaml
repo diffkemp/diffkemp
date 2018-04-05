@@ -1,9 +1,13 @@
 module: devio
+path: drivers/usb/core
+filename: devio
+old_kernel: "3.10"
+new_kernel: "4.11"
 
 params:
   - param: usbfs_memory_mb
     functions:
-      usbfs_increase_memory_usage: not_equal
+      usbfs_increase_memory_usage: error
 
   - param: usbfs_snoop
     functions:

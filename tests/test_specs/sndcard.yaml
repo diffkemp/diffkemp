@@ -1,4 +1,9 @@
 module: sndcard
+path: sound/usb
+filename: card
+old_kernel: "3.10"
+new_kernel: "4.11"
+debug: true
 
 params: 
   - param: autoclock

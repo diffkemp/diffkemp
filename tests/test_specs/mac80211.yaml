@@ -1,4 +1,9 @@
 module: mac80211
+path: net/mac80211
+filename: mlme
+old_kernel: "3.10"
+new_kernel: "4.11"
+debug: true
 
 params: 
   - param: beacon_loss_count
