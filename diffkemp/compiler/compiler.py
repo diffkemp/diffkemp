@@ -141,7 +141,8 @@ class KernelModuleCompiler:
         # Build .bc (LLVM IR) using parameters of the GCC command
         os.chdir(self.kernel_path)
 
-        command = ["clang", "-S", "-emit-llvm", "-O0"]
+        command = ["clang", "-S", "-emit-llvm", "-O1", "-Xclang",
+                   "-disable-llvm-passes"]
         if debug:
             command.append("-g")
         for param in gcc_command.split():
