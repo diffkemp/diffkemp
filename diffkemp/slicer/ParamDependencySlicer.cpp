@@ -71,6 +71,12 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
                     auto affectedBBs = affectedBasicBlocks(BranchInstr);
                     addAllInstrs(affectedBBs);
                 }
+                if (auto StoreInstr = dyn_cast<StoreInst>(&Instr)) {
+                    auto Ptr = StoreInstr->getPointerOperand();
+                    if (auto PtrInstr = dyn_cast<Instruction>(Ptr)) {
+                        addToDependent(PtrInstr);
+                    }
+                }
             }
         }
     }
@@ -567,8 +573,14 @@ bool ParamDependencySlicer::checkPhiDependency(const PHINode &Phi) {
 bool ParamDependencySlicer::addStoresToIncluded(const Instruction *Alloca,
                                                 const Instruction *Use) {
     bool added = false;
-    const Instruction *Current = Alloca->getNextNode();
-    while (Current && Current != Use) {
+    std::list<const Instruction *> worklist;
+    worklist.push_back(Alloca->getNextNode());
+    std::set<const Instruction *> visited;
+    visited.insert(Alloca);
+    visited.insert(Use);
+    while (!worklist.empty()) {
+        const Instruction *Current = worklist.front();
+        worklist.pop_front();
         if (auto Store = dyn_cast<StoreInst>(Current)) {
             if (Store->getPointerOperand() == Alloca) {
                 if (addToIncluded(Store)) {
@@ -577,7 +589,21 @@ bool ParamDependencySlicer::addStoresToIncluded(const Instruction *Alloca,
                 }
             }
         }
-        Current = Current->getNextNode();
+
+        std::vector<const Instruction *> next;
+        if (auto Branch = dyn_cast<BranchInst>(Current)) {
+            for (auto succ : Branch->successors())
+                next.push_back(&*succ->begin());
+        } else {
+            if (Current->getNextNode())
+                next.push_back(Current->getNextNode());
+        }
+        for (auto &n : next) {
+            if (visited.find(n) == visited.end())
+                worklist.push_back(n);
+        }
+
+        visited.insert(Current);
     }
     return added;
 }
