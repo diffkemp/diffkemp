@@ -18,3 +18,7 @@ params:
     functions:
       snd_intel8x0_create: equal
 
+  - param: inside_vm
+    functions:
+      snd_intel8x0_inside_vm: not_equal
+
