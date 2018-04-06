@@ -8,10 +8,10 @@ debug: true
 params: 
   - param: beacon_loss_count
     functions: 
-      ieee80211_set_associated: equal_under_assumptions
+      ieee80211_set_associated: equal
 
   - param: probe_wait_ms
     functions:
-      ieee80211_mgd_probe_ap_send: equal_under_assumptions
+      ieee80211_mgd_probe_ap_send: equal
       ieee80211_sta_work: only_old
       
