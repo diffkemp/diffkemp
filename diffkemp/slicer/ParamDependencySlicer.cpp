@@ -119,6 +119,30 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         addToIncluded(RetBB->getTerminator());
     }
 
+    if (uses_param) {
+        for (auto &BB : Fun) {
+            for (auto &Instr : BB) {
+                if (auto Phi = dyn_cast<PHINode>(&Instr)) {
+                    if (!isIncluded(Phi))
+                        continue;
+                    for (unsigned i = 0; i < Phi->getNumIncomingValues(); ++i) {
+                        auto incomingBB = Phi->getIncomingBlock(i);
+                        if (isIncluded(incomingBB->getTerminator()) ||
+                            (SuccessorsMap.find(incomingBB) !=
+                             SuccessorsMap.end() &&
+                             SuccessorsMap.find(incomingBB)->second == &BB)) {
+                            if (auto incomingInstr = dyn_cast<Instruction>(
+                                    Phi->getIncomingValue(i))) {
+                                addToIncluded(incomingInstr);
+                                addAllOpsToIncluded(incomingInstr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Third phase - add useful debug info
     if (uses_param) {
         for (auto &BB : Fun) {
