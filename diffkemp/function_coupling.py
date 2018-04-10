@@ -25,31 +25,28 @@ class FunctionCollector():
     # Find names of all functions that are (recursively) called by given 
     # function
     @staticmethod
-    def _called_by_one(llvm_fun):
-        result = set()
+    def _called_by_one(llvm_fun, result):
         for bb in llvm_fun.iter_basic_blocks():
             for instr in bb.iter_instructions():
                 if instr.get_instruction_opcode() != Call:
                     continue
                 called = instr.get_called()
-                if called.get_name():
-                    if not FunctionCollector.supported_fun(called):
-                        result.add(called.get_name())
-                    result.update(FunctionCollector._called_by_one(called))
+                if (called.get_name() and
+                    not FunctionCollector.supported_fun(called) and
+                    not called.get_name() in result):
+                    result.add(called.get_name())
+                    FunctionCollector._called_by_one(called, result)
 
                 for opIndex in range(0, instr.get_num_operands()):
                     op = instr.get_operand(opIndex)
                     if op.get_kind() != FunctionValueKind:
                         continue
 
-                    if op.get_name():
-                        if not FunctionCollector.supported_fun(op):
-                            result.add(op.get_name())
-                        result.update(FunctionCollector._called_by_one(op))
-
-
-
-        return result
+                    if (op.get_name() and
+                        not FunctionCollector.supported_fun(op) and
+                        not op.get_name() in result):
+                        result.add(op.get_name())
+                        FunctionCollector._called_by_one(op, result)
 
 
     # Find names of all functions using given parameter (global variable)
@@ -71,7 +68,7 @@ class FunctionCollector():
         result = set()
         for fun_name in function_names:
             llvm_fun = self._module.get_named_function(fun_name)
-            result.update(self._called_by_one(llvm_fun))
+            self._called_by_one(llvm_fun, result)
         return result
 
 
