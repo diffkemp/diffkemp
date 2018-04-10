@@ -48,6 +48,9 @@ class ParamDependencySlicer : public FunctionPass {
     // We only do the slicing if the function uses the parameter
     bool uses_param = false;
 
+    // Return block
+    BasicBlock *RetBB = nullptr;
+
     // Functions for adding to sets
     void addAllInstrs(const std::vector<const BasicBlock *> BBs);
     bool addToSet(const Instruction *Inst,
@@ -91,7 +94,7 @@ class ParamDependencySlicer : public FunctionPass {
 
     bool checkDependency(const Use *Op);
 
-    void mockReturn(BasicBlock *ReturnBB, Type *RetType);
+    void mockReturn(Type *RetType);
 
     bool canRemoveBlock(const BasicBlock *bb);
     bool canRemoveFirstBlock(const BasicBlock *bb);

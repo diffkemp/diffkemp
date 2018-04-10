@@ -92,7 +92,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         }
 
         auto &ExitNodeAnalysis = getAnalysis<UnifyFunctionExitNodes>();
-        auto RetBB = ExitNodeAnalysis.getReturnBlock();
+        RetBB = ExitNodeAnalysis.getReturnBlock();
         for (auto &BB : Fun) {
             auto Term = BB.getTerminator();
             if (isDependent(Term)) continue;
@@ -115,7 +115,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
 
         // If the return instruction is to be removed, we need to mock it
         if (!isIncluded(RetBB->getTerminator()))
-            mockReturn(RetBB, Fun.getReturnType());
+            mockReturn(Fun.getReturnType());
         addToIncluded(RetBB->getTerminator());
     }
 
@@ -381,9 +381,9 @@ std::set<BasicBlock *> ParamDependencySlicer::includedSuccessors(
     }
 }
 
-void ParamDependencySlicer::mockReturn(BasicBlock *ReturnBB, Type *RetType) {
-    IRBuilder<> builder(ReturnBB);
-    ReturnBB->getTerminator()->eraseFromParent();
+void ParamDependencySlicer::mockReturn(Type *RetType) {
+    IRBuilder<> builder(RetBB);
+    RetBB->getTerminator()->eraseFromParent();
 
     // TODO support more return types
     Value *returnVal = nullptr;
