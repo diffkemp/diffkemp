@@ -413,6 +413,9 @@ void ParamDependencySlicer::mockReturn(Type *RetType) {
     Value *returnVal = nullptr;
     if (RetType->isIntegerTy())
         returnVal = ConstantInt::get(RetType, 0);
+    else if (RetType->isPointerTy())
+        returnVal = ConstantPointerNull::get(
+                llvm::dyn_cast<PointerType>(RetType));
 
     auto NewReturn = builder.CreateRet(returnVal);
 #ifdef DEBUG
@@ -605,11 +608,23 @@ bool ParamDependencySlicer::addStoresToIncluded(const Instruction *Alloca,
     while (!worklist.empty()) {
         const Instruction *Current = worklist.front();
         worklist.pop_front();
+        // Add store instruction with alloca as operand
         if (auto Store = dyn_cast<StoreInst>(Current)) {
             if (Store->getPointerOperand() == Alloca) {
                 if (addToIncluded(Store)) {
                     added = true;
                     addAllOpsToIncluded(Store);
+                }
+            }
+        }
+        // Add call instruction with alloca as operand
+        if (auto Call = dyn_cast<CallInst>(Current)) {
+            for (auto &Op : Call->operands()) {
+                if (Op == Alloca) {
+                    if (addToIncluded(Call)) {
+                        added = true;
+                        addAllOpsToIncluded(Call);
+                    }
                 }
             }
         }
