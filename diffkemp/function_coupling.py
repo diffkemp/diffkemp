@@ -13,6 +13,7 @@ class FunctionCollector():
     # List of standard functions that are supported, so they should not be
     # included in couplings
     supported_names = ["malloc", "calloc", "kmalloc", "kzalloc", "__kmalloc",
+                       "devm_kzalloc",
                        "llvm.dbg.value", "llvm.dbg.declare"]
     @staticmethod
     def supported_fun(llvm_fun):
@@ -28,14 +29,13 @@ class FunctionCollector():
     def _called_by_one(llvm_fun, result):
         for bb in llvm_fun.iter_basic_blocks():
             for instr in bb.iter_instructions():
-                if instr.get_instruction_opcode() != Call:
-                    continue
-                called = instr.get_called()
-                if (called.get_name() and
-                    not FunctionCollector.supported_fun(called) and
-                    not called.get_name() in result):
-                    result.add(called.get_name())
-                    FunctionCollector._called_by_one(called, result)
+                if instr.get_instruction_opcode() == Call:
+                    called = instr.get_called()
+                    if (called.get_name() and
+                        not FunctionCollector.supported_fun(called) and
+                        not called.get_name() in result):
+                        result.add(called.get_name())
+                        FunctionCollector._called_by_one(called, result)
 
                 for opIndex in range(0, instr.get_num_operands()):
                     op = instr.get_operand(opIndex)
@@ -46,7 +46,6 @@ class FunctionCollector():
                         not FunctionCollector.supported_fun(op) and
                         not op.get_name() in result):
                         result.add(op.get_name())
-                        FunctionCollector._called_by_one(op, result)
 
 
     # Find names of all functions using given parameter (global variable)
