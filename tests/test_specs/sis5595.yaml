@@ -1,0 +1,11 @@
+module: sis5595
+path: drivers/hwmon
+filename: sis5595
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: force_addr
+    functions:
+      sis5595_pci_probe: equal
+

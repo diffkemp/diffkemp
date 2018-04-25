@@ -1,0 +1,11 @@
+module: lm93
+path: drivers/hwmon
+filename: lm93
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: disable_block
+    functions:
+      lm93_probe: not_equal
+
