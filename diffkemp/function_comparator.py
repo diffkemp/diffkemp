@@ -1,4 +1,5 @@
 from subprocess import Popen, PIPE
+from threading import Timer
 from enum import Enum
 import sys
 
@@ -9,9 +10,15 @@ class Result(Enum):
     EQUAL_UNDER_ASSUMPTIONS = 2
     UNKNOWN = 5
     ERROR = -1
+    TIMEOUT = -2
 
     def __str__(self):
         return self.name.lower().replace("_", " ")
+
+
+def _kill(processes):
+    for p in processes:
+        p.kill()
 
 
 def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
@@ -36,18 +43,27 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
                        stdin=llreve_process.stdout,
                        stdout=PIPE, stderr=stderr)
 
-    result = Result.ERROR
-    for line in z3_process.stdout:
-        line = line.strip()
-        if line == b"sat":
-            result = Result.NOT_EQUAL
-        elif line == b"unsat":
-            result = Result.EQUAL
-        elif line == b"unknown":
-            result = Result.UNKNOWN
-    z3_process.wait()
-    if z3_process.returncode != 0:
+    timer = Timer(40, _kill, [[llreve_process, z3_process]])
+    try:
+        timer.start()
+
+        z3_process.wait()
         result = Result.ERROR
+        for line in z3_process.stdout:
+            line = line.strip()
+            if line == b"sat":
+                result = Result.NOT_EQUAL
+            elif line == b"unsat":
+                result = Result.EQUAL
+            elif line == b"unknown":
+                result = Result.UNKNOWN
+
+        if z3_process.returncode != 0:
+            result = Result.ERROR
+    finally:
+        if not timer.is_alive():
+            result = Result.TIMEOUT
+        timer.cancel()
 
     return result
 
