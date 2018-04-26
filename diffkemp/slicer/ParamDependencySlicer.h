@@ -42,8 +42,6 @@ class ParamDependencySlicer : public FunctionPass {
     std::set<const BasicBlock *> IncludedBasicBlocks = {};
     // Function parameters to be included
     std::set<const Argument *> IncludedParams = {};
-    // Mapping block to its successor (for single-successor blocks only)
-    std::map<const BasicBlock *, BasicBlock *> SuccessorsMap = {};
 
     // We only do the slicing if the function uses the parameter
     bool uses_param = false;

@@ -27,7 +27,6 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     AffectedBasicBlocks.clear();
     IncludedBasicBlocks.clear();
     IncludedParams.clear();
-    SuccessorsMap.clear();
     uses_param = false;
 
 #ifdef DEBUG
@@ -98,14 +97,22 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
             if (isDependent(Term)) continue;
             if (Term->getNumSuccessors() == 0) continue;
 
-            // If there is just one necessary successor, put it into the
-            // successors map
+            // If there is just one necessary successor remove all others
             auto includedSucc = includedSuccessors(*Term, RetBB);
             if (includedSucc.size() <= 1) {
                 auto NewSucc = includedSucc.empty()
                                ? Term->getSuccessor(0)
                                : *includedSucc.begin();
-                SuccessorsMap.emplace(&BB, NewSucc);
+
+                // Notify successors about removing some branches
+                for (auto TermSucc : Term->successors()) {
+                    if (TermSucc != NewSucc)
+                        TermSucc->removePredecessor(&BB, true);
+                }
+                // Create and insert new branch
+                auto NewTerm = BranchInst::Create(NewSucc, Term);
+                Term->eraseFromParent();
+                IncludedInstrs.insert(NewTerm);
             } else {
                 addToIncluded(Term);
                 addAllOpsToIncluded(Term);
@@ -120,22 +127,17 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     }
 
     if (uses_param) {
+        // Add needed instructions coming to Phis to included
         for (auto &BB : Fun) {
             for (auto &Instr : BB) {
                 if (auto Phi = dyn_cast<PHINode>(&Instr)) {
                     if (!isIncluded(Phi))
                         continue;
                     for (unsigned i = 0; i < Phi->getNumIncomingValues(); ++i) {
-                        auto incomingBB = Phi->getIncomingBlock(i);
-                        if (isIncluded(incomingBB->getTerminator()) ||
-                            (SuccessorsMap.find(incomingBB) !=
-                             SuccessorsMap.end() &&
-                             SuccessorsMap.find(incomingBB)->second == &BB)) {
-                            if (auto incomingInstr = dyn_cast<Instruction>(
-                                    Phi->getIncomingValue(i))) {
-                                addToIncluded(incomingInstr);
-                                addAllOpsToIncluded(incomingInstr);
-                            }
+                        if (auto incomingInstr = dyn_cast<Instruction>(
+                                Phi->getIncomingValue(i))) {
+                            addToIncluded(incomingInstr);
+                            addAllOpsToIncluded(incomingInstr);
                         }
                     }
                 }
@@ -159,21 +161,6 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         std::vector<Instruction *> toRemove;
         int b = 0;
         for (auto &BB : Fun) {
-            // Create new terminator if the current one is to be removed
-            // The new terminator will be used to correctly redirect all
-            // incoming edges to the following block
-            auto TermInst = BB.getTerminator();
-            if (!isIncluded(TermInst)) {
-                for (auto TermSucc : TermInst->successors()) {
-                    if (TermSucc != SuccessorsMap.find(&BB)->second)
-                        TermSucc->removePredecessor(&BB, true);
-                }
-                TermInst->eraseFromParent();
-                IRBuilder<> builder(&BB);
-                auto newTerm = builder.CreateBr(
-                        SuccessorsMap.find(&BB)->second);
-                IncludedInstrs.insert(newTerm);
-            }
             // Collect and clear all instruction that can be removed
             for (auto &Inst : BB) {
                 if (!isIncluded(&Inst) && !Inst.isTerminator()) {

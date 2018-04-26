@@ -12,7 +12,7 @@ params:
   - param:  uvc_trace_param
     functions: 
       uvc_parse_format: equal
-      uvc_parse_streaming: equal
+      uvc_parse_streaming: error
       uvc_parse_vendor_control: equal
       uvc_parse_standard_control: not_equal
       __uvc_resume: equal
