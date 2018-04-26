@@ -1,0 +1,15 @@
+module: nct6775
+path: drivers/hwmon
+filename: nct6775
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: force_id
+    functions:
+      nct6775_find: not_equal
+
+  - param: fan_debounce
+    functions:
+      nct6775_probe: not_equal
+
