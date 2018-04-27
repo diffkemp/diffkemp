@@ -568,6 +568,13 @@ bool ParamDependencySlicer::checkPhiDependency(const PHINode &Phi) {
             auto *BBVal = Phi.getIncomingValueForBlock(incomingBB);
             if (BBVal != Val) {
                 for (auto included : IncludedBasicBlocks) {
+                    // Do not consider those blocks whose terminator is not
+                    // included (since we search for included blocks where both
+                    // branches can be included and one of them leads through
+                    // a block from which a different value comes to PHI
+                    if (!isIncluded(included->getTerminator()))
+                        continue;
+
                     if (included->getTerminator()->getNumSuccessors() == 2) {
                         if (isPotentiallyReachable(
                                 included->getTerminator()->getSuccessor(0),
