@@ -8,7 +8,7 @@ params:
   - param: cards_limit
     functions: 
       alsa_sound_init: equal
-      snd_request_card: error
+      snd_request_card: equal
       
   - param: major
     functions: 
