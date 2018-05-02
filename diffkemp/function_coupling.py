@@ -12,14 +12,21 @@ class FunctionCollector():
 
     # List of standard functions that are supported, so they should not be
     # included in couplings
+    # Some functions have multiple variants so we need to check for prefix
     supported_names = ["malloc", "calloc", "kmalloc", "kzalloc", "__kmalloc",
                        "devm_kzalloc",
                        "llvm.dbg.value", "llvm.dbg.declare"]
+    supported_prefixes = ["llvm.memcpy", "llvm.lifetime"]
+
     @staticmethod
     def supported_fun(llvm_fun):
         name = llvm_fun.get_name()
         if name:
-            return name in FunctionCollector.supported_names
+            if name in FunctionCollector.supported_names:
+                return True
+            for p in FunctionCollector.supported_prefixes:
+                if name.startswith(p):
+                    return True
         return False
 
 
@@ -31,7 +38,8 @@ class FunctionCollector():
             for instr in bb.iter_instructions():
                 if instr.get_instruction_opcode() == Call:
                     called = instr.get_called()
-                    if (called.get_name() and
+                    if (called.get_kind() == FunctionValueKind and
+                        called.get_name() and
                         not FunctionCollector.supported_fun(called) and
                         not called.get_name() in result):
                         result.add(called.get_name())
@@ -39,10 +47,9 @@ class FunctionCollector():
 
                 for opIndex in range(0, instr.get_num_operands()):
                     op = instr.get_operand(opIndex)
-                    if op.get_kind() != FunctionValueKind:
-                        continue
 
-                    if (op.get_name() and
+                    if (op.get_kind() == FunctionValueKind and
+                        op.get_name() and
                         not FunctionCollector.supported_fun(op) and
                         not op.get_name() in result):
                         result.add(op.get_name())
