@@ -1,26 +1,6 @@
 import os
 import re
-import sys
-import tarfile
-from distutils.version import StrictVersion
-from progressbar import ProgressBar, Percentage, Bar
 from subprocess import Popen, PIPE
-from urllib import urlretrieve
-
-# Progress bar for downloading
-pbar = None
-def show_progress(count, block_size, total_size):
-    global pbar
-    if pbar is None:
-        pbar = ProgressBar(maxval=total_size, widgets=[Percentage(), Bar()])
-        pbar.start()
-
-    downloaded = count * block_size
-    if downloaded < total_size:
-        pbar.update(downloaded)
-    else:
-        pbar.finish()
-        pbar = None
 
 
 def _strip_bash_quotes(gcc_param):
@@ -37,56 +17,10 @@ class CompilerException(Exception):
 class KernelModuleCompiler:
     kernel_base_path = "kernel"
 
-    def __init__(self, kernel_version, module_path, module_name):
-        self.kernel_base_path = os.path.abspath(self.kernel_base_path)
-        self.kernel_version = kernel_version
-        self.kernel_path = os.path.join(self.kernel_base_path,
-                                        "linux-%s" % self.kernel_version)
+    def __init__(self, kernel_path, module_path, object_file):
+        self.kernel_path = kernel_path
         self.module_path = module_path
-        self.object_file = "%s.o" % module_name
-        self.src_file = os.path.join(self.kernel_path, self.module_path,
-                                     "%s.c" % module_name)
-
-
-    def get_kernel_source(self):
-        if not os.path.isdir(self.kernel_path):
-            url = "https://www.kernel.org/pub/linux/kernel/"
-
-            # version directory
-            if StrictVersion(self.kernel_version) < StrictVersion("3.0"):
-                url += "v%s/" % self.kernel_version[:3]
-            else:
-                url += "v%s.x/" % self.kernel_version[:1]
-
-            tarname = "linux-%s.tar.gz" % self.kernel_version
-            url += tarname
-
-            # Download the tarball with kernel sources
-            print "Downloading kernel version %s" % self.kernel_version
-            urlretrieve(url, os.path.join(self.kernel_base_path, tarname),
-                        show_progress)
-
-            # Extract kernel sources
-            print "Extracting"
-            os.chdir(self.kernel_base_path)
-            tar = tarfile.open(tarname, "r:gz")
-            tar.extractall()
-            tar.close
-
-            os.remove(tarname)
-            print "Done"
-            print("Kernel sources for version %s are in directory %s" %
-                  (self.kernel_version, self.kernel_path))
-
-
-    def configure_kernel(self):
-        # Run `make defconfig`
-        os.chdir(self.kernel_path)
-        print "Configuring kernel"
-        make = Popen(["make", "defconfig"], stdout=PIPE)
-        make.wait()
-        if make.returncode != 0:
-            raise CompilerException("`make config` has failed")
+        self.object_file = object_file
 
 
     def clear_object(self):
@@ -188,26 +122,13 @@ class KernelModuleCompiler:
 
 
     def compile_to_ir(self, debug=False, verbose=False):
-        cwd = os.getcwd()
-        print "Kernel version %s" % self.kernel_version
-        print "-----------"
         try:
-            self.get_kernel_source()
-            self.configure_kernel()
-
             self.clear_object()
             make_output = self.build_object()
             self.build_ir(make_output.split("\n")[-2], debug, verbose)
             self.opt_ir()
 
-            print ""
             return os.path.join(self.kernel_path, self.ir_file)
         except:
             raise
-        finally:
-            os.chdir(cwd)
-
-
-    def get_module_src_file(self):
-        return self.src_file
 

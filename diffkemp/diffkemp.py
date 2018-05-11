@@ -1,11 +1,9 @@
 #! /usr/bin/env python
 
 from argparse import ArgumentParser
-from compiler.compiler import KernelModuleCompiler
-from module_analyser import check_modules
+from llvm_ir.build_llvm import LlvmKernelModule
 from module_comparator import compare_modules, Statistics
 from function_comparator import Result
-from slicer.slicer import slice_module
 import sys
 
 
@@ -28,30 +26,19 @@ def run_from_cli():
     args = ap.parse_args()
 
     try:
-        # Compile old module
-        first_mod_compiler = KernelModuleCompiler(args.src_version,
-                                                  args.module_dir,
-                                                  args.module_name)
-        first_mod = first_mod_compiler.compile_to_ir(args.debug, args.verbose)
+        # Build old module
+        first_mod = LlvmKernelModule(args.src_version, args.module_dir,
+                                     args.module_name, args.parameter)
+        first_mod.build(args.debug, args.verbose)
 
-        # Compile new module
-        second_mod_compiler = KernelModuleCompiler(args.dest_version,
-                                                  args.module_dir,
-                                                  args.module_name)
-        second_mod = second_mod_compiler.compile_to_ir(args.debug, args.verbose)
-
-        # Check modules
-        check_modules(first_mod, second_mod, args.parameter)
-
-        # Slice modules
-        first_sliced = slice_module(first_mod, args.parameter,
-                                    verbose=args.verbose)
-        second_sliced = slice_module(second_mod, args.parameter,
-                                     verbose=args.verbose)
+        # Build new module
+        second_mod = LlvmKernelModule(args.dest_version, args.module_dir,
+                                      args.module_name, args.parameter)
+        second_mod.build(args.debug, args.verbose)
 
         # Compare modules
-        stat = compare_modules(first_sliced, second_sliced, args.parameter,
-                               args.verbose)
+        stat = compare_modules(first_mod.llvm, second_mod.llvm,
+                               args.parameter, args.verbose)
         print ""
         stat.report()
 

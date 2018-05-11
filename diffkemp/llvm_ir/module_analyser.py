@@ -16,10 +16,7 @@ def _has_param(module_file, param):
     return False
 
 
-def check_modules(first, second, param):
-    if not _has_param(first, param):
-        raise ParamNotFoundException("Parameter not found in the first module")
-
-    if not _has_param(second, param):
-        raise ParamNotFoundException("Parameter not found in the second module")
+def check_module(module, param):
+    if not _has_param(module, param):
+        raise ParamNotFoundException("Parameter not found in module")
 
