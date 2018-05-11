@@ -1,9 +1,11 @@
 #! /usr/bin/env python
 
+from __future__ import absolute_import
+
 from argparse import ArgumentParser
-from llvm_ir.build_llvm import LlvmKernelModule
-from module_comparator import compare_modules, Statistics
-from function_comparator import Result
+from diffkemp.llvm_ir.build_llvm import LlvmKernelModule
+from diffkemp.module_comparator import compare_modules, Statistics
+from diffkemp.function_comparator import Result
 import sys
 
 

@@ -1,6 +1,8 @@
+from __future__ import absolute_import
+
 from llvmcpy.llvm import *
-from function_comparator import compare_functions, Result
-from function_coupling import FunctionCouplings
+from diffkemp.function_comparator import compare_functions, Result
+from diffkemp.function_coupling import FunctionCouplings
 
 
 class Statistics():

@@ -1,6 +1,6 @@
 import os
 import tarfile
-from compiler import KernelModuleCompiler
+from diffkemp.llvm_ir.compiler import KernelModuleCompiler
 from diffkemp.slicer.slicer import slice_module
 from distutils.version import StrictVersion
 from module_analyser import check_module
