@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from diffkemp.compiler import compiler
+from diffkemp.llvm_ir import build_llvm
 from diffkemp.function_comparator import compare_functions, Result
 from diffkemp.function_coupling import FunctionCouplings
 from diffkemp.slicer import slicer
@@ -72,6 +72,20 @@ class TaskSpec:
                                                       spec["param"] + ".bc")
 
 
+def _build_module(kernel_version, module_path, module_file, param, debug):
+    module = build_llvm.LlvmKernelModule(kernel_version, module_path,
+                                         module_file, param)
+    module.build(debug)
+    return module
+
+
+def _copy_files(module, ir_file, sliced_ir_file):
+    # Copy .bc file, sliced .bc file, and .c file   
+    shutil.copyfile(module.llvm_unsliced, ir_file)
+    shutil.copyfile(module.llvm, sliced_ir_file)
+    shutil.copyfile(module.src, ir_file[:-3] + ".c")
+
+
 def prepare_task(spec):
     # Create task dir
     if not os.path.isdir(spec.task_dir):
@@ -79,21 +93,16 @@ def prepare_task(spec):
 
     # Compile old module
     if not os.path.isfile(spec.old):
-        c = compiler.KernelModuleCompiler(spec.old_kernel, spec.module_path,
-                                          spec.module_filename)
-        ir_file = c.compile_to_ir(spec.debug)
-        shutil.copyfile(ir_file, spec.old)
-        # Copy .c file
-        shutil.copyfile(c.get_module_src_file(), spec.old[:-3] + ".c")
+        first_mod = _build_module(spec.old_kernel, spec.module_path,
+                                  spec.module_filename, spec.param,
+                                  spec.debug)
+        _copy_files(first_mod, spec.old, spec.old_sliced)
 
-    # Compile new module
     if not os.path.isfile(spec.new):
-        c = compiler.KernelModuleCompiler(spec.new_kernel, spec.module_path,
-                                          spec.module_filename)
-        ir_file = c.compile_to_ir(spec.debug)
-        shutil.copyfile(ir_file, spec.new)
-        # Copy .c file
-        shutil.copyfile(c.get_module_src_file(), spec.new[:-3] + ".c")
+        second_mod = _build_module(spec.new_kernel, spec.module_path,
+                                   spec.module_filename, spec.param,
+                                   spec.debug)
+        _copy_files(second_mod, spec.new, spec.new_sliced)
 
 
 @pytest.fixture(params=[x[1] for x in specs],
@@ -105,27 +114,12 @@ def task_spec(request):
 
 
 class TestClass(object):
-    def _run_slicer(self, module, param, out_file):
-        # Delete the sliced file if exists
-        try:
-            os.remove(out_file)
-        except OSError:
-            pass
-
-        # Slice the module
-        slicer.slice_module(module, param, out_file, False)
-        # Check that the slicer has produced a file
-        assert os.path.exists(out_file)
-
-        # Check that the produced file contains a valid LLVM bitcode
-        opt = Popen(["opt", "-verify", out_file],
-                    stdout=open("/dev/null", "w"))
-        opt.wait()
-        assert opt.returncode == 0
-
     def test_slicer(self, task_spec):
-        self._run_slicer(task_spec.old, task_spec.param, task_spec.old_sliced)
-        self._run_slicer(task_spec.new, task_spec.param, task_spec.new_sliced)
+        first = slicer.slice_module(task_spec.old, task_spec.param)
+        os.rename(first, task_spec.old_sliced)
+        second = slicer.slice_module(task_spec.new, task_spec.param)
+        os.rename(second, task_spec.new_sliced)
+
 
     def test_couplings(self, task_spec):
         couplings = FunctionCouplings(task_spec.old_sliced,
