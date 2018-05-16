@@ -57,6 +57,7 @@ RUN pip install \
 	  pyyaml
 # Install some additional packages - should be moved to top in future
 RUN dnf install -y \
-      bc
+      bc \
+      findutils 
 ENV PYTHONPATH /diffkemp:/usr/lib/python2.7:/usr/lib/python3.6
 
