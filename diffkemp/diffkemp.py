@@ -30,13 +30,15 @@ def run_from_cli():
     try:
         # Build old module
         first_mod = LlvmKernelModule(args.src_version, args.module_dir,
-                                     args.module_name, args.parameter)
-        first_mod.build(args.debug, args.verbose)
+                                     args.module_name, args.parameter,
+                                     args.debug, args.verbose)
+        first_mod.build()
 
         # Build new module
         second_mod = LlvmKernelModule(args.dest_version, args.module_dir,
-                                      args.module_name, args.parameter)
-        second_mod.build(args.debug, args.verbose)
+                                      args.module_name, args.parameter,
+                                      args.debug, args.verbose)
+        second_mod.build()
 
         # Compare modules
         stat = compare_modules(first_mod.llvm, second_mod.llvm,

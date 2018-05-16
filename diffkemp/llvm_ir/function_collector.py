@@ -76,3 +76,12 @@ class FunctionCollector():
             self._called_by_one(llvm_fun, result)
         return result
 
+
+    def undefined(self, function_names):
+        result = set()
+        for fun_name in function_names:
+            llvm_fun = self._module.get_named_function(fun_name)
+            if llvm_fun.is_declaration():
+                result.add(llvm_fun.name)
+        return result
+

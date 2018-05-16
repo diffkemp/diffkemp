@@ -1,4 +1,5 @@
 from llvmcpy.llvm import *
+from subprocess import Popen, PIPE
 
 
 class ParamNotFoundException(Exception):
@@ -19,4 +20,17 @@ def _has_param(module_file, param):
 def check_module(module, param):
     if not _has_param(module, param):
         raise ParamNotFoundException("Parameter not found in module")
+
+
+def find_definitions_in_object(object_file, functions):
+    defs = set()
+    nm = Popen(["nm", object_file], stdout=PIPE, stderr=PIPE)
+    nm_out, nm_err = nm.communicate()
+    symbols = nm_out.splitlines()
+    for sym_line in symbols:
+        sym = sym_line.split()
+        function = sym[-1]
+        if (sym[-1] in functions and sym[-2] == "T"):
+            defs.add(function)
+    return defs
 
