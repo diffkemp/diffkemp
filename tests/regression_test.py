@@ -74,8 +74,8 @@ class TaskSpec:
 
 def _build_module(kernel_version, module_path, module_file, param, debug):
     module = build_llvm.LlvmKernelModule(kernel_version, module_path,
-                                         module_file, param)
-    module.build(debug)
+                                         module_file, param, debug)
+    module.build()
     return module
 
 
