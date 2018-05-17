@@ -162,7 +162,7 @@ class LlvmKernelModule:
             os.chdir(os.path.join(self.kernel_path, self.module_path))
             print "Linking object files into %s" % self.llvm
             linker_command = ["llvm-link", "-S", "-o", self.llvm, self.llvm]
-            linked_command = linker_command + list(self.linked_llvm)
+            linker_command = linker_command + list(self.linked_llvm)
             linker = Popen(linker_command)
             linker.wait()
             if linker.returncode != 0:
