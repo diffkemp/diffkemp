@@ -156,12 +156,12 @@ class LlvmKernelModule:
             self.compile_objects_with_definitions(undefined)
 
 
-    def link_objects(self):
+    def link_objects(self, main_llvm):
         if self.linked_llvm:
             cwd = os.getcwd()
             os.chdir(os.path.join(self.kernel_path, self.module_path))
-            print "Linking object files into %s" % self.llvm
-            linker_command = ["llvm-link", "-S", "-o", self.llvm, self.llvm]
+            print "Linking object files into %s" % main_llvm
+            linker_command = ["llvm-link", "-S", "-o", main_llvm, main_llvm]
             linker_command = linker_command + list(self.linked_llvm)
             linker = Popen(linker_command)
             linker.wait()
@@ -171,12 +171,16 @@ class LlvmKernelModule:
             # Run some more optimisations after linking, particularly remove
             # duplicate constants that might come from different modules
             opt_process = Popen(["opt", "-S", "-constmerge",
-                                 self.llvm,
-                                 "-o", self.llvm])
+                                 main_llvm,
+                                 "-o", main_llvm])
             opt_process.wait()
             if opt_process.returncode != 0:
                 raise CompilerException("Running opt on module failed")
             os.chdir(cwd)
+
+
+    def link_unsliced(self):
+        self.link_objects(self.llvm_unsliced)
 
 
     def build(self):
@@ -203,7 +207,7 @@ class LlvmKernelModule:
                 self.build_all_objects()
                 self.compile_objects_with_definitions(undefined_funs)
 
-            self.link_objects()
+            self.link_objects(self.llvm)
 
             print ""
         except:

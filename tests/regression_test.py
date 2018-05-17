@@ -80,6 +80,7 @@ def _build_module(kernel_version, module_path, module_file, param, debug):
     module = build_llvm.LlvmKernelModule(kernel_version, module_path,
                                          module_file, param, debug)
     module.build()
+    module.link_unsliced()
     return module
 
 
