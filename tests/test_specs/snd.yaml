@@ -13,7 +13,7 @@ params:
   - param: major
     functions: 
       alsa_sound_exit: equal
-      alsa_sound_init: not_equal
+      alsa_sound_init: timeout
       !!python/tuple [snd_register_device_for_dev, snd_register_device]: error
       snd_unregister_device: only_old
 
