@@ -64,12 +64,16 @@ class TaskSpec:
 
         module = spec["module_name"]
         self.task_dir = os.path.join(tasks_path, module)
-        self.old = os.path.join(self.task_dir, module + "_old.bc")
-        self.new = os.path.join(self.task_dir, module + "_new.bc")
+        self.old = os.path.join(self.task_dir, module + "_old-" + spec["param"]
+                                + ".bc")
+        self.new = os.path.join(self.task_dir, module + "_new-" + spec["param"]
+                                + ".bc")
         self.old_sliced = os.path.join(self.task_dir, module + "_old-sliced-" +
                                                       spec["param"] + ".bc")
         self.new_sliced = os.path.join(self.task_dir, module + "_new-sliced-" +
                                                       spec["param"] + ".bc")
+        self.old_src = os.path.join(self.task_dir, module + "_old.c")
+        self.new_src = os.path.join(self.task_dir, module + "_new.c")
 
 
 def _build_module(kernel_version, module_path, module_file, param, debug):
@@ -79,11 +83,11 @@ def _build_module(kernel_version, module_path, module_file, param, debug):
     return module
 
 
-def _copy_files(module, ir_file, sliced_ir_file):
+def _copy_files(module, ir_file, sliced_ir_file, src_file):
     # Copy .bc file, sliced .bc file, and .c file   
     shutil.copyfile(module.llvm_unsliced, ir_file)
     shutil.copyfile(module.llvm, sliced_ir_file)
-    shutil.copyfile(module.src, ir_file[:-3] + ".c")
+    shutil.copyfile(module.src, src_file)
 
 
 def prepare_task(spec):
@@ -96,13 +100,14 @@ def prepare_task(spec):
         first_mod = _build_module(spec.old_kernel, spec.module_path,
                                   spec.module_filename, spec.param,
                                   spec.debug)
-        _copy_files(first_mod, spec.old, spec.old_sliced)
+        _copy_files(first_mod, spec.old, spec.old_sliced, spec.old_src)
 
+    # Compile new module
     if not os.path.isfile(spec.new):
         second_mod = _build_module(spec.new_kernel, spec.module_path,
                                    spec.module_filename, spec.param,
                                    spec.debug)
-        _copy_files(second_mod, spec.new, spec.new_sliced)
+        _copy_files(second_mod, spec.new, spec.new_sliced, spec.new_src)
 
 
 @pytest.fixture(params=[x[1] for x in specs],
@@ -136,9 +141,10 @@ class TestClass(object):
                                       task_spec.new_sliced)
         couplings.infer_for_param(task_spec.param)
         for funPair, expected in task_spec.functions.iteritems():
-            result = compare_functions(task_spec.old_sliced,
-                                       task_spec.new_sliced,
-                                       funPair[0], funPair[1],
-                                       couplings.called)
-            assert result == expected
+            if expected != Result.TIMEOUT:
+                result = compare_functions(task_spec.old_sliced,
+                                           task_spec.new_sliced,
+                                           funPair[0], funPair[1],
+                                           couplings.called)
+                assert result == expected
 
