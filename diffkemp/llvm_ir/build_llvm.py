@@ -167,6 +167,15 @@ class LlvmKernelModule:
             linker.wait()
             if linker.returncode != 0:
                 raise CompilerException("Linking has failed")
+
+            # Run some more optimisations after linking, particularly remove
+            # duplicate constants that might come from different modules
+            opt_process = Popen(["opt", "-S", "-constmerge",
+                                 self.llvm,
+                                 "-o", self.llvm])
+            opt_process.wait()
+            if opt_process.returncode != 0:
+                raise CompilerException("Running opt on module failed")
             os.chdir(cwd)
 
 
