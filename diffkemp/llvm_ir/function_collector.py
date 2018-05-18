@@ -1,7 +1,11 @@
+"""Collecting functions inside LLVM modules by various criteria"""
 from llvmcpy.llvm import *
 
-
 class FunctionCollector():
+    """
+    Class for function collection.
+    Uses the llvmcpy module to parse and analyse LLVM IR.
+    """
     def __init__(self, module_file):
         # Parse LLVM module
         buffer = create_memory_buffer_with_contents_of_file(module_file)
@@ -10,7 +14,7 @@ class FunctionCollector():
 
 
     # List of standard functions that are supported, so they should not be
-    # included in couplings
+    # included in function collecting.
     # Some functions have multiple variants so we need to check for prefix
     supported_names = ["malloc", "calloc", "kmalloc", "kzalloc", "__kmalloc",
                        "devm_kzalloc",
@@ -19,6 +23,7 @@ class FunctionCollector():
 
     @staticmethod
     def supported_fun(llvm_fun):
+        """Check whether the function is supported."""
         name = llvm_fun.get_name()
         if name:
             if name in FunctionCollector.supported_names:
@@ -29,21 +34,28 @@ class FunctionCollector():
         return False
 
 
-    # Find names of all functions that are (recursively) called by given 
-    # function
     @staticmethod
     def _called_by_one(llvm_fun, result):
+        """
+        Find names of all functions that are (recursively) called by the given
+        function. Found names are stored in the 'result' list.
+        """
         for bb in llvm_fun.iter_basic_blocks():
             for instr in bb.iter_instructions():
                 if instr.get_instruction_opcode() == Call:
                     called = instr.get_called()
+                    # Collect all unsupported functions that are called
                     if (called.get_kind() == FunctionValueKind and
                         called.get_name() and
                         not FunctionCollector.supported_fun(called) and
                         not called.get_name() in result):
                         result.add(called.get_name())
+                        # Recursively call the method on the called function
                         FunctionCollector._called_by_one(called, result)
 
+                # Collect also functions that are passed as parameters to
+                # instructions. For these, do not descend recursively since
+                # their body will not be analysed.
                 for opIndex in range(0, instr.get_num_operands()):
                     op = instr.get_operand(opIndex)
 
@@ -54,8 +66,10 @@ class FunctionCollector():
                         result.add(op.get_name())
 
 
-    # Find names of all functions using given parameter (global variable)
     def using_param(self, param):
+        """
+        Find names of all functions using the given parameter (global variable)
+        """
         glob = self._module.get_named_global(param)
         result = set()
         for use in glob.iter_uses():
@@ -67,9 +81,11 @@ class FunctionCollector():
         return result
 
 
-    # Find names of all functions (recursively) called by one of functions
-    # in the given set
     def called_by(self, function_names):
+        """
+        Find names of all functions (recursively) called by one of functions
+        in the given set.
+        """
         result = set()
         for fun_name in function_names:
             llvm_fun = self._module.get_named_function(fun_name)
@@ -78,6 +94,10 @@ class FunctionCollector():
 
 
     def undefined(self, function_names):
+        """
+        Find names of functions from the given set that are not defined in the
+        analysed module.
+        """
         result = set()
         for fun_name in function_names:
             llvm_fun = self._module.get_named_function(fun_name)

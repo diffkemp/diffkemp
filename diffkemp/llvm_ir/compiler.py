@@ -1,9 +1,12 @@
+"""Compiling C source file of a kernel module into LLVM IR"""
+
 import os
 import re
 from subprocess import Popen, PIPE
 
 
 def _strip_bash_quotes(gcc_param):
+    """Remove quotes from gcc_param that represents part of a shell command"""
     if "\'" in gcc_param:
         return gcc_param.translate(None, "\'")
     else:
@@ -15,8 +18,11 @@ class CompilerException(Exception):
 
 
 class KernelModuleCompiler:
-    kernel_base_path = "kernel"
-
+    """
+    Compiler of a kernel module source code into LLVM IR.
+    Uses the original Makefile provided by the kernel and switches gcc by
+    clang.
+    """
     def __init__(self, kernel_path, module_path, object_file):
         self.kernel_path = kernel_path
         self.module_path = module_path
@@ -24,8 +30,10 @@ class KernelModuleCompiler:
 
 
     def clear_object(self):
-        # Remove .o file
-        # This is needed so that make runs gcc and we can reuse arguments
+        """
+        Remove .o file.
+        This is needed so that `make` runs gcc and we can reuse arguments
+        """
         os.chdir(self.kernel_path)
         print "Clearing object file %s" % self.object_file
         object_file = os.path.join(self.module_path, self.object_file)
@@ -36,12 +44,17 @@ class KernelModuleCompiler:
 
 
     def _symlink_gcc_header(self, major_version):
-        # Symlink include/linux/compiler-gccX.h for current GCC version with
-        # most recent header in the downloaded kernel
+        """
+        Symlink include/linux/compiler-gccX.h for the current GCC version with
+        the most recent header in the downloaded kernel
+        :param major_version: Major version of GCC to be used for compilation
+        """
         include_path = os.path.join(self.kernel_path, "include/linux")
         dest_file = os.path.join(include_path,
                                  "compiler-gcc%d.h" % major_version)
         if not os.path.isfile(dest_file):
+            # Search for the most recent version of header provided in the
+            # analysed kernel and symlink the current version to it
             regex = re.compile("^compiler-gcc(\d+)\.h$")
             max_major = 0
             for file in os.listdir(include_path):
@@ -56,7 +69,13 @@ class KernelModuleCompiler:
 
 
     def build_object(self):
-        # Build .o
+        """
+        Build the object file (.o).
+        The command used is `make V=1 /path/to/object.o`
+        :returns Output of the command. Since V=1 is used, this is the list of
+                 all commands that were called by make. The last command
+                 (actual compilation of the object file) will be reused.
+        """
         os.chdir(self.kernel_path)
 
         self._symlink_gcc_header(7)
@@ -72,7 +91,11 @@ class KernelModuleCompiler:
 
 
     def build_ir(self, gcc_command, debug=False, verbose=False):
-        # Build .bc (LLVM IR) using parameters of the GCC command
+        """
+        Compile module to LLVM IR using parameters of the GCC command.
+        All optimisation, warning, and instrumentation options are removed.
+        The output file has .bc extension (byte-code).
+        """
         os.chdir(self.kernel_path)
 
         command = ["clang", "-S", "-emit-llvm", "-O1", "-Xclang",
@@ -88,6 +111,7 @@ class KernelModuleCompiler:
                 param == "-DCC_HAVE_ASM_GOTO"):
                 continue
 
+            # Replace output .o file by .bc with the same name
             if param.endswith(".o"):
                 self.ir_file = "%s.bc" % param[:-2]
                 command.append(self.ir_file)
@@ -110,6 +134,14 @@ class KernelModuleCompiler:
 
 
     def opt_ir(self):
+        """
+        Run optimisation on the LLVM IR file.
+        Currently, following optimistions are run:
+            -mem2reg: promoting memory accesses to registers where possible
+            -loop-simplify, -simplifycfg: simplifications of the CFG
+            -lowerswitch: breaking switch instructions into series of branch
+                          instructions (switch is not yet supported)
+        """
         os.chdir(self.kernel_path)
         print "Optimizing LLVM IR file"
         opt_process = Popen(["opt", "-S", "-mem2reg", "-loop-simplify",
@@ -122,6 +154,13 @@ class KernelModuleCompiler:
 
 
     def compile_to_ir(self, debug=False, verbose=False):
+        """
+        Compile the module sources to LLVM IR. This is the main function to be
+        called for module compilation.
+
+        :param debug: Comiple with debugging information (-g option)
+        :param verbose: Output information about building
+        """
         try:
             self.clear_object()
             make_output = self.build_object()

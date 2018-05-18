@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 from __future__ import absolute_import
 
 from argparse import ArgumentParser
@@ -10,6 +8,7 @@ import sys
 
 
 def __make_argument_parser():
+    """ Parsing arguments. """
     ap = ArgumentParser()
     ap.add_argument("module_dir")
     ap.add_argument("module_name")
@@ -24,6 +23,7 @@ def __make_argument_parser():
 
 
 def run_from_cli():
+    """ Main method to run the tool. """
     ap = __make_argument_parser()
     args = ap.parse_args()
 
