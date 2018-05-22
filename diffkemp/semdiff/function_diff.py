@@ -1,4 +1,4 @@
-"""Comparing two functions using llreve and Z3 SMT solver."""
+"""Semantic difference of two functions using llreve and Z3 SMT solver."""
 from subprocess import Popen, PIPE
 from threading import Timer
 from enum import Enum
@@ -94,8 +94,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
     return result
 
 
-def compare_functions(first, second, funFirst, funSecond, coupled,
-                      verbose=False):
+def functions_diff(first, second, funFirst, funSecond, coupled, verbose=False):
     """
     Compare two functions for semantic equality.
 

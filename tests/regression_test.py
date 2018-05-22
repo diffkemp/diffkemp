@@ -12,8 +12,8 @@ pytest.
 """
 
 from diffkemp.llvm_ir import build_llvm
-from diffkemp.function_comparator import compare_functions, Result
-from diffkemp.function_coupling import FunctionCouplings
+from diffkemp.semdiff.function_diff import functions_diff, Result
+from diffkemp.semdiff.function_coupling import FunctionCouplings
 from diffkemp.slicer import slicer
 import glob
 import os
@@ -200,9 +200,9 @@ class TestClass(object):
         couplings.infer_for_param(task_spec.param)
         for funPair, expected in task_spec.functions.iteritems():
             if expected != Result.TIMEOUT:
-                result = compare_functions(task_spec.old_sliced,
-                                           task_spec.new_sliced,
-                                           funPair[0], funPair[1],
-                                           couplings.called)
+                result = functions_diff(task_spec.old_sliced,
+                                        task_spec.new_sliced,
+                                        funPair[0], funPair[1],
+                                        couplings.called)
                 assert result == expected
 

@@ -6,8 +6,8 @@ using the given parameter is compared individually.
 from __future__ import absolute_import
 
 from llvmcpy.llvm import *
-from diffkemp.function_comparator import compare_functions, Result
-from diffkemp.function_coupling import FunctionCouplings
+from diffkemp.semdiff.function_diff import functions_diff, Result
+from diffkemp.semdiff.function_coupling import FunctionCouplings
 
 
 class Statistics():
@@ -51,7 +51,7 @@ class Statistics():
         return Result.EQUAL
 
 
-def compare_modules(first, second, parameter, verbose=False):
+def modules_diff(first, second, parameter, verbose=False):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
     :param first: File with LLVM IR of the first module
@@ -63,8 +63,8 @@ def compare_modules(first, second, parameter, verbose=False):
     couplings = FunctionCouplings(first, second)
     couplings.infer_for_param(parameter)
     for c in couplings.main:
-        result = compare_functions(first, second, c.first, c.second,
-                                   couplings.called, verbose)
+        result = functions_diff(first, second, c.first, c.second,
+                                couplings.called, verbose)
         stat.log_result(result, c.first)
     return stat
 

@@ -2,8 +2,8 @@ from __future__ import absolute_import
 
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelModule
-from diffkemp.module_comparator import compare_modules, Statistics
-from diffkemp.function_comparator import Result
+from diffkemp.semdiff.module_diff import modules_diff, Statistics
+from diffkemp.semdiff.function_diff import Result
 import sys
 
 
@@ -41,8 +41,8 @@ def run_from_cli():
         second_mod.build()
 
         # Compare modules
-        stat = compare_modules(first_mod.llvm, second_mod.llvm,
-                               args.parameter, args.verbose)
+        stat = modules_diff(first_mod.llvm, second_mod.llvm, args.parameter,
+                            args.verbose)
         print ""
         stat.report()
 
