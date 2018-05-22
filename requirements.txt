@@ -1,2 +1,5 @@
 enum
 llvmcpy
+progressbar
+pytest
+pyyaml
