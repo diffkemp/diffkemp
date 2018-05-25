@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from argparse import ArgumentParser
-from diffkemp.llvm_ir.build_llvm import LlvmKernelModule
+from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.module_diff import modules_diff, Statistics
 from diffkemp.semdiff.function_diff import Result
 import sys
@@ -10,11 +10,11 @@ import sys
 def __make_argument_parser():
     """ Parsing arguments. """
     ap = ArgumentParser()
-    ap.add_argument("module_dir")
-    ap.add_argument("module_name")
-    ap.add_argument("parameter")
+    ap.add_argument("modules_dir")
     ap.add_argument("src_version")
     ap.add_argument("dest_version")
+    ap.add_argument("--build-only", help="only build modules to LLVM IR",
+                    action="store_true")
     ap.add_argument("-d", "--debug", help="compile module with -g",
                     action="store_true")
     ap.add_argument("-v", "--verbose", help="increase output verbosity",
@@ -28,17 +28,23 @@ def run_from_cli():
     args = ap.parse_args()
 
     try:
-        # Build old module
-        first_mod = LlvmKernelModule(args.src_version, args.module_dir,
-                                     args.module_name, args.parameter,
-                                     args.debug, args.verbose)
-        first_mod.build()
+        first_builder = LlvmKernelBuilder(args.src_version, args.modules_dir,
+                                          args.debug)
+        first_mods = first_builder.build_modules_with_params()
 
-        # Build new module
-        second_mod = LlvmKernelModule(args.dest_version, args.module_dir,
-                                      args.module_name, args.parameter,
-                                      args.debug, args.verbose)
-        second_mod.build()
+        second_builder = LlvmKernelBuilder(args.dest_version, args.modules_dir,
+                                           args.debug)
+        second_mods = second_builder.build_modules_with_params()
+
+        if args.build_only:
+            print "Compiled modules in version %s:" % args.src_version
+            for mod in first_mods:
+                print "%s " % mod.name
+            print "Compiled modules in version %s:" % args.dest_version
+            for mod in second_mods:
+                print "%s " % mod.name
+            return 0
+
 
         # Compare modules
         stat = modules_diff(first_mod.llvm, second_mod.llvm, args.parameter,

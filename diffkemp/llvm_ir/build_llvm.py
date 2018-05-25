@@ -14,8 +14,12 @@ from diffkemp.llvm_ir.module_analyser import *
 from diffkemp.slicer.slicer import slice_module
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
-from subprocess import Popen, PIPE
+from subprocess import check_call, check_output
 from urllib import urlretrieve
+
+
+class BuildException(Exception):
+    pass
 
 
 # Progress bar for downloading
@@ -34,41 +38,38 @@ def show_progress(count, block_size, total_size):
         pbar = None
 
 
-class LlvmKernelModule:
+class LlvmKernelBuilder:
     """
-    Kernel module in LLVM IR
-    Main class for downloading, compiling, and linking the kernel module.
+    Building kernel modules into LLVM IR.
+    Contains methods to automatically:
+        - download kernel sources
+        - configure kernel
+        - build modules using GCC
+        - build modules using Clang into LLVM IR
+        - collect module parameters with default values
     """
 
     # Base path to kernel sources
     kernel_base_path = "kernel"
 
-    def __init__(self, kernel_version, module_path, module_name, param,
-                 debug=False, verbose=False):
+    def __init__(self, kernel_version, modules_dir, debug=False):
         self.kernel_base_path = os.path.abspath(self.kernel_base_path)
         self.kernel_version = kernel_version
         self.kernel_path = os.path.join(self.kernel_base_path,
                                         "linux-%s" % self.kernel_version)
-        self.module_path = module_path
-        # .o file of the module
-        self.object_file = "%s.o" % module_name
-        self.src = os.path.join(self.kernel_path, self.module_path,
-                                "%s.c" % module_name)
-        self.param = param
+        self.modules_dir = modules_dir
         self.debug = debug
-        self.verbose = verbose
 
-        # File with unsliced LLVM IR of the module
-        self.llvm_unsliced = None
-        # File with sliced LLVM IR od the module
-        self.llvm = None
-        # Set of files with other modules to be linked
-        self.linked_llvm = set()
-        self.called_functions = set()
-        self.main_functions = set()
+        print "Kernel version %s" % self.kernel_version
+        print "-------------------"
+        print "Configuring and preparing modules in %s" % self.modules_dir
+        self._clean_kernel()
+        self._get_kernel_source()
+        self._configure_kernel()
+        self._symlink_gcc_header(7)
 
 
-    def get_kernel_source(self):
+    def _get_kernel_source(self):
         """Download the sources of the required kernel version if needed."""
         if not os.path.isdir(self.kernel_path):
             url = "https://www.kernel.org/pub/linux/kernel/"
@@ -101,35 +102,315 @@ class LlvmKernelModule:
                   (self.kernel_version, self.kernel_path))
 
 
-    def configure_kernel(self):
-        """Configure kernel to default configuration (run `make defconfig`)"""
-        os.chdir(self.kernel_path)
-        print "Configuring kernel"
-        make = Popen(["make", "defconfig"], stdout=PIPE)
-        make.wait()
-        if make.returncode != 0:
-            raise CompilerException("`make config` has failed")
+    def _call_and_print(self, command, stdout=None, stderr=None):
+        print "  %s" % " ".join(command)
+        check_call(command, stdout=stdout, stderr=stderr)
 
 
-    def build_all_objects(self):
+    def _configure_kernel(self):
         """
-        Build all objects in the same directory using the Makefile provided
-        by kernel.
-        The used command is: `make M=/path/to/module`
+        Configure kernel.
+        When possible, everything should be compiled as module, otherwise it
+        should be compiled as built-in.
+        This can be achieved by commands:
+            make allmodconfig
+            make prepare
+            make modules_prepare
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
-        print "Building all object files in the same directory"
-
-        stdout = None
-        if not self.verbose:
-            stdout = open('/dev/null', 'w')
-
-        make = Popen(["make", "M=%s" % self.module_path], stdout=stdout)
-        make.wait()
-        if make.returncode != 0:
-            raise CompilerException("Building of other modules has failed")
+        with open(os.devnull, 'w') as null:
+            self._call_and_print(["make", "allmodconfig"], null, null)
+            self._call_and_print(["make", "prepare"], null, null)
+            self._call_and_print(["make", "modules_prepare"], null, null)
         os.chdir(cwd)
+
+
+    def _symlink_gcc_header(self, major_version):
+        """
+        Symlink include/linux/compiler-gccX.h for the current GCC version with
+        the most recent header in the downloaded kernel
+        :param major_version: Major version of GCC to be used for compilation
+        """
+        include_path = os.path.join(self.kernel_path, "include/linux")
+        dest_file = os.path.join(include_path,
+                                 "compiler-gcc%d.h" % major_version)
+        if not os.path.isfile(dest_file):
+            # Search for the most recent version of header provided in the
+            # analysed kernel and symlink the current version to it
+            regex = re.compile("^compiler-gcc(\d+)\.h$")
+            max_major = 0
+            for file in os.listdir(include_path):
+                match = regex.match(file)
+                if match and int(match.group(1)) > max_major:
+                    max_major = int(match.group(1))
+
+            if max_major > 0:
+                src_file = os.path.join(include_path,
+                                        "compiler-gcc%d.h" % max_major)
+                os.symlink(src_file, dest_file)
+
+
+    def _clean_kernel(self):
+        """Clean all modules in the modules directory"""
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        with open(os.devnull, "w") as stdout:
+            self._call_and_print(["make", "clean"], stdout=stdout)
+        os.chdir(cwd)
+
+
+    def _get_sources_with_params(self):
+        """
+        Get list of .c files in modules directory that contain definitions of
+        module parameters (contains call to module_param macro).
+        """
+        result = list()
+        modules_dir = os.path.join(self.kernel_path, self.modules_dir)
+        for path, subdirs, files in os.walk(modules_dir):
+            for f in files:
+                file = os.path.join(path, f)
+                if os.path.isfile(file) and file.endswith(".c"):
+                    for line in open(file, "r"):
+                        if "module_param" in line:
+                            result.append(file)
+                            break
+        return result
+
+
+    def _strip_bash_quotes(self, gcc_param):
+        """
+        Remove quotes from gcc_param that represents a part of a shell command.
+        """
+        if "\'" in gcc_param:
+            return gcc_param.translate(None, "\'")
+        else:
+            return gcc_param.translate(None, "\"")
+
+
+    def kbuild_object(self, object_file):
+        """
+        Build the object file (.o) using KBuild.
+        The command used is `make V=1 /path/to/object.o`
+        :returns GCC command used for the compilation. This is the last
+                 command starting with 'gcc' that was run by make
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+
+        object_file = os.path.join(self.modules_dir, object_file)
+        with open(os.devnull, "w") as stderr:
+            output = check_output(["make", "V=1", object_file], stderr=stderr)
+        os.chdir(cwd)
+
+        commands = output.splitlines()
+        for c in reversed(commands):
+            if c.lstrip().startswith("gcc"):
+                return c
+        raise BuildException("Compiling %s did not run a gcc command" %
+                             object_file)
+
+
+    def kbuild_module(self, module):
+        """
+        Build a kernel module using Kbuild.
+        The command used is `make V=1 M=/path/to/mod module.ko`
+        :returns List of commands that were used to comiple and link files in
+                 the module.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        command = ["make", "V=1", "M=%s" % self.modules_dir, "%s.ko" % module]
+        print "    %s" % " ".join(command)
+        with open(os.devnull, "w") as stderr:
+            output = check_output(command, stderr=stderr)
+        os.chdir(cwd)
+        return output.splitlines()
+
+
+    def get_module_name(self, gcc_command):
+        """
+        Extracts name of the module from a gcc command used to compile (part
+        of) the module.
+        The name is usually given by setting KBUILD_MODNAME variable using one
+        of two ways:
+            -D"KBUILD_MODNAME=KBUILD_STR(module)"
+            -DKBUILD_MODNAME='"module"'
+        """
+        regexes = [
+            re.compile("^-DKBUILD_MODNAME=KBUILD_STR\((.*)\)$"),
+            re.compile("^-DKBUILD_MODNAME=\"(.*)\"$")
+        ]
+        for param in gcc_command.split():
+            if "KBUILD_MODNAME" in param:
+                param = self._strip_bash_quotes(param)
+                for r in regexes:
+                    m = r.match(param)
+                    if m:
+                        return m.group(1)
+        raise BuildException("Unable to find module name")
+
+
+    def get_output_file(self, command):
+        """
+        Extract name of the output file produced by a command.
+        The name is the parameter following -o option.
+        :param command: GCC, Clang, or llvm-link command. It is expected to be
+                        a list of strings (parameters of the command).
+        """
+        index = command.index("-o")
+        if len(command) == index:
+            raise BuildException("Broken command: %s" % "".join(command))
+        return command[index + 1]
+
+
+    def gcc_to_llvm(self, gcc_command):
+        """
+        Convert GCC command to corresponding Clang command for compiling source
+        into LLVM IR.
+        :param gcc_command: Command to convert
+        """
+        command = ["clang", "-S", "-emit-llvm", "-O1", "-Xclang",
+                   "-disable-llvm-passes"]
+        if self.debug:
+            command.append("-g")
+        for param in gcc_command.split():
+            if (param == "gcc" or
+                (param.startswith("-W") and "-MD" not in param) or
+                param.startswith("-f") or
+                param.startswith("-m") or
+                param.startswith("-O") or
+                param == "-DCC_HAVE_ASM_GOTO" or
+                param == "-o" or
+                param.endswith(".o")):
+                continue
+
+            # Output name is given by replacing .c by .bc in source name
+            if param.endswith(".c"):
+                output_file = "%s.bc" % param[:-2]
+
+            command.append(self._strip_bash_quotes(param))
+        command.extend(["-o", output_file])
+        return command
+
+
+    def ld_to_llvm(self, ld_command):
+        """
+        Convert ld command into llvm-link command to link multiple LLVM IR
+        files into one file.
+        :param ld_command: Command to convert
+        """
+        command = ["llvm-link", "-S"]
+        for param in ld_command.split():
+            if param.endswith(".o"):
+                command.append("%s.bc" % param[:-2])
+            elif param == "-o":
+                command.append(param)
+        return command
+
+
+    def opt_llvm(self, llvm_file, command):
+        """
+        Optimise LLVM IR using 'opt' tool. LLVM passes are chosen based on the
+        command that created the file being optimized.
+        For compiled files (using clang), run basic simplification passes.
+        For linked files (using llvm-link), run -constmerge to remove
+        duplicate constants that might have come from linked files.
+        """
+        opt_command = ["opt", "-S", llvm_file, "-o", llvm_file]
+        if command == "clang":
+            opt_command.extend(["-mem2reg", "-loop-simplify", "-simplifycfg"])
+        elif command == "llvm-link":
+            opt_command.append("-constmerge")
+        else:
+            raise BuildException("Invalid call to %s" % command)
+        check_call(opt_command)
+
+
+    def build_llvm_module(self, name, commands):
+        """
+        Build kernel module into LLVM IR.
+        :param name: Module name
+        :param commands: List of clang/llvm-link commands to be executed
+        :returns Instance if LlvmKernelModule with information about files
+                 containing the compiled module
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        for command in commands:
+            file = self.get_output_file(command)
+            print "    [%s] %s" % (command[0], file)
+            with open(os.devnull, "w") as stderr:
+                check_call(command, stderr=stderr)
+            self.opt_llvm(file, command[0])
+        os.chdir(cwd)
+        mod = LlvmKernelModule(name, os.path.join(self.kernel_path,
+                                                  self.modules_dir))
+        return mod
+
+
+    def build_modules_with_params(self):
+        """
+        Build all modules in the modules directory that can be configured via
+        parameters.
+        """
+        print "Building all kernel modules having parameters"
+        print "  Collecting modules"
+        sources = self._get_sources_with_params()
+        modules = dict()
+        # First build objects from sources that contain definitions of
+        # parameters. By building them, we can obtain names of modules they
+        # belong to.
+        # Modules to be built are stored in a dictionary:
+        #   module_name -> list of clang commands to execute
+        for src in sources:
+            obj = src[:-1] + "o"
+            command = self.kbuild_object(obj)
+            mod = self.get_module_name(command)
+            mod_dir = os.path.relpath(os.path.dirname(src), self.kernel_path)
+            if mod_dir != self.modules_dir:
+                mod_dir = os.path.relpath(mod_dir, self.modules_dir)
+                mod = os.path.join(mod_dir, mod)
+            # Put command into module's command list because it might not be
+            # re-run later when building the whole module
+            if not mod in modules:
+                modules[mod] = list()
+            modules[mod].append(self.gcc_to_llvm(command))
+
+        # Build collected modules with Kbuild and collect commands
+        # Then, transform commands to use Clang/LLVM and run them to build LLVM
+        # IR of modules
+        llvm_modules = list()
+        for mod, clang_commands in modules.iteritems():
+            print "  %s" % mod
+            commands = self.kbuild_module(mod)
+            for c in commands:
+                command = c.lstrip()
+                if command.startswith("gcc") and "%s.mod" % mod not in command:
+                    clang_commands.append(self.gcc_to_llvm(command))
+                elif command.startswith("ld") and "%s.ko" % mod not in command:
+                    clang_commands.append(
+                        self.ld_to_llvm(command.split(";")[0]))
+            llvm_modules.append(self.build_llvm_module(mod, clang_commands))
+
+        print ""
+        return llvm_modules
+
+
+class LlvmKernelModule:
+    """
+    Kernel module in LLVM IR
+    """
+    def __init__(self, name, module_dir):
+        self.name = name
+        self.llvm = os.path.join(module_dir, "%s.bc" % name)
+        if not os.path.isfile(self.llvm):
+            raise BuildException("Building %s did not produce LLVM IR file" %
+                                 name)
+        self.kernel_object = os.path.join(module_dir, "%s.ko" % name)
+        if not os.path.isfile(self.kernel_object):
+            raise BuildException(
+                "Building %s did not produce kernel object file" % name)
 
 
     def collect_functions(self):
@@ -140,129 +421,7 @@ class LlvmKernelModule:
         Called functions are those that are (recursively) called by main
         functions.
         """
-        assert self.llvm is not None
         collector = FunctionCollector(self.llvm)
         self.main_functions = collector.using_param(self.param)
         self.called_functions = collector.called_by(self.main_functions)
-
-
-    def collect_undefined(self):
-        """Collect functions not having definitions in the module."""
-        assert self.llvm is not None
-        collector = FunctionCollector(self.llvm)
-        return collector.undefined(self.called_functions)
-
-
-    def compile_objects_with_definitions(self, functions):
-        """
-        Search and compile (to LLVM IR) all objects (modules) that contain
-        definitions of functions that are undefined in the analysed module.
-        We limit the search to modules from the same directory as the analysed
-        module. These modules are supposed to be compiled into object (.o)
-        files using the Makefile(s) provided in the kernel.
-        The function is called recursively if the newly vadded function
-        definitions call other undefined functions.
-        """
-        defs = set()
-        cwd = os.getcwd()
-        os.chdir(os.path.join(self.kernel_path, self.module_path))
-        undefined = functions
-        for obj in glob("*.o"):
-            # Compile only objects that have corresonding source (others are
-            # just results of linkning)
-            if not os.path.isfile(obj[:-1] + "c"):
-                continue
-            obj_defs = find_definitions_in_object(obj, functions)
-            if obj_defs:
-                try:
-                    # Compile the object to LLVM IR
-                    obj_compiler = KernelModuleCompiler(self.kernel_path,
-                                                        self.module_path, obj)
-                    obj_llvm = obj_compiler.compile_to_ir(self.debug,
-                                                          self.verbose)
-                    self.linked_llvm.add(obj_llvm)
-                    # Collect functions called by new definitions 
-                    obj_collector = FunctionCollector(obj_llvm)
-                    obj_called = obj_collector.called_by(obj_defs)
-                    self.called_functions.update(obj_called)
-                    # Update the set of undefined functions (remove definitions
-                    # that were found and add functions undefined in the new
-                    # module)
-                    undefined = undefined - obj_defs
-                    functions.update(obj_collector.undefined(obj_called))
-                except CompilerException:
-                    # If the compilation fails, we continue (the symbol will 
-                    # remain undefined or will be found in another object)
-                    pass
-        os.chdir(cwd)
-        # Continue recursively if some functions remain undefined
-        if undefined != functions:
-            self.compile_objects_with_definitions(undefined)
-
-
-    def link_objects(self, main_llvm):
-        """Link all LLVM IR modules together using the `llvm-link` command."""
-        if self.linked_llvm:
-            cwd = os.getcwd()
-            os.chdir(os.path.join(self.kernel_path, self.module_path))
-            print "Linking object files into %s" % main_llvm
-            linker_command = ["llvm-link", "-S", "-o", main_llvm, main_llvm]
-            linker_command = linker_command + list(self.linked_llvm)
-            linker = Popen(linker_command)
-            linker.wait()
-            if linker.returncode != 0:
-                raise CompilerException("Linking has failed")
-
-            # Run some more optimisations after linking, particularly remove
-            # duplicate constants that might come from different modules
-            opt_process = Popen(["opt", "-S", "-constmerge",
-                                 main_llvm,
-                                 "-o", main_llvm])
-            opt_process.wait()
-            if opt_process.returncode != 0:
-                raise CompilerException("Running opt on module failed")
-            os.chdir(cwd)
-
-
-    def link_unsliced(self):
-        """
-        Link also the unsliced version of the module (this is not linked by
-        the builder by default). Currently, this method is required by the
-        regression testing script.
-        """
-        self.link_objects(self.llvm_unsliced)
-
-
-    def build(self):
-        cwd = os.getcwd()
-        print "Kernel version %s" % self.kernel_version
-        print "-----------"
-        try:
-            self.get_kernel_source()
-            self.configure_kernel()
-
-            # Compile the analysed module
-            compiler = KernelModuleCompiler(self.kernel_path, self.module_path,
-                                            self.object_file)
-            self.llvm_unsliced = compiler.compile_to_ir(self.debug,
-                                                        self.verbose)
-            os.chdir(cwd)
-
-            check_module(self.llvm_unsliced, self.param)
-            self.llvm = slice_module(self.llvm_unsliced, self.param,
-                                     verbose=self.verbose)
-
-            # Find and comile modules from the same directory containing
-            # implementations of functions undefined in the main module
-            self.collect_functions()
-            undefined_funs = self.collect_undefined()
-            if undefined_funs:
-                self.build_all_objects()
-                self.compile_objects_with_definitions(undefined_funs)
-
-            self.link_objects(self.llvm)
-
-            print ""
-        except:
-            raise
 
