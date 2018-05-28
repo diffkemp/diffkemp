@@ -58,6 +58,9 @@ RUN pip install \
 # Install some additional packages - should be moved to top in future
 RUN dnf install -y \
       bc \
-      findutils 
+      elfutils-libelf-devel \
+      findutils \
+      module-init-tools \
+      openssl-devel
 ENV PYTHONPATH /diffkemp:/usr/lib/python2.7:/usr/lib/python3.6
 
