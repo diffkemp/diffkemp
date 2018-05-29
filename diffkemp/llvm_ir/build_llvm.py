@@ -450,6 +450,17 @@ class LlvmKernelBuilder:
         return llvm_modules
 
 
+class ModuleParam:
+    """
+    Kernel module parameter.
+    Has name, type, and description.
+    """
+    def __init__(self, name, ctype, desc):
+        self.name = name
+        self.ctype = ctype
+        self.desc = desc
+
+
 class LlvmKernelModule:
     """
     Kernel module in LLVM IR
@@ -464,6 +475,24 @@ class LlvmKernelModule:
         if not os.path.isfile(self.kernel_object):
             raise BuildException(
                 "Building %s did not produce kernel object file" % name)
+        self.params = list()
+
+
+    def collect_parameters(self):
+        """
+        Collect all parameters defined in the module.
+        This is done by parsing output of `modinfo -p module.ko`.
+        """
+        self.params = list()
+        with open(os.devnull, "w") as stderr:
+            modinfo = check_output(["modinfo", "-p", self.kernel_object],
+                                   stderr=stderr)
+        lines = modinfo.splitlines()
+        for line in lines:
+            name, sep, rest = line.partition(":")
+            desc, sep, ctype = rest.partition(" (")
+            ctype = ctype[:-1]
+            self.params.append(ModuleParam(name, ctype, desc))
 
 
     def collect_functions(self):
