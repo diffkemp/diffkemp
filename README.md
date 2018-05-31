@@ -35,10 +35,12 @@ Currently, the main goal is a proof of concept.
     cd ..
 
 ## Run
-    bin/diffkemp module-path module-name parameter old-version new-version
+    bin/diffkemp modules-dir [-m module] [-p param] old-version new-version
 
-Checks equivalence of the module between the old and the new version w.r.t. the
-given parameter. The module-path is given relatively to the kernel directory.
+Check semantic equivalence of all parameters of all modules in the given
+directory between the two kernel versions. Optionally, single module or single
+parameter can be chosen.
+The modules-dir is given relatively to the kernel directory.
 The tool is able to download necessary kernel sources.
 
 ## Regression tests
