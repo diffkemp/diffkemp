@@ -1,6 +1,6 @@
-module: xprtsock
+module: sunrpc
 path: net/sunrpc
-filename: xprtsock
+filename: xprtsock.c
 old_kernel: "3.10"
 new_kernel: "4.11"
 

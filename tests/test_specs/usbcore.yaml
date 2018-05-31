@@ -1,6 +1,6 @@
-module: devio
+module: usbcore
 path: drivers/usb/core
-filename: devio
+filename: devio.c
 old_kernel: "3.10"
 new_kernel: "4.11"
 
@@ -15,7 +15,7 @@ params:
       snoop_urb_data: not_equal
       proc_control: equal
       snoop_urb: not_equal
-      usbdev_open: equal
+      usbdev_open: not_equal
       proc_claim_port: not_equal
       async_completed: equal
       usbdev_do_ioctl: equal

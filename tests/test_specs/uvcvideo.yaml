@@ -1,0 +1,11 @@
+module: uvcvideo
+path:  drivers/media/usb/uvc
+filename:  uvc_driver.c
+old_kernel:  "3.10"
+new_kernel:  "4.11"
+
+params: 
+  - param:  uvc_quirks_param
+    functions: 
+      uvc_probe:  equal
+

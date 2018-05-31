@@ -1,6 +1,7 @@
+disabled: true
 module: mac80211
 path: net/mac80211
-filename: mlme
+filename: mlme.c
 old_kernel: "3.10"
 new_kernel: "4.11"
 debug: true

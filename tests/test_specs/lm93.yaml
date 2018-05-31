@@ -1,6 +1,7 @@
+disabled: true
 module: lm93
 path: drivers/hwmon
-filename: lm93
+filename: lm93.c
 old_kernel: "3.10"
 new_kernel: "4.11"
 

@@ -1,6 +1,6 @@
 module: rfkill
 path: net/rfkill
-filename: core
+filename: core.c
 old_kernel: "3.10"
 new_kernel: "4.11"
 
