@@ -339,6 +339,7 @@ class LlvmKernelBuilder:
                 param.startswith("-m") or
                 param.startswith("-O") or
                 param == "-DCC_HAVE_ASM_GOTO" or
+                param == "-g" or
                 param == "-o" or
                 param.endswith(".o")):
                 continue
