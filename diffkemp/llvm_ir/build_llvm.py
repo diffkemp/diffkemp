@@ -1,8 +1,7 @@
 """
 Building kernel module into LLVM IR.
-Downloads the kernel sources, compiles the chosen module into LLVM IR, and
-links it against other modules containing implementations of undefined
-functions.
+Functions for downloading, configuring, compiling, and linkning kernel modules
+into LLVM IR.
 """
 
 import glob
@@ -10,6 +9,7 @@ import os
 import tarfile
 from diffkemp.llvm_ir.compiler import KernelModuleCompiler, CompilerException
 from diffkemp.llvm_ir.function_collector import FunctionCollector
+from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.module_analyser import *
 from diffkemp.slicer.slicer import slice_module
 from distutils.version import StrictVersion
@@ -391,6 +391,10 @@ class LlvmKernelBuilder:
             with open(os.devnull, "w") as stderr:
                 check_call(command, stderr=stderr)
             self.opt_llvm(file, command[0])
+        if not os.path.isfile(os.path.join(self.modules_dir, "%s.bc" %
+                                           file_name)):
+            raise BuildException("Building %s did not produce LLVM IR file" %
+                                 name)
         os.chdir(cwd)
         mod = LlvmKernelModule(name, file_name, os.path.join(self.kernel_path,
                                                              self.modules_dir))
@@ -448,62 +452,4 @@ class LlvmKernelBuilder:
                 print "    %s" % str(e)
         print ""
         return llvm_modules
-
-
-class ModuleParam:
-    """
-    Kernel module parameter.
-    Has name, type, and description.
-    """
-    def __init__(self, name, ctype, desc):
-        self.name = name
-        self.ctype = ctype
-        self.desc = desc
-
-
-class LlvmKernelModule:
-    """
-    Kernel module in LLVM IR
-    """
-    def __init__(self, name, file_name, module_dir):
-        self.name = name
-        self.llvm = os.path.join(module_dir, "%s.bc" % file_name)
-        if not os.path.isfile(self.llvm):
-            raise BuildException("Building %s did not produce LLVM IR file" %
-                                 name)
-        self.kernel_object = os.path.join(module_dir, "%s.ko" % file_name)
-        if not os.path.isfile(self.kernel_object):
-            raise BuildException(
-                "Building %s did not produce kernel object file" % name)
-        self.params = list()
-
-
-    def collect_parameters(self):
-        """
-        Collect all parameters defined in the module.
-        This is done by parsing output of `modinfo -p module.ko`.
-        """
-        self.params = list()
-        with open(os.devnull, "w") as stderr:
-            modinfo = check_output(["modinfo", "-p", self.kernel_object],
-                                   stderr=stderr)
-        lines = modinfo.splitlines()
-        for line in lines:
-            name, sep, rest = line.partition(":")
-            desc, sep, ctype = rest.partition(" (")
-            ctype = ctype[:-1]
-            self.params.append(ModuleParam(name, ctype, desc))
-
-
-    def collect_functions(self):
-        """
-        Collect main and called functions for the module.
-        Main functions are those that directly use the analysed parameter and
-        that will be compared to corresponding functions of the other module.
-        Called functions are those that are (recursively) called by main
-        functions.
-        """
-        collector = FunctionCollector(self.llvm)
-        self.main_functions = collector.using_param(self.param)
-        self.called_functions = collector.called_by(self.main_functions)
 
