@@ -33,6 +33,8 @@ def collect_task_specs():
     for spec_file_path in glob.glob("*.yaml"):
         with open(spec_file_path, "r") as spec_file:
             spec_yaml = yaml.load(spec_file)
+            if "disabled" in spec_yaml and spec_yaml["disabled"] == True:
+                continue
             # One specification for each analysed parameter is created
             for param in spec_yaml["params"]:
                 spec = param
