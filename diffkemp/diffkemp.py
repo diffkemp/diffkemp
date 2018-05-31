@@ -14,6 +14,7 @@ def __make_argument_parser():
     ap.add_argument("src_version")
     ap.add_argument("dest_version")
     ap.add_argument("-m", "--module", help="analyse only chosen module")
+    ap.add_argument("-p", "--param", help="analyse only chosen parameter")
     ap.add_argument("--build-only", help="only build modules to LLVM IR",
                     action="store_true")
     ap.add_argument("-d", "--debug", help="compile module with -g",
@@ -58,23 +59,32 @@ def run_from_cli():
                 print "%s " % mod_name
             return 0
 
+        print "Computing semantic difference of module parameters"
+        print "--------------------------------------------------"
+        for mod, first in first_mods.iteritems():
+            if not mod in second_mods:
+                continue
+            second = second_mods[mod]
 
-        # Compare modules
-        stat = modules_diff(first_mod.llvm, second_mod.llvm, args.parameter,
-                            args.verbose)
-        print ""
-        stat.report()
+            if args.param:
+                first.set_param(args.param)
+                second.set_param(args.param)
+            else:
+                first.collect_all_parameters()
+                second.collect_all_parameters()
 
-        result = stat.overall_result()
+            print mod
+            for param in first.params.keys():
+                if not param in second.params:
+                    continue
+                print "  parameter %s" % param
+                # Compare modules
+                stat = modules_diff(first, second, param, args.verbose)
+                print "    {}".format(str(stat.overall_result()).upper())
+        return 0
+
     except Exception as e:
         result = Result.ERROR
         sys.stderr.write("Error: %s\n" % str(e))
-
-    if result == Result.EQUAL:
-        print("Semantics of the module parameter is same")
-    elif result == Result.NOT_EQUAL:
-        print("Semantics of the module parameter has changed")
-    else:
-        print("Unable to determine changes in semantics of the parameter")
-    return result
+        return -1
 

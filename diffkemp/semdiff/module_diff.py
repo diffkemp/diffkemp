@@ -51,19 +51,23 @@ class Statistics():
         return Result.EQUAL
 
 
-def modules_diff(first, second, parameter, verbose=False):
+def modules_diff(first, second, param, verbose=False):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
     :param first: File with LLVM IR of the first module
     :param second: File with LLVM IR of the second module
-    :param parameter: Parameter (global variable) to compare (only functions
-                      using this variable are compared)
+    :param param: Parameter (global variable) to compare (only functions
+                  using this variable are compared)
     """
     stat = Statistics()
-    couplings = FunctionCouplings(first, second)
-    couplings.infer_for_param(parameter)
+    # Slice IR files
+    first_sliced = first.slice(param)
+    second_sliced = second.slice(param)
+
+    couplings = FunctionCouplings(first_sliced, second_sliced)
+    couplings.infer_for_param(param)
     for c in couplings.main:
-        result = functions_diff(first, second, c.first, c.second,
+        result = functions_diff(first_sliced, second_sliced, c.first, c.second,
                                 couplings.called, verbose)
         stat.log_result(result, c.first)
     return stat

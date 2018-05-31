@@ -113,12 +113,11 @@ def functions_diff(first, second, funFirst, funSecond, coupled, verbose=False):
                     correspond to each other in both modules)
     :param verbose: Verbosity option
     """
-    print ""
     if funFirst != funSecond:
-        sys.stdout.write("Comparing functions %s and %s" % (funFirst,
-                                                            funSecond))
+        sys.stdout.write("    Comparing functions %s and %s" % (funFirst,
+                                                                funSecond))
     else:
-        sys.stdout.write("Comparing function %s" % funFirst)
+        sys.stdout.write("    Comparing function %s" % funFirst)
     sys.stdout.write("...")
     sys.stdout.flush()
 
