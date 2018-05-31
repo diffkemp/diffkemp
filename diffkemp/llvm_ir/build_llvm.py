@@ -165,7 +165,7 @@ class LlvmKernelBuilder:
 
 
     def _clean_kernel(self):
-        """Clean all modules in the modules directory"""
+        """Clean whole kernel"""
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         with open(os.devnull, "w") as stdout:
@@ -185,9 +185,21 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         with open(os.devnull, "w") as stdout:
-            check_call(["make", "M=%s" % self.modules_dir, mod, "clean"],
+            check_call(["make", "M=%s" % self.modules_dir, "%s.ko" % mod,
+                        "clean"],
                        stdout=stdout)
         os.chdir(cwd)
+
+
+    def _clean_all_modules(self):
+        """Clean all modules in the modules directory"""
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        with open(os.devnull, "w") as stdout:
+            check_call(["make", "M=%s" % self.modules_dir, "clean"],
+                       stdout=stdout)
+        os.chdir(cwd)
+
 
 
     def _get_sources_with_params(self):

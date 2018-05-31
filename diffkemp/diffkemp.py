@@ -17,6 +17,8 @@ def __make_argument_parser():
     ap.add_argument("-p", "--param", help="analyse only chosen parameter")
     ap.add_argument("--build-only", help="only build modules to LLVM IR",
                     action="store_true")
+    ap.add_argument("--rebuild", help="force rebuilding sources",
+                    action="store_true")
     ap.add_argument("-d", "--debug", help="compile module with -g",
                     action="store_true")
     ap.add_argument("-v", "--verbose", help="increase output verbosity",
