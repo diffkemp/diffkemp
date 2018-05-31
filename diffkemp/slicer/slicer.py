@@ -3,8 +3,8 @@ Slicing LLVM of kernel modules with respect to usage of some kernel module
 parameter (global variable).
 """
 
-from os import path
-from subprocess import Popen, PIPE
+import os
+from subprocess import check_call
 
 
 class SlicerException(Exception):
@@ -15,13 +15,13 @@ class SlicerException(Exception):
         return "Slicing has failed"
 
 
-def sliced_name(file):
+def sliced_name(file, param):
     """Name of the sliced file"""
-    name, ext = path.splitext(file)
-    return name + "-sliced" + ext
+    name, ext = os.path.splitext(file)
+    return "{}-{}{}".format(name, param, ext)
 
 
-def slice_module(file, parameter, out_file=None, verbose=False):
+def slice_module(file, parameter, verbose=False):
     """
     Slice the given module w.r.t. to the parameter.
     The actual slicer is implemented as an LLVM pass in C++ that gets the
@@ -34,24 +34,17 @@ def slice_module(file, parameter, out_file=None, verbose=False):
                      from the name of the input file.
     :param verbose: Verbosity option.
     """
-    print("Slicing %s" % file)
-
-    if not out_file:
-        out_file = sliced_name(file)
+    print("    [slice] {}".format(file))
+    out_file = sliced_name(file, parameter)
 
     stderr = None
     if not verbose:
-        stderr = open('/dev/null', 'w')
+        stderr = open(os.devnull, "w")
 
-    opt = Popen(["opt", "-S",
-                 "-load", "build/diffkemp/slicer/libParDepSlicer.so",
-                 "-paramdep-slicer", "-param-name=" + parameter,
-                 "-deadargelim",
-                 "-o", "".join(out_file),
-                 file],
-                stdout=PIPE, stderr=stderr)
-    opt.wait()
-    if opt.returncode != 0:
-        raise SlicerException()
+    check_call(["opt", "-S",
+                "-load", "build/diffkemp/slicer/libParDepSlicer.so",
+                "-paramdep-slicer", "-param-name=" + parameter,
+                "-deadargelim",
+                "-o", "".join(out_file), file], stderr=stderr)
 
     return out_file
