@@ -1,0 +1,2154 @@
+; ModuleID = 'drivers/memstick/core/memstick.bc'
+source_filename = "drivers/memstick/core/memstick.c"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+module asm "\09.section \22___kcrctab+memstick_detect_change\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_detect_change\09"
+module asm "\09.long\09__crc_memstick_detect_change\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_next_req\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_next_req\09"
+module asm "\09.long\09__crc_memstick_next_req\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_new_req\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_new_req\09"
+module asm "\09.long\09__crc_memstick_new_req\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_init_req_sg\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_init_req_sg\09"
+module asm "\09.long\09__crc_memstick_init_req_sg\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_init_req\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_init_req\09"
+module asm "\09.long\09__crc_memstick_init_req\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_set_rw_addr\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_set_rw_addr\09"
+module asm "\09.long\09__crc_memstick_set_rw_addr\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_alloc_host\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_alloc_host\09"
+module asm "\09.long\09__crc_memstick_alloc_host\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_add_host\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_add_host\09"
+module asm "\09.long\09__crc_memstick_add_host\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_remove_host\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_remove_host\09"
+module asm "\09.long\09__crc_memstick_remove_host\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_free_host\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_free_host\09"
+module asm "\09.long\09__crc_memstick_free_host\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_suspend_host\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_suspend_host\09"
+module asm "\09.long\09__crc_memstick_suspend_host\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_resume_host\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_resume_host\09"
+module asm "\09.long\09__crc_memstick_resume_host\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_register_driver\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_register_driver\09"
+module asm "\09.long\09__crc_memstick_register_driver\09"
+module asm "\09.previous\09\09\09\09\09"
+module asm "\09.section \22___kcrctab+memstick_unregister_driver\22, \22a\22\09"
+module asm "\09.weak\09__crc_memstick_unregister_driver\09"
+module asm "\09.long\09__crc_memstick_unregister_driver\09"
+module asm "\09.previous\09\09\09\09\09"
+
+%struct.module = type { i32, %struct.list_head, [56 x i8], %struct.module_kobject, %struct.module_attribute*, i8*, i8*, %struct.kobject*, %struct.kernel_symbol*, i32*, i32, %struct.mutex, %struct.kernel_param*, i32, i32, %struct.kernel_symbol*, i32*, %struct.kernel_symbol*, i32*, i32, i32, %struct.kernel_symbol*, i32*, i8, i8, %struct.kernel_symbol*, i32*, i32, i32, %struct.exception_table_entry*, i32 ()*, [56 x i8], %struct.module_layout, %struct.module_layout, %struct.mod_arch_specific, i64, i32, %struct.list_head, %struct.bug_entry*, %struct.mod_kallsyms*, %struct.mod_kallsyms, %struct.module_sect_attrs*, %struct.module_notes_attrs*, i8*, i8*, i32, i32, %struct.tracepoint**, i32, i8**, %struct.trace_event_call**, i32, %struct.trace_enum_map**, i32, i32, i64*, i8, i8, %struct.klp_modinfo*, %struct.list_head, %struct.list_head, void ()*, %struct.atomic_t, void ()**, i32, [36 x i8] }
+%struct.module_kobject = type { %struct.kobject, %struct.module*, %struct.kobject*, %struct.module_param_attrs*, %struct.completion* }
+%struct.kobject = type { i8*, %struct.list_head, %struct.kobject*, %struct.kset*, %struct.kobj_type*, %struct.kernfs_node*, %struct.kref, %struct.delayed_work, i8 }
+%struct.kset = type { %struct.list_head, %struct.spinlock, %struct.kobject, %struct.kset_uevent_ops* }
+%struct.spinlock = type { %union.anon.1 }
+%union.anon.1 = type { %struct.raw_spinlock }
+%struct.raw_spinlock = type { %struct.qspinlock, i32, i32, i8*, %struct.lockdep_map }
+%struct.qspinlock = type { %struct.atomic_t }
+%struct.lockdep_map = type { %struct.lock_class_key*, [2 x %struct.lock_class*], i8*, i32, i64 }
+%struct.lock_class_key = type { [8 x %struct.lockdep_subclass_key] }
+%struct.lockdep_subclass_key = type { i8 }
+%struct.lock_class = type { %struct.hlist_node, %struct.list_head, %struct.lockdep_subclass_key*, i32, i32, i64, [13 x %struct.stack_trace], %struct.list_head, %struct.list_head, i32, i64, i8*, i32, [4 x i64], [4 x i64] }
+%struct.hlist_node = type { %struct.hlist_node*, %struct.hlist_node** }
+%struct.stack_trace = type { i32, i32, i64*, i32 }
+%struct.kset_uevent_ops = type { i32 (%struct.kset*, %struct.kobject*)*, i8* (%struct.kset*, %struct.kobject*)*, i32 (%struct.kset*, %struct.kobject*, %struct.kobj_uevent_env*)* }
+%struct.kobj_uevent_env = type { [3 x i8*], [32 x i8*], i32, [2048 x i8], i32 }
+%struct.kobj_type = type { void (%struct.kobject*)*, %struct.sysfs_ops*, %struct.attribute**, %struct.kobj_ns_type_operations* (%struct.kobject*)*, i8* (%struct.kobject*)* }
+%struct.sysfs_ops = type { i64 (%struct.kobject*, %struct.attribute*, i8*)*, i64 (%struct.kobject*, %struct.attribute*, i8*, i64)* }
+%struct.attribute = type { i8*, i16, i8, %struct.lock_class_key*, %struct.lock_class_key }
+%struct.kobj_ns_type_operations = type { i32, i1 ()*, i8* ()*, i8* (%struct.sock*)*, i8* ()*, void (i8*)* }
+%struct.sock = type opaque
+%struct.kernfs_node = type { %struct.atomic_t, %struct.atomic_t, %struct.lockdep_map, %struct.kernfs_node*, i8*, %struct.rb_node, i8*, i32, %union.anon, i8*, i16, i16, i32, %struct.kernfs_iattrs* }
+%struct.rb_node = type { i64, %struct.rb_node*, %struct.rb_node* }
+%union.anon = type { %struct.kernfs_elem_attr }
+%struct.kernfs_elem_attr = type { %struct.kernfs_ops*, %struct.kernfs_open_node*, i64, %struct.kernfs_node* }
+%struct.kernfs_ops = type { i32 (%struct.kernfs_open_file*)*, void (%struct.kernfs_open_file*)*, i32 (%struct.seq_file*, i8*)*, i8* (%struct.seq_file*, i64*)*, i8* (%struct.seq_file*, i8*, i64*)*, void (%struct.seq_file*, i8*)*, i64 (%struct.kernfs_open_file*, i8*, i64, i64)*, i64, i8, i64 (%struct.kernfs_open_file*, i8*, i64, i64)*, i32 (%struct.kernfs_open_file*, %struct.vm_area_struct*)*, %struct.lock_class_key }
+%struct.kernfs_open_file = type { %struct.kernfs_node*, %struct.file*, %struct.seq_file*, i8*, %struct.mutex, %struct.mutex, i32, %struct.list_head, i8*, i64, i8, %struct.vm_operations_struct* }
+%struct.file = type { %union.anon.2, %struct.path, %struct.inode*, %struct.file_operations*, %struct.spinlock, %struct.atomic64_t, i32, i32, %struct.mutex, i64, %struct.fown_struct, %struct.cred*, %struct.file_ra_state, i64, i8*, i8*, %struct.list_head, %struct.list_head, %struct.address_space* }
+%union.anon.2 = type { %struct.callback_head }
+%struct.callback_head = type { %struct.callback_head*, void (%struct.callback_head*)* }
+%struct.path = type { %struct.vfsmount*, %struct.dentry* }
+%struct.vfsmount = type opaque
+%struct.dentry = type { i32, %struct.seqcount, %struct.hlist_bl_node, %struct.dentry*, %struct.qstr, %struct.inode*, [32 x i8], %struct.lockref, %struct.dentry_operations*, %struct.super_block*, i64, i8*, %union.anon.49, %struct.list_head, %struct.list_head, %union.anon.50 }
+%struct.seqcount = type { i32, %struct.lockdep_map }
+%struct.hlist_bl_node = type { %struct.hlist_bl_node*, %struct.hlist_bl_node** }
+%struct.qstr = type { %union.anon.3, i8* }
+%union.anon.3 = type { i64 }
+%struct.lockref = type { %union.anon.47 }
+%union.anon.47 = type { %struct.anon.48 }
+%struct.anon.48 = type { %struct.spinlock, i32 }
+%struct.dentry_operations = type { i32 (%struct.dentry*, i32)*, i32 (%struct.dentry*, i32)*, i32 (%struct.dentry*, %struct.qstr*)*, i32 (%struct.dentry*, i32, i8*, %struct.qstr*)*, i32 (%struct.dentry*)*, i32 (%struct.dentry*)*, void (%struct.dentry*)*, void (%struct.dentry*)*, void (%struct.dentry*, %struct.inode*)*, i8* (%struct.dentry*, i8*, i32)*, %struct.vfsmount* (%struct.path*)*, i32 (%struct.path*, i1)*, %struct.dentry* (%struct.dentry*, %struct.inode*, i32)*, [24 x i8] }
+%struct.super_block = type { %struct.list_head, i32, i8, i64, i64, %struct.file_system_type*, %struct.super_operations*, %struct.dquot_operations*, %struct.quotactl_ops*, %struct.export_operations*, i64, i64, i64, %struct.dentry*, %struct.rw_semaphore, i32, %struct.atomic_t, i8*, %struct.xattr_handler**, %struct.fscrypt_operations*, %struct.hlist_bl_head, %struct.list_head, %struct.block_device*, %struct.backing_dev_info*, %struct.mtd_info*, %struct.hlist_node, i32, %struct.quota_info, %struct.sb_writers, [32 x i8], [16 x i8], i8*, i32, i32, i32, %struct.mutex, i8*, i8*, %struct.dentry_operations*, i32, %struct.shrinker, %struct.atomic64_t, i32, %struct.workqueue_struct*, %struct.hlist_head, %struct.user_namespace*, [32 x i8], %struct.list_lru, [40 x i8], %struct.list_lru, %struct.callback_head, %struct.work_struct, %struct.mutex, i32, [36 x i8], %struct.spinlock, %struct.list_head, %struct.spinlock, %struct.list_head, [16 x i8] }
+%struct.file_system_type = type { i8*, i32, %struct.dentry* (%struct.file_system_type*, i32, i8*, i8*)*, void (%struct.super_block*)*, %struct.module*, %struct.file_system_type*, %struct.hlist_head, %struct.lock_class_key, %struct.lock_class_key, %struct.lock_class_key, [3 x %struct.lock_class_key], %struct.lock_class_key, %struct.lock_class_key, %struct.lock_class_key }
+%struct.super_operations = type { %struct.inode* (%struct.super_block*)*, void (%struct.inode*)*, void (%struct.inode*, i32)*, i32 (%struct.inode*, %struct.writeback_control*)*, i32 (%struct.inode*)*, void (%struct.inode*)*, void (%struct.super_block*)*, i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*)*, i32 (%struct.super_block*)*, i32 (%struct.super_block*)*, i32 (%struct.super_block*)*, i32 (%struct.dentry*, %struct.kstatfs*)*, i32 (%struct.super_block*, i32*, i8*)*, void (%struct.super_block*)*, i32 (%struct.seq_file*, %struct.dentry*)*, i32 (%struct.seq_file*, %struct.dentry*)*, i32 (%struct.seq_file*, %struct.dentry*)*, i32 (%struct.seq_file*, %struct.dentry*)*, i64 (%struct.super_block*, i32, i8*, i64, i64)*, i64 (%struct.super_block*, i32, i8*, i64, i64)*, %struct.dquot** (%struct.inode*)*, i32 (%struct.super_block*, %struct.page*, i32)*, i64 (%struct.super_block*, %struct.shrink_control*)*, i64 (%struct.super_block*, %struct.shrink_control*)* }
+%struct.writeback_control = type opaque
+%struct.kstatfs = type opaque
+%struct.dquot = type { %struct.hlist_node, %struct.list_head, %struct.list_head, %struct.list_head, %struct.mutex, %struct.atomic_t, %struct.__wait_queue_head, %struct.super_block*, %struct.kqid, i64, i64, %struct.mem_dqblk }
+%struct.__wait_queue_head = type { %struct.spinlock, %struct.list_head }
+%struct.kqid = type { %union.anon.5, i32 }
+%union.anon.5 = type { %struct.kuid_t }
+%struct.kuid_t = type { i32 }
+%struct.mem_dqblk = type { i64, i64, i64, i64, i64, i64, i64, i64, i64 }
+%struct.page = type { i64, %union.anon.6, %union.anon.32, %union.anon.33, %union.anon.37, %union.anon.41, %struct.mem_cgroup* }
+%union.anon.6 = type { %struct.address_space* }
+%union.anon.32 = type { i64 }
+%union.anon.33 = type { i64 }
+%union.anon.37 = type { %struct.list_head }
+%union.anon.41 = type { i64 }
+%struct.mem_cgroup = type opaque
+%struct.shrink_control = type { i32, i64, i32, %struct.mem_cgroup* }
+%struct.dquot_operations = type { i32 (%struct.dquot*)*, %struct.dquot* (%struct.super_block*, i32)*, void (%struct.dquot*)*, i32 (%struct.dquot*)*, i32 (%struct.dquot*)*, i32 (%struct.dquot*)*, i32 (%struct.super_block*, i32)*, i64* (%struct.inode*)*, i32 (%struct.inode*, %struct.kprojid_t*)*, i32 (%struct.super_block*, %struct.kqid*)* }
+%struct.kprojid_t = type { i32 }
+%struct.quotactl_ops = type { i32 (%struct.super_block*, i32, i32, %struct.path*)*, i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*, i32, %struct.qc_info*)*, i32 (%struct.super_block*, i64, %struct.qc_dqblk*)*, i32 (%struct.super_block*, %struct.kqid*, %struct.qc_dqblk*)*, i32 (%struct.super_block*, i64, %struct.qc_dqblk*)*, i32 (%struct.super_block*, %struct.qc_state*)*, i32 (%struct.super_block*, i32)* }
+%struct.qc_info = type { i32, i32, i32, i32, i32, i32, i32, i32 }
+%struct.qc_dqblk = type { i32, i64, i64, i64, i64, i64, i64, i64, i64, i32, i32, i64, i64, i64, i64, i32 }
+%struct.qc_state = type { i32, [3 x %struct.qc_type_state] }
+%struct.qc_type_state = type { i32, i32, i32, i32, i32, i32, i32, i64, i64, i64 }
+%struct.export_operations = type opaque
+%struct.rw_semaphore = type { %struct.atomic64_t, %struct.list_head, %struct.raw_spinlock, %struct.optimistic_spin_queue, %struct.task_struct*, %struct.lockdep_map }
+%struct.optimistic_spin_queue = type { %struct.atomic_t }
+%struct.task_struct = type { %struct.thread_info, i64, i8*, %struct.atomic_t, i32, i32, %struct.llist_node, i32, i32, i32, i64, %struct.task_struct*, i32, i32, i32, i32, i32, i32, %struct.sched_class*, [16 x i8], %struct.sched_entity, %struct.sched_rt_entity, %struct.task_group*, %struct.sched_dl_entity, %struct.hlist_head, i32, i32, i32, %struct.cpumask, i64, i8, %struct.list_head, i32, %struct.sched_info, %struct.list_head, %struct.plist_node, %struct.rb_node, %struct.mm_struct*, %struct.mm_struct*, %struct.vmacache, %struct.task_rss_stat, i32, i32, i32, i32, i64, i32, i8, [3 x i8], i8, i64, %struct.restart_block, i32, i32, %struct.task_struct*, %struct.task_struct*, %struct.list_head, %struct.list_head, %struct.task_struct*, %struct.list_head, %struct.list_head, [3 x %struct.pid_link], %struct.list_head, %struct.list_head, %struct.completion*, i32*, i32*, i64, i64, i64, %struct.prev_cputime, i64, i64, i64, i64, i64, i64, %struct.task_cputime, [3 x %struct.list_head], %struct.cred*, %struct.cred*, %struct.cred*, [16 x i8], %struct.nameidata*, %struct.sysv_sem, %struct.sysv_shm, i64, %struct.fs_struct*, %struct.files_struct*, %struct.nsproxy*, %struct.signal_struct*, %struct.sighand_struct*, %struct.sigset_t, %struct.sigset_t, %struct.sigset_t, %struct.sigpending, i64, i64, i32, %struct.callback_head*, %struct.audit_context*, %struct.kuid_t, i32, %struct.seccomp, i32, i32, %struct.spinlock, %struct.raw_spinlock, %struct.wake_q_node, %struct.rb_root, %struct.rb_node*, %struct.rt_mutex_waiter*, %struct.mutex_waiter*, i32, i64, i64, i32, i32, i32, i32, i64, i64, i32, i32, i32, i32, i64, i32, i32, [48 x %struct.held_lock], i32, i32, i8*, %struct.bio_list*, %struct.blk_plug*, %struct.reclaim_state*, %struct.backing_dev_info*, %struct.io_context*, i64, %struct.siginfo*, %struct.task_io_accounting, i64, i64, i64, %struct.nodemask_t, %struct.seqcount, i32, i32, %struct.css_set*, %struct.list_head, i32, %struct.robust_list_head*, %struct.compat_robust_list_head*, %struct.list_head, %struct.futex_pi_state*, [2 x %struct.perf_event_context*], %struct.mutex, %struct.list_head, %struct.mempolicy*, i16, i16, i32, i32, i32, i32, i64, i64, i64, i64, %struct.callback_head, %struct.list_head, %struct.numa_group*, i64*, i64, [3 x i64], i64, %struct.tlbflush_unmap_batch, %struct.callback_head, %struct.pipe_inode_info*, %struct.page_frag, %struct.task_delay_info*, i32, i32, i32, i64, i32, [32 x %struct.latency_record], i64, i64, i32, i32, %struct.ftrace_ret_stack*, i64, %struct.atomic_t, %struct.atomic_t, i64, i64, i32, i32, i8*, %struct.kcov*, %struct.mem_cgroup*, i32, i32, i32, %struct.uprobe_task*, i32, i32, i64, i32, %struct.task_struct*, %struct.atomic_t, %struct.thread_struct }
+%struct.thread_info = type { i64 }
+%struct.llist_node = type { %struct.llist_node* }
+%struct.sched_class = type opaque
+%struct.sched_entity = type { %struct.load_weight, %struct.rb_node, %struct.list_head, i32, i64, i64, i64, i64, i64, %struct.sched_statistics, i32, %struct.sched_entity*, %struct.cfs_rq*, %struct.cfs_rq*, [32 x i8], %struct.sched_avg, [24 x i8] }
+%struct.load_weight = type { i64, i32 }
+%struct.sched_statistics = type { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 }
+%struct.cfs_rq = type opaque
+%struct.sched_avg = type { i64, i64, i32, i32, i64, i64 }
+%struct.sched_rt_entity = type { %struct.list_head, i64, i64, i32, i16, i16, %struct.sched_rt_entity*, %struct.sched_rt_entity*, %struct.rt_rq*, %struct.rt_rq* }
+%struct.rt_rq = type opaque
+%struct.task_group = type opaque
+%struct.sched_dl_entity = type { %struct.rb_node, i64, i64, i64, i64, i64, i64, i32, i32, i32, i32, %struct.hrtimer }
+%struct.hrtimer = type { %struct.timerqueue_node, i64, i32 (%struct.hrtimer*)*, %struct.hrtimer_clock_base*, i8, i8 }
+%struct.timerqueue_node = type { %struct.rb_node, i64 }
+%struct.hrtimer_clock_base = type { %struct.hrtimer_cpu_base*, i32, i32, %struct.timerqueue_head, i64 ()*, i64, [16 x i8] }
+%struct.hrtimer_cpu_base = type { %struct.raw_spinlock, %struct.seqcount, %struct.hrtimer*, i32, i32, i32, i8, i8, i8, i64, %struct.hrtimer*, i32, i32, i32, i32, [8 x i8], [4 x %struct.hrtimer_clock_base] }
+%struct.timerqueue_head = type { %struct.rb_root, %struct.timerqueue_node* }
+%struct.cpumask = type { [128 x i64] }
+%struct.sched_info = type { i64, i64, i64, i64 }
+%struct.plist_node = type { i32, %struct.list_head, %struct.list_head }
+%struct.mm_struct = type { %struct.vm_area_struct*, %struct.rb_root, i32, i64 (%struct.file*, i64, i64, i64, i64)*, i64, i64, i64, i64, %struct.pgd_t*, %struct.atomic_t, %struct.atomic_t, %struct.atomic64_t, %struct.atomic64_t, i32, %struct.spinlock, %struct.rw_semaphore, %struct.list_head, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, [46 x i64], %struct.mm_rss_stat, %struct.linux_binfmt*, %struct.cpumask*, %struct.mm_context_t, i64, %struct.core_state*, %struct.spinlock, %struct.kioctx_table*, %struct.task_struct*, %struct.user_namespace*, %struct.file*, %struct.mmu_notifier_mm*, %struct.cpumask, i64, i64, i32, i8, %struct.uprobes_state, %struct.atomic64_t, %struct.work_struct }
+%struct.vm_area_struct = type { i64, i64, %struct.vm_area_struct*, %struct.vm_area_struct*, %struct.rb_node, i64, %struct.mm_struct*, %struct.pgprot, i64, %struct.anon.7, %struct.list_head, %struct.anon_vma*, %struct.vm_operations_struct*, i64, %struct.file*, i8*, %struct.mempolicy*, %struct.vm_userfaultfd_ctx }
+%struct.pgprot = type { i64 }
+%struct.anon.7 = type { %struct.rb_node, i64 }
+%struct.anon_vma = type opaque
+%struct.vm_userfaultfd_ctx = type { %struct.userfaultfd_ctx* }
+%struct.userfaultfd_ctx = type opaque
+%struct.pgd_t = type { i64 }
+%struct.mm_rss_stat = type { [4 x %struct.atomic64_t] }
+%struct.linux_binfmt = type opaque
+%struct.mm_context_t = type { %struct.ldt_struct*, i16, %struct.mutex, i8*, %struct.vdso_image*, %struct.atomic_t, i16, i16, i8* }
+%struct.ldt_struct = type opaque
+%struct.vdso_image = type { i8*, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 }
+%struct.core_state = type { %struct.atomic_t, %struct.core_thread, %struct.completion }
+%struct.core_thread = type { %struct.task_struct*, %struct.core_thread* }
+%struct.completion = type { i32, %struct.__wait_queue_head }
+%struct.kioctx_table = type opaque
+%struct.mmu_notifier_mm = type opaque
+%struct.uprobes_state = type { %struct.xol_area* }
+%struct.xol_area = type opaque
+%struct.vmacache = type { i32, [4 x %struct.vm_area_struct*] }
+%struct.task_rss_stat = type { i32, [4 x i32] }
+%struct.restart_block = type { i64 (%struct.restart_block*)*, %union.anon.8 }
+%union.anon.8 = type { %struct.anon.9 }
+%struct.anon.9 = type { i32*, i32, i32, i32, i64, i32* }
+%struct.pid_link = type { %struct.hlist_node, %struct.pid* }
+%struct.pid = type { %struct.atomic_t, i32, [3 x %struct.hlist_head], %struct.callback_head, [1 x %struct.upid] }
+%struct.upid = type { i32, %struct.pid_namespace*, %struct.hlist_node }
+%struct.pid_namespace = type opaque
+%struct.prev_cputime = type { i64, i64, %struct.raw_spinlock }
+%struct.task_cputime = type { i64, i64, i64 }
+%struct.nameidata = type opaque
+%struct.sysv_sem = type { %struct.sem_undo_list* }
+%struct.sem_undo_list = type opaque
+%struct.sysv_shm = type { %struct.list_head }
+%struct.fs_struct = type opaque
+%struct.files_struct = type opaque
+%struct.nsproxy = type opaque
+%struct.signal_struct = type opaque
+%struct.sighand_struct = type opaque
+%struct.sigset_t = type { [1 x i64] }
+%struct.sigpending = type { %struct.list_head, %struct.sigset_t }
+%struct.audit_context = type opaque
+%struct.seccomp = type { i32, %struct.seccomp_filter* }
+%struct.seccomp_filter = type opaque
+%struct.wake_q_node = type { %struct.wake_q_node* }
+%struct.rb_root = type { %struct.rb_node* }
+%struct.rt_mutex_waiter = type opaque
+%struct.mutex_waiter = type { %struct.list_head, %struct.task_struct*, %struct.ww_acquire_ctx*, i8* }
+%struct.ww_acquire_ctx = type opaque
+%struct.held_lock = type { i64, i64, %struct.lockdep_map*, %struct.lockdep_map*, i64, i64, i32, i32 }
+%struct.bio_list = type opaque
+%struct.blk_plug = type opaque
+%struct.reclaim_state = type opaque
+%struct.io_context = type opaque
+%struct.siginfo = type { i32, i32, i32, %union.anon.12 }
+%union.anon.12 = type { %struct.anon.16, [80 x i8] }
+%struct.anon.16 = type { i32, i32, i32, i64, i64 }
+%struct.task_io_accounting = type { i64, i64, i64, i64, i64, i64, i64 }
+%struct.nodemask_t = type { [16 x i64] }
+%struct.css_set = type opaque
+%struct.robust_list_head = type opaque
+%struct.compat_robust_list_head = type opaque
+%struct.futex_pi_state = type opaque
+%struct.perf_event_context = type opaque
+%struct.mempolicy = type opaque
+%struct.numa_group = type opaque
+%struct.tlbflush_unmap_batch = type { %struct.cpumask, i8, i8 }
+%struct.pipe_inode_info = type opaque
+%struct.page_frag = type { %struct.page*, i32, i32 }
+%struct.task_delay_info = type opaque
+%struct.latency_record = type { [12 x i64], i32, i64, i64 }
+%struct.ftrace_ret_stack = type opaque
+%struct.kcov = type opaque
+%struct.uprobe_task = type { i32, %union.anon.22, %struct.uprobe*, i64, %struct.return_instance*, i32 }
+%union.anon.22 = type { %struct.anon.23 }
+%struct.anon.23 = type { %struct.arch_uprobe_task, i64 }
+%struct.arch_uprobe_task = type { i64, i32, i32 }
+%struct.uprobe = type opaque
+%struct.return_instance = type { %struct.uprobe*, i64, i64, i64, i8, %struct.return_instance* }
+%struct.thread_struct = type { [3 x %struct.desc_struct], i64, i64, i16, i16, i16, i16, i32, i64, i64, [4 x %struct.perf_event*], i64, i64, i64, i64, i64, i64*, i64, i32, %struct.mm_segment_t, i8, [15 x i8], %struct.fpu }
+%struct.desc_struct = type { %union.anon.25 }
+%union.anon.25 = type { %struct.anon.26 }
+%struct.anon.26 = type { i32, i32 }
+%struct.perf_event = type opaque
+%struct.mm_segment_t = type { i64 }
+%struct.fpu = type { i32, i8, i8, [58 x i8], %union.fpregs_state }
+%union.fpregs_state = type { %struct.xregs_state, [3520 x i8] }
+%struct.xregs_state = type { %struct.fxregs_state, %struct.xstate_header, [0 x i8] }
+%struct.fxregs_state = type { i16, i16, i16, i16, %union.anon.28, i32, i32, [32 x i32], [64 x i32], [12 x i32], %union.anon.31 }
+%union.anon.28 = type { %struct.anon.29 }
+%struct.anon.29 = type { i64, i64 }
+%union.anon.31 = type { [12 x i32] }
+%struct.xstate_header = type { i64, i64, [6 x i64] }
+%struct.xattr_handler = type opaque
+%struct.fscrypt_operations = type opaque
+%struct.hlist_bl_head = type { %struct.hlist_bl_node* }
+%struct.block_device = type { i32, i32, %struct.inode*, %struct.super_block*, %struct.mutex, i8*, i8*, i32, i8, %struct.list_head, %struct.block_device*, i32, %struct.hd_struct*, i32, i32, %struct.gendisk*, %struct.request_queue*, %struct.backing_dev_info*, %struct.list_head, i64, i32, %struct.mutex }
+%struct.hd_struct = type opaque
+%struct.gendisk = type opaque
+%struct.request_queue = type opaque
+%struct.backing_dev_info = type opaque
+%struct.mtd_info = type opaque
+%struct.quota_info = type { i32, %struct.mutex, [3 x %struct.inode*], [3 x %struct.mem_dqinfo], [3 x %struct.quota_format_ops*] }
+%struct.mem_dqinfo = type { %struct.quota_format_type*, i32, %struct.list_head, i64, i32, i32, i64, i64, i8* }
+%struct.quota_format_type = type { i32, %struct.quota_format_ops*, %struct.module*, %struct.quota_format_type* }
+%struct.quota_format_ops = type { i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*, i32)*, i32 (%struct.super_block*, i32)*, i32 (%struct.dquot*)*, i32 (%struct.dquot*)*, i32 (%struct.dquot*)*, i32 (%struct.super_block*, %struct.kqid*)* }
+%struct.sb_writers = type { i32, %struct.__wait_queue_head, [3 x %struct.percpu_rw_semaphore] }
+%struct.percpu_rw_semaphore = type { %struct.rcu_sync, i32*, %struct.rw_semaphore, %struct.rcuwait, i32 }
+%struct.rcu_sync = type { i32, i32, %struct.__wait_queue_head, i32, %struct.callback_head, i32 }
+%struct.rcuwait = type { %struct.task_struct* }
+%struct.shrinker = type { i64 (%struct.shrinker*, %struct.shrink_control*)*, i64 (%struct.shrinker*, %struct.shrink_control*)*, i32, i64, i64, %struct.list_head, %struct.atomic64_t* }
+%struct.workqueue_struct = type opaque
+%struct.hlist_head = type { %struct.hlist_node* }
+%struct.user_namespace = type opaque
+%struct.list_lru = type { %struct.list_lru_node*, %struct.list_head }
+%struct.list_lru_node = type { %struct.spinlock, %struct.list_lru_one, %struct.list_lru_memcg*, [24 x i8] }
+%struct.list_lru_one = type { %struct.list_head, i64 }
+%struct.list_lru_memcg = type { [0 x %struct.list_lru_one*] }
+%struct.work_struct = type { %struct.atomic64_t, %struct.list_head, void (%struct.work_struct*)*, %struct.lockdep_map }
+%union.anon.49 = type { %struct.list_head }
+%union.anon.50 = type { %struct.hlist_node }
+%struct.inode = type { i16, i16, %struct.kuid_t, %struct.kgid_t, i32, %struct.posix_acl*, %struct.posix_acl*, %struct.inode_operations*, %struct.super_block*, %struct.address_space*, i8*, i64, %union.anon.42, i32, i64, %struct.timespec, %struct.timespec, %struct.timespec, %struct.spinlock, i16, i32, i64, i64, %struct.rw_semaphore, i64, i64, %struct.hlist_node, %struct.list_head, %struct.bdi_writeback*, i32, i16, i16, %struct.list_head, %struct.list_head, %struct.list_head, %union.anon.43, i64, %struct.atomic_t, %struct.atomic_t, %struct.atomic_t, %struct.atomic_t, %struct.file_operations*, %struct.file_lock_context*, %struct.address_space, %struct.list_head, %union.anon.46, i32, i32, %struct.hlist_head, %struct.fscrypt_info*, i8* }
+%struct.kgid_t = type { i32 }
+%struct.posix_acl = type opaque
+%struct.inode_operations = type { %struct.dentry* (%struct.inode*, %struct.dentry*, i32)*, i8* (%struct.dentry*, %struct.inode*, %struct.delayed_call*)*, i32 (%struct.inode*, i32)*, %struct.posix_acl* (%struct.inode*, i32)*, i32 (%struct.dentry*, i8*, i32)*, i32 (%struct.inode*, %struct.dentry*, i16, i1)*, i32 (%struct.dentry*, %struct.inode*, %struct.dentry*)*, i32 (%struct.inode*, %struct.dentry*)*, i32 (%struct.inode*, %struct.dentry*, i8*)*, i32 (%struct.inode*, %struct.dentry*, i16)*, i32 (%struct.inode*, %struct.dentry*)*, i32 (%struct.inode*, %struct.dentry*, i16, i32)*, i32 (%struct.inode*, %struct.dentry*, %struct.inode*, %struct.dentry*, i32)*, i32 (%struct.dentry*, %struct.iattr*)*, i32 (%struct.path*, %struct.kstat*, i32, i32)*, i64 (%struct.dentry*, i8*, i64)*, i32 (%struct.inode*, %struct.fiemap_extent_info*, i64, i64)*, i32 (%struct.inode*, %struct.timespec*, i32)*, i32 (%struct.inode*, %struct.dentry*, %struct.file*, i32, i16, i32*)*, i32 (%struct.inode*, %struct.dentry*, i16)*, i32 (%struct.inode*, %struct.posix_acl*, i32)*, [24 x i8] }
+%struct.delayed_call = type { void (i8*)*, i8* }
+%struct.iattr = type { i32, i16, %struct.kuid_t, %struct.kgid_t, i64, %struct.timespec, %struct.timespec, %struct.timespec, %struct.file* }
+%struct.kstat = type { i32, i16, i32, i32, i64, i64, i64, i32, i32, %struct.kuid_t, %struct.kgid_t, i64, %struct.timespec, %struct.timespec, %struct.timespec, %struct.timespec, i64 }
+%struct.fiemap_extent_info = type { i32, i32, i32, %struct.fiemap_extent* }
+%struct.fiemap_extent = type { i64, i64, i64, [2 x i64], i32, [3 x i32] }
+%union.anon.42 = type { i32 }
+%struct.timespec = type { i64, i64 }
+%struct.bdi_writeback = type opaque
+%union.anon.43 = type { %struct.callback_head }
+%struct.file_lock_context = type { %struct.spinlock, %struct.list_head, %struct.list_head, %struct.list_head }
+%struct.address_space = type { %struct.inode*, %struct.radix_tree_root, %struct.spinlock, %struct.atomic_t, %struct.rb_root, %struct.rw_semaphore, i64, i64, i64, %struct.address_space_operations*, i64, %struct.spinlock, i32, %struct.list_head, i8* }
+%struct.radix_tree_root = type { i32, %struct.radix_tree_node* }
+%struct.radix_tree_node = type { i8, i8, i8, i8, %struct.radix_tree_node*, %struct.radix_tree_root*, %union.anon.0, [64 x i8*], [3 x [1 x i64]] }
+%union.anon.0 = type { %struct.list_head }
+%struct.address_space_operations = type { i32 (%struct.page*, %struct.writeback_control*)*, i32 (%struct.file*, %struct.page*)*, i32 (%struct.address_space*, %struct.writeback_control*)*, i32 (%struct.page*)*, i32 (%struct.file*, %struct.address_space*, %struct.list_head*, i32)*, i32 (%struct.file*, %struct.address_space*, i64, i32, i32, %struct.page**, i8**)*, i32 (%struct.file*, %struct.address_space*, i64, i32, i32, %struct.page*, i8*)*, i64 (%struct.address_space*, i64)*, void (%struct.page*, i32, i32)*, i32 (%struct.page*, i32)*, void (%struct.page*)*, i64 (%struct.kiocb*, %struct.iov_iter*)*, i32 (%struct.address_space*, %struct.page*, %struct.page*, i32)*, i1 (%struct.page*, i32)*, void (%struct.page*)*, i32 (%struct.page*)*, i32 (%struct.page*, i64, i64)*, void (%struct.page*, i8*, i8*)*, i32 (%struct.address_space*, %struct.page*)*, i32 (%struct.swap_info_struct*, %struct.file*, i64*)*, void (%struct.file*)* }
+%struct.kiocb = type { %struct.file*, i64, void (%struct.kiocb*, i64, i64)*, i8*, i32 }
+%struct.iov_iter = type opaque
+%struct.swap_info_struct = type opaque
+%union.anon.46 = type { %struct.pipe_inode_info* }
+%struct.fscrypt_info = type opaque
+%struct.file_operations = type { %struct.module*, i64 (%struct.file*, i64, i32)*, i64 (%struct.file*, i8*, i64, i64*)*, i64 (%struct.file*, i8*, i64, i64*)*, i64 (%struct.kiocb*, %struct.iov_iter*)*, i64 (%struct.kiocb*, %struct.iov_iter*)*, i32 (%struct.file*, %struct.dir_context*)*, i32 (%struct.file*, %struct.dir_context*)*, i32 (%struct.file*, %struct.poll_table_struct*)*, i64 (%struct.file*, i32, i64)*, i64 (%struct.file*, i32, i64)*, i32 (%struct.file*, %struct.vm_area_struct*)*, i32 (%struct.inode*, %struct.file*)*, i32 (%struct.file*, i8*)*, i32 (%struct.inode*, %struct.file*)*, i32 (%struct.file*, i64, i64, i32)*, i32 (i32, %struct.file*, i32)*, i32 (%struct.file*, i32, %struct.file_lock*)*, i64 (%struct.file*, %struct.page*, i32, i64, i64*, i32)*, i64 (%struct.file*, i64, i64, i64, i64)*, i32 (i32)*, i32 (%struct.file*, i32, %struct.file_lock*)*, i64 (%struct.pipe_inode_info*, %struct.file*, i64*, i64, i32)*, i64 (%struct.file*, i64*, %struct.pipe_inode_info*, i64, i32)*, i32 (%struct.file*, i64, %struct.file_lock**, i8**)*, i64 (%struct.file*, i32, i64, i64)*, void (%struct.seq_file*, %struct.file*)*, i64 (%struct.file*, i64, %struct.file*, i64, i64, i32)*, i32 (%struct.file*, i64, %struct.file*, i64, i64)*, i64 (%struct.file*, i64, i64, %struct.file*, i64)* }
+%struct.dir_context = type { i32 (%struct.dir_context*, i8*, i32, i64, i64, i32)*, i64 }
+%struct.poll_table_struct = type opaque
+%struct.file_lock = type { %struct.file_lock*, %struct.list_head, %struct.hlist_node, %struct.list_head, i8*, i32, i8, i32, i32, %struct.pid*, %struct.__wait_queue_head, %struct.file*, i64, i64, %struct.fasync_struct*, i64, i64, %struct.file_lock_operations*, %struct.lock_manager_operations*, %union.anon.44 }
+%struct.fasync_struct = type { %struct.spinlock, i32, i32, %struct.fasync_struct*, %struct.file*, %struct.callback_head }
+%struct.file_lock_operations = type { void (%struct.file_lock*, %struct.file_lock*)*, void (%struct.file_lock*)* }
+%struct.lock_manager_operations = type { i32 (%struct.file_lock*, %struct.file_lock*)*, i64 (%struct.file_lock*)*, i8* (i8*)*, void (i8*)*, void (%struct.file_lock*)*, i32 (%struct.file_lock*, i32)*, i1 (%struct.file_lock*)*, i32 (%struct.file_lock*, i32, %struct.list_head*)*, void (%struct.file_lock*, i8**)* }
+%union.anon.44 = type { %struct.nfs_lock_info }
+%struct.nfs_lock_info = type { i32, %struct.nlm_lockowner*, %struct.list_head }
+%struct.nlm_lockowner = type opaque
+%struct.atomic64_t = type { i64 }
+%struct.fown_struct = type { %struct.rwlock_t, %struct.pid*, i32, %struct.kuid_t, %struct.kuid_t, i32 }
+%struct.rwlock_t = type { %struct.qrwlock, i32, i32, i8*, %struct.lockdep_map }
+%struct.qrwlock = type { %struct.atomic_t, %struct.qspinlock }
+%struct.cred = type { %struct.atomic_t, %struct.atomic_t, i8*, i32, %struct.kuid_t, %struct.kgid_t, %struct.kuid_t, %struct.kgid_t, %struct.kuid_t, %struct.kgid_t, %struct.kuid_t, %struct.kgid_t, i32, %struct.kernel_cap_struct, %struct.kernel_cap_struct, %struct.kernel_cap_struct, %struct.kernel_cap_struct, %struct.kernel_cap_struct, i8, %struct.key*, %struct.key*, %struct.key*, %struct.key*, i8*, %struct.user_struct*, %struct.user_namespace*, %struct.group_info*, %struct.callback_head }
+%struct.kernel_cap_struct = type { [2 x i32] }
+%struct.key = type { %struct.atomic_t, i32, %union.anon.52, %struct.rw_semaphore, %struct.key_user*, i8*, %union.anon.53, i64, %struct.kuid_t, %struct.kgid_t, i32, i16, i16, i64, %union.anon.54, %union.anon.56, i32 (%struct.key*, %struct.key_type*, %union.key_payload*)* }
+%union.anon.52 = type { %struct.rb_node }
+%struct.key_user = type opaque
+%union.anon.53 = type { i64 }
+%union.anon.54 = type { %struct.keyring_index_key }
+%struct.keyring_index_key = type { %struct.key_type*, i8*, i64 }
+%struct.key_type = type opaque
+%union.anon.56 = type { %union.key_payload }
+%union.key_payload = type { [4 x i8*] }
+%struct.user_struct = type { %struct.atomic_t, %struct.atomic_t, %struct.atomic_t, %struct.atomic_t, %struct.atomic64_t, i64, i64, i64, %struct.atomic64_t, %struct.key*, %struct.key*, %struct.hlist_node, %struct.kuid_t, %struct.atomic64_t }
+%struct.group_info = type { %struct.atomic_t, i32, [0 x %struct.kgid_t] }
+%struct.file_ra_state = type { i64, i32, i32, i32, i32, i64 }
+%struct.seq_file = type { i8*, i64, i64, i64, i64, i64, i64, i64, %struct.mutex, %struct.seq_operations*, i32, %struct.file*, i8* }
+%struct.seq_operations = type { i8* (%struct.seq_file*, i64*)*, void (%struct.seq_file*, i8*)*, i8* (%struct.seq_file*, i8*, i64*)*, i32 (%struct.seq_file*, i8*)* }
+%struct.vm_operations_struct = type { void (%struct.vm_area_struct*)*, void (%struct.vm_area_struct*)*, i32 (%struct.vm_area_struct*)*, i32 (%struct.vm_fault*)*, i32 (%struct.vm_fault*, i32)*, void (%struct.vm_fault*, i64, i64)*, i32 (%struct.vm_fault*)*, i32 (%struct.vm_fault*)*, i32 (%struct.vm_area_struct*, i64, i8*, i32, i32)*, i8* (%struct.vm_area_struct*)*, i32 (%struct.vm_area_struct*, %struct.mempolicy*)*, %struct.mempolicy* (%struct.vm_area_struct*, i64)*, %struct.page* (%struct.vm_area_struct*, i64)* }
+%struct.vm_fault = type { %struct.vm_area_struct*, i32, i32, i64, i64, %struct.pmd_t*, %struct.pud_t*, %struct.pte_t, %struct.page*, %struct.mem_cgroup*, %struct.page*, %struct.pte_t*, %struct.spinlock*, %struct.page* }
+%struct.pmd_t = type { i64 }
+%struct.pud_t = type { i64 }
+%struct.pte_t = type { i64 }
+%struct.kernfs_open_node = type opaque
+%struct.kernfs_iattrs = type opaque
+%struct.kref = type { %struct.refcount_struct }
+%struct.refcount_struct = type { %struct.atomic_t }
+%struct.delayed_work = type { %struct.work_struct, %struct.timer_list, %struct.workqueue_struct*, i32 }
+%struct.timer_list = type { %struct.hlist_node, i64, void (i64)*, i64, i32, %struct.lockdep_map }
+%struct.module_param_attrs = type opaque
+%struct.module_attribute = type { %struct.attribute, i64 (%struct.module_attribute*, %struct.module_kobject*, i8*)*, i64 (%struct.module_attribute*, %struct.module_kobject*, i8*, i64)*, void (%struct.module*, i8*)*, i32 (%struct.module*)*, void (%struct.module*)* }
+%struct.mutex = type { %struct.atomic64_t, %struct.spinlock, %struct.optimistic_spin_queue, %struct.list_head, i8*, %struct.lockdep_map }
+%struct.kernel_param = type { i8*, %struct.module*, %struct.kernel_param_ops*, i16, i8, i8, %union.anon.51 }
+%struct.kernel_param_ops = type { i32, i32 (i8*, %struct.kernel_param*)*, i32 (i8*, %struct.kernel_param*)*, void (i8*)* }
+%union.anon.51 = type { i8* }
+%struct.kernel_symbol = type { i64, i8* }
+%struct.exception_table_entry = type opaque
+%struct.module_layout = type { i8*, i32, i32, i32, i32, %struct.mod_tree_node }
+%struct.mod_tree_node = type { %struct.module*, %struct.latch_tree_node }
+%struct.latch_tree_node = type { [2 x %struct.rb_node] }
+%struct.mod_arch_specific = type {}
+%struct.bug_entry = type { i32, i32, i16, i16 }
+%struct.mod_kallsyms = type { %struct.elf64_sym*, i32, i8* }
+%struct.elf64_sym = type { i32, i8, i8, i16, i64, i64 }
+%struct.module_sect_attrs = type opaque
+%struct.module_notes_attrs = type opaque
+%struct.tracepoint = type { i8*, %struct.static_key, i32 ()*, void ()*, %struct.tracepoint_func* }
+%struct.static_key = type { %struct.atomic_t }
+%struct.tracepoint_func = type { i8*, i8*, i32 }
+%struct.trace_event_call = type opaque
+%struct.trace_enum_map = type opaque
+%struct.klp_modinfo = type { %struct.elf64_hdr, %struct.elf64_shdr*, i8*, i32 }
+%struct.elf64_hdr = type { [16 x i8], i16, i16, i32, i64, i64, i64, i32, i16, i16, i16, i16, i16, i16 }
+%struct.elf64_shdr = type { i32, i32, i64, i64, i64, i64, i32, i32, i64, i64 }
+%struct.list_head = type { %struct.list_head*, %struct.list_head* }
+%struct.atomic_t = type { i32 }
+%struct.class = type { i8*, %struct.module*, %struct.class_attribute*, %struct.attribute_group**, %struct.attribute_group**, %struct.kobject*, i32 (%struct.device*, %struct.kobj_uevent_env*)*, i8* (%struct.device*, i16*)*, void (%struct.class*)*, void (%struct.device*)*, i32 (%struct.device*, i32)*, i32 (%struct.device*)*, %struct.kobj_ns_type_operations*, i8* (%struct.device*)*, %struct.dev_pm_ops*, %struct.subsys_private* }
+%struct.class_attribute = type { %struct.attribute, i64 (%struct.class*, %struct.class_attribute*, i8*)*, i64 (%struct.class*, %struct.class_attribute*, i8*, i64)* }
+%struct.attribute_group = type { i8*, i16 (%struct.kobject*, %struct.attribute*, i32)*, i16 (%struct.kobject*, %struct.bin_attribute*, i32)*, %struct.attribute**, %struct.bin_attribute** }
+%struct.bin_attribute = type { %struct.attribute, i64, i8*, i64 (%struct.file*, %struct.kobject*, %struct.bin_attribute*, i8*, i64, i64)*, i64 (%struct.file*, %struct.kobject*, %struct.bin_attribute*, i8*, i64, i64)*, i32 (%struct.file*, %struct.kobject*, %struct.bin_attribute*, %struct.vm_area_struct*)* }
+%struct.device = type { %struct.device*, %struct.device_private*, %struct.kobject, i8*, %struct.device_type*, %struct.mutex, %struct.bus_type*, %struct.device_driver*, i8*, i8*, %struct.dev_links_info, %struct.dev_pm_info, %struct.dev_pm_domain*, %struct.irq_domain*, %struct.dev_pin_info*, %struct.list_head, i32, %struct.dma_map_ops*, i64*, i64, i64, %struct.device_dma_parameters*, %struct.list_head, %struct.dma_coherent_mem*, %struct.cma*, %struct.dev_archdata, %struct.device_node*, %struct.fwnode_handle*, i32, i32, %struct.spinlock, %struct.list_head, %struct.klist_node, %struct.class*, %struct.attribute_group**, void (%struct.device*)*, %struct.iommu_group*, %struct.iommu_fwspec*, i8 }
+%struct.device_private = type opaque
+%struct.device_type = type { i8*, %struct.attribute_group**, i32 (%struct.device*, %struct.kobj_uevent_env*)*, i8* (%struct.device*, i16*, %struct.kuid_t*, %struct.kgid_t*)*, void (%struct.device*)*, %struct.dev_pm_ops* }
+%struct.bus_type = type { i8*, i8*, %struct.device*, %struct.device_attribute*, %struct.attribute_group**, %struct.attribute_group**, %struct.attribute_group**, i32 (%struct.device*, %struct.device_driver*)*, i32 (%struct.device*, %struct.kobj_uevent_env*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, void (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*, i32)*, i32 (%struct.device*)*, i32 (%struct.device*)*, %struct.dev_pm_ops*, %struct.iommu_ops*, %struct.subsys_private*, %struct.lock_class_key }
+%struct.device_attribute = type { %struct.attribute, i64 (%struct.device*, %struct.device_attribute*, i8*)*, i64 (%struct.device*, %struct.device_attribute*, i8*, i64)* }
+%struct.iommu_ops = type opaque
+%struct.device_driver = type { i8*, %struct.bus_type*, %struct.module*, i8*, i8, i32, %struct.of_device_id*, %struct.acpi_device_id*, i32 (%struct.device*)*, i32 (%struct.device*)*, void (%struct.device*)*, i32 (%struct.device*, i32)*, i32 (%struct.device*)*, %struct.attribute_group**, %struct.dev_pm_ops*, %struct.driver_private* }
+%struct.of_device_id = type opaque
+%struct.acpi_device_id = type opaque
+%struct.driver_private = type opaque
+%struct.dev_links_info = type { %struct.list_head, %struct.list_head, i32 }
+%struct.dev_pm_info = type { %struct.pm_message, i16, %struct.spinlock, %struct.list_head, %struct.completion, %struct.wakeup_source*, i8, %struct.timer_list, i64, %struct.work_struct, %struct.__wait_queue_head, %struct.wake_irq*, %struct.atomic_t, %struct.atomic_t, i16, i32, i32, i32, i32, i32, i64, i64, i64, i64, %struct.pm_subsys_data*, void (%struct.device*, i32)*, %struct.dev_pm_qos* }
+%struct.pm_message = type { i32 }
+%struct.wakeup_source = type { i8*, %struct.list_head, %struct.spinlock, %struct.wake_irq*, %struct.timer_list, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i8 }
+%struct.wake_irq = type opaque
+%struct.pm_subsys_data = type { %struct.spinlock, i32, %struct.list_head, %struct.pm_domain_data* }
+%struct.pm_domain_data = type opaque
+%struct.dev_pm_qos = type opaque
+%struct.dev_pm_domain = type { %struct.dev_pm_ops, void (%struct.device*, i1)*, i32 (%struct.device*)*, void (%struct.device*)*, void (%struct.device*)* }
+%struct.dev_pm_ops = type { i32 (%struct.device*)*, void (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)*, i32 (%struct.device*)* }
+%struct.irq_domain = type opaque
+%struct.dev_pin_info = type { %struct.pinctrl*, %struct.pinctrl_state*, %struct.pinctrl_state*, %struct.pinctrl_state*, %struct.pinctrl_state* }
+%struct.pinctrl = type opaque
+%struct.pinctrl_state = type opaque
+%struct.dma_map_ops = type opaque
+%struct.device_dma_parameters = type { i32, i64 }
+%struct.dma_coherent_mem = type opaque
+%struct.cma = type opaque
+%struct.dev_archdata = type { i8* }
+%struct.device_node = type opaque
+%struct.fwnode_handle = type opaque
+%struct.klist_node = type { i8*, %struct.list_head, %struct.kref }
+%struct.iommu_group = type opaque
+%struct.iommu_fwspec = type opaque
+%struct.subsys_private = type opaque
+%struct.idr = type { %struct.radix_tree_root, i32 }
+%struct.memstick_host = type { %struct.mutex, i32, i32, %struct.work_struct, %struct.device, %struct.memstick_dev*, i32, {}*, i32 (%struct.memstick_host*, i32, i32)*, [24 x i8], [0 x i64] }
+%struct.memstick_dev = type { %struct.memstick_device_id, %struct.memstick_host*, %struct.ms_register_addr, %struct.completion, %struct.memstick_request, i32 (%struct.memstick_dev*)*, i32 (%struct.memstick_dev*, %struct.memstick_request**)*, void (%struct.memstick_dev*)*, void (%struct.memstick_dev*)*, %struct.device }
+%struct.memstick_device_id = type { i8, i8, i8, i8 }
+%struct.ms_register_addr = type { i8, i8, i8, i8 }
+%struct.memstick_request = type { i8, i8, i8, i32, %union.anon.58 }
+%union.anon.58 = type { %struct.scatterlist }
+%struct.scatterlist = type { i64, i64, i32, i32, i64, i32 }
+%struct.anon.59 = type { i8, [15 x i8] }
+%union.anon.60 = type { %struct.list_head* }
+%struct._ddebug = type { i8*, i8*, i8*, i8*, i32 }
+%struct.memstick_driver = type { %struct.memstick_device_id*, i32 (%struct.memstick_dev*)*, void (%struct.memstick_dev*)*, i32 (%struct.memstick_dev*, i32)*, i32 (%struct.memstick_dev*)*, %struct.device_driver }
+%struct.ms_id_register = type { i8, i8, i8, i8 }
+
+@__param_str_cmd_retries = internal constant [12 x i8] c"cmd_retries\00", align 1
+@__this_module = external global %struct.module, align 64
+@param_ops_uint = external constant %struct.kernel_param_ops, align 8
+@cmd_retries = internal global i32 3, align 4
+@__param_cmd_retries = internal constant %struct.kernel_param { i8* getelementptr inbounds ([12 x i8], [12 x i8]* @__param_str_cmd_retries, i32 0, i32 0), %struct.module* @__this_module, %struct.kernel_param_ops* @param_ops_uint, i16 420, i8 -1, i8 0, %union.anon.51 { i8* bitcast (i32* @cmd_retries to i8*) } }, section "__param", align 8
+@__UNIQUE_ID_cmd_retriestype12 = internal constant [26 x i8] c"parmtype=cmd_retries:uint\00", section ".modinfo", align 1
+@workqueue = internal global %struct.workqueue_struct* null, align 8
+@__kstrtab_memstick_detect_change = internal constant [23 x i8] c"memstick_detect_change\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_detect_change = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_host*)* @memstick_detect_change to i64), i8* getelementptr inbounds ([23 x i8], [23 x i8]* @__kstrtab_memstick_detect_change, i32 0, i32 0) }, section "___ksymtab+memstick_detect_change", align 8
+@__kstrtab_memstick_next_req = internal constant [18 x i8] c"memstick_next_req\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_next_req = internal constant %struct.kernel_symbol { i64 ptrtoint (i32 (%struct.memstick_host*, %struct.memstick_request**)* @memstick_next_req to i64), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @__kstrtab_memstick_next_req, i32 0, i32 0) }, section "___ksymtab+memstick_next_req", align 8
+@__kstrtab_memstick_new_req = internal constant [17 x i8] c"memstick_new_req\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_new_req = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_host*)* @memstick_new_req to i64), i8* getelementptr inbounds ([17 x i8], [17 x i8]* @__kstrtab_memstick_new_req, i32 0, i32 0) }, section "___ksymtab+memstick_new_req", align 8
+@__kstrtab_memstick_init_req_sg = internal constant [21 x i8] c"memstick_init_req_sg\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_init_req_sg = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_request*, i8, %struct.scatterlist*)* @memstick_init_req_sg to i64), i8* getelementptr inbounds ([21 x i8], [21 x i8]* @__kstrtab_memstick_init_req_sg, i32 0, i32 0) }, section "___ksymtab+memstick_init_req_sg", align 8
+@__kstrtab_memstick_init_req = internal constant [18 x i8] c"memstick_init_req\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_init_req = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_request*, i8, i8*, i64)* @memstick_init_req to i64), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @__kstrtab_memstick_init_req, i32 0, i32 0) }, section "___ksymtab+memstick_init_req", align 8
+@__kstrtab_memstick_set_rw_addr = internal constant [21 x i8] c"memstick_set_rw_addr\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_set_rw_addr = internal constant %struct.kernel_symbol { i64 ptrtoint (i32 (%struct.memstick_dev*)* @memstick_set_rw_addr to i64), i8* getelementptr inbounds ([21 x i8], [21 x i8]* @__kstrtab_memstick_set_rw_addr, i32 0, i32 0) }, section "___ksymtab+memstick_set_rw_addr", align 8
+@memstick_alloc_host.__key = internal global %struct.lock_class_key zeroinitializer, align 1
+@.str = private unnamed_addr constant [12 x i8] c"&host->lock\00", align 1
+@memstick_alloc_host.__key.1 = internal global %struct.lock_class_key zeroinitializer, align 1
+@.str.2 = private unnamed_addr constant [23 x i8] c"(&host->media_checker)\00", align 1
+@memstick_host_class = internal global %struct.class { i8* getelementptr inbounds ([14 x i8], [14 x i8]* @.str.14, i32 0, i32 0), %struct.module* null, %struct.class_attribute* null, %struct.attribute_group** null, %struct.attribute_group** null, %struct.kobject* null, i32 (%struct.device*, %struct.kobj_uevent_env*)* null, i8* (%struct.device*, i16*)* null, void (%struct.class*)* null, void (%struct.device*)* @memstick_free, i32 (%struct.device*, i32)* null, i32 (%struct.device*)* null, %struct.kobj_ns_type_operations* null, i8* (%struct.device*)* null, %struct.dev_pm_ops* null, %struct.subsys_private* null }, align 8
+@__kstrtab_memstick_alloc_host = internal constant [20 x i8] c"memstick_alloc_host\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_alloc_host = internal constant %struct.kernel_symbol { i64 ptrtoint (%struct.memstick_host* (i32, %struct.device*)* @memstick_alloc_host to i64), i8* getelementptr inbounds ([20 x i8], [20 x i8]* @__kstrtab_memstick_alloc_host, i32 0, i32 0) }, section "___ksymtab+memstick_alloc_host", align 8
+@memstick_host_lock = internal global %struct.spinlock { %union.anon.1 { %struct.raw_spinlock { %struct.qspinlock zeroinitializer, i32 -559067475, i32 -1, i8* inttoptr (i64 -1 to i8*), %struct.lockdep_map { %struct.lock_class_key* null, [2 x %struct.lock_class*] zeroinitializer, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.15, i32 0, i32 0), i32 0, i64 0 } } } }, align 8
+@memstick_host_idr = internal global %struct.idr { %struct.radix_tree_root { i32 100663296, %struct.radix_tree_node* null }, i32 0 }, align 8
+@.str.3 = private unnamed_addr constant [11 x i8] c"memstick%u\00", align 1
+@__kstrtab_memstick_add_host = internal constant [18 x i8] c"memstick_add_host\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_add_host = internal constant %struct.kernel_symbol { i64 ptrtoint (i32 (%struct.memstick_host*)* @memstick_add_host to i64), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @__kstrtab_memstick_add_host, i32 0, i32 0) }, section "___ksymtab+memstick_add_host", align 8
+@__kstrtab_memstick_remove_host = internal constant [21 x i8] c"memstick_remove_host\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_remove_host = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_host*)* @memstick_remove_host to i64), i8* getelementptr inbounds ([21 x i8], [21 x i8]* @__kstrtab_memstick_remove_host, i32 0, i32 0) }, section "___ksymtab+memstick_remove_host", align 8
+@__kstrtab_memstick_free_host = internal constant [19 x i8] c"memstick_free_host\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_free_host = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_host*)* @memstick_free_host to i64), i8* getelementptr inbounds ([19 x i8], [19 x i8]* @__kstrtab_memstick_free_host, i32 0, i32 0) }, section "___ksymtab+memstick_free_host", align 8
+@__kstrtab_memstick_suspend_host = internal constant [22 x i8] c"memstick_suspend_host\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_suspend_host = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_host*)* @memstick_suspend_host to i64), i8* getelementptr inbounds ([22 x i8], [22 x i8]* @__kstrtab_memstick_suspend_host, i32 0, i32 0) }, section "___ksymtab+memstick_suspend_host", align 8
+@__kstrtab_memstick_resume_host = internal constant [21 x i8] c"memstick_resume_host\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_resume_host = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_host*)* @memstick_resume_host to i64), i8* getelementptr inbounds ([21 x i8], [21 x i8]* @__kstrtab_memstick_resume_host, i32 0, i32 0) }, section "___ksymtab+memstick_resume_host", align 8
+@memstick_bus_type = internal global %struct.bus_type { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.4, i32 0, i32 0), i8* null, %struct.device* null, %struct.device_attribute* null, %struct.attribute_group** null, %struct.attribute_group** getelementptr inbounds ([2 x %struct.attribute_group*], [2 x %struct.attribute_group*]* @memstick_dev_groups, i32 0, i32 0), %struct.attribute_group** null, i32 (%struct.device*, %struct.device_driver*)* @memstick_bus_match, i32 (%struct.device*, %struct.kobj_uevent_env*)* @memstick_uevent, i32 (%struct.device*)* @memstick_device_probe, i32 (%struct.device*)* @memstick_device_remove, void (%struct.device*)* null, i32 (%struct.device*)* null, i32 (%struct.device*)* null, i32 (%struct.device*, i32)* @memstick_device_suspend, i32 (%struct.device*)* @memstick_device_resume, i32 (%struct.device*)* null, %struct.dev_pm_ops* null, %struct.iommu_ops* null, %struct.subsys_private* null, %struct.lock_class_key zeroinitializer }, align 8
+@__kstrtab_memstick_register_driver = internal constant [25 x i8] c"memstick_register_driver\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_register_driver = internal constant %struct.kernel_symbol { i64 ptrtoint (i32 (%struct.memstick_driver*)* @memstick_register_driver to i64), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @__kstrtab_memstick_register_driver, i32 0, i32 0) }, section "___ksymtab+memstick_register_driver", align 8
+@__kstrtab_memstick_unregister_driver = internal constant [27 x i8] c"memstick_unregister_driver\00", section "__ksymtab_strings", align 1
+@__ksymtab_memstick_unregister_driver = internal constant %struct.kernel_symbol { i64 ptrtoint (void (%struct.memstick_driver*)* @memstick_unregister_driver to i64), i8* getelementptr inbounds ([27 x i8], [27 x i8]* @__kstrtab_memstick_unregister_driver, i32 0, i32 0) }, section "___ksymtab+memstick_unregister_driver", align 8
+@__UNIQUE_ID_author13 = internal constant [18 x i8] c"author=Alex Dubov\00", section ".modinfo", align 1
+@__UNIQUE_ID_license14 = internal constant [12 x i8] c"license=GPL\00", section ".modinfo", align 1
+@__UNIQUE_ID_description15 = internal constant [41 x i8] c"description=Sony MemoryStick core driver\00", section ".modinfo", align 1
+@memstick_check.descriptor = internal global { i8*, i8*, i8*, i8*, i8, i8, i8, i8 } { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.4, i32 0, i32 0), i8* getelementptr inbounds ([15 x i8], [15 x i8]* @__func__.memstick_check, i32 0, i32 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.5, i32 0, i32 0), i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.6, i32 0, i32 0), i8 -74, i8 1, i8 0, i8 0 }, section "__verbose", align 8
+@.str.4 = private unnamed_addr constant [9 x i8] c"memstick\00", align 1
+@__func__.memstick_check = private unnamed_addr constant [15 x i8] c"memstick_check\00", align 1
+@.str.5 = private unnamed_addr constant [33 x i8] c"drivers/memstick/core/memstick.c\00", align 1
+@.str.6 = private unnamed_addr constant [24 x i8] c"memstick_check started\0A\00", align 1
+@memstick_check.descriptor.7 = internal global { i8*, i8*, i8*, i8*, i8, i8, i8, i8 } { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.4, i32 0, i32 0), i8* getelementptr inbounds ([15 x i8], [15 x i8]* @__func__.memstick_check, i32 0, i32 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.5, i32 0, i32 0), i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.8, i32 0, i32 0), i8 -57, i8 1, i8 0, i8 0 }, section "__verbose", align 8
+@.str.8 = private unnamed_addr constant [27 x i8] c"new card %02x, %02x, %02x\0A\00", align 1
+@memstick_check.descriptor.9 = internal global { i8*, i8*, i8*, i8*, i8, i8, i8, i8 } { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.4, i32 0, i32 0), i8* getelementptr inbounds ([15 x i8], [15 x i8]* @__func__.memstick_check, i32 0, i32 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.5, i32 0, i32 0), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.10, i32 0, i32 0), i8 -30, i8 1, i8 0, i8 0 }, section "__verbose", align 8
+@.str.10 = private unnamed_addr constant [25 x i8] c"memstick_check finished\0A\00", align 1
+@.str.11 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+@init_completion.__key = internal global %struct.lock_class_key zeroinitializer, align 1
+@.str.12 = private unnamed_addr constant [9 x i8] c"&x->wait\00", align 1
+@h_memstick_read_dev_id.descriptor = internal global { i8*, i8*, i8*, i8*, i8, i8, i8, i8 } { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.4, i32 0, i32 0), i8* getelementptr inbounds ([23 x i8], [23 x i8]* @__func__.h_memstick_read_dev_id, i32 0, i32 0), i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.5, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.13, i32 0, i32 0), i8 88, i8 1, i8 0, i8 0 }, section "__verbose", align 8
+@__func__.h_memstick_read_dev_id = private unnamed_addr constant [23 x i8] c"h_memstick_read_dev_id\00", align 1
+@.str.13 = private unnamed_addr constant [16 x i8] c"if_mode = %02x\0A\00", align 1
+@.str.14 = private unnamed_addr constant [14 x i8] c"memstick_host\00", align 1
+@.str.15 = private unnamed_addr constant [19 x i8] c"memstick_host_lock\00", align 1
+@__preempt_count = external global i32, align 4
+@memstick_dev_groups = internal global [2 x %struct.attribute_group*] [%struct.attribute_group* @memstick_dev_group, %struct.attribute_group* null], align 16
+@memstick_dev_group = internal constant %struct.attribute_group { i8* null, i16 (%struct.kobject*, %struct.attribute*, i32)* null, i16 (%struct.kobject*, %struct.bin_attribute*, i32)* null, %struct.attribute** getelementptr inbounds ([4 x %struct.attribute*], [4 x %struct.attribute*]* @memstick_dev_attrs, i32 0, i32 0), %struct.bin_attribute** null }, align 8
+@memstick_dev_attrs = internal global [4 x %struct.attribute*] [%struct.attribute* getelementptr inbounds (%struct.device_attribute, %struct.device_attribute* @dev_attr_type, i32 0, i32 0), %struct.attribute* getelementptr inbounds (%struct.device_attribute, %struct.device_attribute* @dev_attr_category, i32 0, i32 0), %struct.attribute* getelementptr inbounds (%struct.device_attribute, %struct.device_attribute* @dev_attr_class, i32 0, i32 0), %struct.attribute* null], align 16
+@dev_attr_type = internal global %struct.device_attribute { %struct.attribute { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.16, i32 0, i32 0), i16 292, i8 0, %struct.lock_class_key* null, %struct.lock_class_key zeroinitializer }, i64 (%struct.device*, %struct.device_attribute*, i8*)* @type_show, i64 (%struct.device*, %struct.device_attribute*, i8*, i64)* null }, align 8
+@dev_attr_category = internal global %struct.device_attribute { %struct.attribute { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.18, i32 0, i32 0), i16 292, i8 0, %struct.lock_class_key* null, %struct.lock_class_key zeroinitializer }, i64 (%struct.device*, %struct.device_attribute*, i8*)* @category_show, i64 (%struct.device*, %struct.device_attribute*, i8*, i64)* null }, align 8
+@dev_attr_class = internal global %struct.device_attribute { %struct.attribute { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.19, i32 0, i32 0), i16 292, i8 0, %struct.lock_class_key* null, %struct.lock_class_key zeroinitializer }, i64 (%struct.device*, %struct.device_attribute*, i8*)* @class_show, i64 (%struct.device*, %struct.device_attribute*, i8*, i64)* null }, align 8
+@.str.16 = private unnamed_addr constant [5 x i8] c"type\00", align 1
+@.str.17 = private unnamed_addr constant [5 x i8] c"%02X\00", align 1
+@.str.18 = private unnamed_addr constant [9 x i8] c"category\00", align 1
+@.str.19 = private unnamed_addr constant [6 x i8] c"class\00", align 1
+@.str.20 = private unnamed_addr constant [19 x i8] c"MEMSTICK_TYPE=%02X\00", align 1
+@.str.21 = private unnamed_addr constant [23 x i8] c"MEMSTICK_CATEGORY=%02X\00", align 1
+@.str.22 = private unnamed_addr constant [20 x i8] c"MEMSTICK_CLASS=%02X\00", align 1
+@memstick_init.__key = internal global %struct.lock_class_key zeroinitializer, align 1
+@.str.23 = private unnamed_addr constant [18 x i8] c"\22%s\22(\22kmemstick\22)\00", align 1
+@.str.24 = private unnamed_addr constant [10 x i8] c"kmemstick\00", align 1
+@memstick_init.__key.25 = internal global %struct.lock_class_key zeroinitializer, align 1
+@llvm.used = appending global [19 x i8*] [i8* bitcast (%struct.kernel_param* @__param_cmd_retries to i8*), i8* getelementptr inbounds ([26 x i8], [26 x i8]* @__UNIQUE_ID_cmd_retriestype12, i32 0, i32 0), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_detect_change to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_next_req to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_new_req to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_init_req_sg to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_init_req to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_set_rw_addr to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_alloc_host to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_add_host to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_remove_host to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_free_host to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_suspend_host to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_resume_host to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_register_driver to i8*), i8* bitcast (%struct.kernel_symbol* @__ksymtab_memstick_unregister_driver to i8*), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @__UNIQUE_ID_author13, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @__UNIQUE_ID_license14, i32 0, i32 0), i8* getelementptr inbounds ([41 x i8], [41 x i8]* @__UNIQUE_ID_description15, i32 0, i32 0)], section "llvm.metadata"
+
+@init_module = alias i32 (), i32 ()* @memstick_init
+@cleanup_module = alias void (), void ()* @memstick_exit
+
+; Function Attrs: nounwind uwtable
+define void @memstick_detect_change(%struct.memstick_host* %host) #0 {
+entry:
+  %0 = load %struct.workqueue_struct*, %struct.workqueue_struct** @workqueue, align 8, !tbaa !2
+  %media_checker = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 3
+  %call = call zeroext i1 @queue_work(%struct.workqueue_struct* %0, %struct.work_struct* %media_checker)
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal zeroext i1 @queue_work(%struct.workqueue_struct* %wq, %struct.work_struct* %work) #1 {
+entry:
+  %call = call zeroext i1 @queue_work_on(i32 8192, %struct.workqueue_struct* %wq, %struct.work_struct* %work)
+  ret i1 %call
+}
+
+; Function Attrs: nounwind uwtable
+define i32 @memstick_next_req(%struct.memstick_host* %host, %struct.memstick_request** %mrq) #0 {
+entry:
+  %0 = load %struct.memstick_request*, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  %tobool = icmp ne %struct.memstick_request* %0, null
+  br i1 %tobool, label %land.lhs.true, label %if.end
+
+land.lhs.true:                                    ; preds = %entry
+  %1 = load %struct.memstick_request*, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  %error = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %1, i32 0, i32 3
+  %2 = load i32, i32* %error, align 4, !tbaa !6
+  %tobool1 = icmp ne i32 %2, 0
+  br i1 %tobool1, label %land.lhs.true2, label %if.end
+
+land.lhs.true2:                                   ; preds = %land.lhs.true
+  %retries = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 6
+  %3 = load i32, i32* %retries, align 16, !tbaa !9
+  %tobool3 = icmp ne i32 %3, 0
+  br i1 %tobool3, label %if.then, label %if.end
+
+if.then:                                          ; preds = %land.lhs.true2
+  %4 = load %struct.memstick_request*, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  %error4 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %4, i32 0, i32 3
+  store i32 -6, i32* %error4, align 4, !tbaa !6
+  %retries5 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 6
+  %5 = load i32, i32* %retries5, align 16, !tbaa !9
+  %dec = add i32 %5, -1
+  store i32 %dec, i32* %retries5, align 16, !tbaa !9
+  br label %cleanup
+
+if.end:                                           ; preds = %land.lhs.true2, %land.lhs.true, %entry
+  %card = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %6 = load %struct.memstick_dev*, %struct.memstick_dev** %card, align 8, !tbaa !36
+  %tobool6 = icmp ne %struct.memstick_dev* %6, null
+  br i1 %tobool6, label %land.lhs.true7, label %if.end14
+
+land.lhs.true7:                                   ; preds = %if.end
+  %card8 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %7 = load %struct.memstick_dev*, %struct.memstick_dev** %card8, align 8, !tbaa !36
+  %next_request = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %7, i32 0, i32 6
+  %8 = load i32 (%struct.memstick_dev*, %struct.memstick_request**)*, i32 (%struct.memstick_dev*, %struct.memstick_request**)** %next_request, align 8, !tbaa !37
+  %tobool9 = icmp ne i32 (%struct.memstick_dev*, %struct.memstick_request**)* %8, null
+  br i1 %tobool9, label %if.then10, label %if.end14
+
+if.then10:                                        ; preds = %land.lhs.true7
+  %card11 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %9 = load %struct.memstick_dev*, %struct.memstick_dev** %card11, align 8, !tbaa !36
+  %next_request12 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %9, i32 0, i32 6
+  %10 = load i32 (%struct.memstick_dev*, %struct.memstick_request**)*, i32 (%struct.memstick_dev*, %struct.memstick_request**)** %next_request12, align 8, !tbaa !37
+  %card13 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %11 = load %struct.memstick_dev*, %struct.memstick_dev** %card13, align 8, !tbaa !36
+  %call = call i32 %10(%struct.memstick_dev* %11, %struct.memstick_request** %mrq)
+  br label %if.end14
+
+if.end14:                                         ; preds = %if.then10, %land.lhs.true7, %if.end
+  %rc.0 = phi i32 [ %call, %if.then10 ], [ -6, %land.lhs.true7 ], [ -6, %if.end ]
+  %tobool15 = icmp ne i32 %rc.0, 0
+  br i1 %tobool15, label %if.else, label %if.then16
+
+if.then16:                                        ; preds = %if.end14
+  %12 = load i32, i32* @cmd_retries, align 4, !tbaa !41
+  %cmp = icmp ugt i32 %12, 1
+  %13 = load i32, i32* @cmd_retries, align 4
+  %sub = sub i32 %13, 1
+  %cond = select i1 %cmp, i32 %sub, i32 1
+  %retries17 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 6
+  store i32 %cond, i32* %retries17, align 16, !tbaa !9
+  br label %cleanup
+
+if.else:                                          ; preds = %if.end14
+  store %struct.memstick_request* null, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  br label %cleanup
+
+cleanup:                                          ; preds = %if.then16, %if.else, %if.then
+  %retval.0 = phi i32 [ 0, %if.then ], [ %rc.0, %if.else ], [ %rc.0, %if.then16 ]
+  ret i32 %retval.0
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64, i8* nocapture) #2
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64, i8* nocapture) #2
+
+; Function Attrs: nounwind uwtable
+define void @memstick_new_req(%struct.memstick_host* %host) #0 {
+entry:
+  %card = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %0 = load %struct.memstick_dev*, %struct.memstick_dev** %card, align 8, !tbaa !36
+  %tobool = icmp ne %struct.memstick_dev* %0, null
+  br i1 %tobool, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry
+  %1 = load i32, i32* @cmd_retries, align 4, !tbaa !41
+  %retries = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 6
+  store i32 %1, i32* %retries, align 16, !tbaa !9
+  %card1 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %2 = load %struct.memstick_dev*, %struct.memstick_dev** %card1, align 8, !tbaa !36
+  %mrq_complete = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %2, i32 0, i32 3
+  call void @reinit_completion(%struct.completion* %mrq_complete)
+  %request = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 7
+  %request2 = bitcast {}** %request to void (%struct.memstick_host*)**
+  %3 = load void (%struct.memstick_host*)*, void (%struct.memstick_host*)** %request2, align 8, !tbaa !42
+  call void %3(%struct.memstick_host* %host)
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal void @reinit_completion(%struct.completion* %x) #1 {
+entry:
+  %done = getelementptr inbounds %struct.completion, %struct.completion* %x, i32 0, i32 0
+  store i32 0, i32* %done, align 8, !tbaa !43
+  ret void
+}
+
+; Function Attrs: nounwind uwtable
+define void @memstick_init_req_sg(%struct.memstick_request* %mrq, i8 zeroext %tpc, %struct.scatterlist* %sg) #0 {
+entry:
+  %tpc1 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 0
+  store i8 %tpc, i8* %tpc1, align 8, !tbaa !44
+  %conv = zext i8 %tpc to i32
+  %and = and i32 %conv, 8
+  %tobool = icmp ne i32 %and, 0
+  %data_dir = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 1
+  %bf.load = load i8, i8* %data_dir, align 1
+  %bf.clear = and i8 %bf.load, -2
+  %bf.set = or i8 %bf.clear, 1
+  %bf.clear.sink = select i1 %tobool, i8 %bf.set, i8 %bf.clear
+  store i8 %bf.clear.sink, i8* %data_dir, align 1
+  %0 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 4
+  %sg5 = bitcast %union.anon.58* %0 to %struct.scatterlist*
+  %1 = bitcast %struct.scatterlist* %sg5 to i8*
+  %2 = bitcast %struct.scatterlist* %sg to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %1, i8* %2, i64 40, i32 8, i1 false), !tbaa.struct !45
+  %long_data = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 1
+  %bf.load6 = load i8, i8* %long_data, align 1
+  %bf.clear7 = and i8 %bf.load6, -5
+  %bf.set8 = or i8 %bf.clear7, 4
+  store i8 %bf.set8, i8* %long_data, align 1
+  %conv9 = zext i8 %tpc to i32
+  %cmp = icmp eq i32 %conv9, 14
+  %conv11 = zext i8 %tpc to i32
+  %cmp12 = icmp eq i32 %conv11, 9
+  %or.cond = or i1 %cmp, %cmp12
+  %need_card_int = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 1
+  %bf.load15 = load i8, i8* %need_card_int, align 1
+  %bf.clear16 = and i8 %bf.load15, -3
+  %bf.set17 = or i8 %bf.clear16, 2
+  %bf.clear16.sink = select i1 %or.cond, i8 %bf.set17, i8 %bf.clear16
+  store i8 %bf.clear16.sink, i8* %need_card_int, align 1
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i32, i1) #2
+
+; Function Attrs: nounwind uwtable
+define void @memstick_init_req(%struct.memstick_request* %mrq, i8 zeroext %tpc, i8* %buf, i64 %length) #0 {
+entry:
+  %tpc1 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 0
+  store i8 %tpc, i8* %tpc1, align 8, !tbaa !44
+  %conv = zext i8 %tpc to i32
+  %and = and i32 %conv, 8
+  %tobool = icmp ne i32 %and, 0
+  %data_dir = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 1
+  %bf.load = load i8, i8* %data_dir, align 1
+  %bf.clear = and i8 %bf.load, -2
+  %bf.set = or i8 %bf.clear, 1
+  %bf.clear.sink = select i1 %tobool, i8 %bf.set, i8 %bf.clear
+  store i8 %bf.clear.sink, i8* %data_dir, align 1
+  %cmp = icmp ugt i64 %length, 15
+  %.length = select i1 %cmp, i64 15, i64 %length
+  %conv6 = trunc i64 %.length to i8
+  %0 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 4
+  %1 = bitcast %union.anon.58* %0 to %struct.anon.59*
+  %data_len = getelementptr inbounds %struct.anon.59, %struct.anon.59* %1, i32 0, i32 0
+  store i8 %conv6, i8* %data_len, align 8, !tbaa !48
+  %data_dir7 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 1
+  %bf.load8 = load i8, i8* %data_dir7, align 1
+  %bf.clear9 = and i8 %bf.load8, 1
+  %conv10 = zext i8 %bf.clear9 to i32
+  %cmp11 = icmp eq i32 %conv10, 1
+  br i1 %cmp11, label %if.then13, label %if.end16
+
+if.then13:                                        ; preds = %entry
+  %2 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 4
+  %3 = bitcast %union.anon.58* %2 to %struct.anon.59*
+  %data = getelementptr inbounds %struct.anon.59, %struct.anon.59* %3, i32 0, i32 1
+  %arraydecay = getelementptr inbounds [15 x i8], [15 x i8]* %data, i32 0, i32 0
+  %4 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 4
+  %5 = bitcast %union.anon.58* %4 to %struct.anon.59*
+  %data_len14 = getelementptr inbounds %struct.anon.59, %struct.anon.59* %5, i32 0, i32 0
+  %6 = load i8, i8* %data_len14, align 8, !tbaa !48
+  %conv15 = zext i8 %6 to i64
+  %call = call i8* @__memcpy(i8* %arraydecay, i8* %buf, i64 %conv15)
+  br label %if.end16
+
+if.end16:                                         ; preds = %if.then13, %entry
+  %long_data = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 1
+  %bf.load17 = load i8, i8* %long_data, align 1
+  %bf.clear18 = and i8 %bf.load17, -5
+  store i8 %bf.clear18, i8* %long_data, align 1
+  %conv19 = zext i8 %tpc to i32
+  %cmp20 = icmp eq i32 %conv19, 14
+  %conv22 = zext i8 %tpc to i32
+  %cmp23 = icmp eq i32 %conv22, 9
+  %or.cond = or i1 %cmp20, %cmp23
+  %need_card_int = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %mrq, i32 0, i32 1
+  %bf.load26 = load i8, i8* %need_card_int, align 1
+  %bf.clear27 = and i8 %bf.load26, -3
+  %bf.set28 = or i8 %bf.clear27, 2
+  %bf.clear27.sink = select i1 %or.cond, i8 %bf.set28, i8 %bf.clear27
+  store i8 %bf.clear27.sink, i8* %need_card_int, align 1
+  ret void
+}
+
+declare i8* @__memcpy(i8*, i8*, i64) #3
+
+; Function Attrs: nounwind uwtable
+define i32 @memstick_set_rw_addr(%struct.memstick_dev* %card) #0 {
+entry:
+  %next_request = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 6
+  store i32 (%struct.memstick_dev*, %struct.memstick_request**)* @h_memstick_set_rw_addr, i32 (%struct.memstick_dev*, %struct.memstick_request**)** %next_request, align 8, !tbaa !37
+  %host = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 1
+  %0 = load %struct.memstick_host*, %struct.memstick_host** %host, align 8, !tbaa !49
+  call void @memstick_new_req(%struct.memstick_host* %0)
+  %mrq_complete = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 3
+  call void @wait_for_completion(%struct.completion* %mrq_complete)
+  %current_mrq = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 4
+  %error = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %current_mrq, i32 0, i32 3
+  %1 = load i32, i32* %error, align 4, !tbaa !50
+  ret i32 %1
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @h_memstick_set_rw_addr(%struct.memstick_dev* %card, %struct.memstick_request** %mrq) #0 {
+entry:
+  %0 = load %struct.memstick_request*, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  %tobool = icmp ne %struct.memstick_request* %0, null
+  br i1 %tobool, label %if.else, label %if.then
+
+if.then:                                          ; preds = %entry
+  %current_mrq = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 4
+  %reg_addr = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 2
+  %1 = bitcast %struct.ms_register_addr* %reg_addr to i8*
+  call void @memstick_init_req(%struct.memstick_request* %current_mrq, i8 zeroext 8, i8* %1, i64 4)
+  %current_mrq1 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 4
+  store %struct.memstick_request* %current_mrq1, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  br label %return
+
+if.else:                                          ; preds = %entry
+  %mrq_complete = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 3
+  call void @complete(%struct.completion* %mrq_complete)
+  br label %return
+
+return:                                           ; preds = %if.else, %if.then
+  %retval.0 = phi i32 [ -11, %if.else ], [ 0, %if.then ]
+  ret i32 %retval.0
+}
+
+declare void @wait_for_completion(%struct.completion*) #3
+
+; Function Attrs: nounwind uwtable
+define %struct.memstick_host* @memstick_alloc_host(i32 %extra, %struct.device* %dev) #0 {
+entry:
+  %.compoundliteral = alloca %struct.atomic64_t, align 8
+  %conv = zext i32 %extra to i64
+  %add = add i64 1728, %conv
+  %call = call i8* @kzalloc(i64 %add, i32 20971712)
+  %0 = bitcast i8* %call to %struct.memstick_host*
+  %tobool = icmp ne %struct.memstick_host* %0, null
+  br i1 %tobool, label %do.body, label %if.end
+
+do.body:                                          ; preds = %entry
+  %lock = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 0
+  call void @__mutex_init(%struct.mutex* %lock, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i32 0, i32 0), %struct.lock_class_key* @memstick_alloc_host.__key)
+  %media_checker = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 3
+  call void @__init_work(%struct.work_struct* %media_checker, i32 0)
+  %media_checker2 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 3
+  %data = getelementptr inbounds %struct.work_struct, %struct.work_struct* %media_checker2, i32 0, i32 0
+  %counter = getelementptr inbounds %struct.atomic64_t, %struct.atomic64_t* %.compoundliteral, i32 0, i32 0
+  store i64 137438953408, i64* %counter, align 8, !tbaa !51
+  %1 = bitcast %struct.atomic64_t* %data to i8*
+  %2 = bitcast %struct.atomic64_t* %.compoundliteral to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %1, i8* %2, i64 8, i32 8, i1 false), !tbaa.struct !52
+  %media_checker3 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 3
+  %lockdep_map = getelementptr inbounds %struct.work_struct, %struct.work_struct* %media_checker3, i32 0, i32 3
+  call void @lockdep_init_map(%struct.lockdep_map* %lockdep_map, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.2, i32 0, i32 0), %struct.lock_class_key* @memstick_alloc_host.__key.1, i32 0)
+  %media_checker4 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 3
+  %entry5 = getelementptr inbounds %struct.work_struct, %struct.work_struct* %media_checker4, i32 0, i32 1
+  call void @INIT_LIST_HEAD(%struct.list_head* %entry5)
+  %media_checker6 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 3
+  %func = getelementptr inbounds %struct.work_struct, %struct.work_struct* %media_checker6, i32 0, i32 2
+  store void (%struct.work_struct*)* @memstick_check, void (%struct.work_struct*)** %func, align 8, !tbaa !53
+  %dev9 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 4
+  %class = getelementptr inbounds %struct.device, %struct.device* %dev9, i32 0, i32 33
+  store %struct.class* @memstick_host_class, %struct.class** %class, align 8, !tbaa !54
+  %dev10 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 4
+  %parent = getelementptr inbounds %struct.device, %struct.device* %dev10, i32 0, i32 0
+  store %struct.device* %dev, %struct.device** %parent, align 8, !tbaa !55
+  %dev11 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %0, i32 0, i32 4
+  call void @device_initialize(%struct.device* %dev11)
+  br label %if.end
+
+if.end:                                           ; preds = %do.body, %entry
+  ret %struct.memstick_host* %0
+}
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal i8* @kzalloc(i64 %size, i32 %flags) #1 {
+entry:
+  %or = or i32 %flags, 32768
+  %call = call i8* @kmalloc(i64 %size, i32 %or)
+  ret i8* %call
+}
+
+declare void @__mutex_init(%struct.mutex*, i8*, %struct.lock_class_key*) #3
+
+declare void @__init_work(%struct.work_struct*, i32) #3
+
+declare void @lockdep_init_map(%struct.lockdep_map*, i8*, %struct.lock_class_key*, i32) #3
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal void @INIT_LIST_HEAD(%struct.list_head* %list) #1 {
+entry:
+  %__u = alloca %union.anon.60, align 8
+  %0 = bitcast %union.anon.60* %__u to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* %0) #7
+  %__val = bitcast %union.anon.60* %__u to %struct.list_head**
+  store %struct.list_head* %list, %struct.list_head** %__val, align 8, !tbaa !48
+  %next = getelementptr inbounds %struct.list_head, %struct.list_head* %list, i32 0, i32 0
+  %1 = bitcast %struct.list_head** %next to i8*
+  %__c = bitcast %union.anon.60* %__u to [1 x i8]*
+  %arraydecay = getelementptr inbounds [1 x i8], [1 x i8]* %__c, i32 0, i32 0
+  call void @__write_once_size(i8* %1, i8* %arraydecay, i32 8)
+  %__val1 = bitcast %union.anon.60* %__u to %struct.list_head**
+  %2 = load %struct.list_head*, %struct.list_head** %__val1, align 8, !tbaa !48
+  %3 = bitcast %union.anon.60* %__u to i8*
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* %3) #7
+  %prev = getelementptr inbounds %struct.list_head, %struct.list_head* %list, i32 0, i32 1
+  store %struct.list_head* %list, %struct.list_head** %prev, align 8, !tbaa !56
+  ret void
+}
+
+; Function Attrs: nounwind uwtable
+define internal void @memstick_check(%struct.work_struct* %work) #0 {
+entry:
+  %0 = bitcast %struct.work_struct* %work to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -168
+  %1 = bitcast i8* %add.ptr to %struct.memstick_host*
+  %bf.load = load i32, i32* getelementptr inbounds (%struct._ddebug, %struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @memstick_check.descriptor to %struct._ddebug*), i32 0, i32 4), align 8
+  %bf.lshr = lshr i32 %bf.load, 18
+  %bf.clear = and i32 %bf.lshr, 255
+  %and = and i32 %bf.clear, 1
+  %tobool = icmp ne i32 %and, 0
+  %lnot = xor i1 %tobool, true
+  %lnot2 = xor i1 %lnot, true
+  %lnot.ext = zext i1 %lnot2 to i32
+  %conv = sext i32 %lnot.ext to i64
+  %expval = call i64 @llvm.expect.i64(i64 %conv, i64 0)
+  %tobool3 = icmp ne i64 %expval, 0
+  br i1 %tobool3, label %if.then, label %do.end5
+
+if.then:                                          ; preds = %entry
+  %dev = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 4
+  call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @memstick_check.descriptor to %struct._ddebug*), %struct.device* %dev, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.6, i32 0, i32 0))
+  br label %do.end5
+
+do.end5:                                          ; preds = %if.then, %entry
+  %lock = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 0
+  call void @mutex_lock_nested(%struct.mutex* %lock, i32 0)
+  %card6 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %2 = load %struct.memstick_dev*, %struct.memstick_dev** %card6, align 8, !tbaa !36
+  %tobool7 = icmp ne %struct.memstick_dev* %2, null
+  br i1 %tobool7, label %if.else, label %if.then8
+
+if.then8:                                         ; preds = %do.end5
+  %call = call i32 @memstick_power_on(%struct.memstick_host* %1)
+  %tobool9 = icmp ne i32 %call, 0
+  br i1 %tobool9, label %out_power_off, label %if.end19
+
+if.else:                                          ; preds = %do.end5
+  %card12 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %3 = load %struct.memstick_dev*, %struct.memstick_dev** %card12, align 8, !tbaa !36
+  %stop = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %3, i32 0, i32 7
+  %4 = load void (%struct.memstick_dev*)*, void (%struct.memstick_dev*)** %stop, align 8, !tbaa !57
+  %tobool13 = icmp ne void (%struct.memstick_dev*)* %4, null
+  br i1 %tobool13, label %if.then14, label %if.end19
+
+if.then14:                                        ; preds = %if.else
+  %card15 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %5 = load %struct.memstick_dev*, %struct.memstick_dev** %card15, align 8, !tbaa !36
+  %stop16 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %5, i32 0, i32 7
+  %6 = load void (%struct.memstick_dev*)*, void (%struct.memstick_dev*)** %stop16, align 8, !tbaa !57
+  %card17 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %7 = load %struct.memstick_dev*, %struct.memstick_dev** %card17, align 8, !tbaa !36
+  call void %6(%struct.memstick_dev* %7)
+  br label %if.end19
+
+if.end19:                                         ; preds = %if.else, %if.then14, %if.then8
+  %call20 = call %struct.memstick_dev* @memstick_alloc_card(%struct.memstick_host* %1)
+  %tobool21 = icmp ne %struct.memstick_dev* %call20, null
+  br i1 %tobool21, label %do.body32, label %if.then22
+
+if.then22:                                        ; preds = %if.end19
+  %card23 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %8 = load %struct.memstick_dev*, %struct.memstick_dev** %card23, align 8, !tbaa !36
+  %tobool24 = icmp ne %struct.memstick_dev* %8, null
+  br i1 %tobool24, label %if.then25, label %out_power_off
+
+if.then25:                                        ; preds = %if.then22
+  %card26 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %9 = load %struct.memstick_dev*, %struct.memstick_dev** %card26, align 8, !tbaa !36
+  %dev27 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %9, i32 0, i32 9
+  call void @device_unregister(%struct.device* %dev27)
+  %card28 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  store %struct.memstick_dev* null, %struct.memstick_dev** %card28, align 8, !tbaa !36
+  br label %out_power_off
+
+do.body32:                                        ; preds = %if.end19
+  %bf.load33 = load i32, i32* getelementptr inbounds (%struct._ddebug, %struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @memstick_check.descriptor.7 to %struct._ddebug*), i32 0, i32 4), align 8
+  %bf.lshr34 = lshr i32 %bf.load33, 18
+  %bf.clear35 = and i32 %bf.lshr34, 255
+  %and36 = and i32 %bf.clear35, 1
+  %tobool37 = icmp ne i32 %and36, 0
+  %lnot38 = xor i1 %tobool37, true
+  %lnot40 = xor i1 %lnot38, true
+  %lnot.ext41 = zext i1 %lnot40 to i32
+  %conv42 = sext i32 %lnot.ext41 to i64
+  %expval43 = call i64 @llvm.expect.i64(i64 %conv42, i64 0)
+  %tobool44 = icmp ne i64 %expval43, 0
+  br i1 %tobool44, label %if.then45, label %do.end56
+
+if.then45:                                        ; preds = %do.body32
+  %dev46 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 4
+  %id = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %call20, i32 0, i32 0
+  %type = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 1
+  %10 = load i8, i8* %type, align 1, !tbaa !58
+  %conv47 = zext i8 %10 to i32
+  %id48 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %call20, i32 0, i32 0
+  %category = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id48, i32 0, i32 2
+  %11 = load i8, i8* %category, align 2, !tbaa !59
+  %conv49 = zext i8 %11 to i32
+  %id50 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %call20, i32 0, i32 0
+  %class = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id50, i32 0, i32 3
+  %12 = load i8, i8* %class, align 1, !tbaa !60
+  %conv51 = zext i8 %12 to i32
+  call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @memstick_check.descriptor.7 to %struct._ddebug*), %struct.device* %dev46, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.8, i32 0, i32 0), i32 %conv47, i32 %conv49, i32 %conv51)
+  br label %do.end56
+
+do.end56:                                         ; preds = %if.then45, %do.body32
+  %card57 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %13 = load %struct.memstick_dev*, %struct.memstick_dev** %card57, align 8, !tbaa !36
+  %tobool58 = icmp ne %struct.memstick_dev* %13, null
+  br i1 %tobool58, label %if.then59, label %if.end85
+
+if.then59:                                        ; preds = %do.end56
+  %card60 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %14 = load %struct.memstick_dev*, %struct.memstick_dev** %card60, align 8, !tbaa !36
+  %call61 = call i32 @memstick_set_rw_addr(%struct.memstick_dev* %14)
+  %tobool62 = icmp ne i32 %call61, 0
+  br i1 %tobool62, label %if.then72, label %lor.lhs.false
+
+lor.lhs.false:                                    ; preds = %if.then59
+  %card63 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %15 = load %struct.memstick_dev*, %struct.memstick_dev** %card63, align 8, !tbaa !36
+  %id64 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %call20, i32 0, i32 0
+  %call65 = call i32 @memstick_dev_match(%struct.memstick_dev* %15, %struct.memstick_device_id* %id64)
+  %tobool66 = icmp ne i32 %call65, 0
+  br i1 %tobool66, label %lor.lhs.false67, label %if.then72
+
+lor.lhs.false67:                                  ; preds = %lor.lhs.false
+  %card68 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %16 = load %struct.memstick_dev*, %struct.memstick_dev** %card68, align 8, !tbaa !36
+  %check = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %16, i32 0, i32 5
+  %17 = load i32 (%struct.memstick_dev*)*, i32 (%struct.memstick_dev*)** %check, align 8, !tbaa !61
+  %card69 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %18 = load %struct.memstick_dev*, %struct.memstick_dev** %card69, align 8, !tbaa !36
+  %call70 = call i32 %17(%struct.memstick_dev* %18)
+  %tobool71 = icmp ne i32 %call70, 0
+  br i1 %tobool71, label %if.else76, label %if.then72
+
+if.then72:                                        ; preds = %lor.lhs.false67, %lor.lhs.false, %if.then59
+  %card73 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %19 = load %struct.memstick_dev*, %struct.memstick_dev** %card73, align 8, !tbaa !36
+  %dev74 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %19, i32 0, i32 9
+  call void @device_unregister(%struct.device* %dev74)
+  %card75 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  store %struct.memstick_dev* null, %struct.memstick_dev** %card75, align 8, !tbaa !36
+  br label %if.end85
+
+if.else76:                                        ; preds = %lor.lhs.false67
+  %card77 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %20 = load %struct.memstick_dev*, %struct.memstick_dev** %card77, align 8, !tbaa !36
+  %start = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %20, i32 0, i32 8
+  %21 = load void (%struct.memstick_dev*)*, void (%struct.memstick_dev*)** %start, align 8, !tbaa !62
+  %tobool78 = icmp ne void (%struct.memstick_dev*)* %21, null
+  br i1 %tobool78, label %if.then79, label %if.end85
+
+if.then79:                                        ; preds = %if.else76
+  %card80 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %22 = load %struct.memstick_dev*, %struct.memstick_dev** %card80, align 8, !tbaa !36
+  %start81 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %22, i32 0, i32 8
+  %23 = load void (%struct.memstick_dev*)*, void (%struct.memstick_dev*)** %start81, align 8, !tbaa !62
+  %card82 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %24 = load %struct.memstick_dev*, %struct.memstick_dev** %card82, align 8, !tbaa !36
+  call void %23(%struct.memstick_dev* %24)
+  br label %if.end85
+
+if.end85:                                         ; preds = %if.then72, %if.then79, %if.else76, %do.end56
+  %card86 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %25 = load %struct.memstick_dev*, %struct.memstick_dev** %card86, align 8, !tbaa !36
+  %tobool87 = icmp ne %struct.memstick_dev* %25, null
+  br i1 %tobool87, label %if.else98, label %if.then88
+
+if.then88:                                        ; preds = %if.end85
+  %card89 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  store %struct.memstick_dev* %call20, %struct.memstick_dev** %card89, align 8, !tbaa !36
+  %dev90 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %call20, i32 0, i32 9
+  %call91 = call i32 @device_register(%struct.device* %dev90)
+  %tobool92 = icmp ne i32 %call91, 0
+  br i1 %tobool92, label %if.then93, label %out_power_off
+
+if.then93:                                        ; preds = %if.then88
+  %dev94 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %call20, i32 0, i32 9
+  call void @put_device(%struct.device* %dev94)
+  %card95 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %26 = load %struct.memstick_dev*, %struct.memstick_dev** %card95, align 8, !tbaa !36
+  %27 = bitcast %struct.memstick_dev* %26 to i8*
+  call void @kfree(i8* %27)
+  %card96 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  store %struct.memstick_dev* null, %struct.memstick_dev** %card96, align 8, !tbaa !36
+  br label %out_power_off
+
+if.else98:                                        ; preds = %if.end85
+  %28 = bitcast %struct.memstick_dev* %call20 to i8*
+  call void @kfree(i8* %28)
+  br label %out_power_off
+
+out_power_off:                                    ; preds = %if.then25, %if.then22, %if.then88, %if.then93, %if.else98, %if.then8
+  %card101 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 5
+  %29 = load %struct.memstick_dev*, %struct.memstick_dev** %card101, align 8, !tbaa !36
+  %tobool102 = icmp ne %struct.memstick_dev* %29, null
+  br i1 %tobool102, label %if.end105, label %if.then103
+
+if.then103:                                       ; preds = %out_power_off
+  %set_param = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 8
+  %30 = load i32 (%struct.memstick_host*, i32, i32)*, i32 (%struct.memstick_host*, i32, i32)** %set_param, align 32, !tbaa !63
+  %call104 = call i32 %30(%struct.memstick_host* %1, i32 1, i32 0)
+  br label %if.end105
+
+if.end105:                                        ; preds = %if.then103, %out_power_off
+  %lock106 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 0
+  call void @mutex_unlock(%struct.mutex* %lock106)
+  %bf.load109 = load i32, i32* getelementptr inbounds (%struct._ddebug, %struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @memstick_check.descriptor.9 to %struct._ddebug*), i32 0, i32 4), align 8
+  %bf.lshr110 = lshr i32 %bf.load109, 18
+  %bf.clear111 = and i32 %bf.lshr110, 255
+  %and112 = and i32 %bf.clear111, 1
+  %tobool113 = icmp ne i32 %and112, 0
+  %lnot114 = xor i1 %tobool113, true
+  %lnot116 = xor i1 %lnot114, true
+  %lnot.ext117 = zext i1 %lnot116 to i32
+  %conv118 = sext i32 %lnot.ext117 to i64
+  %expval119 = call i64 @llvm.expect.i64(i64 %conv118, i64 0)
+  %tobool120 = icmp ne i64 %expval119, 0
+  br i1 %tobool120, label %if.then121, label %do.end127
+
+if.then121:                                       ; preds = %if.end105
+  %dev122 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %1, i32 0, i32 4
+  call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @memstick_check.descriptor.9 to %struct._ddebug*), %struct.device* %dev122, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.10, i32 0, i32 0))
+  br label %do.end127
+
+do.end127:                                        ; preds = %if.then121, %if.end105
+  ret void
+}
+
+declare void @device_initialize(%struct.device*) #3
+
+; Function Attrs: nounwind uwtable
+define i32 @memstick_add_host(%struct.memstick_host* %host) #0 {
+entry:
+  call void @idr_preload(i32 20971712)
+  call void @spin_lock(%struct.spinlock* @memstick_host_lock)
+  %0 = bitcast %struct.memstick_host* %host to i8*
+  %call = call i32 @idr_alloc(%struct.idr* @memstick_host_idr, i8* %0, i32 0, i32 0, i32 16777216)
+  %cmp = icmp sge i32 %call, 0
+  br i1 %cmp, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry
+  %id = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 1
+  store i32 %call, i32* %id, align 32, !tbaa !64
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  call void @spin_unlock(%struct.spinlock* @memstick_host_lock)
+  call void @idr_preload_end()
+  %cmp1 = icmp slt i32 %call, 0
+  br i1 %cmp1, label %cleanup, label %if.end3
+
+if.end3:                                          ; preds = %if.end
+  %dev = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 4
+  %id4 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 1
+  %1 = load i32, i32* %id4, align 32, !tbaa !64
+  %call5 = call i32 (%struct.device*, i8*, ...) @dev_set_name(%struct.device* %dev, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.3, i32 0, i32 0), i32 %1)
+  %dev6 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 4
+  %call7 = call i32 @device_add(%struct.device* %dev6)
+  %tobool = icmp ne i32 %call7, 0
+  br i1 %tobool, label %if.then8, label %if.end11
+
+if.then8:                                         ; preds = %if.end3
+  call void @spin_lock(%struct.spinlock* @memstick_host_lock)
+  %id9 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 1
+  %2 = load i32, i32* %id9, align 32, !tbaa !64
+  %call10 = call i8* @idr_remove(%struct.idr* @memstick_host_idr, i32 %2)
+  call void @spin_unlock(%struct.spinlock* @memstick_host_lock)
+  br label %cleanup
+
+if.end11:                                         ; preds = %if.end3
+  %set_param = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 8
+  %3 = load i32 (%struct.memstick_host*, i32, i32)*, i32 (%struct.memstick_host*, i32, i32)** %set_param, align 32, !tbaa !63
+  %call12 = call i32 %3(%struct.memstick_host* %host, i32 1, i32 0)
+  call void @memstick_detect_change(%struct.memstick_host* %host)
+  br label %cleanup
+
+cleanup:                                          ; preds = %if.end, %if.end11, %if.then8
+  %retval.0 = phi i32 [ %call7, %if.then8 ], [ 0, %if.end11 ], [ %call, %if.end ]
+  ret i32 %retval.0
+}
+
+declare void @idr_preload(i32) #3
+
+; Function Attrs: alwaysinline nounwind uwtable
+define internal void @spin_lock(%struct.spinlock* %lock) #4 {
+entry:
+  %0 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
+  %rlock = bitcast %union.anon.1* %0 to %struct.raw_spinlock*
+  call void @_raw_spin_lock(%struct.raw_spinlock* %rlock)
+  ret void
+}
+
+declare i32 @idr_alloc(%struct.idr*, i8*, i32, i32, i32) #3
+
+; Function Attrs: alwaysinline nounwind uwtable
+define internal void @spin_unlock(%struct.spinlock* %lock) #4 {
+entry:
+  %0 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
+  %rlock = bitcast %union.anon.1* %0 to %struct.raw_spinlock*
+  call void @_raw_spin_unlock(%struct.raw_spinlock* %rlock)
+  ret void
+}
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal void @idr_preload_end() #1 {
+entry:
+  call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !65
+  call void @__preempt_count_sub(i32 1)
+  ret void
+}
+
+declare i32 @dev_set_name(%struct.device*, i8*, ...) #3
+
+declare i32 @device_add(%struct.device*) #3
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal i8* @idr_remove(%struct.idr* %idr, i32 %id) #1 {
+entry:
+  %idr_rt = getelementptr inbounds %struct.idr, %struct.idr* %idr, i32 0, i32 0
+  %conv = sext i32 %id to i64
+  %call = call i8* @radix_tree_delete_item(%struct.radix_tree_root* %idr_rt, i64 %conv, i8* null)
+  ret i8* %call
+}
+
+; Function Attrs: nounwind uwtable
+define void @memstick_remove_host(%struct.memstick_host* %host) #0 {
+entry:
+  %0 = load %struct.workqueue_struct*, %struct.workqueue_struct** @workqueue, align 8, !tbaa !2
+  call void @flush_workqueue(%struct.workqueue_struct* %0)
+  %lock = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 0
+  call void @mutex_lock_nested(%struct.mutex* %lock, i32 0)
+  %card = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %1 = load %struct.memstick_dev*, %struct.memstick_dev** %card, align 8, !tbaa !36
+  %tobool = icmp ne %struct.memstick_dev* %1, null
+  br i1 %tobool, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry
+  %card1 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %2 = load %struct.memstick_dev*, %struct.memstick_dev** %card1, align 8, !tbaa !36
+  %dev = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %2, i32 0, i32 9
+  call void @device_unregister(%struct.device* %dev)
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  %card2 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  store %struct.memstick_dev* null, %struct.memstick_dev** %card2, align 8, !tbaa !36
+  %set_param = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 8
+  %3 = load i32 (%struct.memstick_host*, i32, i32)*, i32 (%struct.memstick_host*, i32, i32)** %set_param, align 32, !tbaa !63
+  %call = call i32 %3(%struct.memstick_host* %host, i32 1, i32 0)
+  %lock3 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 0
+  call void @mutex_unlock(%struct.mutex* %lock3)
+  call void @spin_lock(%struct.spinlock* @memstick_host_lock)
+  %id = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 1
+  %4 = load i32, i32* %id, align 32, !tbaa !64
+  %call4 = call i8* @idr_remove(%struct.idr* @memstick_host_idr, i32 %4)
+  call void @spin_unlock(%struct.spinlock* @memstick_host_lock)
+  %dev5 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 4
+  call void @device_del(%struct.device* %dev5)
+  ret void
+}
+
+declare void @flush_workqueue(%struct.workqueue_struct*) #3
+
+declare void @mutex_lock_nested(%struct.mutex*, i32) #3
+
+declare void @device_unregister(%struct.device*) #3
+
+declare void @mutex_unlock(%struct.mutex*) #3
+
+declare void @device_del(%struct.device*) #3
+
+; Function Attrs: nounwind uwtable
+define void @memstick_free_host(%struct.memstick_host* %host) #0 {
+entry:
+  %lock = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 0
+  call void @mutex_destroy(%struct.mutex* %lock)
+  %dev = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 4
+  call void @put_device(%struct.device* %dev)
+  ret void
+}
+
+declare void @mutex_destroy(%struct.mutex*) #3
+
+declare void @put_device(%struct.device*) #3
+
+; Function Attrs: nounwind uwtable
+define void @memstick_suspend_host(%struct.memstick_host* %host) #0 {
+entry:
+  %lock = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 0
+  call void @mutex_lock_nested(%struct.mutex* %lock, i32 0)
+  %set_param = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 8
+  %0 = load i32 (%struct.memstick_host*, i32, i32)*, i32 (%struct.memstick_host*, i32, i32)** %set_param, align 32, !tbaa !63
+  %call = call i32 %0(%struct.memstick_host* %host, i32 1, i32 0)
+  %lock1 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 0
+  call void @mutex_unlock(%struct.mutex* %lock1)
+  ret void
+}
+
+; Function Attrs: nounwind uwtable
+define void @memstick_resume_host(%struct.memstick_host* %host) #0 {
+entry:
+  %lock = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 0
+  call void @mutex_lock_nested(%struct.mutex* %lock, i32 0)
+  %card = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %0 = load %struct.memstick_dev*, %struct.memstick_dev** %card, align 8, !tbaa !36
+  %tobool = icmp ne %struct.memstick_dev* %0, null
+  br i1 %tobool, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry
+  %call = call i32 @memstick_power_on(%struct.memstick_host* %host)
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  %rc.0 = phi i32 [ %call, %if.then ], [ 0, %entry ]
+  %lock1 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 0
+  call void @mutex_unlock(%struct.mutex* %lock1)
+  %tobool2 = icmp ne i32 %rc.0, 0
+  br i1 %tobool2, label %if.end4, label %if.then3
+
+if.then3:                                         ; preds = %if.end
+  call void @memstick_detect_change(%struct.memstick_host* %host)
+  br label %if.end4
+
+if.end4:                                          ; preds = %if.then3, %if.end
+  ret void
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_power_on(%struct.memstick_host* %host) #0 {
+entry:
+  %set_param = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 8
+  %0 = load i32 (%struct.memstick_host*, i32, i32)*, i32 (%struct.memstick_host*, i32, i32)** %set_param, align 32, !tbaa !63
+  %call = call i32 %0(%struct.memstick_host* %host, i32 1, i32 1)
+  %tobool = icmp ne i32 %call, 0
+  br i1 %tobool, label %if.end, label %if.then
+
+if.then:                                          ; preds = %entry
+  %set_param1 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 8
+  %1 = load i32 (%struct.memstick_host*, i32, i32)*, i32 (%struct.memstick_host*, i32, i32)** %set_param1, align 32, !tbaa !63
+  %call2 = call i32 %1(%struct.memstick_host* %host, i32 2, i32 0)
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  %rc.0 = phi i32 [ %call, %entry ], [ %call2, %if.then ]
+  ret i32 %rc.0
+}
+
+; Function Attrs: nounwind uwtable
+define i32 @memstick_register_driver(%struct.memstick_driver* %drv) #0 {
+entry:
+  %driver = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %drv, i32 0, i32 5
+  %bus = getelementptr inbounds %struct.device_driver, %struct.device_driver* %driver, i32 0, i32 1
+  store %struct.bus_type* @memstick_bus_type, %struct.bus_type** %bus, align 8, !tbaa !66
+  %driver1 = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %drv, i32 0, i32 5
+  %call = call i32 @driver_register(%struct.device_driver* %driver1)
+  ret i32 %call
+}
+
+declare i32 @driver_register(%struct.device_driver*) #3
+
+; Function Attrs: nounwind uwtable
+define void @memstick_unregister_driver(%struct.memstick_driver* %drv) #0 {
+entry:
+  %driver = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %drv, i32 0, i32 5
+  call void @driver_unregister(%struct.device_driver* %driver)
+  ret void
+}
+
+declare void @driver_unregister(%struct.device_driver*) #3
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_init() #5 section ".init.text" {
+entry:
+  %call = call %struct.workqueue_struct* (i8*, i32, i32, %struct.lock_class_key*, i8*, ...) @__alloc_workqueue_key(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.11, i32 0, i32 0), i32 262158, i32 1, %struct.lock_class_key* @memstick_init.__key, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.23, i32 0, i32 0), i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.24, i32 0, i32 0))
+  store %struct.workqueue_struct* %call, %struct.workqueue_struct** @workqueue, align 8, !tbaa !2
+  %0 = load %struct.workqueue_struct*, %struct.workqueue_struct** @workqueue, align 8, !tbaa !2
+  %tobool = icmp ne %struct.workqueue_struct* %0, null
+  br i1 %tobool, label %if.end, label %cleanup
+
+if.end:                                           ; preds = %entry
+  %call1 = call i32 @bus_register(%struct.bus_type* @memstick_bus_type)
+  %tobool2 = icmp ne i32 %call1, 0
+  br i1 %tobool2, label %if.end6, label %if.then3
+
+if.then3:                                         ; preds = %if.end
+  %call5 = call i32 @__class_register(%struct.class* @memstick_host_class, %struct.lock_class_key* @memstick_init.__key.25)
+  br label %if.end6
+
+if.end6:                                          ; preds = %if.then3, %if.end
+  %rc.0 = phi i32 [ %call1, %if.end ], [ %call5, %if.then3 ]
+  %tobool7 = icmp ne i32 %rc.0, 0
+  br i1 %tobool7, label %if.end9, label %cleanup
+
+if.end9:                                          ; preds = %if.end6
+  call void @bus_unregister(%struct.bus_type* @memstick_bus_type)
+  %1 = load %struct.workqueue_struct*, %struct.workqueue_struct** @workqueue, align 8, !tbaa !2
+  call void @destroy_workqueue(%struct.workqueue_struct* %1)
+  br label %cleanup
+
+cleanup:                                          ; preds = %if.end6, %entry, %if.end9
+  %retval.0 = phi i32 [ %rc.0, %if.end9 ], [ -12, %entry ], [ 0, %if.end6 ]
+  ret i32 %retval.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal void @memstick_exit() #5 section ".exit.text" {
+entry:
+  call void @class_unregister(%struct.class* @memstick_host_class)
+  call void @bus_unregister(%struct.bus_type* @memstick_bus_type)
+  %0 = load %struct.workqueue_struct*, %struct.workqueue_struct** @workqueue, align 8, !tbaa !2
+  call void @destroy_workqueue(%struct.workqueue_struct* %0)
+  call void @idr_destroy(%struct.idr* @memstick_host_idr)
+  ret void
+}
+
+declare zeroext i1 @queue_work_on(i32, %struct.workqueue_struct*, %struct.work_struct*) #3
+
+declare void @complete(%struct.completion*) #3
+
+; Function Attrs: alwaysinline nounwind uwtable
+define internal i8* @kmalloc(i64 %size, i32 %flags) #4 {
+entry:
+  %call = call noalias i8* @__kmalloc(i64 %size, i32 %flags)
+  ret i8* %call
+}
+
+declare noalias i8* @__kmalloc(i64, i32) #3
+
+; Function Attrs: alwaysinline nounwind uwtable
+define internal void @__write_once_size(i8* %p, i8* %res, i32 %size) #4 {
+entry:
+  switch i32 %size, label %sw.default [
+    i32 1, label %sw.bb
+    i32 2, label %sw.bb1
+    i32 4, label %sw.bb2
+    i32 8, label %sw.bb3
+  ]
+
+sw.bb:                                            ; preds = %entry
+  %0 = load i8, i8* %res, align 1, !tbaa !48
+  store volatile i8 %0, i8* %p, align 1, !tbaa !48
+  br label %sw.epilog
+
+sw.bb1:                                           ; preds = %entry
+  %1 = bitcast i8* %res to i16*
+  %2 = load i16, i16* %1, align 2, !tbaa !69
+  %3 = bitcast i8* %p to i16*
+  store volatile i16 %2, i16* %3, align 2, !tbaa !69
+  br label %sw.epilog
+
+sw.bb2:                                           ; preds = %entry
+  %4 = bitcast i8* %res to i32*
+  %5 = load i32, i32* %4, align 4, !tbaa !41
+  %6 = bitcast i8* %p to i32*
+  store volatile i32 %5, i32* %6, align 4, !tbaa !41
+  br label %sw.epilog
+
+sw.bb3:                                           ; preds = %entry
+  %7 = bitcast i8* %res to i64*
+  %8 = load i64, i64* %7, align 8, !tbaa !47
+  %9 = bitcast i8* %p to i64*
+  store volatile i64 %8, i64* %9, align 8, !tbaa !47
+  br label %sw.epilog
+
+sw.default:                                       ; preds = %entry
+  call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !71
+  %conv = sext i32 %size to i64
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %p, i8* %res, i64 %conv, i32 1, i1 false)
+  call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !72
+  br label %sw.epilog
+
+sw.epilog:                                        ; preds = %sw.default, %sw.bb3, %sw.bb2, %sw.bb1, %sw.bb
+  ret void
+}
+
+; Function Attrs: nounwind readnone
+declare i64 @llvm.expect.i64(i64, i64) #6
+
+declare void @__dynamic_dev_dbg(%struct._ddebug*, %struct.device*, i8*, ...) #3
+
+; Function Attrs: nounwind uwtable
+define internal %struct.memstick_dev* @memstick_alloc_card(%struct.memstick_host* %host) #0 {
+entry:
+  %call = call i8* @kzalloc(i64 1624, i32 20971712)
+  %0 = bitcast i8* %call to %struct.memstick_dev*
+  %card1 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  %1 = load %struct.memstick_dev*, %struct.memstick_dev** %card1, align 8, !tbaa !36
+  %tobool = icmp ne %struct.memstick_dev* %0, null
+  br i1 %tobool, label %if.then, label %if.end21
+
+if.then:                                          ; preds = %entry
+  %host2 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 1
+  store %struct.memstick_host* %host, %struct.memstick_host** %host2, align 8, !tbaa !49
+  %dev = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 9
+  %dev3 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 4
+  %call4 = call i8* @dev_name(%struct.device* %dev3)
+  %call5 = call i32 (%struct.device*, i8*, ...) @dev_set_name(%struct.device* %dev, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.11, i32 0, i32 0), i8* %call4)
+  %dev6 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 4
+  %dev7 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 9
+  %parent = getelementptr inbounds %struct.device, %struct.device* %dev7, i32 0, i32 0
+  store %struct.device* %dev6, %struct.device** %parent, align 8, !tbaa !73
+  %dev8 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 9
+  %bus = getelementptr inbounds %struct.device, %struct.device* %dev8, i32 0, i32 6
+  store %struct.bus_type* @memstick_bus_type, %struct.bus_type** %bus, align 8, !tbaa !74
+  %dev9 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 9
+  %release = getelementptr inbounds %struct.device, %struct.device* %dev9, i32 0, i32 35
+  store void (%struct.device*)* @memstick_free_card, void (%struct.device*)** %release, align 8, !tbaa !75
+  %check = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 5
+  store i32 (%struct.memstick_dev*)* @memstick_dummy_check, i32 (%struct.memstick_dev*)** %check, align 8, !tbaa !61
+  %reg_addr = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 2
+  %r_offset = getelementptr inbounds %struct.ms_register_addr, %struct.ms_register_addr* %reg_addr, i32 0, i32 0
+  store i8 4, i8* %r_offset, align 8, !tbaa !76
+  %reg_addr10 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 2
+  %r_length = getelementptr inbounds %struct.ms_register_addr, %struct.ms_register_addr* %reg_addr10, i32 0, i32 1
+  store i8 4, i8* %r_length, align 1, !tbaa !77
+  %reg_addr11 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 2
+  %w_offset = getelementptr inbounds %struct.ms_register_addr, %struct.ms_register_addr* %reg_addr11, i32 0, i32 2
+  store i8 4, i8* %w_offset, align 2, !tbaa !78
+  %reg_addr12 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 2
+  %w_length = getelementptr inbounds %struct.ms_register_addr, %struct.ms_register_addr* %reg_addr12, i32 0, i32 3
+  store i8 4, i8* %w_length, align 1, !tbaa !79
+  %mrq_complete = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 3
+  call void @init_completion(%struct.completion* %mrq_complete)
+  %card13 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  store %struct.memstick_dev* %0, %struct.memstick_dev** %card13, align 8, !tbaa !36
+  %call14 = call i32 @memstick_set_rw_addr(%struct.memstick_dev* %0)
+  %tobool15 = icmp ne i32 %call14, 0
+  br i1 %tobool15, label %err_out, label %if.end
+
+if.end:                                           ; preds = %if.then
+  %next_request = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 6
+  store i32 (%struct.memstick_dev*, %struct.memstick_request**)* @h_memstick_read_dev_id, i32 (%struct.memstick_dev*, %struct.memstick_request**)** %next_request, align 8, !tbaa !37
+  call void @memstick_new_req(%struct.memstick_host* %host)
+  %mrq_complete17 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 3
+  call void @wait_for_completion(%struct.completion* %mrq_complete17)
+  %current_mrq = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %0, i32 0, i32 4
+  %error = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %current_mrq, i32 0, i32 3
+  %2 = load i32, i32* %error, align 4, !tbaa !50
+  %tobool18 = icmp ne i32 %2, 0
+  br i1 %tobool18, label %err_out, label %if.end21
+
+if.end21:                                         ; preds = %if.end, %entry
+  %card22 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  store %struct.memstick_dev* %1, %struct.memstick_dev** %card22, align 8, !tbaa !36
+  br label %cleanup
+
+err_out:                                          ; preds = %if.end, %if.then
+  %card23 = getelementptr inbounds %struct.memstick_host, %struct.memstick_host* %host, i32 0, i32 5
+  store %struct.memstick_dev* %1, %struct.memstick_dev** %card23, align 8, !tbaa !36
+  %3 = bitcast %struct.memstick_dev* %0 to i8*
+  call void @kfree(i8* %3)
+  br label %cleanup
+
+cleanup:                                          ; preds = %err_out, %if.end21
+  %retval.0 = phi %struct.memstick_dev* [ null, %err_out ], [ %0, %if.end21 ]
+  ret %struct.memstick_dev* %retval.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_dev_match(%struct.memstick_dev* %card, %struct.memstick_device_id* %id) #0 {
+entry:
+  %match_flags = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 0
+  %0 = load i8, i8* %match_flags, align 1, !tbaa !80
+  %conv = zext i8 %0 to i32
+  %and = and i32 %conv, 1
+  %tobool = icmp ne i32 %and, 0
+  br i1 %tobool, label %if.then, label %if.end20
+
+if.then:                                          ; preds = %entry
+  %type = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 1
+  %1 = load i8, i8* %type, align 1, !tbaa !81
+  %conv1 = zext i8 %1 to i32
+  %id2 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 0
+  %type3 = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id2, i32 0, i32 1
+  %2 = load i8, i8* %type3, align 1, !tbaa !58
+  %conv4 = zext i8 %2 to i32
+  %cmp = icmp eq i32 %conv1, %conv4
+  br i1 %cmp, label %land.lhs.true, label %if.end20
+
+land.lhs.true:                                    ; preds = %if.then
+  %category = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 2
+  %3 = load i8, i8* %category, align 1, !tbaa !82
+  %conv6 = zext i8 %3 to i32
+  %id7 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 0
+  %category8 = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id7, i32 0, i32 2
+  %4 = load i8, i8* %category8, align 2, !tbaa !59
+  %conv9 = zext i8 %4 to i32
+  %cmp10 = icmp eq i32 %conv6, %conv9
+  br i1 %cmp10, label %land.lhs.true12, label %if.end20
+
+land.lhs.true12:                                  ; preds = %land.lhs.true
+  %class = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 3
+  %5 = load i8, i8* %class, align 1, !tbaa !83
+  %conv13 = zext i8 %5 to i32
+  %id14 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 0
+  %class15 = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id14, i32 0, i32 3
+  %6 = load i8, i8* %class15, align 1, !tbaa !60
+  %conv16 = zext i8 %6 to i32
+  %cmp17 = icmp eq i32 %conv13, %conv16
+  br i1 %cmp17, label %return, label %if.end20
+
+if.end20:                                         ; preds = %if.then, %land.lhs.true, %land.lhs.true12, %entry
+  br label %return
+
+return:                                           ; preds = %land.lhs.true12, %if.end20
+  %retval.0 = phi i32 [ 0, %if.end20 ], [ 1, %land.lhs.true12 ]
+  ret i32 %retval.0
+}
+
+declare i32 @device_register(%struct.device*) #3
+
+declare void @kfree(i8*) #3
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal i8* @dev_name(%struct.device* %dev) #1 {
+entry:
+  %init_name = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 3
+  %0 = load i8*, i8** %init_name, align 8, !tbaa !84
+  %tobool = icmp ne i8* %0, null
+  br i1 %tobool, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry
+  %init_name1 = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 3
+  %1 = load i8*, i8** %init_name1, align 8, !tbaa !84
+  br label %return
+
+if.end:                                           ; preds = %entry
+  %kobj = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 2
+  %call = call i8* @kobject_name(%struct.kobject* %kobj)
+  br label %return
+
+return:                                           ; preds = %if.end, %if.then
+  %retval.0 = phi i8* [ %1, %if.then ], [ %call, %if.end ]
+  ret i8* %retval.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal void @memstick_free_card(%struct.device* %dev) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %2 = bitcast %struct.memstick_dev* %1 to i8*
+  call void @kfree(i8* %2)
+  ret void
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_dummy_check(%struct.memstick_dev* %card) #0 {
+entry:
+  ret i32 0
+}
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal void @init_completion(%struct.completion* %x) #1 {
+entry:
+  %done = getelementptr inbounds %struct.completion, %struct.completion* %x, i32 0, i32 0
+  store i32 0, i32* %done, align 8, !tbaa !43
+  %wait = getelementptr inbounds %struct.completion, %struct.completion* %x, i32 0, i32 1
+  call void @__init_waitqueue_head(%struct.__wait_queue_head* %wait, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.12, i32 0, i32 0), %struct.lock_class_key* @init_completion.__key)
+  ret void
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @h_memstick_read_dev_id(%struct.memstick_dev* %card, %struct.memstick_request** %mrq) #0 {
+entry:
+  %id_reg = alloca %struct.ms_id_register, align 1
+  %0 = bitcast %struct.ms_id_register* %id_reg to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* %0) #7
+  %1 = load %struct.memstick_request*, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  %tobool = icmp ne %struct.memstick_request* %1, null
+  br i1 %tobool, label %if.else, label %if.then
+
+if.then:                                          ; preds = %entry
+  %current_mrq = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 4
+  %2 = bitcast %struct.ms_id_register* %id_reg to i8*
+  call void @memstick_init_req(%struct.memstick_request* %current_mrq, i8 zeroext 4, i8* %2, i64 4)
+  %current_mrq1 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 4
+  store %struct.memstick_request* %current_mrq1, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  br label %cleanup
+
+if.else:                                          ; preds = %entry
+  %3 = load %struct.memstick_request*, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  %error = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %3, i32 0, i32 3
+  %4 = load i32, i32* %error, align 4, !tbaa !6
+  %tobool2 = icmp ne i32 %4, 0
+  br i1 %tobool2, label %if.end18, label %if.then3
+
+if.then3:                                         ; preds = %if.else
+  %5 = bitcast %struct.ms_id_register* %id_reg to i8*
+  %6 = load %struct.memstick_request*, %struct.memstick_request** %mrq, align 8, !tbaa !2
+  %7 = getelementptr inbounds %struct.memstick_request, %struct.memstick_request* %6, i32 0, i32 4
+  %8 = bitcast %union.anon.58* %7 to %struct.anon.59*
+  %data = getelementptr inbounds %struct.anon.59, %struct.anon.59* %8, i32 0, i32 1
+  %arraydecay = getelementptr inbounds [15 x i8], [15 x i8]* %data, i32 0, i32 0
+  %call = call i8* @__memcpy(i8* %5, i8* %arraydecay, i64 4)
+  %id = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 0
+  %match_flags = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 0
+  store i8 1, i8* %match_flags, align 8, !tbaa !85
+  %type = getelementptr inbounds %struct.ms_id_register, %struct.ms_id_register* %id_reg, i32 0, i32 0
+  %9 = load i8, i8* %type, align 1, !tbaa !86
+  %id4 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 0
+  %type5 = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id4, i32 0, i32 1
+  store i8 %9, i8* %type5, align 1, !tbaa !58
+  %category = getelementptr inbounds %struct.ms_id_register, %struct.ms_id_register* %id_reg, i32 0, i32 2
+  %10 = load i8, i8* %category, align 1, !tbaa !88
+  %id6 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 0
+  %category7 = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id6, i32 0, i32 2
+  store i8 %10, i8* %category7, align 2, !tbaa !59
+  %class = getelementptr inbounds %struct.ms_id_register, %struct.ms_id_register* %id_reg, i32 0, i32 3
+  %11 = load i8, i8* %class, align 1, !tbaa !89
+  %id8 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 0
+  %class9 = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id8, i32 0, i32 3
+  store i8 %11, i8* %class9, align 1, !tbaa !60
+  %bf.load = load i32, i32* getelementptr inbounds (%struct._ddebug, %struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @h_memstick_read_dev_id.descriptor to %struct._ddebug*), i32 0, i32 4), align 8
+  %bf.lshr = lshr i32 %bf.load, 18
+  %bf.clear = and i32 %bf.lshr, 255
+  %and = and i32 %bf.clear, 1
+  %tobool11 = icmp ne i32 %and, 0
+  %lnot = xor i1 %tobool11, true
+  %lnot12 = xor i1 %lnot, true
+  %lnot.ext = zext i1 %lnot12 to i32
+  %conv = sext i32 %lnot.ext to i64
+  %expval = call i64 @llvm.expect.i64(i64 %conv, i64 0)
+  %tobool13 = icmp ne i64 %expval, 0
+  br i1 %tobool13, label %if.then14, label %if.end18
+
+if.then14:                                        ; preds = %if.then3
+  %dev = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 9
+  %if_mode = getelementptr inbounds %struct.ms_id_register, %struct.ms_id_register* %id_reg, i32 0, i32 1
+  %12 = load i8, i8* %if_mode, align 1, !tbaa !90
+  %conv15 = zext i8 %12 to i32
+  call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @h_memstick_read_dev_id.descriptor to %struct._ddebug*), %struct.device* %dev, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.13, i32 0, i32 0), i32 %conv15)
+  br label %if.end18
+
+if.end18:                                         ; preds = %if.then3, %if.then14, %if.else
+  %mrq_complete = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %card, i32 0, i32 3
+  call void @complete(%struct.completion* %mrq_complete)
+  br label %cleanup
+
+cleanup:                                          ; preds = %if.end18, %if.then
+  %retval.0 = phi i32 [ -11, %if.end18 ], [ 0, %if.then ]
+  %13 = bitcast %struct.ms_id_register* %id_reg to i8*
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* %13) #7
+  ret i32 %retval.0
+}
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal i8* @kobject_name(%struct.kobject* %kobj) #1 {
+entry:
+  %name = getelementptr inbounds %struct.kobject, %struct.kobject* %kobj, i32 0, i32 0
+  %0 = load i8*, i8** %name, align 8, !tbaa !91
+  ret i8* %0
+}
+
+declare void @__init_waitqueue_head(%struct.__wait_queue_head*, i8*, %struct.lock_class_key*) #3
+
+; Function Attrs: nounwind uwtable
+define internal void @memstick_free(%struct.device* %dev) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -248
+  %1 = bitcast i8* %add.ptr to %struct.memstick_host*
+  %2 = bitcast %struct.memstick_host* %1 to i8*
+  call void @kfree(i8* %2)
+  ret void
+}
+
+declare void @_raw_spin_lock(%struct.raw_spinlock*) #3 section ".spinlock.text"
+
+declare void @_raw_spin_unlock(%struct.raw_spinlock*) #3 section ".spinlock.text"
+
+; Function Attrs: alwaysinline nounwind uwtable
+define internal void @__preempt_count_sub(i32 %val) #4 {
+entry:
+  %sub = sub nsw i32 0, %val
+  call void asm "addl $1, %gs:$0", "=*m,ri,*m,~{dirflag},~{fpsr},~{flags}"(i32* @__preempt_count, i32 %sub, i32* @__preempt_count) #7, !srcloc !92
+  ret void
+}
+
+declare i8* @radix_tree_delete_item(%struct.radix_tree_root*, i64, i8*) #3
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_bus_match(%struct.device* %dev, %struct.device_driver* %drv) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %2 = bitcast %struct.device_driver* %drv to i8*
+  %add.ptr3 = getelementptr inbounds i8, i8* %2, i64 -40
+  %3 = bitcast i8* %add.ptr3 to %struct.memstick_driver*
+  %id_table = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %3, i32 0, i32 0
+  %4 = load %struct.memstick_device_id*, %struct.memstick_device_id** %id_table, align 8, !tbaa !93
+  %tobool = icmp ne %struct.memstick_device_id* %4, null
+  br i1 %tobool, label %if.then, label %cleanup
+
+if.then:                                          ; preds = %entry
+  br label %while.cond
+
+while.cond:                                       ; preds = %if.end, %if.then
+  %ids.0 = phi %struct.memstick_device_id* [ %4, %if.then ], [ %incdec.ptr, %if.end ]
+  %match_flags = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %ids.0, i32 0, i32 0
+  %5 = load i8, i8* %match_flags, align 1, !tbaa !80
+  %tobool4 = icmp ne i8 %5, 0
+  br i1 %tobool4, label %while.body, label %cleanup
+
+while.body:                                       ; preds = %while.cond
+  %call = call i32 @memstick_dev_match(%struct.memstick_dev* %1, %struct.memstick_device_id* %ids.0)
+  %tobool5 = icmp ne i32 %call, 0
+  br i1 %tobool5, label %cleanup, label %if.end
+
+if.end:                                           ; preds = %while.body
+  %incdec.ptr = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %ids.0, i32 1
+  br label %while.cond
+
+cleanup:                                          ; preds = %entry, %while.cond, %while.body
+  %retval.0 = phi i32 [ 1, %while.body ], [ 0, %while.cond ], [ 0, %entry ]
+  ret i32 %retval.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_uevent(%struct.device* %dev, %struct.kobj_uevent_env* %env) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %id = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %1, i32 0, i32 0
+  %type = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 1
+  %2 = load i8, i8* %type, align 1, !tbaa !58
+  %conv = zext i8 %2 to i32
+  %call = call i32 (%struct.kobj_uevent_env*, i8*, ...) @add_uevent_var(%struct.kobj_uevent_env* %env, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.20, i32 0, i32 0), i32 %conv)
+  %tobool = icmp ne i32 %call, 0
+  br i1 %tobool, label %cleanup, label %if.end
+
+if.end:                                           ; preds = %entry
+  %id1 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %1, i32 0, i32 0
+  %category = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id1, i32 0, i32 2
+  %3 = load i8, i8* %category, align 2, !tbaa !59
+  %conv2 = zext i8 %3 to i32
+  %call3 = call i32 (%struct.kobj_uevent_env*, i8*, ...) @add_uevent_var(%struct.kobj_uevent_env* %env, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.21, i32 0, i32 0), i32 %conv2)
+  %tobool4 = icmp ne i32 %call3, 0
+  br i1 %tobool4, label %cleanup, label %if.end6
+
+if.end6:                                          ; preds = %if.end
+  %id7 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %1, i32 0, i32 0
+  %class = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id7, i32 0, i32 3
+  %4 = load i8, i8* %class, align 1, !tbaa !60
+  %conv8 = zext i8 %4 to i32
+  %call9 = call i32 (%struct.kobj_uevent_env*, i8*, ...) @add_uevent_var(%struct.kobj_uevent_env* %env, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.22, i32 0, i32 0), i32 %conv8)
+  %tobool10 = icmp ne i32 %call9, 0
+  %. = select i1 %tobool10, i32 -12, i32 0
+  br label %cleanup
+
+cleanup:                                          ; preds = %if.end6, %if.end, %entry
+  %retval.0 = phi i32 [ -12, %entry ], [ -12, %if.end ], [ %., %if.end6 ]
+  ret i32 %retval.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_device_probe(%struct.device* %dev) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %driver = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %2 = load %struct.device_driver*, %struct.device_driver** %driver, align 8, !tbaa !94
+  %3 = bitcast %struct.device_driver* %2 to i8*
+  %add.ptr3 = getelementptr inbounds i8, i8* %3, i64 -40
+  %4 = bitcast i8* %add.ptr3 to %struct.memstick_driver*
+  %driver4 = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %5 = load %struct.device_driver*, %struct.device_driver** %driver4, align 8, !tbaa !94
+  %tobool = icmp ne %struct.device_driver* %5, null
+  br i1 %tobool, label %land.lhs.true, label %if.end10
+
+land.lhs.true:                                    ; preds = %entry
+  %probe = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 1
+  %6 = load i32 (%struct.memstick_dev*)*, i32 (%struct.memstick_dev*)** %probe, align 8, !tbaa !95
+  %tobool5 = icmp ne i32 (%struct.memstick_dev*)* %6, null
+  br i1 %tobool5, label %if.then, label %if.end10
+
+if.then:                                          ; preds = %land.lhs.true
+  %probe6 = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 1
+  %7 = load i32 (%struct.memstick_dev*)*, i32 (%struct.memstick_dev*)** %probe6, align 8, !tbaa !95
+  %call = call i32 %7(%struct.memstick_dev* %1)
+  %tobool7 = icmp ne i32 %call, 0
+  br i1 %tobool7, label %if.end10, label %if.then8
+
+if.then8:                                         ; preds = %if.then
+  %call9 = call %struct.device* @get_device(%struct.device* %dev)
+  br label %if.end10
+
+if.end10:                                         ; preds = %if.then, %if.then8, %land.lhs.true, %entry
+  %rc.0 = phi i32 [ -19, %land.lhs.true ], [ -19, %entry ], [ %call, %if.then8 ], [ %call, %if.then ]
+  ret i32 %rc.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_device_remove(%struct.device* %dev) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %driver = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %2 = load %struct.device_driver*, %struct.device_driver** %driver, align 8, !tbaa !94
+  %3 = bitcast %struct.device_driver* %2 to i8*
+  %add.ptr3 = getelementptr inbounds i8, i8* %3, i64 -40
+  %4 = bitcast i8* %add.ptr3 to %struct.memstick_driver*
+  %driver4 = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %5 = load %struct.device_driver*, %struct.device_driver** %driver4, align 8, !tbaa !94
+  %tobool = icmp ne %struct.device_driver* %5, null
+  br i1 %tobool, label %land.lhs.true, label %if.end
+
+land.lhs.true:                                    ; preds = %entry
+  %remove = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 2
+  %6 = load void (%struct.memstick_dev*)*, void (%struct.memstick_dev*)** %remove, align 8, !tbaa !96
+  %tobool5 = icmp ne void (%struct.memstick_dev*)* %6, null
+  br i1 %tobool5, label %if.then, label %if.end
+
+if.then:                                          ; preds = %land.lhs.true
+  %remove6 = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 2
+  %7 = load void (%struct.memstick_dev*)*, void (%struct.memstick_dev*)** %remove6, align 8, !tbaa !96
+  call void %7(%struct.memstick_dev* %1)
+  %dev7 = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %1, i32 0, i32 9
+  %driver8 = getelementptr inbounds %struct.device, %struct.device* %dev7, i32 0, i32 7
+  store %struct.device_driver* null, %struct.device_driver** %driver8, align 8, !tbaa !97
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %land.lhs.true, %entry
+  call void @put_device(%struct.device* %dev)
+  ret i32 0
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_device_suspend(%struct.device* %dev, i32 %state.coerce) #0 {
+entry:
+  %state = alloca %struct.pm_message, align 4
+  %coerce.dive = getelementptr inbounds %struct.pm_message, %struct.pm_message* %state, i32 0, i32 0
+  store i32 %state.coerce, i32* %coerce.dive, align 4
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %driver = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %2 = load %struct.device_driver*, %struct.device_driver** %driver, align 8, !tbaa !94
+  %3 = bitcast %struct.device_driver* %2 to i8*
+  %add.ptr3 = getelementptr inbounds i8, i8* %3, i64 -40
+  %4 = bitcast i8* %add.ptr3 to %struct.memstick_driver*
+  %driver4 = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %5 = load %struct.device_driver*, %struct.device_driver** %driver4, align 8, !tbaa !94
+  %tobool = icmp ne %struct.device_driver* %5, null
+  br i1 %tobool, label %land.lhs.true, label %cleanup
+
+land.lhs.true:                                    ; preds = %entry
+  %suspend = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 3
+  %6 = load i32 (%struct.memstick_dev*, i32)*, i32 (%struct.memstick_dev*, i32)** %suspend, align 8, !tbaa !98
+  %tobool5 = icmp ne i32 (%struct.memstick_dev*, i32)* %6, null
+  br i1 %tobool5, label %if.then, label %cleanup
+
+if.then:                                          ; preds = %land.lhs.true
+  %suspend6 = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 3
+  %7 = load i32 (%struct.memstick_dev*, i32)*, i32 (%struct.memstick_dev*, i32)** %suspend6, align 8, !tbaa !98
+  %coerce.dive7 = getelementptr inbounds %struct.pm_message, %struct.pm_message* %state, i32 0, i32 0
+  %8 = load i32, i32* %coerce.dive7, align 4
+  %call = call i32 %7(%struct.memstick_dev* %1, i32 %8)
+  br label %cleanup
+
+cleanup:                                          ; preds = %entry, %land.lhs.true, %if.then
+  %retval.0 = phi i32 [ %call, %if.then ], [ 0, %land.lhs.true ], [ 0, %entry ]
+  ret i32 %retval.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal i32 @memstick_device_resume(%struct.device* %dev) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %driver = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %2 = load %struct.device_driver*, %struct.device_driver** %driver, align 8, !tbaa !94
+  %3 = bitcast %struct.device_driver* %2 to i8*
+  %add.ptr3 = getelementptr inbounds i8, i8* %3, i64 -40
+  %4 = bitcast i8* %add.ptr3 to %struct.memstick_driver*
+  %driver4 = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 7
+  %5 = load %struct.device_driver*, %struct.device_driver** %driver4, align 8, !tbaa !94
+  %tobool = icmp ne %struct.device_driver* %5, null
+  br i1 %tobool, label %land.lhs.true, label %cleanup
+
+land.lhs.true:                                    ; preds = %entry
+  %resume = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 4
+  %6 = load i32 (%struct.memstick_dev*)*, i32 (%struct.memstick_dev*)** %resume, align 8, !tbaa !99
+  %tobool5 = icmp ne i32 (%struct.memstick_dev*)* %6, null
+  br i1 %tobool5, label %if.then, label %cleanup
+
+if.then:                                          ; preds = %land.lhs.true
+  %resume6 = getelementptr inbounds %struct.memstick_driver, %struct.memstick_driver* %4, i32 0, i32 4
+  %7 = load i32 (%struct.memstick_dev*)*, i32 (%struct.memstick_dev*)** %resume6, align 8, !tbaa !99
+  %call = call i32 %7(%struct.memstick_dev* %1)
+  br label %cleanup
+
+cleanup:                                          ; preds = %entry, %land.lhs.true, %if.then
+  %retval.0 = phi i32 [ %call, %if.then ], [ 0, %land.lhs.true ], [ 0, %entry ]
+  ret i32 %retval.0
+}
+
+; Function Attrs: nounwind uwtable
+define internal i64 @type_show(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %id = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %1, i32 0, i32 0
+  %type = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 1
+  %2 = load i8, i8* %type, align 1, !tbaa !58
+  %conv = zext i8 %2 to i32
+  %call = call i32 (i8*, i8*, ...) @sprintf(i8* %buf, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.17, i32 0, i32 0), i32 %conv)
+  %conv1 = sext i32 %call to i64
+  ret i64 %conv1
+}
+
+declare i32 @sprintf(i8*, i8*, ...) #3
+
+; Function Attrs: nounwind uwtable
+define internal i64 @category_show(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %id = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %1, i32 0, i32 0
+  %category = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 2
+  %2 = load i8, i8* %category, align 2, !tbaa !59
+  %conv = zext i8 %2 to i32
+  %call = call i32 (i8*, i8*, ...) @sprintf(i8* %buf, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.17, i32 0, i32 0), i32 %conv)
+  %conv1 = sext i32 %call to i64
+  ret i64 %conv1
+}
+
+; Function Attrs: nounwind uwtable
+define internal i64 @class_show(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #0 {
+entry:
+  %0 = bitcast %struct.device* %dev to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %0, i64 -200
+  %1 = bitcast i8* %add.ptr to %struct.memstick_dev*
+  %id = getelementptr inbounds %struct.memstick_dev, %struct.memstick_dev* %1, i32 0, i32 0
+  %class = getelementptr inbounds %struct.memstick_device_id, %struct.memstick_device_id* %id, i32 0, i32 3
+  %2 = load i8, i8* %class, align 1, !tbaa !60
+  %conv = zext i8 %2 to i32
+  %call = call i32 (i8*, i8*, ...) @sprintf(i8* %buf, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.17, i32 0, i32 0), i32 %conv)
+  %conv1 = sext i32 %call to i64
+  ret i64 %conv1
+}
+
+declare i32 @add_uevent_var(%struct.kobj_uevent_env*, i8*, ...) #3
+
+declare %struct.device* @get_device(%struct.device*) #3
+
+declare %struct.workqueue_struct* @__alloc_workqueue_key(i8*, i32, i32, %struct.lock_class_key*, i8*, ...) #3
+
+declare i32 @bus_register(%struct.bus_type*) #3
+
+declare i32 @__class_register(%struct.class*, %struct.lock_class_key*) #3
+
+declare void @bus_unregister(%struct.bus_type*) #3
+
+declare void @destroy_workqueue(%struct.workqueue_struct*) #3
+
+declare void @class_unregister(%struct.class*) #3
+
+declare void @idr_destroy(%struct.idr*) #3
+
+attributes #0 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { alwaysinline nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone }
+attributes #7 = { nounwind }
+
+!llvm.module.flags = !{!0}
+!llvm.ident = !{!1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{!"clang version 5.0.1 (tags/RELEASE_500/final)"}
+!2 = !{!3, !3, i64 0}
+!3 = !{!"any pointer", !4, i64 0}
+!4 = !{!"omnipotent char", !5, i64 0}
+!5 = !{!"Simple C/C++ TBAA"}
+!6 = !{!7, !8, i64 4}
+!7 = !{!"memstick_request", !4, i64 0, !4, i64 1, !4, i64 1, !4, i64 1, !4, i64 2, !8, i64 4, !4, i64 8}
+!8 = !{!"int", !4, i64 0}
+!9 = !{!10, !8, i64 1680}
+!10 = !{!"memstick_host", !11, i64 0, !8, i64 160, !8, i64 164, !19, i64 168, !20, i64 248, !3, i64 1672, !8, i64 1680, !3, i64 1688, !3, i64 1696, !4, i64 1728}
+!11 = !{!"mutex", !12, i64 0, !14, i64 8, !15, i64 80, !17, i64 88, !3, i64 104, !18, i64 112}
+!12 = !{!"", !13, i64 0}
+!13 = !{!"long", !4, i64 0}
+!14 = !{!"spinlock", !4, i64 0}
+!15 = !{!"optimistic_spin_queue", !16, i64 0}
+!16 = !{!"", !8, i64 0}
+!17 = !{!"list_head", !3, i64 0, !3, i64 8}
+!18 = !{!"lockdep_map", !3, i64 0, !4, i64 8, !3, i64 24, !8, i64 32, !13, i64 40}
+!19 = !{!"work_struct", !12, i64 0, !17, i64 8, !3, i64 24, !18, i64 32}
+!20 = !{!"device", !3, i64 0, !3, i64 8, !21, i64 16, !3, i64 280, !3, i64 288, !11, i64 296, !3, i64 456, !3, i64 464, !3, i64 472, !3, i64 480, !27, i64 488, !28, i64 528, !3, i64 1104, !3, i64 1112, !3, i64 1120, !17, i64 1128, !8, i64 1144, !3, i64 1152, !3, i64 1160, !33, i64 1168, !13, i64 1176, !3, i64 1184, !17, i64 1192, !3, i64 1208, !3, i64 1216, !34, i64 1224, !3, i64 1232, !3, i64 1240, !8, i64 1248, !8, i64 1252, !14, i64 1256, !17, i64 1328, !35, i64 1344, !3, i64 1376, !3, i64 1384, !3, i64 1392, !3, i64 1400, !3, i64 1408, !30, i64 1416, !30, i64 1416}
+!21 = !{!"kobject", !3, i64 0, !17, i64 8, !3, i64 24, !3, i64 32, !3, i64 40, !3, i64 48, !22, i64 56, !24, i64 64, !8, i64 256, !8, i64 256, !8, i64 256, !8, i64 256, !8, i64 256}
+!22 = !{!"kref", !23, i64 0}
+!23 = !{!"refcount_struct", !16, i64 0}
+!24 = !{!"delayed_work", !19, i64 0, !25, i64 80, !3, i64 176, !8, i64 184}
+!25 = !{!"timer_list", !26, i64 0, !13, i64 16, !3, i64 24, !13, i64 32, !8, i64 40, !18, i64 48}
+!26 = !{!"hlist_node", !3, i64 0, !3, i64 8}
+!27 = !{!"dev_links_info", !17, i64 0, !17, i64 16, !4, i64 32}
+!28 = !{!"dev_pm_info", !29, i64 0, !8, i64 4, !8, i64 4, !30, i64 4, !30, i64 4, !30, i64 4, !30, i64 4, !30, i64 4, !30, i64 4, !30, i64 5, !14, i64 8, !17, i64 80, !31, i64 96, !3, i64 192, !30, i64 200, !30, i64 200, !30, i64 200, !25, i64 208, !13, i64 304, !19, i64 312, !32, i64 392, !3, i64 480, !16, i64 488, !16, i64 492, !8, i64 496, !8, i64 496, !8, i64 496, !8, i64 496, !8, i64 496, !8, i64 496, !30, i64 497, !8, i64 497, !8, i64 497, !8, i64 497, !8, i64 497, !8, i64 497, !8, i64 500, !4, i64 504, !4, i64 508, !8, i64 512, !8, i64 516, !13, i64 520, !13, i64 528, !13, i64 536, !13, i64 544, !3, i64 552, !3, i64 560, !3, i64 568}
+!29 = !{!"pm_message", !8, i64 0}
+!30 = !{!"_Bool", !4, i64 0}
+!31 = !{!"completion", !8, i64 0, !32, i64 8}
+!32 = !{!"__wait_queue_head", !14, i64 0, !17, i64 72}
+!33 = !{!"long long", !4, i64 0}
+!34 = !{!"dev_archdata", !3, i64 0}
+!35 = !{!"klist_node", !3, i64 0, !17, i64 8, !22, i64 24}
+!36 = !{!10, !3, i64 1672}
+!37 = !{!38, !3, i64 176}
+!38 = !{!"memstick_dev", !39, i64 0, !3, i64 8, !40, i64 16, !31, i64 24, !7, i64 120, !3, i64 168, !3, i64 176, !3, i64 184, !3, i64 192, !20, i64 200}
+!39 = !{!"memstick_device_id", !4, i64 0, !4, i64 1, !4, i64 2, !4, i64 3}
+!40 = !{!"ms_register_addr", !4, i64 0, !4, i64 1, !4, i64 2, !4, i64 3}
+!41 = !{!8, !8, i64 0}
+!42 = !{!10, !3, i64 1688}
+!43 = !{!31, !8, i64 0}
+!44 = !{!7, !4, i64 0}
+!45 = !{i64 0, i64 8, !46, i64 8, i64 8, !46, i64 16, i64 4, !41, i64 20, i64 4, !41, i64 24, i64 8, !47, i64 32, i64 4, !41}
+!46 = !{!13, !13, i64 0}
+!47 = !{!33, !33, i64 0}
+!48 = !{!4, !4, i64 0}
+!49 = !{!38, !3, i64 8}
+!50 = !{!38, !8, i64 124}
+!51 = !{!12, !13, i64 0}
+!52 = !{i64 0, i64 8, !46}
+!53 = !{!19, !3, i64 24}
+!54 = !{!10, !3, i64 1624}
+!55 = !{!10, !3, i64 248}
+!56 = !{!17, !3, i64 8}
+!57 = !{!38, !3, i64 184}
+!58 = !{!38, !4, i64 1}
+!59 = !{!38, !4, i64 2}
+!60 = !{!38, !4, i64 3}
+!61 = !{!38, !3, i64 168}
+!62 = !{!38, !3, i64 192}
+!63 = !{!10, !3, i64 1696}
+!64 = !{!10, !8, i64 160}
+!65 = !{i32 -2144169136}
+!66 = !{!67, !3, i64 48}
+!67 = !{!"memstick_driver", !3, i64 0, !3, i64 8, !3, i64 16, !3, i64 24, !3, i64 32, !68, i64 40}
+!68 = !{!"device_driver", !3, i64 0, !3, i64 8, !3, i64 16, !3, i64 24, !30, i64 32, !4, i64 36, !3, i64 40, !3, i64 48, !3, i64 56, !3, i64 64, !3, i64 72, !3, i64 80, !3, i64 88, !3, i64 96, !3, i64 104, !3, i64 112}
+!69 = !{!70, !70, i64 0}
+!70 = !{!"short", !4, i64 0}
+!71 = !{i32 -2147009119}
+!72 = !{i32 -2147009081}
+!73 = !{!38, !3, i64 200}
+!74 = !{!38, !3, i64 656}
+!75 = !{!38, !3, i64 1592}
+!76 = !{!38, !4, i64 16}
+!77 = !{!38, !4, i64 17}
+!78 = !{!38, !4, i64 18}
+!79 = !{!38, !4, i64 19}
+!80 = !{!39, !4, i64 0}
+!81 = !{!39, !4, i64 1}
+!82 = !{!39, !4, i64 2}
+!83 = !{!39, !4, i64 3}
+!84 = !{!20, !3, i64 280}
+!85 = !{!38, !4, i64 0}
+!86 = !{!87, !4, i64 0}
+!87 = !{!"ms_id_register", !4, i64 0, !4, i64 1, !4, i64 2, !4, i64 3}
+!88 = !{!87, !4, i64 2}
+!89 = !{!87, !4, i64 3}
+!90 = !{!87, !4, i64 1}
+!91 = !{!21, !3, i64 0}
+!92 = !{i32 -2145788961}
+!93 = !{!67, !3, i64 0}
+!94 = !{!20, !3, i64 464}
+!95 = !{!67, !3, i64 8}
+!96 = !{!67, !3, i64 16}
+!97 = !{!38, !3, i64 664}
+!98 = !{!67, !3, i64 24}
+!99 = !{!67, !3, i64 32}
