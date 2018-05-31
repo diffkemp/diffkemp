@@ -373,6 +373,30 @@ class LlvmKernelBuilder:
         check_call(opt_command)
 
 
+    def kbuild_to_llvm_commands(self, kbuild_commands, file_name):
+        """
+        Convers a list of Kbuild commands for building a module into a list of
+        corresponding llvm/clang commands to build the module into LLVM IR.
+        GCC commands are transformed into clang commands.
+        LD commands are transformed into llvm-link commands.
+        Unnecessary commands are filtered out.
+        :param kbuild_commands: List of Kbuild commands to transform
+        :param file_name: File name of the kernel module to be built
+        :return List of llvm/clang commands.
+        """
+        clang_commands = list()
+        for c in kbuild_commands:
+            command = c.lstrip()
+            if (command.startswith("gcc") and
+                "%s.mod" % file_name not in command):
+                clang_commands.append(self.gcc_to_llvm(command))
+            elif (command.startswith("ld") and
+                  "%s.ko" % file_name not in command):
+                clang_commands.append(
+                    self.ld_to_llvm(command.split(";")[0]))
+        return clang_commands
+
+
     def build_llvm_module(self, name, file_name, commands):
         """
         Build kernel module into LLVM IR.
@@ -401,20 +425,38 @@ class LlvmKernelBuilder:
         return mod
 
 
-    def build_modules_with_params(self):
+    def build_module(self, module, clean):
+        """
+        Build kernel module.
+        First use kbuild to build kernel object file. Then, transform kbuuld
+        commands to the corresponding clang commands and build LLVM IR of the
+        module.
+        :param module: Name of the module
+        :param clean: Clean module before building
+        :return Built module in LLVM IR (instance of LlvmKernelModule)
+        """
+        if clean:
+            self._clean_all_modules()
+        file_name, commands = self.kbuild_module(module)
+        clang_commands = self.kbuild_to_llvm_commands(commands, file_name)
+        return self.build_llvm_module(module, file_name, clang_commands)
+
+
+    def build_modules_with_params(self, clean):
         """
         Build all modules in the modules directory that can be configured via
         parameters.
+        :return Dictionary of modules in form name -> module
         """
         print "Building all kernel modules having parameters"
         print "  Collecting modules"
+        if clean:
+            self._clean_all_modules()
         sources = self._get_sources_with_params()
-        modules = dict()
+        modules = set()
         # First build objects from sources that contain definitions of
         # parameters. By building them, we can obtain names of modules they
         # belong to.
-        # Modules to be built are stored in a dictionary:
-        #   module_name -> list of clang commands to execute
         for src in sources:
             obj = src[:-1] + "o"
             command = self.kbuild_object_command(obj)
@@ -424,31 +466,17 @@ class LlvmKernelBuilder:
                 mod_dir = os.path.relpath(mod_dir, self.modules_dir)
                 mod = os.path.join(mod_dir, mod)
             # Put mod into modules
-            if not mod in modules:
-                modules[mod] = list()
+            modules.add(mod)
 
         # Build collected modules with Kbuild and collect commands
         # Then, transform commands to use Clang/LLVM and run them to build LLVM
         # IR of modules
-        llvm_modules = list()
-        for mod in modules.keys():
+        llvm_modules = dict()
+        for mod in modules:
             print "  %s" % mod
             try:
-                file_name, commands = self.kbuild_module(mod)
-                clang_commands = modules[mod]
-                for c in commands:
-                    command = c.lstrip()
-                    if (command.startswith("gcc") and
-                        "%s.mod" % file_name not in command):
-                        clang_commands.append(self.gcc_to_llvm(command))
-                    elif (command.startswith("ld") and
-                          "%s.ko" % file_name not in command):
-                        clang_commands.append(
-                            self.ld_to_llvm(command.split(";")[0]))
-                llvm_modules.append(self.build_llvm_module(mod, file_name,
-                                                           clang_commands))
+                llvm_modules[mod] = self.build_module(mod, False)
             except CompilerException as e:
-                del modules[mod]
                 print "    %s" % str(e)
         print ""
         return llvm_modules
