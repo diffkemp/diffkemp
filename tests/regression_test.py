@@ -11,10 +11,10 @@ This script parses the test specification and prepares testing scenarions for
 pytest.
 """
 
-from diffkemp.llvm_ir import build_llvm
+from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
-from diffkemp.slicer import slicer
+from diffkemp.slicer.slicer import slice_module
 import glob
 import os
 import pytest
@@ -36,7 +36,7 @@ def collect_task_specs():
             # One specification for each analysed parameter is created
             for param in spec_yaml["params"]:
                 spec = param
-                spec["module_name"] = spec_yaml["module"]
+                spec["module"] = spec_yaml["module"]
                 spec["path"] = spec_yaml["path"]
                 spec["filename"] = spec_yaml["filename"]
                 spec["old_kernel"] = spec_yaml["old_kernel"]
@@ -45,7 +45,7 @@ def collect_task_specs():
                     spec["debug"] = True
                 else:
                     spec["debug"] = False
-                spec_id = spec["module_name"] + "-" + spec["param"]
+                spec_id = spec["module"] + "-" + spec["param"]
                 result.append((spec_id, spec))
     os.chdir(cwd)
     return result
@@ -59,9 +59,11 @@ class TaskSpec:
     """
     def __init__(self, spec):
         # Values from the YAML file
+        module = spec["module"]
+        self.module = module
         self.param = spec["param"]
-        self.module_path = spec["path"]
-        self.module_filename = spec["filename"]
+        self.module_dir= spec["path"]
+        self.module_src = spec["filename"]
         self.old_kernel = spec["old_kernel"]
         self.new_kernel = spec["new_kernel"]
         self.debug = spec["debug"]
@@ -86,39 +88,34 @@ class TaskSpec:
                 elif desc == "only_new":
                     self.only_new.add(fun[0])
 
-        module = spec["module_name"]
         # Names of files
         self.task_dir = os.path.join(tasks_path, module)
-        self.old = os.path.join(self.task_dir, module + "_old-" + spec["param"]
-                                + ".bc")
-        self.new = os.path.join(self.task_dir, module + "_new-" + spec["param"]
-                                + ".bc")
-        self.old_sliced = os.path.join(self.task_dir, module + "_old-sliced-" +
+        self.old = os.path.join(self.task_dir, module + "_old.bc")
+        self.new = os.path.join(self.task_dir, module + "_new.bc")
+        self.old_sliced = os.path.join(self.task_dir, module + "_old-" +
                                                       spec["param"] + ".bc")
-        self.new_sliced = os.path.join(self.task_dir, module + "_new-sliced-" +
+        self.new_sliced = os.path.join(self.task_dir, module + "_new-" +
                                                       spec["param"] + ".bc")
         self.old_src = os.path.join(self.task_dir, module + "_old.c")
         self.new_src = os.path.join(self.task_dir, module + "_new.c")
 
 
-def _build_module(kernel_version, module_path, module_file, param, debug):
+def _build_module(kernel_version, module_dir, module, debug):
     """
-    Build LLVM IR of the analysed module. The unsliced file is linked as
-    well, so that the slicer can be re-run without the need to rebuild the
-    whole module.
+    Build LLVM IR of the analysed module.
     """
-    module = build_llvm.LlvmKernelModule(kernel_version, module_path,
-                                         module_file, param, debug)
-    module.build()
-    module.link_unsliced()
-    return module
+    builder = LlvmKernelBuilder(kernel_version, module_dir, debug)
+    llvm_mod = builder.build_module(module, True)
+    return llvm_mod
 
 
-def _copy_files(module, ir_file, sliced_ir_file, src_file):
+def _copy_files(unsliced_src, unsliced_dest,
+                sliced_src, sliced_dest,
+                source_src, source_dest):
     """Copy .bc file, sliced .bc file, and .c file"""
-    shutil.copyfile(module.llvm_unsliced, ir_file)
-    shutil.copyfile(module.llvm, sliced_ir_file)
-    shutil.copyfile(module.src, src_file)
+    shutil.copyfile(unsliced_src, unsliced_dest)
+    shutil.copyfile(sliced_src, sliced_dest)
+    shutil.copyfile(source_src, source_dest)
 
 
 def prepare_task(spec):
@@ -130,19 +127,25 @@ def prepare_task(spec):
     if not os.path.isdir(spec.task_dir):
         os.mkdir(spec.task_dir)
 
-    # Compile old module
+    # Prepare old module
     if not os.path.isfile(spec.old):
-        first_mod = _build_module(spec.old_kernel, spec.module_path,
-                                  spec.module_filename, spec.param,
-                                  spec.debug)
-        _copy_files(first_mod, spec.old, spec.old_sliced, spec.old_src)
+        first_mod = _build_module(spec.old_kernel, spec.module_dir,
+                                  spec.module, spec.debug)
+        first_sliced = first_mod.slice(spec.param)
+        first_src = os.path.join(os.path.dirname(first_mod.llvm),
+                                 spec.module_src)
+        _copy_files(first_mod.llvm, spec.old, first_sliced, spec.old_sliced,
+                    first_src, spec.old_src)
 
-    # Compile new module
+    # Prepare new module
     if not os.path.isfile(spec.new):
-        second_mod = _build_module(spec.new_kernel, spec.module_path,
-                                   spec.module_filename, spec.param,
-                                   spec.debug)
-        _copy_files(second_mod, spec.new, spec.new_sliced, spec.new_src)
+        second_mod = _build_module(spec.new_kernel, spec.module_dir,
+                                   spec.module, spec.debug)
+        second_sliced = second_mod.slice(spec.param)
+        second_src = os.path.join(os.path.dirname(second_mod.llvm),
+                                  spec.module_src)
+        _copy_files(second_mod.llvm, spec.new, second_sliced, spec.new_sliced,
+                    second_src, spec.new_src)
 
 
 @pytest.fixture(params=[x[1] for x in specs],
@@ -166,9 +169,9 @@ class TestClass(object):
         LLVM IR code. Also this method is useful so that slicing is re-run
         before each analysis.
         """
-        first = slicer.slice_module(task_spec.old, task_spec.param)
+        first = slice_module(task_spec.old, task_spec.param)
         os.rename(first, task_spec.old_sliced)
-        second = slicer.slice_module(task_spec.new, task_spec.param)
+        second = slice_module(task_spec.new, task_spec.param)
         os.rename(second, task_spec.new_sliced)
 
 
@@ -186,6 +189,7 @@ class TestClass(object):
         assert coupled == set(task_spec.functions.keys())
         assert couplings.uncoupled_first == task_spec.only_old
         assert couplings.uncoupled_second == task_spec.only_new
+
 
     def test_function_comparison(self, task_spec):
         """
