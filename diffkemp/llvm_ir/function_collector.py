@@ -16,10 +16,10 @@ class FunctionCollector():
     # List of standard functions that are supported, so they should not be
     # included in function collecting.
     # Some functions have multiple variants so we need to check for prefix
-    supported_names = ["malloc", "calloc", "kmalloc", "kzalloc", "__kmalloc",
-                       "devm_kzalloc",
-                       "llvm.dbg.value", "llvm.dbg.declare"]
-    supported_prefixes = ["llvm.memcpy", "llvm.lifetime"]
+    supported_names = ["llvm.dbg.value", "llvm.dbg.declare"]
+    supported_prefixes = ["llvm.memcpy", "llvm.lifetime", "kmalloc",
+                          "kzalloc","malloc", "calloc", "__kmalloc",
+                          "devm_kzalloc"]
 
     @staticmethod
     def supported_fun(llvm_fun):
