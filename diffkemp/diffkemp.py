@@ -53,12 +53,12 @@ def run_from_cli():
             second_mods = second_builder.build_modules_with_params(args.rebuild)
 
         if args.build_only:
-            print "Compiled modules in version %s:" % args.src_version
+            print "Compiled modules in version {}:".format(args.src_version)
             for mod_name in first_mods.keys():
-                print "%s " % mod_name
-            print "Compiled modules in version %s:" % args.dest_version
+                print "{} ".format(mod_name)
+            print "Compiled modules in version {}:".format(args.dest_version)
             for mod_name in second_mods.keys():
-                print "%s " % mod_name
+                print "{} ".format(mod_name)
             return 0
 
         print "Computing semantic difference of module parameters"
@@ -79,7 +79,7 @@ def run_from_cli():
             for name, param in first.params.iteritems():
                 if not name in second.params:
                     continue
-                print "  parameter %s" % name
+                print "  parameter {}".format(name)
                 # Compare modules
                 stat = modules_diff(first, second, param.varname, args.verbose)
                 print "    {}".format(str(stat.overall_result()).upper())
@@ -87,6 +87,6 @@ def run_from_cli():
 
     except Exception as e:
         result = Result.ERROR
-        sys.stderr.write("Error: %s\n" % str(e))
+        sys.stderr.write("Error: {}\n".format(str(e)))
         return -1
 

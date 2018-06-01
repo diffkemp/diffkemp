@@ -26,8 +26,8 @@ class LlvmKernelModule:
     """
     def __init__(self, name, file_name, module_dir):
         self.name = name
-        self.llvm = os.path.join(module_dir, "%s.bc" % file_name)
-        self.kernel_object = os.path.join(module_dir, "%s.ko" % file_name)
+        self.llvm = os.path.join(module_dir, "{}.bc".format(file_name))
+        self.kernel_object = os.path.join(module_dir, "{}.ko".format(file_name))
         self.params = dict()
         self.llvm_module = None
 

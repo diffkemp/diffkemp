@@ -55,7 +55,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
                "-muz", "--ir-input", "--bitvect", "--infer-marks",
                "--disable-auto-coupling"]
     for c in coupled:
-        command.append("--couple-functions=%s,%s" % (c.first, c.second))
+        command.append("--couple-functions={},{}".format(c.first, c.second))
 
     if verbose:
         sys.stderr.write(" ".join(command) + "\n")
@@ -114,10 +114,10 @@ def functions_diff(first, second, funFirst, funSecond, coupled, verbose=False):
     :param verbose: Verbosity option
     """
     if funFirst != funSecond:
-        sys.stdout.write("    Comparing functions %s and %s" % (funFirst,
-                                                                funSecond))
+        sys.stdout.write("    Comparing functions {} and {}".format(funFirst,
+                                                                    funSecond))
     else:
-        sys.stdout.write("    Comparing function %s" % funFirst)
+        sys.stdout.write("    Comparing function {}".format(funFirst))
     sys.stdout.write("...")
     sys.stdout.flush()
 
@@ -142,7 +142,7 @@ def functions_diff(first, second, funFirst, funSecond, coupled, verbose=False):
     if result == Result.EQUAL_UNDER_ASSUMPTIONS:
         print "  Used assumptions:"
         for assume in [a for a in assumptions if a.diff > 0]:
-            print "    Functions %s and %s are same" % (assume.first,
-                                                        assume.second)
+            print "    Functions {} and {} are same".format(assume.first,
+                                                            assume.second)
     return result
 
