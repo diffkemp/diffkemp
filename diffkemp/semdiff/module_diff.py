@@ -48,7 +48,9 @@ class Statistics():
             return Result.NOT_EQUAL
         if len(self.unknown) > 0:
             return Result.UNKNOWN
-        return Result.EQUAL
+        if len(self.equal) > 0:
+            return Result.EQUAL
+        return Result.UNKNOWN
 
 
 def modules_diff(first, second, param, verbose=False):
