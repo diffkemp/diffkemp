@@ -14,7 +14,7 @@ from diffkemp.llvm_ir.module_analyser import *
 from diffkemp.slicer.slicer import slice_module
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
-from subprocess import CalledProcessError, check_call, check_output
+from subprocess import CalledProcessError, call, check_call, check_output
 from urllib import urlretrieve
 
 
@@ -103,9 +103,23 @@ class LlvmKernelBuilder:
 
     def _call_output_and_print(self, command):
         with open(os.devnull) as stderr:
+            print "    {}".format(" ".join(command))
             output = check_output(command, stderr=stderr)
-            print "  {}".format(" ".join(command))
             return output
+
+
+    def _check_make_target(self, make_command):
+        """
+        Check if make target exists.
+        Runs make with -n argument which returns 2 if the target does not
+        exist.
+        :param make_command: Make command to run
+        :return True if the command can be run (target exists)
+        """
+        with open(os.devnull, "w") as devnull:
+            ret_code = call(make_command + ["-n"],
+                            stdout=devnull, stderr=devnull)
+            return ret_code != 2
 
 
     def _configure_kernel(self):
@@ -273,17 +287,20 @@ class LlvmKernelBuilder:
         file_name = module
         command = ["make", "V=1", "M={}".format(self.modules_dir),
                    "{}.ko".format(file_name)]
+
+        if not self._check_make_target(command):
+            # If the target does not exist, replace "_" by "-" and try again
+            file_name = file_name.replace("_", "-")
+            command[3] = "{}.ko".format(file_name)
+        if not self._check_make_target(command):
+            os.chdir(cwd)
+            raise CompilerException(
+                    "Could not build module {}".format(module))
+
         try:
             output = self._call_output_and_print(command)
         except CalledProcessError:
-            # If the module cannot be built, replace "_" by "-" and try again
-            file_name = file_name.replace("_", "-")
-            command[3] = "{}.ko".format(file_name)
-            try:
-                output = self._call_output_and_print(command)
-            except CalledProcessError:
-                raise CompilerException(
-                    "Could not build module {}".format(module))
+            raise CompilerException("Could not build module {}".format(module))
         finally:
             os.chdir(cwd)
         return file_name, output.splitlines()
@@ -433,8 +450,8 @@ class LlvmKernelBuilder:
             self.opt_llvm(file, command[0])
         if not os.path.isfile(os.path.join(self.modules_dir, "{}.bc".format(
                                                              file_name))):
-            raise BuildException("Building {} did not produce LLVM IR \
-                                  file".format(name))
+            raise BuildException("Building {} did not produce LLVM IR file"
+                                     .format(name))
         os.chdir(cwd)
         mod = LlvmKernelModule(name, file_name, os.path.join(self.kernel_path,
                                                              self.modules_dir))
