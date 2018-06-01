@@ -76,12 +76,12 @@ def run_from_cli():
                 second.collect_all_parameters()
 
             print mod
-            for param in first.params.keys():
-                if not param in second.params:
+            for name, param in first.params.iteritems():
+                if not name in second.params:
                     continue
-                print "  parameter %s" % param
+                print "  parameter %s" % name
                 # Compare modules
-                stat = modules_diff(first, second, param, args.verbose)
+                stat = modules_diff(first, second, param.varname, args.verbose)
                 print "    {}".format(str(stat.overall_result()).upper())
         return 0
 
