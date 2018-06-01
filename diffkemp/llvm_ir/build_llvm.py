@@ -83,6 +83,7 @@ class LlvmKernelBuilder:
 
         # Extract kernel sources
         print "Extracting"
+        cwd = os.getcwd()
         os.chdir(self.kernel_base_path)
         tar = tarfile.open(tarname, "r:gz")
         tar.extractall()
@@ -92,6 +93,7 @@ class LlvmKernelBuilder:
         print "Done"
         print("Kernel sources for version {} are in directory {}".format(
               self.kernel_version, self.kernel_path))
+        os.chdir(cwd)
 
 
     def _call_and_print(self, command, stdout=None, stderr=None):
@@ -135,8 +137,8 @@ class LlvmKernelBuilder:
         if not os.path.isdir(self.kernel_path):
             self._get_kernel_source()
             self._clean_kernel()
-            self._configure_kernel()
             self._symlink_gcc_header(7)
+            self._configure_kernel()
 
 
     def _symlink_gcc_header(self, major_version):
