@@ -50,6 +50,8 @@ class LlvmKernelModule:
         :return Name of the global variable corresponding to param
         """
         glob = self.llvm_module.get_named_global("__param_{}".format(param))
+        if not glob:
+            return None
         # Get value of __param_#name variable
         glob_value = glob.get_initializer()
         # Get the last element
@@ -78,7 +80,8 @@ class LlvmKernelModule:
             desc, sep, ctype = rest.partition(" (")
             ctype = ctype[:-1]
             varname = self.find_param_var(name)
-            self.params[name] = ModuleParam(name, varname, ctype, desc)
+            if varname:
+                self.params[name] = ModuleParam(name, varname, ctype, desc)
 
 
     def set_param(self, param):
