@@ -299,6 +299,10 @@ class LlvmKernelBuilder:
 
         try:
             output = self._call_output_and_print(command)
+            ko_file = os.path.join(self.modules_dir, "{}.ko".format(file_name))
+            if not os.path.exists(ko_file):
+                raise CompilerException(
+                    "Could not build module {}".format(module))
         except CalledProcessError:
             raise CompilerException("Could not build module {}".format(module))
         finally:
