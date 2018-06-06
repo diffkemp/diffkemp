@@ -43,9 +43,6 @@ class ParamDependencySlicer : public FunctionPass {
     // Function parameters to be included
     std::set<const Argument *> IncludedParams = {};
 
-    // We only do the slicing if the function uses the parameter
-    bool uses_param = false;
-
     // Return block
     BasicBlock *RetBB = nullptr;
 

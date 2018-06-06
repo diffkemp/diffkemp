@@ -5,6 +5,8 @@
  * See LICENSE for details.
  */
 
+#define DEBUG
+
 #include "ParamDependencySlicer.h"
 #include <iostream>
 #include <llvm/IR/Constants.h>
@@ -27,11 +29,25 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     AffectedBasicBlocks.clear();
     IncludedBasicBlocks.clear();
     IncludedParams.clear();
-    uses_param = false;
 
 #ifdef DEBUG
     errs() << "Function: " << Fun.getName().str() << "\n";
 #endif
+
+    // Check if some use of the parameter is inside the function
+    Module *Mod = Fun.getParent();
+    auto param = Mod->getGlobalVariable(ParamName, true);
+    bool uses_param = false;
+    if (param) {
+        for (auto &use : param->uses()) {
+            if (auto UserInst = dyn_cast<Instruction>(use.getUser()))
+                if (UserInst->getParent()->getParent() == &Fun)
+                    uses_param = true;
+        }
+    }
+
+    if (!uses_param)
+        return false;
 
     // First phase - determine which instructions are dependent on the parameter
     for (auto &BB : Fun) {
@@ -82,63 +98,58 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
 
     // Second phase - determine which additional instructions we need to
     // produce a valid CFG
-    if (uses_param) {
-        errs() << "Second phase\n";
-        // Recursively add all instruction operands to included
-        for (auto &Inst : DependentInstrs) {
-            if (isa<PHINode>(Inst)) continue;
-            addAllOpsToIncluded(Inst);
-        }
-
-        auto &ExitNodeAnalysis = getAnalysis<UnifyFunctionExitNodes>();
-        RetBB = ExitNodeAnalysis.getReturnBlock();
-        for (auto &BB : Fun) {
-            auto Term = BB.getTerminator();
-            if (isDependent(Term)) continue;
-            if (Term->getNumSuccessors() == 0) continue;
-
-            // If there is just one necessary successor remove all others
-            auto includedSucc = includedSuccessors(*Term, RetBB);
-            if (includedSucc.size() <= 1) {
-                auto NewSucc = includedSucc.empty()
-                               ? Term->getSuccessor(0)
-                               : *includedSucc.begin();
-
-                // Notify successors about removing some branches
-                for (auto TermSucc : Term->successors()) {
-                    if (TermSucc != NewSucc)
-                        TermSucc->removePredecessor(&BB, true);
-                }
-                // Create and insert new branch
-                auto NewTerm = BranchInst::Create(NewSucc, Term);
-                Term->eraseFromParent();
-                IncludedInstrs.insert(NewTerm);
-            } else {
-                addToIncluded(Term);
-                addAllOpsToIncluded(Term);
-            }
-        }
-        IncludedInstrs.insert(DependentInstrs.begin(), DependentInstrs.end());
-
-        // If the return instruction is to be removed, we need to mock it
-        if (!isIncluded(RetBB->getTerminator()))
-            mockReturn(Fun.getReturnType());
-        addToIncluded(RetBB->getTerminator());
+    errs() << "Second phase\n";
+    // Recursively add all instruction operands to included
+    for (auto &Inst : DependentInstrs) {
+        if (isa<PHINode>(Inst)) continue;
+        addAllOpsToIncluded(Inst);
     }
 
-    if (uses_param) {
-        // Add needed instructions coming to Phis to included
-        for (auto &BB : Fun) {
-            for (auto &Instr : BB) {
-                if (auto Phi = dyn_cast<PHINode>(&Instr)) {
-                    if (!isIncluded(Phi))
-                        continue;
-                    for (unsigned i = 0; i < Phi->getNumIncomingValues(); ++i) {
-                        if (auto incomingInstr = dyn_cast<Instruction>(
-                                Phi->getIncomingValue(i))) {
-                            addToIncluded(incomingInstr);
-                            addAllOpsToIncluded(incomingInstr);
-                        }
+    auto &ExitNodeAnalysis = getAnalysis<UnifyFunctionExitNodes>();
+    RetBB = ExitNodeAnalysis.getReturnBlock();
+    for (auto &BB : Fun) {
+        auto Term = BB.getTerminator();
+        if (isDependent(Term)) continue;
+        if (Term->getNumSuccessors() == 0) continue;
+
+        // If there is just one necessary successor remove all others
+        auto includedSucc = includedSuccessors(*Term, RetBB);
+        if (includedSucc.size() <= 1) {
+            auto NewSucc = includedSucc.empty() ? Term->getSuccessor(0)
+                                                : *includedSucc.begin();
+
+            // Notify successors about removing some branches
+            for (auto TermSucc : Term->successors()) {
+                if (TermSucc != NewSucc)
+                    TermSucc->removePredecessor(&BB, true);
+            }
+            // Create and insert new branch
+            auto NewTerm = BranchInst::Create(NewSucc, Term);
+            Term->eraseFromParent();
+            IncludedInstrs.insert(NewTerm);
+        } else {
+            addToIncluded(Term);
+            addAllOpsToIncluded(Term);
+        }
+    }
+    IncludedInstrs.insert(DependentInstrs.begin(), DependentInstrs.end());
+
+    // If the return instruction is to be removed, we need to mock it
+    if (!isIncluded(RetBB->getTerminator()))
+        mockReturn(Fun.getReturnType());
+    addToIncluded(RetBB->getTerminator());
+
+    // Add needed instructions coming to Phis to included
+    for (auto &BB : Fun) {
+        for (auto &Instr : BB) {
+            if (auto Phi = dyn_cast<PHINode>(&Instr)) {
+                if (!isIncluded(Phi))
+                    continue;
+                for (unsigned i = 0; i < Phi->getNumIncomingValues(); ++i) {
+                    if (auto incomingInstr = dyn_cast<Instruction>(
+                            Phi->getIncomingValue(i))) {
+                        addToIncluded(incomingInstr);
+                        addAllOpsToIncluded(incomingInstr);
                     }
                 }
             }
@@ -146,86 +157,82 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     }
 
     // Third phase - add useful debug info
-    if (uses_param) {
-        for (auto &BB : Fun) {
-            for (auto &Inst : BB) {
-                if (isIncludedDebugInfo(Inst)) {
-                    addToIncluded(&Inst);
-                }
+    for (auto &BB : Fun) {
+        for (auto &Inst : BB) {
+            if (isIncludedDebugInfo(Inst)) {
+                addToIncluded(&Inst);
             }
         }
     }
 
     // Fourth phase - remove unneeded instructions and keep the control flow
-    if (uses_param) {
-        std::vector<Instruction *> toRemove;
-        int b = 0;
-        for (auto &BB : Fun) {
-            // Collect and clear all instruction that can be removed
-            for (auto &Inst : BB) {
-                if (!isIncluded(&Inst) && !Inst.isTerminator()) {
+    std::vector<Instruction *> toRemove;
+    int b = 0;
+    for (auto &BB : Fun) {
+        // Collect and clear all instruction that can be removed
+        for (auto &Inst : BB) {
+            if (!isIncluded(&Inst) && !Inst.isTerminator()) {
 #ifdef DEBUG
-                    errs() << "Clearing ";
-                    Inst.dump();
+                errs() << "Clearing ";
+                Inst.dump();
 #endif
-                    Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
-                    toRemove.push_back(&Inst);
-                }
+                Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
+                toRemove.push_back(&Inst);
             }
         }
+    }
 
-        // Erase instructions
-        for (auto &Inst : toRemove) {
-            Inst->eraseFromParent();
+    // Erase instructions
+    for (auto &Inst : toRemove) {
+        Inst->eraseFromParent();
+    }
+    // Clear BBs except first that have no incoming edges
+    for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
+        BasicBlock *BB = &*BB_it++;
+        if (pred_begin(BB) == pred_end(BB)) {
+            DeleteDeadBlock(BB);
         }
-        // Clear BBs except first that have no incoming edges
-        for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
-            BasicBlock *BB = &*BB_it++;
-            if (pred_begin(BB) == pred_end(BB)) {
-                DeleteDeadBlock(BB);
-            }
-        }
-        // Erase basic blocks
-        std::vector<BasicBlock *> BBToRemove;
-        for (auto BB_it = Fun.begin(); BB_it != Fun.end();) {
-            BasicBlock *BB = &*BB_it++;
-            if (!isIncluded(BB)) {
-                if (BB == &BB->getParent()->getEntryBlock()) {
-                    // First block is simply deleted, incoming edges represent
-                    // loop-back edges that will be deleted as well and hence
-                    // can be removed
-                    if (canRemoveFirstBlock(BB)) {
-                        for (auto Pred : predecessors(BB)) {
-                            auto PredTerm = Pred->getTerminator();
-                            unsigned succ_cnt = PredTerm->getNumSuccessors();
-                            for (unsigned succ = 0; succ < succ_cnt; ++succ) {
-                                if (PredTerm->getSuccessor(succ) == BB) {
-                                    PredTerm->setSuccessor(succ, Pred);
-                                }
+    }
+    // Erase basic blocks
+    std::vector<BasicBlock *> BBToRemove;
+    for (auto BB_it = Fun.begin(); BB_it != Fun.end();) {
+        BasicBlock *BB = &*BB_it++;
+        if (!isIncluded(BB)) {
+            if (BB == &BB->getParent()->getEntryBlock()) {
+                // First block is simply deleted, incoming edges represent
+                // loop-back edges that will be deleted as well and hence
+                // can be removed
+                if (canRemoveFirstBlock(BB)) {
+                    for (auto Pred : predecessors(BB)) {
+                        auto PredTerm = Pred->getTerminator();
+                        unsigned succ_cnt = PredTerm->getNumSuccessors();
+                        for (unsigned succ = 0; succ < succ_cnt; ++succ) {
+                            if (PredTerm->getSuccessor(succ) == BB) {
+                                PredTerm->setSuccessor(succ, Pred);
                             }
                         }
-                        DeleteDeadBlock(BB);
                     }
-                } else {
-                    // When removing other than a first block, we need to
-                    // redirect incoming edges into the successor (a block that
-                    // is not included is guaranteed to have one successor).
-                    if (canRemoveBlock(BB)) {
-                        bool removed =
-                                TryToSimplifyUncondBranchFromEmptyBlock(BB);
-                        assert(removed);
-                    }
+                    DeleteDeadBlock(BB);
+                }
+            } else {
+                // When removing other than a first block, we need to
+                // redirect incoming edges into the successor (a block that
+                // is not included is guaranteed to have one successor).
+                if (canRemoveBlock(BB)) {
+                    bool removed =
+                            TryToSimplifyUncondBranchFromEmptyBlock(BB);
+                    assert(removed);
                 }
             }
         }
+    }
 
 #ifdef DEBUG
-        errs() << "Function " << Fun.getName().str() << " after cleanup:\n";
-        Fun.dump();
-        errs() << "\n";
+    errs() << "Function " << Fun.getName().str() << " after cleanup:\n";
+    Fun.dump();
+    errs() << "\n";
 #endif
-    }
-    return uses_param;
+    return true;
 }
 
 std::vector<const BasicBlock *> ParamDependencySlicer::affectedBasicBlocks(
@@ -279,7 +286,6 @@ bool ParamDependencySlicer::checkDependency(const Use *Op) {
     bool result = false;
     if (auto Global = dyn_cast<GlobalVariable>(Op)) {
         if (Global->getName() == ParamName) {
-            uses_param = true;
             result = true;
         }
     } else if (auto OpInst = dyn_cast<Instruction>(Op)) {
