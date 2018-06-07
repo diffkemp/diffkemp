@@ -5,15 +5,21 @@ services:
 
 language: python
 
-before_install:
-  - docker pull viktormalik/diffkemp
-
-before_script:
-  - mkdir build
+jobs:
+  include:
+    - stage: build and test
+      before_install:
+        - docker pull viktormalik/diffkemp
+      before_script:
+        - mkdir build
+      script: 
+        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+          "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release; ninja; cd .."
+        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+          "pytest tests"
     
-script: 
-  - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
-    "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release; ninja; cd .."
-  - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
-    "pytest tests"
+    - stage: linter
+      script:
+        - flake8 diffkemp --exclude=llreve --ignore=F403,F405
+        - flake8 tests
 
