@@ -2,8 +2,7 @@ from __future__ import absolute_import
 
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
-from diffkemp.semdiff.module_diff import modules_diff, Statistics
-from diffkemp.semdiff.function_diff import Result
+from diffkemp.semdiff.module_diff import modules_diff
 import sys
 
 
@@ -50,7 +49,8 @@ def run_from_cli():
                                                          args.rebuild)
             }
         else:
-            second_mods = second_builder.build_modules_with_params(args.rebuild)
+            second_mods = second_builder.build_modules_with_params(
+                args.rebuild)
 
         if args.build_only:
             print "Compiled modules in version {}:".format(args.src_version)
@@ -64,7 +64,7 @@ def run_from_cli():
         print "Computing semantic difference of module parameters"
         print "--------------------------------------------------"
         for mod, first in first_mods.iteritems():
-            if not mod in second_mods:
+            if mod not in second_mods:
                 continue
             second = second_mods[mod]
 
@@ -77,7 +77,7 @@ def run_from_cli():
 
             print mod
             for name, param in first.params.iteritems():
-                if not name in second.params:
+                if name not in second.params:
                     continue
                 print "  parameter {}".format(name)
                 # Compare modules
@@ -86,7 +86,5 @@ def run_from_cli():
         return 0
 
     except Exception as e:
-        result = Result.ERROR
         sys.stderr.write("Error: {}\n".format(str(e)))
         return -1
-

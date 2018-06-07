@@ -145,4 +145,3 @@ def functions_diff(first, second, funFirst, funSecond, coupled, verbose=False):
             print "    Functions {} and {} are same".format(assume.first,
                                                             assume.second)
     return result
-

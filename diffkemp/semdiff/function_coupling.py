@@ -12,7 +12,7 @@ from diffkemp.llvm_ir.function_collector import FunctionCollector
 
 # Rules defining similarity of function names, used for computing couplings.
 # Each rule returns a number that indicates how similar functions are. The
-# lower the number is, the higher similarity it represents. 
+# lower the number is, the higher similarity it represents.
 #   0 denotes identity,
 #  -1 denotes no similarity under that rule
 
@@ -21,6 +21,7 @@ def same(name_first, name_second):
     if name_first == name_second:
         return 0
     return -1
+
 
 def substring(name_first, name_second):
     """
@@ -32,6 +33,7 @@ def substring(name_first, name_second):
     if name_second in name_first:
         return len(name_first) - len(name_second)
     return -1
+
 
 # Rules sorted by importance
 rules = [same, substring]
@@ -77,7 +79,6 @@ class FunctionCouplings():
         self.uncoupled_first = set()
         self.uncoupled_second = set()
 
-
     def _infer_from_sets(self, functions_first, functions_second):
         """
         Find pairs of functions that correspond to each other between given
@@ -91,10 +92,10 @@ class FunctionCouplings():
         # no more rules are left.
         for rule in rules:
             for fun in uncoupled_first:
-                # Compute the set of candidates as functions from the second 
+                # Compute the set of candidates as functions from the second
                 # module (f) that have similarity with fun under the rule
-                candidates = [(f, rule(fun, f)) for f in uncoupled_second
-                                                if rule(fun, f) >= 0]
+                candidates = [(f, rule(fun, f)) for f in uncoupled_second if
+                              rule(fun, f) >= 0]
                 # A coupling is created only if there is a unique candidate
                 if len(candidates) == 1:
                     couplings.add(FunCouple(fun, candidates[0][0],
@@ -105,7 +106,6 @@ class FunctionCouplings():
                 break
 
         return couplings
-
 
     def infer_for_param(self, param):
         """
@@ -125,4 +125,3 @@ class FunctionCouplings():
         called_first = self._fun_collector_first.called_by(main_first)
         called_second = self._fun_collector_second.called_by(main_second)
         self.called = self._infer_from_sets(called_first, called_second)
-

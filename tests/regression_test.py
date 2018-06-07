@@ -19,11 +19,11 @@ import glob
 import os
 import pytest
 import shutil
-from subprocess import Popen
 import yaml
 
 specs_path = "tests/test_specs"
 tasks_path = "tests/kernel_modules"
+
 
 def collect_task_specs():
     """Collecting and parsing YAML files with test specifications."""
@@ -33,7 +33,7 @@ def collect_task_specs():
     for spec_file_path in glob.glob("*.yaml"):
         with open(spec_file_path, "r") as spec_file:
             spec_yaml = yaml.load(spec_file)
-            if "disabled" in spec_yaml and spec_yaml["disabled"] == True:
+            if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
                 continue
             # One specification for each analysed parameter is created
             for param in spec_yaml["params"]:
@@ -51,6 +51,8 @@ def collect_task_specs():
                 result.append((spec_id, spec))
     os.chdir(cwd)
     return result
+
+
 specs = collect_task_specs()
 
 
@@ -64,7 +66,7 @@ class TaskSpec:
         module = spec["module"]
         self.module = module
         self.param = spec["param"]
-        self.module_dir= spec["path"]
+        self.module_dir = spec["path"]
         self.module_src = spec["filename"]
         self.old_kernel = spec["old_kernel"]
         self.new_kernel = spec["new_kernel"]
@@ -95,9 +97,9 @@ class TaskSpec:
         self.old = os.path.join(self.task_dir, module + "_old.bc")
         self.new = os.path.join(self.task_dir, module + "_new.bc")
         self.old_sliced = os.path.join(self.task_dir, module + "_old-" +
-                                                      spec["param"] + ".bc")
+                                       spec["param"] + ".bc")
         self.new_sliced = os.path.join(self.task_dir, module + "_new-" +
-                                                      spec["param"] + ".bc")
+                                       spec["param"] + ".bc")
         self.old_src = os.path.join(self.task_dir, module + "_old.c")
         self.new_src = os.path.join(self.task_dir, module + "_new.c")
 
@@ -176,7 +178,6 @@ class TestClass(object):
         second = slice_module(task_spec.new, task_spec.param)
         os.rename(second, task_spec.new_sliced)
 
-
     def test_couplings(self, task_spec):
         """
         Test collection of function couplings. Checks whether the collected
@@ -191,7 +192,6 @@ class TestClass(object):
         assert coupled == set(task_spec.functions.keys())
         assert couplings.uncoupled_first == task_spec.only_old
         assert couplings.uncoupled_second == task_spec.only_new
-
 
     def test_function_comparison(self, task_spec):
         """
@@ -211,4 +211,3 @@ class TestClass(object):
                                         funPair[0], funPair[1],
                                         couplings.called)
                 assert result == expected
-

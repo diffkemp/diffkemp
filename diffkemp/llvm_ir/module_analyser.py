@@ -45,4 +45,3 @@ def find_definitions_in_object(object_file, functions):
         if (sym[-1] in functions and sym[-2] == "T"):
             defs.add(function)
     return defs
-

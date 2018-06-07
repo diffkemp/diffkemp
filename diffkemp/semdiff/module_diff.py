@@ -5,7 +5,6 @@ using the given parameter is compared individually.
 """
 from __future__ import absolute_import
 
-from llvmcpy.llvm import *
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
 
@@ -73,4 +72,3 @@ def modules_diff(first, second, param, verbose=False):
                                 couplings.called, verbose)
         stat.log_result(result, c.first)
     return stat
-

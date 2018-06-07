@@ -4,13 +4,10 @@ Functions for downloading, configuring, compiling, and linkning kernel modules
 into LLVM IR.
 """
 
-import glob
 import os
 import tarfile
-from diffkemp.llvm_ir.function_collector import FunctionCollector
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.module_analyser import *
-from diffkemp.slicer.slicer import slice_module
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
 from subprocess import CalledProcessError, call, check_call, check_output
@@ -23,6 +20,8 @@ class BuildException(Exception):
 
 # Progress bar for downloading
 pbar = None
+
+
 def show_progress(count, block_size, total_size):
     global pbar
     if pbar is None:
@@ -94,18 +93,15 @@ class LlvmKernelBuilder:
               self.kernel_version, self.kernel_path))
         os.chdir(cwd)
 
-
     def _call_and_print(self, command, stdout=None, stderr=None):
         print "  {}".format(" ".join(command))
         check_call(command, stdout=stdout, stderr=stderr)
-
 
     def _call_output_and_print(self, command):
         with open(os.devnull) as stderr:
             print "    {}".format(" ".join(command))
             output = check_output(command, stderr=stderr)
             return output
-
 
     def _check_make_target(self, make_command):
         """
@@ -119,7 +115,6 @@ class LlvmKernelBuilder:
             ret_code = call(make_command + ["-n"],
                             stdout=devnull, stderr=devnull)
             return ret_code != 2
-
 
     def _configure_kernel(self):
         """
@@ -140,7 +135,6 @@ class LlvmKernelBuilder:
             self._call_and_print(["make", "modules_prepare"], null, null)
         os.chdir(cwd)
 
-
     def _prepare_kernel(self):
         """
         Download and configure kernel if kernel directory does not exist.
@@ -152,7 +146,6 @@ class LlvmKernelBuilder:
             self._clean_kernel()
             self._symlink_gcc_header(7)
             self._configure_kernel()
-
 
     def _symlink_gcc_header(self, major_version):
         """
@@ -166,7 +159,7 @@ class LlvmKernelBuilder:
         if not os.path.isfile(dest_file):
             # Search for the most recent version of header provided in the
             # analysed kernel and symlink the current version to it
-            regex = re.compile("^compiler-gcc(\d+)\.h$")
+            regex = re.compile(r"^compiler-gcc(\d+)\.h$")
             max_major = 0
             for file in os.listdir(include_path):
                 match = regex.match(file)
@@ -178,7 +171,6 @@ class LlvmKernelBuilder:
                                         "compiler-gcc{}.h".format(max_major))
                 os.symlink(src_file, dest_file)
 
-
     def _clean_kernel(self):
         """Clean whole kernel"""
         cwd = os.getcwd()
@@ -187,13 +179,11 @@ class LlvmKernelBuilder:
             self._call_and_print(["make", "clean"], stdout=stdout)
         os.chdir(cwd)
 
-
     def _clean_object(self, obj):
         """Clean an object file"""
         file = os.path.join(self.modules_dir, obj)
         if os.path.isfile(file):
             os.remove(file)
-
 
     def _clean_module(self, mod):
         """Clean an object file"""
@@ -205,7 +195,6 @@ class LlvmKernelBuilder:
                        stdout=stdout)
         os.chdir(cwd)
 
-
     def _clean_all_modules(self):
         """Clean all modules in the modules directory"""
         cwd = os.getcwd()
@@ -214,8 +203,6 @@ class LlvmKernelBuilder:
             check_call(["make", "M={}".format(self.modules_dir), "clean"],
                        stdout=stdout)
         os.chdir(cwd)
-
-
 
     def _get_sources_with_params(self):
         """
@@ -233,7 +220,6 @@ class LlvmKernelBuilder:
                         break
         return result
 
-
     def _strip_bash_quotes(self, gcc_param):
         """
         Remove quotes from gcc_param that represents a part of a shell command.
@@ -242,7 +228,6 @@ class LlvmKernelBuilder:
             return gcc_param.translate(None, "\'")
         else:
             return gcc_param.translate(None, "\"")
-
 
     def kbuild_object_command(self, object_file):
         """
@@ -269,7 +254,6 @@ class LlvmKernelBuilder:
         raise BuildException("Compiling {} did not run a gcc command".format(
                              object_file))
 
-
     def kbuild_module(self, module):
         """
         Build a kernel module using Kbuild.
@@ -293,8 +277,7 @@ class LlvmKernelBuilder:
             command[3] = "{}.ko".format(file_name)
         if not self._check_make_target(command):
             os.chdir(cwd)
-            raise CompilerException(
-                    "Could not build module {}".format(module))
+            raise CompilerException("Could not build module {}".format(module))
 
         try:
             output = self._call_output_and_print(command)
@@ -308,7 +291,6 @@ class LlvmKernelBuilder:
             os.chdir(cwd)
         return file_name, output.splitlines()
 
-
     def get_module_name(self, gcc_command):
         """
         Extracts name of the module from a gcc command used to compile (part
@@ -319,8 +301,8 @@ class LlvmKernelBuilder:
             -DKBUILD_MODNAME='"module"'
         """
         regexes = [
-            re.compile("^-DKBUILD_MODNAME=KBUILD_STR\((.*)\)$"),
-            re.compile("^-DKBUILD_MODNAME=\"(.*)\"$")
+            re.compile(r"^-DKBUILD_MODNAME=KBUILD_STR\((.*)\)$"),
+            re.compile(r"^-DKBUILD_MODNAME=\"(.*)\"$")
         ]
         for param in gcc_command.split():
             if "KBUILD_MODNAME" in param:
@@ -330,7 +312,6 @@ class LlvmKernelBuilder:
                     if m:
                         return m.group(1)
         raise BuildException("Unable to find module name")
-
 
     def get_output_file(self, command):
         """
@@ -344,7 +325,6 @@ class LlvmKernelBuilder:
             raise BuildException("Broken command: {}".format("".join(command)))
         return command[index + 1]
 
-
     def gcc_to_llvm(self, gcc_command):
         """
         Convert GCC command to corresponding Clang command for compiling source
@@ -357,14 +337,14 @@ class LlvmKernelBuilder:
             command.append("-g")
         for param in gcc_command.split():
             if (param == "gcc" or
-                (param.startswith("-W") and "-MD" not in param) or
-                param.startswith("-f") or
-                param.startswith("-m") or
-                param.startswith("-O") or
-                param == "-DCC_HAVE_ASM_GOTO" or
-                param == "-g" or
-                param == "-o" or
-                param.endswith(".o")):
+                    (param.startswith("-W") and "-MD" not in param) or
+                    param.startswith("-f") or
+                    param.startswith("-m") or
+                    param.startswith("-O") or
+                    param == "-DCC_HAVE_ASM_GOTO" or
+                    param == "-g" or
+                    param == "-o" or
+                    param.endswith(".o")):
                 continue
 
             # Output name is given by replacing .c by .bc in source name
@@ -374,7 +354,6 @@ class LlvmKernelBuilder:
             command.append(self._strip_bash_quotes(param))
         command.extend(["-o", output_file])
         return command
-
 
     def ld_to_llvm(self, ld_command):
         """
@@ -389,7 +368,6 @@ class LlvmKernelBuilder:
             elif param == "-o":
                 command.append(param)
         return command
-
 
     def opt_llvm(self, llvm_file, command):
         """
@@ -408,7 +386,6 @@ class LlvmKernelBuilder:
             raise BuildException("Invalid call to {}".format(command))
         check_call(opt_command)
 
-
     def kbuild_to_llvm_commands(self, kbuild_commands, file_name):
         """
         Convers a list of Kbuild commands for building a module into a list of
@@ -424,14 +401,13 @@ class LlvmKernelBuilder:
         for c in kbuild_commands:
             command = c.lstrip()
             if (command.startswith("gcc") and
-                "{}.mod".format(file_name) not in command):
+                    "{}.mod".format(file_name) not in command):
                 clang_commands.append(self.gcc_to_llvm(command))
             elif (command.startswith("ld") and
                   "{}.ko".format(file_name) not in command):
                 clang_commands.append(
                     self.ld_to_llvm(command.split(";")[0]))
         return clang_commands
-
 
     def build_llvm_module(self, name, file_name, commands):
         """
@@ -454,12 +430,11 @@ class LlvmKernelBuilder:
         if not os.path.isfile(os.path.join(self.modules_dir, "{}.bc".format(
                                                              file_name))):
             raise BuildException("Building {} did not produce LLVM IR file"
-                                     .format(name))
+                                 .format(name))
         os.chdir(cwd)
         mod = LlvmKernelModule(name, file_name, os.path.join(self.kernel_path,
                                                              self.modules_dir))
         return mod
-
 
     def build_module(self, module, clean):
         """
@@ -476,7 +451,6 @@ class LlvmKernelBuilder:
         file_name, commands = self.kbuild_module(module)
         clang_commands = self.kbuild_to_llvm_commands(commands, file_name)
         return self.build_llvm_module(module, file_name, clang_commands)
-
 
     def build_modules_with_params(self, clean):
         """
@@ -516,4 +490,3 @@ class LlvmKernelBuilder:
                 print "    {}".format(str(e))
         print ""
         return llvm_modules
-

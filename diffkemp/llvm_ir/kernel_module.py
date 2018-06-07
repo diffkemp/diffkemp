@@ -8,6 +8,7 @@ from llvmcpy.llvm import *
 import os
 from subprocess import check_output
 
+
 class ModuleParam:
     """
     Kernel module parameter.
@@ -27,17 +28,16 @@ class LlvmKernelModule:
     def __init__(self, name, file_name, module_dir):
         self.name = name
         self.llvm = os.path.join(module_dir, "{}.bc".format(file_name))
-        self.kernel_object = os.path.join(module_dir, "{}.ko".format(file_name))
+        self.kernel_object = os.path.join(module_dir,
+                                          "{}.ko".format(file_name))
         self.params = dict()
         self.llvm_module = None
-
 
     def _parse_module(self):
         """Parse module file into LLVM module using llvmcpy library"""
         buffer = create_memory_buffer_with_contents_of_file(self.llvm)
         context = get_global_context()
         self.llvm_module = context.parse_ir(buffer)
-
 
     def find_param_var(self, param):
         """
@@ -63,7 +63,6 @@ class LlvmKernelModule:
             var = var.get_operand(0)
         return var.get_name()
 
-
     def collect_all_parameters(self):
         """
         Collect all parameters defined in the module.
@@ -83,10 +82,8 @@ class LlvmKernelModule:
             if varname:
                 self.params[name] = ModuleParam(name, varname, ctype, desc)
 
-
     def set_param(self, param):
         self.params = {param: ModuleParam(param, param, None, None)}
-
 
     def slice(self, param):
         """
@@ -94,7 +91,6 @@ class LlvmKernelModule:
         """
         sliced = slice_module(self.llvm, param)
         return sliced
-
 
     def collect_functions(self):
         """
@@ -107,4 +103,3 @@ class LlvmKernelModule:
         collector = FunctionCollector(self.llvm)
         self.main_functions = collector.using_param(self.param)
         self.called_functions = collector.called_by(self.main_functions)
-
