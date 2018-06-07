@@ -7,7 +7,6 @@ into LLVM IR.
 import glob
 import os
 import tarfile
-from diffkemp.llvm_ir.compiler import KernelModuleCompiler, CompilerException
 from diffkemp.llvm_ir.function_collector import FunctionCollector
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.module_analyser import *
