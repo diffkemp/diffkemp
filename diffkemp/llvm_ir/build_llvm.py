@@ -277,16 +277,16 @@ class LlvmKernelBuilder:
             command[3] = "{}.ko".format(file_name)
         if not self._check_make_target(command):
             os.chdir(cwd)
-            raise CompilerException("Could not build module {}".format(module))
+            raise BuildException("Could not build module {}".format(module))
 
         try:
             output = self._call_output_and_print(command)
             ko_file = os.path.join(self.modules_dir, "{}.ko".format(file_name))
             if not os.path.exists(ko_file):
-                raise CompilerException(
-                    "Could not build module {}".format(module))
+                raise BuildException("Could not build module {}"
+                                     .format(module))
         except CalledProcessError:
-            raise CompilerException("Could not build module {}".format(module))
+            raise BuildException("Could not build module {}".format(module))
         finally:
             os.chdir(cwd)
         return file_name, output.splitlines()
@@ -486,7 +486,7 @@ class LlvmKernelBuilder:
             print "  {}".format(mod)
             try:
                 llvm_modules[mod] = self.build_module(mod, False)
-            except CompilerException as e:
+            except BuildException as e:
                 print "    {}".format(str(e))
         print ""
         return llvm_modules
