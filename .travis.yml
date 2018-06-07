@@ -1,0 +1,19 @@
+sudo: required
+
+services:
+  - docker
+
+language: python
+
+before_install:
+  - docker pull viktormalik/diffkemp
+
+before_script:
+  - mkdir build
+    
+script: 
+  - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+    "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release; ninja; cd .."
+  - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+    "pytest tests"
+
