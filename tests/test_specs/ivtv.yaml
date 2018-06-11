@@ -1,0 +1,15 @@
+module: ivtv
+path: drivers/media/pci/ivtv
+filename: ivtv-driver.c
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: pal
+    functions:
+      ivtv_parse_std: equal
+
+  - param: secam
+    functions:
+      ivtv_parse_std: equal
+
