@@ -39,13 +39,39 @@ class LlvmKernelModule:
         context = get_global_context()
         self.llvm_module = context.parse_ir(buffer)
 
+    def _extract_param_name(self, param_var):
+        """
+        Extract name of the global variable representing a module parameter
+        from the structure describing it.
+
+        :param param_var: LLVM expression containing the variable
+        :return Name of the variable
+        """
+        if param_var.get_kind() != GlobalVariableValueKind:
+            # Variable can be inside bitcast or getelementptr, in both cases
+            # it is inside the first operand of the expression
+            return self._extract_param_name(param_var.get_operand(0))
+
+        if ("__param_arr" in param_var.get_name() or
+                "__param_string" in param_var.get_name()):
+            # For array and string parameters, the actual variable is inside
+            # another structure as its last element
+            param_var_value = param_var.get_initializer()
+            # Get the last element
+            var_expr = param_var_value.get_operand(
+                param_var_value.get_num_operands() - 1)
+            return self._extract_param_name(var_expr)
+
+        return param_var.get_name()
+
     def find_param_var(self, param):
         """
         Find global variable in the module that corresponds to the given param.
         In case the param is defined by module_param_named, this can be
         different from the param name.
-        Pointer to the variable is stored inside the last element of structure
-        assigned to the '__param_#name' variable (#name is the name of param).
+        Information about the variable is stored inside the last element of the
+        structure assigned to the '__param_#name' variable (#name is the name
+        of param).
         :param param
         :return Name of the global variable corresponding to param
         """
@@ -58,10 +84,8 @@ class LlvmKernelModule:
         var_union = glob_value.get_operand(glob_value.get_num_operands() - 1)
         # Last element is a struct with single element, get it
         var = var_union.get_operand(0)
-        if var.get_kind() != GlobalVariableValueKind:
-            # Unwrap bitcast and get name of the variable
-            var = var.get_operand(0)
-        return var.get_name()
+
+        return self._extract_param_name(var)
 
     def collect_all_parameters(self):
         """
