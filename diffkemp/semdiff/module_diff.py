@@ -7,6 +7,7 @@ from __future__ import absolute_import
 
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
+from diffkemp.slicer.slicer import SlicerException
 
 
 class Statistics():
@@ -62,8 +63,13 @@ def modules_diff(first, second, param, verbose=False):
     """
     stat = Statistics()
     # Slice IR files
-    first_sliced = first.slice(param)
-    second_sliced = second.slice(param)
+    try:
+        first_sliced = first.slice(param, verbose)
+        second_sliced = second.slice(param, verbose)
+    except SlicerException:
+        print "    Slicing has failed"
+        stat.log_result(Result.ERROR, "")
+        return stat
 
     couplings = FunctionCouplings(first_sliced, second_sliced)
     couplings.infer_for_param(param)

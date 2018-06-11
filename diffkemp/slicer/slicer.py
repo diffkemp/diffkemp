@@ -4,7 +4,7 @@ parameter (global variable).
 """
 
 import os
-from subprocess import check_call
+from subprocess import check_call, CalledProcessError
 
 
 class SlicerException(Exception):
@@ -41,10 +41,12 @@ def slice_module(file, parameter, verbose=False):
     if not verbose:
         stderr = open(os.devnull, "w")
 
-    check_call(["opt", "-S",
-                "-load", "build/diffkemp/slicer/libParDepSlicer.so",
-                "-paramdep-slicer", "-param-name=" + parameter,
-                "-deadargelim",
-                "-o", "".join(out_file), file], stderr=stderr)
-
-    return out_file
+    try:
+        check_call(["opt", "-S",
+                    "-load", "build/diffkemp/slicer/libParDepSlicer.so",
+                    "-paramdep-slicer", "-param-name=" + parameter,
+                    "-deadargelim",
+                    "-o", "".join(out_file), file], stderr=stderr)
+        return out_file
+    except CalledProcessError:
+        raise SlicerException()
