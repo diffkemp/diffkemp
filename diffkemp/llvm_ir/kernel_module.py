@@ -109,11 +109,11 @@ class LlvmKernelModule:
     def set_param(self, param):
         self.params = {param: ModuleParam(param, param, None, None)}
 
-    def slice(self, param):
+    def slice(self, param, verbose=False):
         """
         Slice the module w.r.t. to the given parameter.
         """
-        sliced = slice_module(self.llvm, param)
+        sliced = slice_module(self.llvm, param, verbose)
         return sliced
 
     def collect_functions(self):
