@@ -5,6 +5,7 @@ using the given parameter is compared individually.
 """
 from __future__ import absolute_import
 
+from __future__ import division
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
 from diffkemp.slicer.slicer import SlicerException
@@ -35,10 +36,16 @@ class Statistics():
 
     def report(self):
         """Report results."""
-        print "Equal:     ", str(len(self.equal))
-        print "Not equal: ", str(len(self.not_equal))
-        print "Unknown:   ", str(len(self.unknown))
-        print "Errors:    ", str(len(self.errors))
+        eq = len(self.equal)
+        neq = len(self.not_equal)
+        unkwn = len(self.unknown)
+        errs = len(self.errors)
+        total = eq + neq + unkwn + errs
+        print "Total params: {}".format(total)
+        print "Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100)
+        print "Not equal:    {0} ({1:.0f}%)".format(neq, neq / total * 100)
+        print "Unknown:      {0} ({1:.0f}%)".format(unkwn, unkwn / total * 100)
+        print "Errors:       {0} ({1:.0f}%)".format(errs, errs / total * 100)
 
     def overall_result(self):
         """Aggregate results for individual functions into one result."""
