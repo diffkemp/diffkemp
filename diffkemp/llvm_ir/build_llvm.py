@@ -204,20 +204,24 @@ class LlvmKernelBuilder:
                        stdout=stdout)
         os.chdir(cwd)
 
-    def _get_sources_with_params(self):
+    def _get_sources_with_params(self, directory):
         """
-        Get list of .c files in modules directory that contain definitions of
-        module parameters (contains call to module_param macro).
+        Get list of .c files in modules directory and all its subdirectories
+        that contain definitions of module parameters (contain call to
+        module_param macro).
         """
         result = list()
-        modules_dir = os.path.join(self.kernel_path, self.modules_dir)
-        for f in os.listdir(modules_dir):
-            file = os.path.join(modules_dir, f)
+        for f in os.listdir(directory):
+            file = os.path.join(directory, f)
             if os.path.isfile(file) and file.endswith(".c"):
                 for line in open(file, "r"):
                     if "module_param" in line:
                         result.append(file)
                         break
+            elif os.path.isdir(file):
+                dir_files = self._get_sources_with_params(file)
+                result.extend(dir_files)
+
         return result
 
     def _strip_bash_quotes(self, gcc_param):
@@ -462,7 +466,8 @@ class LlvmKernelBuilder:
         print "  Collecting modules"
         if clean:
             self._clean_all_modules()
-        sources = self._get_sources_with_params()
+        sources = self._get_sources_with_params(os.path.join(self.kernel_path,
+                                                             self.modules_dir))
         modules = set()
         # First build objects from sources that contain definitions of
         # parameters. By building them, we can obtain names of modules they
