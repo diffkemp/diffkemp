@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
-from diffkemp.semdiff.module_diff import modules_diff
+from diffkemp.semdiff.module_diff import modules_diff, Statistics
 import sys
 
 
@@ -21,6 +21,8 @@ def __make_argument_parser():
     ap.add_argument("-d", "--debug", help="compile module with -g",
                     action="store_true")
     ap.add_argument("-v", "--verbose", help="increase output verbosity",
+                    action="store_true")
+    ap.add_argument("--report-stat", help="report statistics of the analysis",
                     action="store_true")
     return ap
 
@@ -63,6 +65,7 @@ def run_from_cli():
 
         print "Computing semantic difference of module parameters"
         print "--------------------------------------------------"
+        result = Statistics()
         for mod, first in first_mods.iteritems():
             if mod not in second_mods:
                 continue
@@ -83,6 +86,13 @@ def run_from_cli():
                 # Compare modules
                 stat = modules_diff(first, second, param.varname, args.verbose)
                 print "    {}".format(str(stat.overall_result()).upper())
+                result.log_result(stat.overall_result(), "{}-{}".format(mod,
+                                                                        name))
+        if args.report_stat:
+            print ""
+            print "Statistics"
+            print "----------"
+            result.report()
         return 0
 
     except Exception as e:
