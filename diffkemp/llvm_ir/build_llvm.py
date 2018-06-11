@@ -383,7 +383,8 @@ class LlvmKernelBuilder:
         """
         opt_command = ["opt", "-S", llvm_file, "-o", llvm_file]
         if command == "clang":
-            opt_command.extend(["-mem2reg", "-loop-simplify", "-simplifycfg"])
+            opt_command.extend(["-mem2reg", "-loop-simplify", "-simplifycfg",
+                                "-lowerswitch"])
         elif command == "llvm-link":
             opt_command.append("-constmerge")
         else:
