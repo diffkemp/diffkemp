@@ -40,9 +40,22 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     bool uses_param = false;
     if (param) {
         for (auto &use : param->uses()) {
-            if (auto UserInst = dyn_cast<Instruction>(use.getUser()))
+            if (Fun.getName() == "ivtv_parse_std") {
+                use.getUser()->dump();
+                errs() << use.getUser() << "\n";
+            }
+            if (auto UserInst = dyn_cast<Instruction>(use.getUser())) {
                 if (UserInst->getParent()->getParent() == &Fun)
                     uses_param = true;
+            } else if (auto UserOp = dyn_cast<Operator>(use.getUser())) {
+                auto OpUse = UserOp->use_begin();
+                if (OpUse == UserOp->use_end())
+                    continue;
+                if (auto UserInst = dyn_cast<Instruction>(OpUse->getUser())) {
+                    if (UserInst->getParent()->getParent() == &Fun)
+                        uses_param = true;
+                }
+            }
         }
     }
 
@@ -292,6 +305,10 @@ bool ParamDependencySlicer::checkDependency(const Use *Op) {
         if (isDependent(OpInst)) {
             result = true;
         }
+    } else if (auto OpOperator = dyn_cast<Operator>(Op)) {
+        for (auto &InnerOp : OpOperator->operands())
+            if (checkDependency(&InnerOp))
+                result = true;
     }
     return result;
 }
