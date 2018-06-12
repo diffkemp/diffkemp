@@ -383,13 +383,16 @@ class LlvmKernelBuilder:
         """
         opt_command = ["opt", "-S", llvm_file, "-o", llvm_file]
         if command == "clang":
-            opt_command.extend(["-mem2reg", "-loop-simplify", "-simplifycfg",
-                                "-lowerswitch"])
+            opt_command.extend(["-lowerswitch", "-mem2reg", "-loop-simplify",
+                                "-simplifycfg"])
         elif command == "llvm-link":
             opt_command.append("-constmerge")
         else:
             raise BuildException("Invalid call to {}".format(command))
-        check_call(opt_command)
+        try:
+            check_call(opt_command)
+        except CalledProcessError:
+            raise BuildException("Running opt failed")
 
     def kbuild_to_llvm_commands(self, kbuild_commands, file_name):
         """
