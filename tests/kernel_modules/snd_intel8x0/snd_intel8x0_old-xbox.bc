@@ -573,9 +573,9 @@ target triple = "x86_64-unknown-linux-gnu"
 @.str.34 = private unnamed_addr constant [31 x i8] c"\013AC'97 space ioremap problem\0A\00", align 1
 @.str.35 = private unnamed_addr constant [36 x i8] c"\013Controller space ioremap problem\0A\00", align 1
 @snd_intel8x0_create.bdbars = internal global [5 x i32] [i32 3, i32 6, i32 3, i32 6, i32 4], align 16
-@snd_intel8x0_create.ali_regs = internal global [6 x %struct.exception_table_entry] [%struct.exception_table_entry { i32 65536, i32 64 }, %struct.exception_table_entry { i32 131072, i32 80 }, %struct.exception_table_entry { i32 262144, i32 96 }, %struct.exception_table_entry { i32 524288, i32 112 }, %struct.exception_table_entry { i32 4194304, i32 160 }, %struct.exception_table_entry { i32 8388608, i32 176 }], align 16
 @snd_intel8x0_create.intel_regs = internal global [6 x %struct.exception_table_entry] [%struct.exception_table_entry { i32 32, i32 0 }, %struct.exception_table_entry { i32 64, i32 16 }, %struct.exception_table_entry { i32 128, i32 32 }, %struct.exception_table_entry { i32 16777216, i32 64 }, %struct.exception_table_entry { i32 33554432, i32 80 }, %struct.exception_table_entry { i32 67108864, i32 96 }], align 16
 @snd_intel8x0_create.nforce_regs = internal global [4 x %struct.exception_table_entry] [%struct.exception_table_entry { i32 32, i32 0 }, %struct.exception_table_entry { i32 64, i32 16 }, %struct.exception_table_entry { i32 128, i32 32 }, %struct.exception_table_entry { i32 16, i32 112 }], align 16
+@snd_intel8x0_create.ali_regs = internal global [6 x %struct.exception_table_entry] [%struct.exception_table_entry { i32 65536, i32 64 }, %struct.exception_table_entry { i32 131072, i32 80 }, %struct.exception_table_entry { i32 262144, i32 96 }, %struct.exception_table_entry { i32 524288, i32 112 }, %struct.exception_table_entry { i32 4194304, i32 160 }, %struct.exception_table_entry { i32 8388608, i32 176 }], align 16
 @.str.36 = private unnamed_addr constant [48 x i8] c"\013intel8x0: cannot allocate buffer descriptors\0A\00", align 1
 @ich_codec_bits = internal global [3 x i32] [i32 256, i32 512, i32 268435456], align 4
 @sis_codec_bits = internal global [3 x i32] [i32 256, i32 512, i32 262144], align 4
@@ -668,26 +668,32 @@ if.end4:                                          ; preds = %if.then2, %if.end
 if.then6:                                         ; preds = %if.end4
   %driver_data = getelementptr inbounds %struct.pci_device_id, %struct.pci_device_id* %pci_id, i32 0, i32 6
   %7 = load i64, i64* %driver_data, align 8, !tbaa !8
-  switch i64 %7, label %if.end14 [
-    i64 4, label %sw.bb
-    i64 1, label %sw.bb10
-  ]
+  %Pivot = icmp slt i64 %7, 4
+  br i1 %Pivot, label %LeafBlock, label %LeafBlock1
 
-sw.bb:                                            ; preds = %if.then6
+LeafBlock1:                                       ; preds = %if.then6
+  %SwitchLeaf2 = icmp eq i64 %7, 4
+  br i1 %SwitchLeaf2, label %sw.bb, label %if.end14
+
+LeafBlock:                                        ; preds = %if.then6
+  %SwitchLeaf = icmp eq i64 %7, 1
+  br i1 %SwitchLeaf, label %sw.bb10, label %if.end14
+
+sw.bb:                                            ; preds = %LeafBlock1
   %8 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
   %driver7 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %8, i32 0, i32 2
   %arraydecay8 = getelementptr inbounds [16 x i8], [16 x i8]* %driver7, i32 0, i32 0
   %call9 = call i8* @strcpy(i8* %arraydecay8, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.3, i32 0, i32 0))
   br label %if.end14
 
-sw.bb10:                                          ; preds = %if.then6
+sw.bb10:                                          ; preds = %LeafBlock
   %9 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
   %driver11 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %9, i32 0, i32 2
   %arraydecay12 = getelementptr inbounds [16 x i8], [16 x i8]* %driver11, i32 0, i32 0
   %call13 = call i8* @strcpy(i8* %arraydecay12, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.4, i32 0, i32 0))
   br label %if.end14
 
-if.end14:                                         ; preds = %sw.bb10, %sw.bb, %if.then6, %if.end4
+if.end14:                                         ; preds = %sw.bb10, %sw.bb, %LeafBlock, %LeafBlock1, %if.end4
   %10 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
   %shortname = getelementptr inbounds %struct.snd_card, %struct.snd_card* %10, i32 0, i32 3
   %arraydecay15 = getelementptr inbounds [32 x i8], [32 x i8]* %shortname, i32 0, i32 0
@@ -1133,8 +1139,8 @@ for.inc54:                                        ; preds = %if.then44, %land.lh
 if.end57:                                         ; preds = %for.cond32, %for.end
   br label %for.cond58
 
-for.cond58:                                       ; preds = %cleanup, %if.end57
-  %i.2 = phi i32 [ 0, %if.end57 ], [ %inc95, %cleanup ]
+for.cond58:                                       ; preds = %LeafBlock, %if.end57
+  %i.2 = phi i32 [ 0, %if.end57 ], [ %inc95, %LeafBlock ]
   %bdbars_count59 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %4, i32 0, i32 21
   %19 = load i32, i32* %bdbars_count59, align 8, !tbaa !50
   %cmp60 = icmp ult i32 %i.2, %19
@@ -1149,7 +1155,7 @@ for.body62:                                       ; preds = %for.cond58
   %substream67 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx66, i32 0, i32 4
   %21 = load %struct.snd_pcm_substream*, %struct.snd_pcm_substream** %substream67, align 8, !tbaa !51
   %tobool68 = icmp ne %struct.snd_pcm_substream* %21, null
-  br i1 %tobool68, label %lor.lhs.false, label %cleanup
+  br i1 %tobool68, label %lor.lhs.false, label %LeafBlock
 
 lor.lhs.false:                                    ; preds = %for.body62
   %suspended = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx66, i32 0, i32 25
@@ -1158,7 +1164,7 @@ lor.lhs.false:                                    ; preds = %for.body62
   %bf.clear71 = and i8 %bf.lshr70, 1
   %bf.cast72 = zext i8 %bf.clear71 to i32
   %tobool73 = icmp ne i32 %bf.cast72, 0
-  br i1 %tobool73, label %if.end75, label %cleanup
+  br i1 %tobool73, label %if.end75, label %LeafBlock
 
 if.end75:                                         ; preds = %lor.lhs.false
   %ichd76 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx66, i32 0, i32 0
@@ -1198,11 +1204,11 @@ if.end82:                                         ; preds = %if.then79, %if.end7
   %add91 = add i64 %20, %conv90
   %conv92 = trunc i64 %add91 to i32
   call void @iputbyte(%struct.intel8x0* %4, i32 %conv92, i8 zeroext 28)
-  br label %cleanup
+  br label %LeafBlock
 
-cleanup:                                          ; preds = %if.end82, %lor.lhs.false, %for.body62
+LeafBlock:                                        ; preds = %if.end82, %lor.lhs.false, %for.body62
   %cleanup.dest.slot.0 = phi i32 [ 0, %if.end82 ], [ 14, %lor.lhs.false ], [ 14, %for.body62 ]
-  %switch = icmp ult i32 %cleanup.dest.slot.0, 1
+  %SwitchLeaf = icmp eq i32 %cleanup.dest.slot.0, 14
   %inc95 = add nsw i32 %i.2, 1
   br label %for.cond58
 
@@ -1512,12 +1518,18 @@ entry:
   call void @spin_lock_irq(%struct.spinlock* %reg_lock)
   %device_type = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
   %1 = load i32, i32* %device_type, align 8, !tbaa !68
-  switch i32 %1, label %sw.default [
-    i32 3, label %sw.bb
-    i32 2, label %sw.bb9
-  ]
+  %Pivot = icmp slt i32 %1, 3
+  br i1 %Pivot, label %LeafBlock, label %LeafBlock1
 
-sw.bb:                                            ; preds = %entry
+LeafBlock1:                                       ; preds = %entry
+  %SwitchLeaf2 = icmp eq i32 %1, 3
+  br i1 %SwitchLeaf2, label %sw.bb, label %sw.default
+
+LeafBlock:                                        ; preds = %entry
+  %SwitchLeaf = icmp eq i32 %1, 2
+  br i1 %SwitchLeaf, label %sw.bb9, label %sw.default
+
+sw.bb:                                            ; preds = %LeafBlock1
   %call = call i32 @igetdword(%struct.intel8x0* %chip, i32 0)
   %and = and i32 %call, -769
   %channels = getelementptr inbounds %struct.snd_pcm_runtime, %struct.snd_pcm_runtime* %runtime, i32 0, i32 14
@@ -1544,15 +1556,15 @@ if.end8:                                          ; preds = %if.else, %if.then
   call void @iputdword(%struct.intel8x0* %chip, i32 0, i32 %cnt.1)
   br label %sw.epilog
 
-sw.bb9:                                           ; preds = %entry
+sw.bb9:                                           ; preds = %LeafBlock
   %call10 = call i32 @igetdword(%struct.intel8x0* %chip, i32 44)
   %and11 = and i32 %call10, -193
   %channels12 = getelementptr inbounds %struct.snd_pcm_runtime, %struct.snd_pcm_runtime* %runtime, i32 0, i32 14
   %4 = load i32, i32* %channels12, align 8, !tbaa !82
   %cmp13 = icmp eq i32 %4, 4
   %tobool16 = icmp ne i32 %conv, 0
-  %or.cond1 = or i1 %cmp13, %tobool16
-  br i1 %or.cond1, label %if.then17, label %if.else19
+  %or.cond3 = or i1 %cmp13, %tobool16
+  br i1 %or.cond3, label %if.then17, label %if.else19
 
 if.then17:                                        ; preds = %sw.bb9
   %or18 = or i32 %and11, 64
@@ -1571,15 +1583,15 @@ if.end26:                                         ; preds = %if.else19, %if.then
   call void @iputdword(%struct.intel8x0* %chip, i32 44, i32 %cnt.3)
   br label %sw.epilog
 
-sw.default:                                       ; preds = %entry
+sw.default:                                       ; preds = %LeafBlock, %LeafBlock1
   %call27 = call i32 @igetdword(%struct.intel8x0* %chip, i32 44)
   %and28 = and i32 %call27, -7340033
   %channels29 = getelementptr inbounds %struct.snd_pcm_runtime, %struct.snd_pcm_runtime* %runtime, i32 0, i32 14
   %6 = load i32, i32* %channels29, align 8, !tbaa !82
   %cmp30 = icmp eq i32 %6, 4
   %tobool33 = icmp ne i32 %conv, 0
-  %or.cond2 = or i1 %cmp30, %tobool33
-  br i1 %or.cond2, label %if.then34, label %if.else36
+  %or.cond4 = or i1 %cmp30, %tobool33
+  br i1 %or.cond4, label %if.then34, label %if.else36
 
 if.then34:                                        ; preds = %sw.default
   %or35 = or i32 %and28, 1048576
@@ -2575,22 +2587,37 @@ entry:
 if.then:                                          ; preds = %entry
   %device_type = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
   %3 = load i32, i32* %device_type, align 8, !tbaa !68
-  switch i32 %3, label %if.end [
-    i32 4, label %sw.epilog.sink.split
-    i32 3, label %sw.epilog.sink.split
-    i32 1, label %sw.bb4
-  ]
+  %Pivot4 = icmp slt i32 %3, 3
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb4:                                           ; preds = %if.then
-  br label %sw.epilog.sink.split
+NodeBlock:                                        ; preds = %if.then
+  %Pivot = icmp slt i32 %3, 4
+  br i1 %Pivot, label %sw.bb2, label %LeafBlock1
 
-sw.epilog.sink.split:                             ; preds = %sw.bb4, %if.then, %if.then
-  %.sink = phi i32 [ 5, %sw.bb4 ], [ 3, %if.then ], [ 3, %if.then ]
-  %spdif_idx5 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
-  store i32 %.sink, i32* %spdif_idx5, align 4, !tbaa !106
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %3, 4
+  br i1 %SwitchLeaf2, label %sw.bb, label %if.end
+
+LeafBlock:                                        ; preds = %if.then
+  %SwitchLeaf = icmp eq i32 %3, 1
+  br i1 %SwitchLeaf, label %sw.bb4, label %if.end
+
+sw.bb:                                            ; preds = %LeafBlock1
+  %spdif_idx1 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
+  store i32 3, i32* %spdif_idx1, align 4, !tbaa !106
   br label %if.end
 
-if.end:                                           ; preds = %sw.epilog.sink.split, %if.then, %entry
+sw.bb2:                                           ; preds = %NodeBlock
+  %spdif_idx3 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
+  store i32 3, i32* %spdif_idx3, align 4, !tbaa !106
+  br label %if.end
+
+sw.bb4:                                           ; preds = %LeafBlock
+  %spdif_idx5 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
+  store i32 5, i32* %spdif_idx5, align 4, !tbaa !106
+  br label %if.end
+
+if.end:                                           ; preds = %sw.bb4, %sw.bb2, %sw.bb, %LeafBlock, %LeafBlock1, %entry
   %in_ac97_init = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 9
   %bf.load = load i16, i16* %in_ac97_init, align 8
   %bf.clear = and i16 %bf.load, -33
@@ -2700,11 +2727,11 @@ if.end42:                                         ; preds = %if.then41, %if.then
   br i1 %tobool50, label %if.end59.sink.split, label %if.end59
 
 if.end59.sink.split:                              ; preds = %if.end42, %if.end20
-  %.sink1 = phi i32 [ 0, %if.end42 ], [ %i.0, %if.end20 ]
+  %.sink = phi i32 [ 0, %if.end42 ], [ %i.0, %if.end20 ]
   %ac97_sdin52 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 14
   %idxprom53 = zext i32 %codecs.0 to i64
   %arrayidx54 = getelementptr inbounds [3 x i32], [3 x i32]* %ac97_sdin52, i64 0, i64 %idxprom53
-  store i32 %.sink1, i32* %arrayidx54, align 4, !tbaa !2
+  store i32 %.sink, i32* %arrayidx54, align 4, !tbaa !2
   br label %if.end59
 
 if.end59:                                         ; preds = %if.end59.sink.split, %if.end42
@@ -2738,27 +2765,27 @@ for.body71:                                       ; preds = %for.cond68
   %call72 = call i32 @igetdword(%struct.intel8x0* %chip, i32 52)
   %and73 = and i32 %call72, 64
   %tobool74 = icmp ne i32 %and73, 0
-  br i1 %tobool74, label %cleanup, label %if.end76
+  br i1 %tobool74, label %LeafBlock6, label %if.end76
 
 if.end76:                                         ; preds = %for.body71
   %or77 = or i32 %call72, 64
   call void @iputdword(%struct.intel8x0* %chip, i32 52, i32 %or77)
   call void @__const_udelay(i64 4295)
-  br label %cleanup
+  br label %LeafBlock6
 
-cleanup:                                          ; preds = %if.end76, %for.body71
+LeafBlock6:                                       ; preds = %if.end76, %for.body71
   %codecs.4 = phi i32 [ %codecs.3, %if.end76 ], [ 2, %for.body71 ]
   %cleanup.dest.slot.0 = phi i32 [ 0, %if.end76 ], [ 6, %for.body71 ]
-  %switch = icmp ult i32 %cleanup.dest.slot.0, 1
-  br i1 %switch, label %for.inc78, label %if.end81
+  %SwitchLeaf7 = icmp eq i32 %cleanup.dest.slot.0, 6
+  br i1 %SwitchLeaf7, label %if.end81, label %for.inc78
 
-for.inc78:                                        ; preds = %cleanup
+for.inc78:                                        ; preds = %LeafBlock6
   %inc79 = add i32 %i.1, 1
   br label %for.cond68
 
-if.end81:                                         ; preds = %cleanup, %for.cond68, %for.end
-  %codecs.6 = phi i32 [ %codecs.0., %for.end ], [ %codecs.4, %cleanup ], [ %codecs.3, %for.cond68 ]
-  %ops.0 = phi %struct.snd_ac97_bus_ops* [ @snd_intel8x0_mixer.standard_bus_ops, %for.end ], [ @snd_intel8x0_mixer.ali_bus_ops, %cleanup ], [ @snd_intel8x0_mixer.ali_bus_ops, %for.cond68 ]
+if.end81:                                         ; preds = %LeafBlock6, %for.cond68, %for.end
+  %codecs.6 = phi i32 [ %codecs.0., %for.end ], [ %codecs.4, %LeafBlock6 ], [ %codecs.3, %for.cond68 ]
+  %ops.0 = phi %struct.snd_ac97_bus_ops* [ @snd_intel8x0_mixer.standard_bus_ops, %for.end ], [ @snd_intel8x0_mixer.ali_bus_ops, %LeafBlock6 ], [ @snd_intel8x0_mixer.ali_bus_ops, %for.cond68 ]
   %card = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 5
   %13 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !112
   %14 = bitcast %struct.intel8x0* %chip to i8*
@@ -2788,10 +2815,10 @@ if.end93:                                         ; preds = %if.then92, %if.end8
   %18 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
   %no_vra = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %18, i32 0, i32 5
   %bf.load98 = load i8, i8* %no_vra, align 2
-  %.sink3 = select i1 %cmp95, i8 -2, i8 -3
-  %.sink2 = select i1 %cmp95, i8 1, i8 2
-  %bf.clear103 = and i8 %bf.load98, %.sink3
-  %bf.set104 = or i8 %bf.clear103, %.sink2
+  %.sink9 = select i1 %cmp95, i8 -2, i8 -3
+  %.sink8 = select i1 %cmp95, i8 1, i8 2
+  %bf.clear103 = and i8 %bf.load98, %.sink9
+  %bf.set104 = or i8 %bf.clear103, %.sink8
   store i8 %bf.set104, i8* %no_vra, align 2
   %19 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
   %ac97_bus = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
@@ -3123,8 +3150,8 @@ if.end310:                                        ; preds = %if.then305, %if.the
   %cmp312 = icmp ne i32 %62, 4
   %63 = load i32, i32* @spdif_aclink, align 4
   %tobool315 = icmp ne i32 %63, 0
-  %or.cond4 = or i1 %cmp312, %tobool315
-  br i1 %or.cond4, label %if.end322, label %if.then316
+  %or.cond10 = or i1 %cmp312, %tobool315
+  br i1 %or.cond10, label %if.end322, label %if.then316
 
 if.then316:                                       ; preds = %if.end310
   %ichd317 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
@@ -3144,8 +3171,8 @@ if.end322:                                        ; preds = %if.then316, %if.end
   %cmp324 = icmp ne i32 %66, 1
   %67 = load i32, i32* @spdif_aclink, align 4
   %tobool327 = icmp ne i32 %67, 0
-  %or.cond5 = or i1 %cmp324, %tobool327
-  br i1 %or.cond5, label %if.end335, label %if.then328
+  %or.cond11 = or i1 %cmp324, %tobool327
+  br i1 %or.cond11, label %if.end335, label %if.then328
 
 if.then328:                                       ; preds = %if.end322
   %call329 = call i32 @igetdword(%struct.intel8x0* %chip, i32 44)
@@ -3192,32 +3219,38 @@ define internal i32 @snd_intel8x0_pcm(%struct.intel8x0* %chip) #2 {
 entry:
   %device_type = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
   %0 = load i32, i32* %device_type, align 8, !tbaa !68
-  switch i32 %0, label %sw.default [
-    i32 1, label %sw.bb
-    i32 4, label %sw.bb1
-    i32 3, label %sw.epilog
-  ]
+  %Pivot4 = icmp slt i32 %0, 3
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb:                                            ; preds = %entry
+NodeBlock:                                        ; preds = %entry
+  %Pivot = icmp slt i32 %0, 4
+  br i1 %Pivot, label %sw.epilog, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %0, 4
+  br i1 %SwitchLeaf2, label %sw.bb1, label %sw.epilog
+
+LeafBlock:                                        ; preds = %entry
+  %SwitchLeaf = icmp eq i32 %0, 1
+  br i1 %SwitchLeaf, label %sw.bb, label %sw.epilog
+
+sw.bb:                                            ; preds = %LeafBlock
   %1 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
   %tobool = icmp ne i32 %1, 0
   %dec = add nsw i32 5, -1
   %dec. = select i1 %tobool, i32 %dec, i32 5
   br label %sw.epilog
 
-sw.bb1:                                           ; preds = %entry
+sw.bb1:                                           ; preds = %LeafBlock1
   %2 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
   %tobool2 = icmp ne i32 %2, 0
   %dec4 = add nsw i32 3, -1
   %dec4. = select i1 %tobool2, i32 %dec4, i32 3
   br label %sw.epilog
 
-sw.default:                                       ; preds = %entry
-  br label %sw.epilog
-
-sw.epilog:                                        ; preds = %sw.default, %sw.bb1, %sw.bb, %entry
-  %tbl.0 = phi %struct.ich_pcm_table* [ getelementptr inbounds ([5 x %struct.ich_pcm_table], [5 x %struct.ich_pcm_table]* @intel_pcms, i32 0, i32 0), %sw.default ], [ getelementptr inbounds ([3 x %struct.ich_pcm_table], [3 x %struct.ich_pcm_table]* @nforce_pcms, i32 0, i32 0), %sw.bb1 ], [ getelementptr inbounds ([5 x %struct.ich_pcm_table], [5 x %struct.ich_pcm_table]* @intel_pcms, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([3 x %struct.ich_pcm_table], [3 x %struct.ich_pcm_table]* @ali_pcms, i32 0, i32 0), %entry ]
-  %tblsize.2 = phi i32 [ 2, %sw.default ], [ %dec4., %sw.bb1 ], [ %dec., %sw.bb ], [ 3, %entry ]
+sw.epilog:                                        ; preds = %sw.bb1, %sw.bb, %LeafBlock, %LeafBlock1, %NodeBlock
+  %tbl.0 = phi %struct.ich_pcm_table* [ getelementptr inbounds ([5 x %struct.ich_pcm_table], [5 x %struct.ich_pcm_table]* @intel_pcms, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([3 x %struct.ich_pcm_table], [3 x %struct.ich_pcm_table]* @nforce_pcms, i32 0, i32 0), %sw.bb1 ], [ getelementptr inbounds ([3 x %struct.ich_pcm_table], [3 x %struct.ich_pcm_table]* @ali_pcms, i32 0, i32 0), %NodeBlock ], [ getelementptr inbounds ([5 x %struct.ich_pcm_table], [5 x %struct.ich_pcm_table]* @intel_pcms, i32 0, i32 0), %LeafBlock ], [ getelementptr inbounds ([5 x %struct.ich_pcm_table], [5 x %struct.ich_pcm_table]* @intel_pcms, i32 0, i32 0), %LeafBlock1 ]
+  %tblsize.2 = phi i32 [ %dec., %sw.bb ], [ %dec4., %sw.bb1 ], [ 3, %NodeBlock ], [ 2, %LeafBlock ], [ 2, %LeafBlock1 ]
   br label %for.cond
 
 for.cond:                                         ; preds = %for.inc, %sw.epilog
@@ -3694,6 +3727,7 @@ __end:                                            ; preds = %if.then155, %if.els
   br label %cleanup
 
 cleanup:                                          ; preds = %__end, %if.then11, %if.then3, %entry
+  %cleanup.dest.slot.0 = phi i32 [ 1, %if.then3 ], [ 1, %if.then11 ], [ 0, %__end ], [ 1, %entry ]
   %38 = bitcast %struct.load_weight* %stop_time to i8*
   call void @llvm.lifetime.end.p0i8(i64 16, i8* %38) #7
   %39 = bitcast %struct.load_weight* %start_time to i8*
@@ -3965,6 +3999,7 @@ if.then29:                                        ; preds = %lor.lhs.false, %if.
   br label %cleanup.cont
 
 cleanup.cont:                                     ; preds = %if.then29, %lor.lhs.false, %entry
+  %cleanup.dest.slot.0 = phi i32 [ 1, %entry ], [ 0, %if.then29 ], [ 0, %lor.lhs.false ]
   ret void
 }
 
@@ -4101,13 +4136,13 @@ if.end37:                                         ; preds = %if.else30, %if.then
   %ac97_idx = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 5
   %28 = load i32, i32* %ac97_idx, align 8, !tbaa !129
   %cmp40 = icmp eq i32 %28, 1
-  br i1 %cmp40, label %land.lhs.true, label %if.end73
+  br i1 %cmp40, label %land.lhs.true, label %cleanup74
 
 land.lhs.true:                                    ; preds = %if.end37
   %playback_ops41 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 1
   %29 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops41, align 8, !tbaa !148
   %tobool42 = icmp ne %struct.snd_pcm_ops* %29, null
-  br i1 %tobool42, label %if.then43, label %if.end73
+  br i1 %tobool42, label %if.then43, label %cleanup74
 
 if.then43:                                        ; preds = %land.lhs.true
   %30 = bitcast %struct.snd_pcm_chmap** %chmap to i8*
@@ -4168,14 +4203,12 @@ cleanup:                                          ; preds = %if.end69, %if.end65
   %cleanup.dest.slot.0 = phi i32 [ 0, %if.end69 ], [ 1, %if.end65 ]
   %36 = bitcast %struct.snd_pcm_chmap** %chmap to i8*
   call void @llvm.lifetime.end.p0i8(i64 8, i8* %36) #7
-  %cond1 = icmp eq i32 %cleanup.dest.slot.0, 0
-  br i1 %cond1, label %if.end73, label %cleanup74
-
-if.end73:                                         ; preds = %cleanup, %land.lhs.true, %if.end37
+  %SwitchLeaf = icmp eq i32 %cleanup.dest.slot.0, 0
+  %.call66 = select i1 %SwitchLeaf, i32 0, i32 %call66
   br label %cleanup74
 
-cleanup74:                                        ; preds = %if.end73, %cleanup, %if.end
-  %retval.1 = phi i32 [ %call66, %cleanup ], [ 0, %if.end73 ], [ %call8, %if.end ]
+cleanup74:                                        ; preds = %cleanup, %land.lhs.true, %if.end37, %if.end
+  %retval.1 = phi i32 [ %call8, %if.end ], [ 0, %land.lhs.true ], [ 0, %if.end37 ], [ %.call66, %cleanup ]
   %37 = bitcast [32 x i8]* %name to i8*
   call void @llvm.lifetime.end.p0i8(i64 32, i8* %37) #7
   %38 = bitcast %struct.snd_pcm** %pcm to i8*
@@ -4502,23 +4535,45 @@ entry:
   %reg_offset = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 1
   %5 = load i64, i64* %reg_offset, align 8, !tbaa !71
   %call = call i32 @igetdword(%struct.intel8x0* %1, i32 8)
-  switch i32 %cmd, label %cleanup [
-    i32 6, label %sw.bb
-    i32 1, label %sw.bb2
-    i32 4, label %sw.bb2
-    i32 5, label %sw.bb20
-    i32 0, label %sw.bb24
-    i32 3, label %sw.bb24
-  ]
+  %Pivot12 = icmp slt i32 %cmd, 4
+  br i1 %Pivot12, label %NodeBlock3, label %NodeBlock9
 
-sw.bb:                                            ; preds = %entry
+NodeBlock9:                                       ; preds = %entry
+  %Pivot10 = icmp slt i32 %cmd, 5
+  br i1 %Pivot10, label %sw.bb2, label %NodeBlock7
+
+NodeBlock7:                                       ; preds = %NodeBlock9
+  %Pivot8 = icmp slt i32 %cmd, 6
+  br i1 %Pivot8, label %sw.bb20, label %LeafBlock5
+
+LeafBlock5:                                       ; preds = %NodeBlock7
+  %SwitchLeaf6 = icmp eq i32 %cmd, 6
+  br i1 %SwitchLeaf6, label %sw.bb, label %cleanup
+
+NodeBlock3:                                       ; preds = %entry
+  %Pivot4 = icmp slt i32 %cmd, 1
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
+
+NodeBlock:                                        ; preds = %NodeBlock3
+  %Pivot = icmp slt i32 %cmd, 3
+  br i1 %Pivot, label %LeafBlock1, label %sw.bb24
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %cmd, 1
+  br i1 %SwitchLeaf2, label %sw.bb2, label %cleanup
+
+LeafBlock:                                        ; preds = %NodeBlock3
+  %SwitchLeaf = icmp eq i32 %cmd, 0
+  br i1 %SwitchLeaf, label %sw.bb24, label %cleanup
+
+sw.bb:                                            ; preds = %LeafBlock5
   %suspended = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 25
   %bf.load = load i8, i8* %suspended, align 4
   %bf.clear = and i8 %bf.load, -3
   store i8 %bf.clear, i8* %suspended, align 4
   br label %sw.bb2
 
-sw.bb2:                                           ; preds = %sw.bb, %entry, %entry
+sw.bb2:                                           ; preds = %sw.bb, %LeafBlock1, %NodeBlock9
   %stream = getelementptr inbounds %struct.snd_pcm_substream, %struct.snd_pcm_substream* %substream, i32 0, i32 5
   %6 = load i32, i32* %stream, align 4, !tbaa !164
   %cmp = icmp eq i32 %6, 0
@@ -4569,7 +4624,7 @@ if.end:                                           ; preds = %if.then, %sw.bb2
   call void @iputdword(%struct.intel8x0* %1, i32 8, i32 %or19)
   br label %cleanup
 
-sw.bb20:                                          ; preds = %entry
+sw.bb20:                                          ; preds = %NodeBlock7
   %suspended21 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 25
   %bf.load22 = load i8, i8* %suspended21, align 4
   %bf.clear23 = and i8 %bf.load22, -3
@@ -4577,7 +4632,7 @@ sw.bb20:                                          ; preds = %entry
   store i8 %bf.set, i8* %suspended21, align 4
   br label %sw.bb24
 
-sw.bb24:                                          ; preds = %sw.bb20, %entry, %entry
+sw.bb24:                                          ; preds = %sw.bb20, %LeafBlock, %NodeBlock
   %ali_slot25 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 22
   %15 = load i32, i32* %ali_slot25, align 4, !tbaa !139
   %add26 = add i32 %15, 16
@@ -4623,8 +4678,8 @@ if.end37:                                         ; preds = %while.end
   call void @iputdword(%struct.intel8x0* %1, i32 24, i32 %and49)
   br label %cleanup
 
-cleanup:                                          ; preds = %if.end37, %while.end, %if.end, %entry
-  %retval.0 = phi i32 [ -22, %entry ], [ 0, %while.end ], [ 0, %if.end37 ], [ 0, %if.end ]
+cleanup:                                          ; preds = %if.end37, %while.end, %if.end, %LeafBlock, %LeafBlock1, %LeafBlock5
+  %retval.0 = phi i32 [ -22, %LeafBlock ], [ -22, %LeafBlock1 ], [ -22, %LeafBlock5 ], [ 0, %while.end ], [ 0, %if.end37 ], [ 0, %if.end ]
   ret i32 %retval.0
 }
 
@@ -5130,30 +5185,52 @@ entry:
   %4 = bitcast i8* %3 to %struct.ichdev*
   %reg_offset = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 1
   %5 = load i64, i64* %reg_offset, align 8, !tbaa !71
-  switch i32 %cmd, label %cleanup [
-    i32 6, label %sw.bb
-    i32 1, label %sw.bb2
-    i32 4, label %sw.bb2
-    i32 5, label %sw.bb3
-    i32 0, label %sw.epilog
-    i32 3, label %sw.bb8
-  ]
+  %Pivot12 = icmp slt i32 %cmd, 4
+  br i1 %Pivot12, label %NodeBlock3, label %NodeBlock9
 
-sw.bb:                                            ; preds = %entry
+NodeBlock9:                                       ; preds = %entry
+  %Pivot10 = icmp slt i32 %cmd, 5
+  br i1 %Pivot10, label %sw.bb2, label %NodeBlock7
+
+NodeBlock7:                                       ; preds = %NodeBlock9
+  %Pivot8 = icmp slt i32 %cmd, 6
+  br i1 %Pivot8, label %sw.bb3, label %LeafBlock5
+
+LeafBlock5:                                       ; preds = %NodeBlock7
+  %SwitchLeaf6 = icmp eq i32 %cmd, 6
+  br i1 %SwitchLeaf6, label %sw.bb, label %cleanup
+
+NodeBlock3:                                       ; preds = %entry
+  %Pivot4 = icmp slt i32 %cmd, 1
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
+
+NodeBlock:                                        ; preds = %NodeBlock3
+  %Pivot = icmp slt i32 %cmd, 3
+  br i1 %Pivot, label %LeafBlock1, label %sw.epilog
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %cmd, 1
+  br i1 %SwitchLeaf2, label %sw.bb2, label %cleanup
+
+LeafBlock:                                        ; preds = %NodeBlock3
+  %SwitchLeaf = icmp eq i32 %cmd, 0
+  br i1 %SwitchLeaf, label %sw.epilog, label %cleanup
+
+sw.bb:                                            ; preds = %LeafBlock5
   %suspended = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 25
   %bf.load = load i8, i8* %suspended, align 4
   %bf.clear = and i8 %bf.load, -3
   store i8 %bf.clear, i8* %suspended, align 4
   br label %sw.bb2
 
-sw.bb2:                                           ; preds = %sw.bb, %entry, %entry
+sw.bb2:                                           ; preds = %sw.bb, %LeafBlock1, %NodeBlock9
   %position = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 9
   %6 = load i32, i32* %position, align 8, !tbaa !86
   %last_pos = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 11
   store i32 %6, i32* %last_pos, align 8, !tbaa !165
   br label %sw.epilog
 
-sw.bb3:                                           ; preds = %entry
+sw.bb3:                                           ; preds = %NodeBlock7
   %suspended4 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %4, i32 0, i32 25
   %bf.load5 = load i8, i8* %suspended4, align 4
   %bf.clear6 = and i8 %bf.load5, -3
@@ -5161,11 +5238,8 @@ sw.bb3:                                           ; preds = %entry
   store i8 %bf.set, i8* %suspended4, align 4
   br label %sw.epilog
 
-sw.bb8:                                           ; preds = %entry
-  br label %sw.epilog
-
-sw.epilog:                                        ; preds = %sw.bb8, %sw.bb3, %sw.bb2, %entry
-  %val.0 = phi i8 [ 16, %sw.bb8 ], [ 17, %sw.bb2 ], [ 0, %sw.bb3 ], [ 0, %entry ]
+sw.epilog:                                        ; preds = %sw.bb3, %sw.bb2, %LeafBlock, %NodeBlock
+  %val.0 = phi i8 [ 17, %sw.bb2 ], [ 0, %LeafBlock ], [ 0, %sw.bb3 ], [ 16, %NodeBlock ]
   %add = add i64 %5, 11
   %conv = trunc i64 %add to i32
   call void @iputbyte(%struct.intel8x0* %1, i32 %conv, i8 zeroext %val.0)
@@ -5197,8 +5271,8 @@ while.end:                                        ; preds = %while.cond
   call void @iputbyte(%struct.intel8x0* %1, i32 %conv15, i8 zeroext 2)
   br label %cleanup
 
-cleanup:                                          ; preds = %while.end, %sw.epilog, %entry
-  %retval.0 = phi i32 [ -22, %entry ], [ 0, %while.end ], [ 0, %sw.epilog ]
+cleanup:                                          ; preds = %while.end, %sw.epilog, %LeafBlock, %LeafBlock1, %LeafBlock5
+  %retval.0 = phi i32 [ -22, %LeafBlock ], [ -22, %LeafBlock1 ], [ -22, %LeafBlock5 ], [ 0, %while.end ], [ 0, %sw.epilog ]
   ret i32 %retval.0
 }
 
@@ -5348,6 +5422,7 @@ if.end:                                           ; preds = %entry
   br label %cleanup.cont
 
 cleanup.cont:                                     ; preds = %if.end, %entry
+  %cleanup.dest.slot.0 = phi i32 [ 0, %if.end ], [ 1, %entry ]
   ret void
 }
 
@@ -5460,8 +5535,8 @@ for.body:                                         ; preds = %for.cond
   %tobool = icmp ne i32 %and, 0
   %. = select i1 %tobool, i32 1, i32 0
   %.retval.0 = select i1 %tobool, i32 0, i32 %retval.0
-  %cond = icmp eq i32 %., 0
-  br i1 %cond, label %for.inc, label %cleanup4
+  %SwitchLeaf = icmp eq i32 %., 0
+  br i1 %SwitchLeaf, label %for.inc, label %cleanup4
 
 for.inc:                                          ; preds = %for.body
   %inc = add nsw i32 %count.0, 1

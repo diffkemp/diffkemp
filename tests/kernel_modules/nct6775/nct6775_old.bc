@@ -1362,19 +1362,26 @@ if.end5:                                          ; preds = %if.else, %if.then2
   %val.0 = phi i16 [ %1, %if.then2 ], [ %conv, %if.else ]
   %conv6 = zext i16 %val.0 to i32
   %and = and i32 %conv6, 65520
-  switch i32 %and, label %sw.default [
-    i32 46192, label %sw.bb
-    i32 49968, label %sw.epilog
-    i32 50528, label %sw.bb9
-  ]
+  %Pivot6 = icmp slt i32 %and, 49968
+  br i1 %Pivot6, label %LeafBlock, label %NodeBlock
 
-sw.bb:                                            ; preds = %if.end5
-  br label %sw.epilog
+NodeBlock:                                        ; preds = %if.end5
+  %Pivot = icmp slt i32 %and, 50528
+  br i1 %Pivot, label %LeafBlock1, label %LeafBlock3
 
-sw.bb9:                                           ; preds = %if.end5
-  br label %sw.epilog
+LeafBlock3:                                       ; preds = %NodeBlock
+  %SwitchLeaf4 = icmp eq i32 %and, 50528
+  br i1 %SwitchLeaf4, label %sw.epilog, label %sw.default
 
-sw.default:                                       ; preds = %if.end5
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %and, 49968
+  br i1 %SwitchLeaf2, label %sw.epilog, label %sw.default
+
+LeafBlock:                                        ; preds = %if.end5
+  %SwitchLeaf = icmp eq i32 %and, 46192
+  br i1 %SwitchLeaf, label %sw.epilog, label %sw.default
+
+sw.default:                                       ; preds = %LeafBlock, %LeafBlock1, %LeafBlock3
   %conv11 = zext i16 %val.0 to i32
   %cmp = icmp ne i32 %conv11, 65535
   br i1 %cmp, label %do.body, label %if.end23
@@ -1402,8 +1409,8 @@ if.end23:                                         ; preds = %do.body, %if.then19
   call void @superio_exit(i32 %sioaddr)
   br label %cleanup
 
-sw.epilog:                                        ; preds = %if.end5, %sw.bb9, %sw.bb
-  %.sink = phi i32 [ 2, %sw.bb9 ], [ 0, %sw.bb ], [ 1, %if.end5 ]
+sw.epilog:                                        ; preds = %LeafBlock, %LeafBlock3, %LeafBlock1
+  %.sink = phi i32 [ 1, %LeafBlock1 ], [ 2, %LeafBlock3 ], [ 0, %LeafBlock ]
   %kind10 = getelementptr inbounds %struct.nct6775_sio_data, %struct.nct6775_sio_data* %sio_data, i32 0, i32 1
   store i32 %.sink, i32* %kind10, align 4, !tbaa !28
   call void @superio_select(i32 %sioaddr, i32 11)
@@ -1456,7 +1463,7 @@ if.end47:                                         ; preds = %if.then43, %if.end3
   br label %cleanup
 
 cleanup:                                          ; preds = %entry, %if.end47, %if.then35, %if.end23
-  %retval.0 = phi i32 [ -19, %if.end23 ], [ -19, %if.then35 ], [ 0, %if.end47 ], [ %call, %entry ]
+  %retval.0 = phi i32 [ -19, %if.then35 ], [ 0, %if.end47 ], [ -19, %if.end23 ], [ %call, %entry ]
   ret i32 %retval.0
 }
 
@@ -1616,13 +1623,22 @@ if.end8:                                          ; preds = %if.end
   call void @platform_set_drvdata(%struct.platform_device* %pdev, i8* %10)
   %kind12 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 1
   %11 = load i32, i32* %kind12, align 4, !tbaa !54
-  switch i32 %11, label %cleanup806 [
-    i32 0, label %sw.bb
-    i32 1, label %sw.bb37
-    i32 2, label %sw.bb98
-  ]
+  %Pivot4 = icmp slt i32 %11, 1
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb:                                            ; preds = %if.end8
+NodeBlock:                                        ; preds = %if.end8
+  %Pivot = icmp slt i32 %11, 2
+  br i1 %Pivot, label %sw.bb37, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %11, 2
+  br i1 %SwitchLeaf2, label %sw.bb98, label %cleanup806
+
+LeafBlock:                                        ; preds = %if.end8
+  %SwitchLeaf = icmp eq i32 %11, 0
+  br i1 %SwitchLeaf, label %sw.bb, label %cleanup806
+
+sw.bb:                                            ; preds = %LeafBlock
   %in_num = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 42
   store i8 9, i8* %in_num, align 1, !tbaa !59
   %pwm_num = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 57
@@ -1687,7 +1703,7 @@ sw.bb:                                            ; preds = %if.end8
   store i16* getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_PWM, i32 0, i32 0), i16** %arrayidx21, align 8, !tbaa !14
   br label %sw.epilog
 
-sw.bb37:                                          ; preds = %if.end8
+sw.bb37:                                          ; preds = %NodeBlock
   %in_num38 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 42
   store i8 9, i8* %in_num38, align 1, !tbaa !59
   %pwm_num39 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 57
@@ -1751,7 +1767,7 @@ sw.bb37:                                          ; preds = %if.end8
   store i16* getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6776_REG_TOLERANCE_H, i32 0, i32 0), i16** %REG_TOLERANCE_H, align 8, !tbaa !81
   br label %sw.epilog
 
-sw.bb98:                                          ; preds = %if.end8
+sw.bb98:                                          ; preds = %LeafBlock1
   %in_num99 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 42
   store i8 15, i8* %in_num99, align 1, !tbaa !59
   %pwm_num100 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 57
@@ -1816,48 +1832,48 @@ sw.bb98:                                          ; preds = %if.end8
   br label %sw.epilog
 
 sw.epilog:                                        ; preds = %sw.bb98, %sw.bb37, %sw.bb
-  %.sink13 = phi i64 [ 0, %sw.bb98 ], [ 0, %sw.bb37 ], [ 1, %sw.bb ]
-  %.sink12 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_PWM, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_PWM, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_START_OUTPUT, i32 0, i32 0), %sw.bb ]
-  %.sink11 = phi i64 [ 1, %sw.bb98 ], [ 1, %sw.bb37 ], [ 2, %sw.bb ]
-  %.sink10 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_START_OUTPUT, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_START_OUTPUT, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_STOP_OUTPUT, i32 0, i32 0), %sw.bb ]
-  %.sink9 = phi i64 [ 2, %sw.bb98 ], [ 2, %sw.bb37 ], [ 3, %sw.bb ]
-  %.sink8 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_STOP_OUTPUT, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_STOP_OUTPUT, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_FAN_MAX_OUTPUT, i32 0, i32 0), %sw.bb ]
-  %.sink7 = phi i64 [ 5, %sw.bb98 ], [ 5, %sw.bb37 ], [ 4, %sw.bb ]
-  %.sink6 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_WEIGHT_DUTY_STEP, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_WEIGHT_DUTY_STEP, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_FAN_STEP_OUTPUT, i32 0, i32 0), %sw.bb ]
-  %.sink5 = phi i64 [ 6, %sw.bb98 ], [ 6, %sw.bb37 ], [ 5, %sw.bb ]
-  %.sink4 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6776_REG_WEIGHT_DUTY_BASE, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6776_REG_WEIGHT_DUTY_BASE, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_WEIGHT_DUTY_STEP, i32 0, i32 0), %sw.bb ]
-  %.sink3 = phi i8* [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_REG_PWM_MODE, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_REG_PWM_MODE, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6775_REG_PWM_MODE, i32 0, i32 0), %sw.bb ]
-  %.sink2 = phi i8* [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_PWM_MODE_MASK, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_PWM_MODE_MASK, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6775_PWM_MODE_MASK, i32 0, i32 0), %sw.bb ]
-  %.sink1 = phi i16* [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6779_REG_TEMP_OFFSET, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_TEMP_OFFSET, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_TEMP_OFFSET, i32 0, i32 0), %sw.bb ]
+  %.sink44 = phi i64 [ 0, %sw.bb98 ], [ 0, %sw.bb37 ], [ 1, %sw.bb ]
+  %.sink43 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_PWM, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_PWM, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_START_OUTPUT, i32 0, i32 0), %sw.bb ]
+  %.sink42 = phi i64 [ 1, %sw.bb98 ], [ 1, %sw.bb37 ], [ 2, %sw.bb ]
+  %.sink41 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_START_OUTPUT, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_START_OUTPUT, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_STOP_OUTPUT, i32 0, i32 0), %sw.bb ]
+  %.sink40 = phi i64 [ 2, %sw.bb98 ], [ 2, %sw.bb37 ], [ 3, %sw.bb ]
+  %.sink39 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_STOP_OUTPUT, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_FAN_STOP_OUTPUT, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_FAN_MAX_OUTPUT, i32 0, i32 0), %sw.bb ]
+  %.sink38 = phi i64 [ 5, %sw.bb98 ], [ 5, %sw.bb37 ], [ 4, %sw.bb ]
+  %.sink37 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_WEIGHT_DUTY_STEP, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_WEIGHT_DUTY_STEP, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_FAN_STEP_OUTPUT, i32 0, i32 0), %sw.bb ]
+  %.sink36 = phi i64 [ 6, %sw.bb98 ], [ 6, %sw.bb37 ], [ 5, %sw.bb ]
+  %.sink35 = phi i16* [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6776_REG_WEIGHT_DUTY_BASE, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6776_REG_WEIGHT_DUTY_BASE, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_WEIGHT_DUTY_STEP, i32 0, i32 0), %sw.bb ]
+  %.sink34 = phi i8* [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_REG_PWM_MODE, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_REG_PWM_MODE, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6775_REG_PWM_MODE, i32 0, i32 0), %sw.bb ]
+  %.sink33 = phi i8* [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_PWM_MODE_MASK, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6776_PWM_MODE_MASK, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i8], [3 x i8]* @NCT6775_PWM_MODE_MASK, i32 0, i32 0), %sw.bb ]
+  %.sink32 = phi i16* [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6779_REG_TEMP_OFFSET, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_TEMP_OFFSET, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([3 x i16], [3 x i16]* @NCT6775_REG_TEMP_OFFSET, i32 0, i32 0), %sw.bb ]
   %.sink = phi i16* [ getelementptr inbounds ([4 x i16], [4 x i16]* @NCT6779_REG_ALARM, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([4 x i16], [4 x i16]* @NCT6775_REG_ALARM, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([4 x i16], [4 x i16]* @NCT6775_REG_ALARM, i32 0, i32 0), %sw.bb ]
-  %reg_temp_alternate.0 = phi i16* [ getelementptr inbounds ([26 x i16], [26 x i16]* @NCT6779_REG_TEMP_ALTERNATE, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([22 x i16], [22 x i16]* @NCT6776_REG_TEMP_ALTERNATE, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([20 x i16], [20 x i16]* @NCT6775_REG_TEMP_ALTERNATE, i32 0, i32 0), %sw.bb ]
-  %reg_temp_config.0 = phi i16* [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP_CONFIG, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6776_REG_TEMP_CONFIG, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_CONFIG, i32 0, i32 0), %sw.bb ]
-  %reg_temp_hyst.0 = phi i16* [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP_HYST, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_HYST, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_HYST, i32 0, i32 0), %sw.bb ]
-  %reg_temp_over.0 = phi i16* [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP_OVER, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_OVER, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_OVER, i32 0, i32 0), %sw.bb ]
-  %reg_temp.0 = phi i16* [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP, i32 0, i32 0), %sw.bb ]
-  %reg_temp_crit.0 = phi i16* [ getelementptr inbounds ([26 x i16], [26 x i16]* @NCT6779_REG_TEMP_CRIT, i32 0, i32 0), %sw.bb98 ], [ getelementptr inbounds ([22 x i16], [22 x i16]* @NCT6776_REG_TEMP_CRIT, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([20 x i16], [20 x i16]* @NCT6775_REG_TEMP_CRIT, i32 0, i32 0), %sw.bb ]
-  %num_reg_temp.0 = phi i32 [ 2, %sw.bb98 ], [ 6, %sw.bb37 ], [ 6, %sw.bb ]
+  %reg_temp_alternate.0 = phi i16* [ getelementptr inbounds ([20 x i16], [20 x i16]* @NCT6775_REG_TEMP_ALTERNATE, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([22 x i16], [22 x i16]* @NCT6776_REG_TEMP_ALTERNATE, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([26 x i16], [26 x i16]* @NCT6779_REG_TEMP_ALTERNATE, i32 0, i32 0), %sw.bb98 ]
+  %reg_temp_config.0 = phi i16* [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_CONFIG, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6776_REG_TEMP_CONFIG, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP_CONFIG, i32 0, i32 0), %sw.bb98 ]
+  %reg_temp_hyst.0 = phi i16* [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_HYST, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_HYST, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP_HYST, i32 0, i32 0), %sw.bb98 ]
+  %reg_temp_over.0 = phi i16* [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_OVER, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_OVER, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP_OVER, i32 0, i32 0), %sw.bb98 ]
+  %reg_temp.0 = phi i16* [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([2 x i16], [2 x i16]* @NCT6779_REG_TEMP, i32 0, i32 0), %sw.bb98 ]
+  %reg_temp_crit.0 = phi i16* [ getelementptr inbounds ([20 x i16], [20 x i16]* @NCT6775_REG_TEMP_CRIT, i32 0, i32 0), %sw.bb ], [ getelementptr inbounds ([22 x i16], [22 x i16]* @NCT6776_REG_TEMP_CRIT, i32 0, i32 0), %sw.bb37 ], [ getelementptr inbounds ([26 x i16], [26 x i16]* @NCT6779_REG_TEMP_CRIT, i32 0, i32 0), %sw.bb98 ]
+  %num_reg_temp.0 = phi i32 [ 6, %sw.bb ], [ 6, %sw.bb37 ], [ 2, %sw.bb98 ]
   %REG_PWM132 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 24
-  %arrayidx133 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM132, i64 0, i64 %.sink13
-  store i16* %.sink12, i16** %arrayidx133, align 8, !tbaa !14
+  %arrayidx133 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM132, i64 0, i64 %.sink44
+  store i16* %.sink43, i16** %arrayidx133, align 8, !tbaa !14
   %REG_PWM134 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 24
-  %arrayidx135 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM134, i64 0, i64 %.sink11
-  store i16* %.sink10, i16** %arrayidx135, align 8, !tbaa !14
+  %arrayidx135 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM134, i64 0, i64 %.sink42
+  store i16* %.sink41, i16** %arrayidx135, align 8, !tbaa !14
   %REG_PWM136 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 24
-  %arrayidx137 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM136, i64 0, i64 %.sink9
-  store i16* %.sink8, i16** %arrayidx137, align 8, !tbaa !14
+  %arrayidx137 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM136, i64 0, i64 %.sink40
+  store i16* %.sink39, i16** %arrayidx137, align 8, !tbaa !14
   %REG_PWM138 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 24
-  %arrayidx139 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM138, i64 0, i64 %.sink7
-  store i16* %.sink6, i16** %arrayidx139, align 8, !tbaa !14
+  %arrayidx139 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM138, i64 0, i64 %.sink38
+  store i16* %.sink37, i16** %arrayidx139, align 8, !tbaa !14
   %REG_PWM140 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 24
-  %arrayidx141 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM140, i64 0, i64 %.sink5
-  store i16* %.sink4, i16** %arrayidx141, align 8, !tbaa !14
+  %arrayidx141 = getelementptr inbounds [7 x i16*], [7 x i16*]* %REG_PWM140, i64 0, i64 %.sink36
+  store i16* %.sink35, i16** %arrayidx141, align 8, !tbaa !14
   %REG_PWM_READ142 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 25
   store i16* getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_PWM_READ, i32 0, i32 0), i16** %REG_PWM_READ142, align 8, !tbaa !82
   %REG_PWM_MODE143 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 22
-  store i8* %.sink3, i8** %REG_PWM_MODE143, align 8, !tbaa !83
+  store i8* %.sink34, i8** %REG_PWM_MODE143, align 8, !tbaa !83
   %PWM_MODE_MASK144 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 23
-  store i8* %.sink2, i8** %PWM_MODE_MASK144, align 8, !tbaa !84
+  store i8* %.sink33, i8** %PWM_MODE_MASK144, align 8, !tbaa !84
   %REG_AUTO_TEMP145 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 26
   store i16* getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_AUTO_TEMP, i32 0, i32 0), i16** %REG_AUTO_TEMP145, align 8, !tbaa !85
   %REG_AUTO_PWM146 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 27
@@ -1867,7 +1883,7 @@ sw.epilog:                                        ; preds = %sw.bb98, %sw.bb37, 
   %REG_CRITICAL_TEMP_TOLERANCE148 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 29
   store i16* getelementptr inbounds ([5 x i16], [5 x i16]* @NCT6775_REG_CRITICAL_TEMP_TOLERANCE, i32 0, i32 0), i16** %REG_CRITICAL_TEMP_TOLERANCE148, align 8, !tbaa !88
   %REG_TEMP_OFFSET149 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 34
-  store i16* %.sink1, i16** %REG_TEMP_OFFSET149, align 8, !tbaa !89
+  store i16* %.sink32, i16** %REG_TEMP_OFFSET149, align 8, !tbaa !89
   %REG_TEMP_SOURCE150 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 30
   store i16* getelementptr inbounds ([6 x i16], [6 x i16]* @NCT6775_REG_TEMP_SOURCE, i32 0, i32 0), i16** %REG_TEMP_SOURCE150, align 8, !tbaa !90
   %REG_TEMP_SEL151 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 31
@@ -2314,27 +2330,33 @@ if.end426:                                        ; preds = %for.end422
   %conv429 = trunc i32 %call428 to i8
   %kind430 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 1
   %60 = load i32, i32* %kind430, align 4, !tbaa !54
-  switch i32 %60, label %sw.epilog441 [
-    i32 0, label %sw.bb431
-    i32 1, label %sw.bb435
-  ]
+  %Pivot13 = icmp slt i32 %60, 1
+  br i1 %Pivot13, label %LeafBlock6, label %NodeBlock10
 
-sw.bb431:                                         ; preds = %if.end426
+NodeBlock10:                                      ; preds = %if.end426
+  %Pivot11 = icmp slt i32 %60, 2
+  br i1 %Pivot11, label %sw.bb435, label %sw.epilog441
+
+LeafBlock6:                                       ; preds = %if.end426
+  %SwitchLeaf7 = icmp eq i32 %60, 0
+  br i1 %SwitchLeaf7, label %sw.bb431, label %sw.epilog441
+
+sw.bb431:                                         ; preds = %LeafBlock6
   %conv432 = zext i8 %conv429 to i32
   %and433 = and i32 %conv432, 64
   %tobool434 = icmp ne i32 %and433, 0
   %frombool = zext i1 %tobool434 to i8
   br label %sw.epilog441
 
-sw.bb435:                                         ; preds = %if.end426
+sw.bb435:                                         ; preds = %NodeBlock10
   %conv436 = zext i8 %conv429 to i32
   %and437 = and i32 %conv436, 96
   %cmp438 = icmp eq i32 %and437, 64
   %frombool440 = zext i1 %cmp438 to i8
   br label %sw.epilog441
 
-sw.epilog441:                                     ; preds = %sw.bb435, %sw.bb431, %if.end426
-  %have_vid.0 = phi i8 [ 0, %if.end426 ], [ %frombool440, %sw.bb435 ], [ %frombool, %sw.bb431 ]
+sw.epilog441:                                     ; preds = %NodeBlock10, %LeafBlock6, %sw.bb435, %sw.bb431
+  %have_vid.0 = phi i8 [ %frombool, %sw.bb431 ], [ %frombool440, %sw.bb435 ], [ 0, %LeafBlock6 ], [ 0, %NodeBlock10 ]
   %tobool442 = trunc i8 %have_vid.0 to i1
   br i1 %tobool442, label %if.then443, label %if.end449
 
@@ -2368,26 +2390,32 @@ if.then451:                                       ; preds = %if.end449
   %conv455 = trunc i32 %call454 to i8
   %kind456 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 1
   %66 = load i32, i32* %kind456, align 4, !tbaa !54
-  switch i32 %66, label %sw.epilog465 [
-    i32 0, label %sw.bb457
-    i32 1, label %sw.bb461
-    i32 2, label %sw.bb461
-  ]
+  %Pivot20 = icmp slt i32 %66, 1
+  br i1 %Pivot20, label %LeafBlock15, label %LeafBlock17
 
-sw.bb457:                                         ; preds = %if.then451
+LeafBlock17:                                      ; preds = %if.then451
+  %.off = add i32 %66, -1
+  %SwitchLeaf18 = icmp ule i32 %.off, 1
+  br i1 %SwitchLeaf18, label %sw.bb461, label %sw.epilog465
+
+LeafBlock15:                                      ; preds = %if.then451
+  %SwitchLeaf16 = icmp eq i32 %66, 0
+  br i1 %SwitchLeaf16, label %sw.bb457, label %sw.epilog465
+
+sw.bb457:                                         ; preds = %LeafBlock15
   %conv458 = zext i8 %conv455 to i32
   %or459 = or i32 %conv458, 30
   %conv460 = trunc i32 %or459 to i8
   br label %sw.epilog465
 
-sw.bb461:                                         ; preds = %if.then451, %if.then451
+sw.bb461:                                         ; preds = %LeafBlock17
   %conv462 = zext i8 %conv455 to i32
   %or463 = or i32 %conv462, 62
   %conv464 = trunc i32 %or463 to i8
   br label %sw.epilog465
 
-sw.epilog465:                                     ; preds = %sw.bb461, %sw.bb457, %if.then451
-  %tmp.0 = phi i8 [ %conv455, %if.then451 ], [ %conv464, %sw.bb461 ], [ %conv460, %sw.bb457 ]
+sw.epilog465:                                     ; preds = %LeafBlock15, %LeafBlock17, %sw.bb461, %sw.bb457
+  %tmp.0 = phi i8 [ %conv460, %sw.bb457 ], [ %conv464, %sw.bb461 ], [ %conv455, %LeafBlock17 ], [ %conv455, %LeafBlock15 ]
   %sioreg466 = getelementptr inbounds %struct.nct6775_sio_data, %struct.nct6775_sio_data* %1, i32 0, i32 0
   %67 = load i32, i32* %sioreg466, align 4, !tbaa !31
   %conv467 = zext i8 %tmp.0 to i32
@@ -2519,7 +2547,7 @@ for.body544:                                      ; preds = %for.cond540
   %shl550 = shl i32 1, %conv549
   %and551 = and i32 %conv548, %shl550
   %tobool552 = icmp ne i32 %and551, 0
-  br i1 %tobool552, label %if.end554, label %cleanup
+  br i1 %tobool552, label %if.end554, label %NodeBlock30
 
 if.end554:                                        ; preds = %for.body544
   %index = getelementptr inbounds %struct.sensor_device_attribute_2, %struct.sensor_device_attribute_2* %arrayidx546, i32 0, i32 1
@@ -2528,25 +2556,38 @@ if.end554:                                        ; preds = %for.body544
   %auto_pwm_num556 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %5, i32 0, i32 69
   %78 = load i32, i32* %auto_pwm_num556, align 4, !tbaa !61
   %cmp557 = icmp sgt i32 %conv555, %78
-  br i1 %cmp557, label %cleanup, label %if.end560
+  br i1 %cmp557, label %NodeBlock30, label %if.end560
 
 if.end560:                                        ; preds = %if.end554
   %dev_attr561 = getelementptr inbounds %struct.sensor_device_attribute_2, %struct.sensor_device_attribute_2* %arrayidx546, i32 0, i32 0
   %call562 = call i32 @device_create_file(%struct.device* %dev1, %struct.device_attribute* %dev_attr561)
   %tobool563 = icmp ne i32 %call562, 0
   %. = select i1 %tobool563, i32 16, i32 0
-  br label %cleanup
+  br label %NodeBlock30
 
-cleanup:                                          ; preds = %if.end560, %if.end554, %for.body544
+NodeBlock30:                                      ; preds = %for.body544, %if.end554, %if.end560
   %err.6 = phi i32 [ %err.5, %for.body544 ], [ %err.5, %if.end554 ], [ %call562, %if.end560 ]
   %cleanup.dest.slot.0 = phi i32 [ 22, %for.body544 ], [ 22, %if.end554 ], [ %., %if.end560 ]
-  switch i32 %cleanup.dest.slot.0, label %cleanup806 [
-    i32 0, label %for.inc566
-    i32 22, label %for.inc566
-    i32 16, label %exit_remove
-  ]
+  %Pivot31 = icmp slt i32 %cleanup.dest.slot.0, 16
+  br i1 %Pivot31, label %LeafBlock22, label %NodeBlock28
 
-for.inc566:                                       ; preds = %cleanup, %cleanup
+NodeBlock28:                                      ; preds = %NodeBlock30
+  %Pivot29 = icmp slt i32 %cleanup.dest.slot.0, 22
+  br i1 %Pivot29, label %LeafBlock24, label %LeafBlock26
+
+LeafBlock26:                                      ; preds = %NodeBlock28
+  %SwitchLeaf27 = icmp eq i32 %cleanup.dest.slot.0, 22
+  br i1 %SwitchLeaf27, label %for.inc566, label %cleanup806
+
+LeafBlock24:                                      ; preds = %NodeBlock28
+  %SwitchLeaf25 = icmp eq i32 %cleanup.dest.slot.0, 16
+  br i1 %SwitchLeaf25, label %exit_remove, label %cleanup806
+
+LeafBlock22:                                      ; preds = %NodeBlock30
+  %SwitchLeaf23 = icmp eq i32 %cleanup.dest.slot.0, 0
+  br i1 %SwitchLeaf23, label %for.inc566, label %cleanup806
+
+for.inc566:                                       ; preds = %LeafBlock22, %LeafBlock26
   %inc567 = add nsw i32 %i.4, 1
   br label %for.cond540
 
@@ -2863,13 +2904,13 @@ if.then801:                                       ; preds = %if.end796
   %conv804 = trunc i64 %call803 to i32
   br label %exit_remove
 
-exit_remove:                                      ; preds = %cleanup, %for.end792, %if.end782, %if.end758, %if.end738, %if.end731, %if.then716, %if.then702, %if.then688, %if.then674, %if.end664, %if.end642, %if.then634, %if.then621, %if.end607, %if.then600, %if.end581, %if.then528, %if.then516, %if.then505, %if.end495, %if.end479, %if.then801
-  %err.7 = phi i32 [ %conv804, %if.then801 ], [ %call480, %if.end479 ], [ %call498, %if.end495 ], [ %call508, %if.then505 ], [ %call520, %if.then516 ], [ %call532, %if.then528 ], [ %call585, %if.end581 ], [ %call604, %if.then600 ], [ %call611, %if.end607 ], [ %call625, %if.then621 ], [ %call638, %if.then634 ], [ %call646, %if.end642 ], [ %call668, %if.end664 ], [ %call678, %if.then674 ], [ %call692, %if.then688 ], [ %call706, %if.then702 ], [ %call720, %if.then716 ], [ %call735, %if.end731 ], [ %call742, %if.end738 ], [ %call762, %if.end758 ], [ %call786, %if.end782 ], [ %call793, %for.end792 ], [ %err.6, %cleanup ]
+exit_remove:                                      ; preds = %for.end792, %if.end782, %if.end758, %if.end738, %if.end731, %if.then716, %if.then702, %if.then688, %if.then674, %if.end664, %if.end642, %if.then634, %if.then621, %if.end607, %if.then600, %if.end581, %if.then528, %if.then516, %if.then505, %if.end495, %if.end479, %LeafBlock24, %if.then801
+  %err.7 = phi i32 [ %err.6, %LeafBlock24 ], [ %conv804, %if.then801 ], [ %call480, %if.end479 ], [ %call498, %if.end495 ], [ %call508, %if.then505 ], [ %call520, %if.then516 ], [ %call532, %if.then528 ], [ %call585, %if.end581 ], [ %call604, %if.then600 ], [ %call611, %if.end607 ], [ %call625, %if.then621 ], [ %call638, %if.then634 ], [ %call646, %if.end642 ], [ %call668, %if.end664 ], [ %call678, %if.then674 ], [ %call692, %if.then688 ], [ %call706, %if.then702 ], [ %call720, %if.then716 ], [ %call735, %if.end731 ], [ %call742, %if.end738 ], [ %call762, %if.end758 ], [ %call786, %if.end782 ], [ %call793, %for.end792 ]
   call void @nct6775_device_remove_files(%struct.device* %dev1)
   br label %cleanup806
 
-cleanup806:                                       ; preds = %cleanup, %if.end796, %if.then474, %for.end422, %if.end8, %if.end, %entry, %exit_remove
-  %retval.0 = phi i32 [ %err.7, %exit_remove ], [ -16, %entry ], [ -12, %if.end ], [ -19, %if.end8 ], [ %call423, %for.end422 ], [ %call475, %if.then474 ], [ 0, %if.end796 ], [ undef, %cleanup ]
+cleanup806:                                       ; preds = %LeafBlock24, %LeafBlock22, %LeafBlock26, %if.end796, %if.then474, %for.end422, %LeafBlock1, %LeafBlock, %if.end, %entry, %exit_remove
+  %retval.0 = phi i32 [ %err.7, %exit_remove ], [ -16, %entry ], [ -12, %if.end ], [ -19, %LeafBlock ], [ -19, %LeafBlock1 ], [ %call423, %for.end422 ], [ %call475, %if.then474 ], [ 0, %if.end796 ], [ undef, %LeafBlock26 ], [ undef, %LeafBlock22 ], [ undef, %LeafBlock24 ]
   %99 = bitcast i32* %available to i8*
   call void @llvm.lifetime.end.p0i8(i64 4, i8* %99) #7
   %100 = bitcast i32* %mask to i8*
@@ -3028,8 +3069,8 @@ define internal void @add_temp_sensors(%struct.nct6775_data* %data, i16* %regp, 
 entry:
   br label %for.cond
 
-for.cond:                                         ; preds = %cleanup, %entry
-  %i.0 = phi i32 [ 0, %entry ], [ %inc, %cleanup ]
+for.cond:                                         ; preds = %LeafBlock, %entry
+  %i.0 = phi i32 [ 0, %entry ], [ %inc, %LeafBlock ]
   %pwm_num = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %data, i32 0, i32 57
   %0 = load i8, i8* %pwm_num, align 8, !tbaa !60
   %conv = zext i8 %0 to i32
@@ -3046,7 +3087,7 @@ for.body:                                         ; preds = %land.rhs
   %arrayidx = getelementptr inbounds i16, i16* %regp, i64 %idxprom
   %2 = load i16, i16* %arrayidx, align 2, !tbaa !12
   %tobool2 = icmp ne i16 %2, 0
-  br i1 %tobool2, label %if.end, label %cleanup
+  br i1 %tobool2, label %if.end, label %LeafBlock
 
 if.end:                                           ; preds = %for.body
   %idxprom3 = sext i32 %i.0 to i64
@@ -3058,7 +3099,7 @@ if.end:                                           ; preds = %for.body
   %and = and i32 %conv6, 31
   %conv7 = trunc i32 %and to i8
   %tobool8 = icmp ne i8 %conv7, 0
-  br i1 %tobool8, label %lor.lhs.false, label %cleanup
+  br i1 %tobool8, label %lor.lhs.false, label %LeafBlock
 
 lor.lhs.false:                                    ; preds = %if.end
   %4 = load i32, i32* %mask, align 4, !tbaa !96
@@ -3066,14 +3107,14 @@ lor.lhs.false:                                    ; preds = %if.end
   %shl = shl i32 1, %conv9
   %and10 = and i32 %4, %shl
   %tobool11 = icmp ne i32 %and10, 0
-  br i1 %tobool11, label %cleanup, label %if.end13
+  br i1 %tobool11, label %LeafBlock, label %if.end13
 
 if.end13:                                         ; preds = %lor.lhs.false
   %conv14 = zext i8 %conv7 to i32
   %temp_label_num = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %data, i32 0, i32 8
   %5 = load i32, i32* %temp_label_num, align 8, !tbaa !71
   %cmp15 = icmp sge i32 %conv14, %5
-  br i1 %cmp15, label %cleanup, label %lor.lhs.false17
+  br i1 %cmp15, label %LeafBlock, label %lor.lhs.false17
 
 lor.lhs.false17:                                  ; preds = %if.end13
   %temp_label = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %data, i32 0, i32 7
@@ -3083,7 +3124,7 @@ lor.lhs.false17:                                  ; preds = %if.end13
   %7 = load i8*, i8** %arrayidx19, align 8, !tbaa !14
   %call20 = call i64 @strlen(i8* %7)
   %tobool21 = icmp ne i64 %call20, 0
-  br i1 %tobool21, label %if.end23, label %cleanup
+  br i1 %tobool21, label %if.end23, label %LeafBlock
 
 if.end23:                                         ; preds = %lor.lhs.false17
   %8 = load i32, i32* %available, align 4, !tbaa !96
@@ -3107,11 +3148,11 @@ if.end23:                                         ; preds = %lor.lhs.false17
   %12 = load i32, i32* %mask, align 4, !tbaa !96
   %or = or i32 %12, %shl34
   store i32 %or, i32* %mask, align 4, !tbaa !96
-  br label %cleanup
+  br label %LeafBlock
 
-cleanup:                                          ; preds = %if.end13, %lor.lhs.false17, %if.end, %lor.lhs.false, %for.body, %if.end23
+LeafBlock:                                        ; preds = %if.end23, %for.body, %lor.lhs.false, %if.end, %lor.lhs.false17, %if.end13
   %cleanup.dest.slot.0 = phi i32 [ 0, %if.end23 ], [ 4, %for.body ], [ 4, %lor.lhs.false ], [ 4, %if.end ], [ 4, %lor.lhs.false17 ], [ 4, %if.end13 ]
-  %switch = icmp ult i32 %cleanup.dest.slot.0, 1
+  %SwitchLeaf = icmp eq i32 %cleanup.dest.slot.0, 4
   %inc = add nsw i32 %i.0, 1
   br label %for.cond
 
@@ -3830,13 +3871,22 @@ define internal zeroext i1 @is_word_sized(%struct.nct6775_data* %data, i16 zeroe
 entry:
   %kind = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %data, i32 0, i32 1
   %0 = load i32, i32* %kind, align 4, !tbaa !54
-  switch i32 %0, label %return [
-    i32 0, label %sw.bb
-    i32 1, label %sw.bb58
-    i32 2, label %sw.bb123
-  ]
+  %Pivot4 = icmp slt i32 %0, 1
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb:                                            ; preds = %entry
+NodeBlock:                                        ; preds = %entry
+  %Pivot = icmp slt i32 %0, 2
+  br i1 %Pivot, label %sw.bb58, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %0, 2
+  br i1 %SwitchLeaf2, label %sw.bb123, label %return
+
+LeafBlock:                                        ; preds = %entry
+  %SwitchLeaf = icmp eq i32 %0, 0
+  br i1 %SwitchLeaf, label %sw.bb, label %return
+
+sw.bb:                                            ; preds = %LeafBlock
   %conv = zext i16 %reg to i32
   %and = and i32 %conv, 65280
   %cmp = icmp eq i32 %and, 256
@@ -3875,11 +3925,11 @@ lor.lhs.false20:                                  ; preds = %lor.lhs.false15, %l
   %or.cond = or i1 %cmp23, %cmp27
   %conv30 = zext i16 %reg to i32
   %cmp31 = icmp eq i32 %conv30, 1602
-  %or.cond1 = or i1 %or.cond, %cmp31
+  %or.cond5 = or i1 %or.cond, %cmp31
   %conv34 = zext i16 %reg to i32
   %cmp35 = icmp eq i32 %conv34, 1634
-  %or.cond2 = or i1 %or.cond1, %cmp35
-  br i1 %or.cond2, label %return, label %lor.lhs.false37
+  %or.cond6 = or i1 %or.cond5, %cmp35
+  br i1 %or.cond6, label %return, label %lor.lhs.false37
 
 lor.lhs.false37:                                  ; preds = %lor.lhs.false20
   %conv38 = zext i16 %reg to i32
@@ -3893,25 +3943,25 @@ land.lhs.true42:                                  ; preds = %lor.lhs.false37
   %cmp45 = icmp sge i32 %and44, 6
   %conv48 = zext i16 %reg to i32
   %cmp49 = icmp eq i32 %conv48, 115
-  %or.cond3 = or i1 %cmp45, %cmp49
+  %or.cond7 = or i1 %cmp45, %cmp49
   %conv52 = zext i16 %reg to i32
   %cmp53 = icmp eq i32 %conv52, 117
-  %or.cond5 = or i1 %or.cond3, %cmp53
-  br i1 %or.cond5, label %return, label %lor.rhs
+  %or.cond9 = or i1 %or.cond7, %cmp53
+  br i1 %or.cond9, label %return, label %lor.rhs
 
 lor.lhs.false47:                                  ; preds = %lor.lhs.false37
   %cmp49.old = icmp eq i32 %conv43, 115
-  %.old4 = zext i16 %reg to i32
-  %cmp53.old = icmp eq i32 %.old4, 117
-  %or.cond7 = or i1 %cmp49.old, %cmp53.old
-  br i1 %or.cond7, label %return, label %lor.rhs
+  %.old8 = zext i16 %reg to i32
+  %cmp53.old = icmp eq i32 %.old8, 117
+  %or.cond11 = or i1 %cmp49.old, %cmp53.old
+  br i1 %or.cond11, label %return, label %lor.rhs
 
 lor.rhs:                                          ; preds = %lor.lhs.false47, %land.lhs.true42
   %conv55 = zext i16 %reg to i32
   %cmp56 = icmp eq i32 %conv55, 119
   br label %return
 
-sw.bb58:                                          ; preds = %entry
+sw.bb58:                                          ; preds = %NodeBlock
   %conv59 = zext i16 %reg to i32
   %and60 = and i32 %conv59, 65280
   %cmp61 = icmp eq i32 %and60, 256
@@ -3947,14 +3997,14 @@ lor.lhs.false83:                                  ; preds = %lor.lhs.false78, %l
   %cmp86 = icmp eq i32 %and85, 1584
   %conv89 = zext i16 %reg to i32
   %cmp90 = icmp eq i32 %conv89, 1026
-  %or.cond9 = or i1 %cmp86, %cmp90
+  %or.cond13 = or i1 %cmp86, %cmp90
   %conv93 = zext i16 %reg to i32
   %cmp94 = icmp eq i32 %conv93, 1600
-  %or.cond11 = or i1 %or.cond9, %cmp94
+  %or.cond15 = or i1 %or.cond13, %cmp94
   %conv97 = zext i16 %reg to i32
   %cmp98 = icmp eq i32 %conv97, 1602
-  %or.cond13 = or i1 %or.cond11, %cmp98
-  br i1 %or.cond13, label %return, label %lor.lhs.false100
+  %or.cond17 = or i1 %or.cond15, %cmp98
+  br i1 %or.cond17, label %return, label %lor.lhs.false100
 
 lor.lhs.false100:                                 ; preds = %lor.lhs.false83
   %conv101 = zext i16 %reg to i32
@@ -3968,34 +4018,34 @@ land.lhs.true105:                                 ; preds = %lor.lhs.false100
   %cmp108 = icmp sge i32 %and107, 6
   %conv111 = zext i16 %reg to i32
   %cmp112 = icmp eq i32 %conv111, 115
-  %or.cond15 = or i1 %cmp108, %cmp112
+  %or.cond19 = or i1 %cmp108, %cmp112
   %conv115 = zext i16 %reg to i32
   %cmp116 = icmp eq i32 %conv115, 117
-  %or.cond17 = or i1 %or.cond15, %cmp116
-  br i1 %or.cond17, label %return, label %lor.rhs118
+  %or.cond21 = or i1 %or.cond19, %cmp116
+  br i1 %or.cond21, label %return, label %lor.rhs118
 
 lor.lhs.false110:                                 ; preds = %lor.lhs.false100
   %cmp112.old = icmp eq i32 %conv106, 115
-  %.old16 = zext i16 %reg to i32
-  %cmp116.old = icmp eq i32 %.old16, 117
-  %or.cond19 = or i1 %cmp112.old, %cmp116.old
-  br i1 %or.cond19, label %return, label %lor.rhs118
+  %.old20 = zext i16 %reg to i32
+  %cmp116.old = icmp eq i32 %.old20, 117
+  %or.cond23 = or i1 %cmp112.old, %cmp116.old
+  br i1 %or.cond23, label %return, label %lor.rhs118
 
 lor.rhs118:                                       ; preds = %lor.lhs.false110, %land.lhs.true105
   %conv119 = zext i16 %reg to i32
   %cmp120 = icmp eq i32 %conv119, 119
   br label %return
 
-sw.bb123:                                         ; preds = %entry
+sw.bb123:                                         ; preds = %LeafBlock1
   %conv124 = zext i16 %reg to i32
   %cmp125 = icmp eq i32 %conv124, 336
   %conv128 = zext i16 %reg to i32
   %cmp129 = icmp eq i32 %conv128, 339
-  %or.cond21 = or i1 %cmp125, %cmp129
+  %or.cond25 = or i1 %cmp125, %cmp129
   %conv132 = zext i16 %reg to i32
   %cmp133 = icmp eq i32 %conv132, 341
-  %or.cond23 = or i1 %or.cond21, %cmp133
-  br i1 %or.cond23, label %return, label %lor.lhs.false135
+  %or.cond27 = or i1 %or.cond25, %cmp133
+  br i1 %or.cond27, label %return, label %lor.lhs.false135
 
 lor.lhs.false135:                                 ; preds = %sw.bb123
   %conv136 = zext i16 %reg to i32
@@ -4009,74 +4059,74 @@ land.lhs.true140:                                 ; preds = %lor.lhs.false135
   %cmp143 = icmp slt i32 %and142, 9
   %conv146 = zext i16 %reg to i32
   %cmp147 = icmp eq i32 %conv146, 1026
-  %or.cond25 = or i1 %cmp143, %cmp147
+  %or.cond29 = or i1 %cmp143, %cmp147
   %conv150 = zext i16 %reg to i32
   %cmp151 = icmp eq i32 %conv150, 1594
-  %or.cond27 = or i1 %or.cond25, %cmp151
-  %.old30 = zext i16 %reg to i32
-  %cmp155.old = icmp eq i32 %.old30, 1596
-  %or.cond33 = or i1 %or.cond27, %cmp155.old
+  %or.cond31 = or i1 %or.cond29, %cmp151
+  %.old34 = zext i16 %reg to i32
+  %cmp155.old = icmp eq i32 %.old34, 1596
+  %or.cond37 = or i1 %or.cond31, %cmp155.old
   %conv158 = zext i16 %reg to i32
   %cmp159 = icmp eq i32 %conv158, 1598
-  %or.cond35 = or i1 %or.cond33, %cmp159
-  %.old38 = zext i16 %reg to i32
-  %cmp163.old = icmp eq i32 %.old38, 1600
-  %or.cond41 = or i1 %or.cond35, %cmp163.old
+  %or.cond39 = or i1 %or.cond37, %cmp159
+  %.old42 = zext i16 %reg to i32
+  %cmp163.old = icmp eq i32 %.old42, 1600
+  %or.cond45 = or i1 %or.cond39, %cmp163.old
   %conv166 = zext i16 %reg to i32
   %cmp167 = icmp eq i32 %conv166, 1602
-  %or.cond43 = or i1 %or.cond41, %cmp167
-  %.old46 = zext i16 %reg to i32
-  %cmp171.old = icmp eq i32 %.old46, 115
-  %or.cond49 = or i1 %or.cond43, %cmp171.old
+  %or.cond47 = or i1 %or.cond45, %cmp167
+  %.old50 = zext i16 %reg to i32
+  %cmp171.old = icmp eq i32 %.old50, 115
+  %or.cond53 = or i1 %or.cond47, %cmp171.old
   %conv174 = zext i16 %reg to i32
   %cmp175 = icmp eq i32 %conv174, 117
-  %or.cond51 = or i1 %or.cond49, %cmp175
-  %.old54 = zext i16 %reg to i32
-  %cmp179.old = icmp eq i32 %.old54, 119
-  %or.cond57 = or i1 %or.cond51, %cmp179.old
+  %or.cond55 = or i1 %or.cond53, %cmp175
+  %.old58 = zext i16 %reg to i32
+  %cmp179.old = icmp eq i32 %.old58, 119
+  %or.cond61 = or i1 %or.cond55, %cmp179.old
   %conv182 = zext i16 %reg to i32
   %cmp183 = icmp eq i32 %conv182, 121
-  %or.cond59 = or i1 %or.cond57, %cmp183
-  br i1 %or.cond59, label %return, label %lor.rhs185
+  %or.cond63 = or i1 %or.cond61, %cmp183
+  br i1 %or.cond63, label %return, label %lor.rhs185
 
 lor.lhs.false145:                                 ; preds = %lor.lhs.false135
   %cmp147.old = icmp eq i32 %conv141, 1026
-  %.old26 = zext i16 %reg to i32
-  %cmp151.old = icmp eq i32 %.old26, 1594
-  %or.cond29 = or i1 %cmp147.old, %cmp151.old
+  %.old30 = zext i16 %reg to i32
+  %cmp151.old = icmp eq i32 %.old30, 1594
+  %or.cond33 = or i1 %cmp147.old, %cmp151.old
   %conv154 = zext i16 %reg to i32
   %cmp155 = icmp eq i32 %conv154, 1596
-  %or.cond31 = or i1 %or.cond29, %cmp155
-  %.old34 = zext i16 %reg to i32
-  %cmp159.old = icmp eq i32 %.old34, 1598
-  %or.cond37 = or i1 %or.cond31, %cmp159.old
+  %or.cond35 = or i1 %or.cond33, %cmp155
+  %.old38 = zext i16 %reg to i32
+  %cmp159.old = icmp eq i32 %.old38, 1598
+  %or.cond41 = or i1 %or.cond35, %cmp159.old
   %conv162 = zext i16 %reg to i32
   %cmp163 = icmp eq i32 %conv162, 1600
-  %or.cond39 = or i1 %or.cond37, %cmp163
-  %.old42 = zext i16 %reg to i32
-  %cmp167.old = icmp eq i32 %.old42, 1602
-  %or.cond45 = or i1 %or.cond39, %cmp167.old
+  %or.cond43 = or i1 %or.cond41, %cmp163
+  %.old46 = zext i16 %reg to i32
+  %cmp167.old = icmp eq i32 %.old46, 1602
+  %or.cond49 = or i1 %or.cond43, %cmp167.old
   %conv170 = zext i16 %reg to i32
   %cmp171 = icmp eq i32 %conv170, 115
-  %or.cond47 = or i1 %or.cond45, %cmp171
-  %.old50 = zext i16 %reg to i32
-  %cmp175.old = icmp eq i32 %.old50, 117
-  %or.cond53 = or i1 %or.cond47, %cmp175.old
+  %or.cond51 = or i1 %or.cond49, %cmp171
+  %.old54 = zext i16 %reg to i32
+  %cmp175.old = icmp eq i32 %.old54, 117
+  %or.cond57 = or i1 %or.cond51, %cmp175.old
   %conv178 = zext i16 %reg to i32
   %cmp179 = icmp eq i32 %conv178, 119
-  %or.cond55 = or i1 %or.cond53, %cmp179
-  %.old58 = zext i16 %reg to i32
-  %cmp183.old = icmp eq i32 %.old58, 121
-  %or.cond61 = or i1 %or.cond55, %cmp183.old
-  br i1 %or.cond61, label %return, label %lor.rhs185
+  %or.cond59 = or i1 %or.cond57, %cmp179
+  %.old62 = zext i16 %reg to i32
+  %cmp183.old = icmp eq i32 %.old62, 121
+  %or.cond65 = or i1 %or.cond59, %cmp183.old
+  br i1 %or.cond65, label %return, label %lor.rhs185
 
 lor.rhs185:                                       ; preds = %lor.lhs.false145, %land.lhs.true140
   %conv186 = zext i16 %reg to i32
   %cmp187 = icmp eq i32 %conv186, 123
   br label %return
 
-return:                                           ; preds = %entry, %sw.bb123, %land.lhs.true140, %lor.lhs.false145, %lor.rhs185, %land.lhs.true68, %lor.lhs.false73, %lor.lhs.false78, %lor.lhs.false83, %land.lhs.true105, %lor.lhs.false110, %lor.rhs118, %land.lhs.true, %lor.lhs.false10, %lor.lhs.false15, %lor.lhs.false20, %land.lhs.true42, %lor.lhs.false47, %lor.rhs
-  %retval.0 = phi i1 [ true, %lor.lhs.false47 ], [ true, %land.lhs.true42 ], [ true, %lor.lhs.false20 ], [ true, %lor.lhs.false15 ], [ true, %lor.lhs.false10 ], [ true, %land.lhs.true ], [ %cmp56, %lor.rhs ], [ true, %lor.lhs.false110 ], [ true, %land.lhs.true105 ], [ true, %lor.lhs.false83 ], [ true, %lor.lhs.false78 ], [ true, %lor.lhs.false73 ], [ true, %land.lhs.true68 ], [ %cmp120, %lor.rhs118 ], [ true, %lor.lhs.false145 ], [ true, %land.lhs.true140 ], [ true, %sw.bb123 ], [ %cmp187, %lor.rhs185 ], [ false, %entry ]
+return:                                           ; preds = %LeafBlock1, %LeafBlock, %sw.bb123, %land.lhs.true140, %lor.lhs.false145, %lor.rhs185, %land.lhs.true68, %lor.lhs.false73, %lor.lhs.false78, %lor.lhs.false83, %land.lhs.true105, %lor.lhs.false110, %lor.rhs118, %land.lhs.true, %lor.lhs.false10, %lor.lhs.false15, %lor.lhs.false20, %land.lhs.true42, %lor.lhs.false47, %lor.rhs
+  %retval.0 = phi i1 [ true, %lor.lhs.false47 ], [ true, %land.lhs.true42 ], [ true, %lor.lhs.false20 ], [ true, %lor.lhs.false15 ], [ true, %lor.lhs.false10 ], [ true, %land.lhs.true ], [ %cmp56, %lor.rhs ], [ true, %lor.lhs.false110 ], [ true, %land.lhs.true105 ], [ true, %lor.lhs.false83 ], [ true, %lor.lhs.false78 ], [ true, %lor.lhs.false73 ], [ true, %land.lhs.true68 ], [ %cmp120, %lor.rhs118 ], [ true, %lor.lhs.false145 ], [ true, %land.lhs.true140 ], [ true, %sw.bb123 ], [ %cmp187, %lor.rhs185 ], [ false, %LeafBlock ], [ false, %LeafBlock1 ]
   ret i1 %retval.0
 }
 
@@ -4336,14 +4386,26 @@ if.end:                                           ; preds = %if.then, %entry
 ; Function Attrs: nounwind uwtable
 define internal void @nct6775_write_fan_div(%struct.nct6775_data* %data, i32 %nr) #6 {
 entry:
-  switch i32 %nr, label %sw.epilog [
-    i32 0, label %sw.bb
-    i32 1, label %sw.bb6
-    i32 2, label %sw.bb18
-    i32 3, label %sw.bb30
-  ]
+  %Pivot6 = icmp slt i32 %nr, 2
+  br i1 %Pivot6, label %NodeBlock, label %NodeBlock3
 
-sw.bb:                                            ; preds = %entry
+NodeBlock3:                                       ; preds = %entry
+  %Pivot4 = icmp slt i32 %nr, 3
+  br i1 %Pivot4, label %sw.bb18, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock3
+  %SwitchLeaf2 = icmp eq i32 %nr, 3
+  br i1 %SwitchLeaf2, label %sw.bb30, label %sw.epilog
+
+NodeBlock:                                        ; preds = %entry
+  %Pivot = icmp slt i32 %nr, 1
+  br i1 %Pivot, label %LeafBlock, label %sw.bb6
+
+LeafBlock:                                        ; preds = %NodeBlock
+  %SwitchLeaf = icmp eq i32 %nr, 0
+  br i1 %SwitchLeaf, label %sw.bb, label %sw.epilog
+
+sw.bb:                                            ; preds = %LeafBlock
   %call = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %data, i16 zeroext 1286)
   %conv = zext i16 %call to i32
   %and = and i32 %conv, 112
@@ -4358,7 +4420,7 @@ sw.bb:                                            ; preds = %entry
   %call5 = call i32 @nct6775_write_value(%struct.nct6775_data* %data, i16 zeroext 1286, i16 zeroext %conv4)
   br label %sw.epilog
 
-sw.bb6:                                           ; preds = %entry
+sw.bb6:                                           ; preds = %NodeBlock
   %call7 = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %data, i16 zeroext 1286)
   %conv8 = zext i16 %call7 to i32
   %and9 = and i32 %conv8, 7
@@ -4374,7 +4436,7 @@ sw.bb6:                                           ; preds = %entry
   %call17 = call i32 @nct6775_write_value(%struct.nct6775_data* %data, i16 zeroext 1286, i16 zeroext %conv16)
   br label %sw.epilog
 
-sw.bb18:                                          ; preds = %entry
+sw.bb18:                                          ; preds = %NodeBlock3
   %call19 = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %data, i16 zeroext 1287)
   %conv20 = zext i16 %call19 to i32
   %and21 = and i32 %conv20, 112
@@ -4389,7 +4451,7 @@ sw.bb18:                                          ; preds = %entry
   %call29 = call i32 @nct6775_write_value(%struct.nct6775_data* %data, i16 zeroext 1287, i16 zeroext %conv28)
   br label %sw.epilog
 
-sw.bb30:                                          ; preds = %entry
+sw.bb30:                                          ; preds = %LeafBlock1
   %call31 = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %data, i16 zeroext 1287)
   %conv32 = zext i16 %call31 to i32
   %and33 = and i32 %conv32, 7
@@ -4405,7 +4467,7 @@ sw.bb30:                                          ; preds = %entry
   %call42 = call i32 @nct6775_write_value(%struct.nct6775_data* %data, i16 zeroext 1287, i16 zeroext %conv41)
   br label %sw.epilog
 
-sw.epilog:                                        ; preds = %sw.bb30, %sw.bb18, %sw.bb6, %sw.bb, %entry
+sw.epilog:                                        ; preds = %LeafBlock, %LeafBlock1, %sw.bb30, %sw.bb18, %sw.bb6, %sw.bb
   ret void
 }
 
@@ -4732,8 +4794,8 @@ for.inc:                                          ; preds = %for.body, %if.end
 for.end:                                          ; preds = %for.cond
   br label %for.cond42
 
-for.cond42:                                       ; preds = %for.inc79, %for.end
-  %i.1 = phi i32 [ 0, %for.end ], [ %inc80, %for.inc79 ]
+for.cond42:                                       ; preds = %LeafBlock, %for.end
+  %i.1 = phi i32 [ 0, %for.end ], [ %inc80, %LeafBlock ]
   %conv43 = sext i32 %i.1 to i64
   %cmp44 = icmp ult i64 %conv43, 5
   br i1 %cmp44, label %for.body46, label %for.end81
@@ -4745,7 +4807,7 @@ for.body46:                                       ; preds = %for.cond42
   %shl48 = shl i32 1, %i.1
   %and49 = and i32 %conv47, %shl48
   %tobool50 = icmp ne i32 %and49, 0
-  br i1 %tobool50, label %if.end52, label %for.inc79
+  br i1 %tobool50, label %if.end52, label %LeafBlock
 
 if.end52:                                         ; preds = %for.body46
   %REG_FAN = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 16
@@ -4800,9 +4862,11 @@ if.end72:                                         ; preds = %if.then66, %if.end5
   %arrayidx78 = getelementptr inbounds [5 x i8], [5 x i8]* %fan_pulses, i64 0, i64 %idxprom77
   store i8 %conv76, i8* %arrayidx78, align 1, !tbaa !98
   call void @nct6775_select_fan_div(%struct.device* %dev, %struct.nct6775_data* %0, i32 %i.1, i16 zeroext %call55)
-  br label %for.inc79
+  br label %LeafBlock
 
-for.inc79:                                        ; preds = %if.end72, %for.body46
+LeafBlock:                                        ; preds = %if.end72, %for.body46
+  %cleanup.dest.slot.0 = phi i32 [ 0, %if.end72 ], [ 7, %for.body46 ]
+  %SwitchLeaf = icmp eq i32 %cleanup.dest.slot.0, 7
   %inc80 = add nsw i32 %i.1, 1
   br label %for.cond42
 
@@ -4896,8 +4960,8 @@ for.end131:                                       ; preds = %for.cond82
   store i64 0, i64* %alarms, align 8, !tbaa !118
   br label %for.cond132
 
-for.cond132:                                      ; preds = %cleanup150, %for.end131
-  %i.3 = phi i32 [ 0, %for.end131 ], [ %inc154, %cleanup150 ]
+for.cond132:                                      ; preds = %LeafBlock2, %for.end131
+  %i.3 = phi i32 [ 0, %for.end131 ], [ %inc154, %LeafBlock2 ]
   %cmp133 = icmp slt i32 %i.3, 4
   br i1 %cmp133, label %for.body135, label %for.end155
 
@@ -4908,7 +4972,7 @@ for.body135:                                      ; preds = %for.cond132
   %arrayidx137 = getelementptr inbounds i16, i16* %36, i64 %idxprom136
   %37 = load i16, i16* %arrayidx137, align 2, !tbaa !12
   %tobool138 = icmp ne i16 %37, 0
-  br i1 %tobool138, label %if.end140, label %cleanup150
+  br i1 %tobool138, label %if.end140, label %LeafBlock2
 
 if.end140:                                        ; preds = %for.body135
   %REG_ALARM141 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 35
@@ -4926,11 +4990,11 @@ if.end140:                                        ; preds = %for.body135
   %40 = load i64, i64* %alarms149, align 8, !tbaa !118
   %or = or i64 %40, %shl148
   store i64 %or, i64* %alarms149, align 8, !tbaa !118
-  br label %cleanup150
+  br label %LeafBlock2
 
-cleanup150:                                       ; preds = %for.body135, %if.end140
+LeafBlock2:                                       ; preds = %if.end140, %for.body135
   %cleanup.dest.slot.1 = phi i32 [ 0, %if.end140 ], [ 16, %for.body135 ]
-  %switch = icmp ult i32 %cleanup.dest.slot.1, 1
+  %SwitchLeaf3 = icmp eq i32 %cleanup.dest.slot.1, 16
   %inc154 = add nsw i32 %i.3, 1
   br label %for.cond132
 
@@ -5103,6 +5167,7 @@ if.end99:                                         ; preds = %if.end83, %if.then9
   br label %cleanup.cont
 
 cleanup.cont:                                     ; preds = %entry, %if.end99, %if.end20
+  %cleanup.dest.slot.0 = phi i32 [ 1, %entry ], [ 0, %if.end99 ], [ 0, %if.end20 ]
   ret void
 }
 
@@ -5611,13 +5676,22 @@ for.end89:                                        ; preds = %for.cond62
   store i8 %conv93, i8* %arrayidx99, align 1, !tbaa !98
   %kind = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 1
   %23 = load i32, i32* %kind, align 4, !tbaa !54
-  switch i32 %23, label %for.inc147 [
-    i32 0, label %sw.bb
-    i32 1, label %sw.epilog.sink.split
-    i32 2, label %sw.bb121
-  ]
+  %Pivot4 = icmp slt i32 %23, 1
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb:                                            ; preds = %for.end89
+NodeBlock:                                        ; preds = %for.end89
+  %Pivot = icmp slt i32 %23, 2
+  br i1 %Pivot, label %sw.bb114, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %23, 2
+  br i1 %SwitchLeaf2, label %sw.bb121, label %for.inc147
+
+LeafBlock:                                        ; preds = %for.end89
+  %SwitchLeaf = icmp eq i32 %23, 0
+  br i1 %SwitchLeaf, label %sw.bb, label %for.inc147
+
+sw.bb:                                            ; preds = %LeafBlock
   %idxprom100 = sext i32 %i.0 to i64
   %arrayidx101 = getelementptr inbounds [3 x i16], [3 x i16]* @NCT6775_REG_CRITICAL_ENAB, i64 0, i64 %idxprom100
   %24 = load i16, i16* %arrayidx101, align 2, !tbaa !12
@@ -5629,40 +5703,59 @@ sw.bb:                                            ; preds = %for.end89
   %25 = zext i1 %tobool106 to i64
   %cond = select i1 %tobool106, i32 255, i32 0
   %conv107 = trunc i32 %cond to i8
-  br label %sw.epilog.sink.split
+  %auto_pwm108 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 70
+  %idxprom109 = sext i32 %i.0 to i64
+  %arrayidx110 = getelementptr inbounds [5 x [7 x i8]], [5 x [7 x i8]]* %auto_pwm108, i64 0, i64 %idxprom109
+  %auto_pwm_num111 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 69
+  %26 = load i32, i32* %auto_pwm_num111, align 4, !tbaa !61
+  %idxprom112 = sext i32 %26 to i64
+  %arrayidx113 = getelementptr inbounds [7 x i8], [7 x i8]* %arrayidx110, i64 0, i64 %idxprom112
+  store i8 %conv107, i8* %arrayidx113, align 1, !tbaa !98
+  br label %for.inc147
 
-sw.bb121:                                         ; preds = %for.end89
+sw.bb114:                                         ; preds = %NodeBlock
+  %auto_pwm115 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 70
+  %idxprom116 = sext i32 %i.0 to i64
+  %arrayidx117 = getelementptr inbounds [5 x [7 x i8]], [5 x [7 x i8]]* %auto_pwm115, i64 0, i64 %idxprom116
+  %auto_pwm_num118 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 69
+  %27 = load i32, i32* %auto_pwm_num118, align 4, !tbaa !61
+  %idxprom119 = sext i32 %27 to i64
+  %arrayidx120 = getelementptr inbounds [7 x i8], [7 x i8]* %arrayidx117, i64 0, i64 %idxprom119
+  store i8 -1, i8* %arrayidx120, align 1, !tbaa !98
+  br label %for.inc147
+
+sw.bb121:                                         ; preds = %LeafBlock1
   %idxprom122 = sext i32 %i.0 to i64
   %arrayidx123 = getelementptr inbounds [5 x i16], [5 x i16]* @NCT6779_REG_CRITICAL_PWM_ENABLE, i64 0, i64 %idxprom122
-  %26 = load i16, i16* %arrayidx123, align 2, !tbaa !12
-  %call124 = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %0, i16 zeroext %26)
+  %28 = load i16, i16* %arrayidx123, align 2, !tbaa !12
+  %call124 = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %0, i16 zeroext %28)
   %conv125 = trunc i16 %call124 to i8
   %conv126 = zext i8 %conv125 to i32
   %and127 = and i32 %conv126, 1
   %tobool128 = icmp ne i32 %and127, 0
-  br i1 %tobool128, label %if.then129, label %sw.epilog.sink.split
+  br i1 %tobool128, label %if.then129, label %if.end146
 
 if.then129:                                       ; preds = %sw.bb121
   %idxprom130 = sext i32 %i.0 to i64
   %arrayidx131 = getelementptr inbounds [5 x i16], [5 x i16]* @NCT6779_REG_CRITICAL_PWM, i64 0, i64 %idxprom130
-  %27 = load i16, i16* %arrayidx131, align 2, !tbaa !12
-  %call132 = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %0, i16 zeroext %27)
+  %29 = load i16, i16* %arrayidx131, align 2, !tbaa !12
+  %call132 = call zeroext i16 @nct6775_read_value(%struct.nct6775_data* %0, i16 zeroext %29)
   %conv133 = trunc i16 %call132 to i8
-  br label %sw.epilog.sink.split
+  br label %if.end146
 
-sw.epilog.sink.split:                             ; preds = %if.then129, %sw.bb121, %for.end89, %sw.bb
-  %.sink.sink = phi i8 [ %conv107, %sw.bb ], [ -1, %for.end89 ], [ %conv133, %if.then129 ], [ -1, %sw.bb121 ]
+if.end146:                                        ; preds = %sw.bb121, %if.then129
+  %.sink = phi i8 [ %conv133, %if.then129 ], [ -1, %sw.bb121 ]
   %auto_pwm140 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 70
   %idxprom141 = sext i32 %i.0 to i64
   %arrayidx142 = getelementptr inbounds [5 x [7 x i8]], [5 x [7 x i8]]* %auto_pwm140, i64 0, i64 %idxprom141
   %auto_pwm_num143 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 69
-  %28 = load i32, i32* %auto_pwm_num143, align 4, !tbaa !61
-  %idxprom144 = sext i32 %28 to i64
+  %30 = load i32, i32* %auto_pwm_num143, align 4, !tbaa !61
+  %idxprom144 = sext i32 %30 to i64
   %arrayidx145 = getelementptr inbounds [7 x i8], [7 x i8]* %arrayidx142, i64 0, i64 %idxprom144
-  store i8 %.sink.sink, i8* %arrayidx145, align 1, !tbaa !98
+  store i8 %.sink, i8* %arrayidx145, align 1, !tbaa !98
   br label %for.inc147
 
-for.inc147:                                       ; preds = %for.end89, %sw.epilog.sink.split, %for.body
+for.inc147:                                       ; preds = %sw.bb, %sw.bb114, %if.end146, %LeafBlock1, %LeafBlock, %for.body
   %inc148 = add nsw i32 %i.0, 1
   br label %for.cond
 
@@ -6116,14 +6209,22 @@ entry:
   %idxprom = sext i32 %nr to i64
   %arrayidx = getelementptr inbounds [5 x i32], [5 x i32]* %pwm_enable, i64 0, i64 %idxprom
   %0 = load i32, i32* %arrayidx, align 4, !tbaa !98
-  switch i32 %0, label %sw.default [
-    i32 0, label %sw.epilog
-    i32 1, label %sw.epilog
-    i32 3, label %sw.bb1
-    i32 2, label %sw.bb41
-  ]
+  %Pivot4 = icmp slt i32 %0, 2
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb1:                                           ; preds = %entry
+NodeBlock:                                        ; preds = %entry
+  %Pivot = icmp slt i32 %0, 3
+  br i1 %Pivot, label %sw.bb41, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %0, 3
+  br i1 %SwitchLeaf2, label %sw.bb1, label %sw.default
+
+LeafBlock:                                        ; preds = %entry
+  %SwitchLeaf = icmp ule i32 %0, 1
+  br i1 %SwitchLeaf, label %sw.epilog, label %sw.default
+
+sw.bb1:                                           ; preds = %LeafBlock1
   %REG_FAN_MODE = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %data, i32 0, i32 17
   %1 = load i16*, i16** %REG_FAN_MODE, align 8, !tbaa !78
   %idxprom2 = sext i32 %nr to i64
@@ -6197,7 +6298,7 @@ if.then:                                          ; preds = %sw.bb1
   %call40 = call i32 @nct6775_write_value(%struct.nct6775_data* %data, i16 zeroext %15, i16 zeroext %conv39)
   br label %sw.epilog
 
-sw.bb41:                                          ; preds = %entry
+sw.bb41:                                          ; preds = %NodeBlock
   %REG_TARGET42 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %data, i32 0, i32 15
   %16 = load i16*, i16** %REG_TARGET42, align 8, !tbaa !76
   %idxprom43 = sext i32 %nr to i64
@@ -6211,7 +6312,7 @@ sw.bb41:                                          ; preds = %entry
   %call48 = call i32 @nct6775_write_value(%struct.nct6775_data* %data, i16 zeroext %17, i16 zeroext %conv47)
   br label %sw.default
 
-sw.default:                                       ; preds = %sw.bb41, %entry
+sw.default:                                       ; preds = %LeafBlock, %LeafBlock1, %sw.bb41
   %REG_FAN_MODE49 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %data, i32 0, i32 17
   %19 = load i16*, i16** %REG_FAN_MODE49, align 8, !tbaa !78
   %idxprom50 = sext i32 %nr to i64
@@ -6242,7 +6343,7 @@ sw.default:                                       ; preds = %sw.bb41, %entry
   %call69 = call i32 @nct6775_write_value(%struct.nct6775_data* %data, i16 zeroext %24, i16 zeroext %conv68)
   br label %sw.epilog
 
-sw.epilog:                                        ; preds = %sw.bb1, %if.then, %entry, %entry, %sw.default
+sw.epilog:                                        ; preds = %sw.bb1, %if.then, %LeafBlock, %sw.default
   ret void
 }
 
@@ -7274,8 +7375,8 @@ if.end16:                                         ; preds = %if.then12
   %cmp18 = icmp ne i32 %10, 2
   %11 = load i64, i64* %val, align 8
   %tobool21 = icmp ne i64 %11, 0
-  %or.cond1 = and i1 %cmp18, %tobool21
-  br i1 %or.cond1, label %if.then22, label %if.end24
+  %or.cond5 = and i1 %cmp18, %tobool21
+  br i1 %or.cond5, label %if.then22, label %if.end24
 
 if.then22:                                        ; preds = %if.end16
   store i64 255, i64* %val, align 8, !tbaa !115
@@ -7319,12 +7420,20 @@ if.then31:                                        ; preds = %if.end24
 if.else:                                          ; preds = %if.end24
   %kind43 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 1
   %17 = load i32, i32* %kind43, align 4, !tbaa !54
-  switch i32 %17, label %if.end84 [
-    i32 0, label %sw.bb
-    i32 2, label %sw.bb60
-  ]
+  %Pivot4 = icmp slt i32 %17, 1
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb:                                            ; preds = %if.else
+NodeBlock:                                        ; preds = %if.else
+  %Pivot = icmp sge i32 %17, 2
+  %SwitchLeaf2 = icmp eq i32 %17, 2
+  %or.cond6 = and i1 %Pivot, %SwitchLeaf2
+  br i1 %or.cond6, label %sw.bb60, label %if.end84
+
+LeafBlock:                                        ; preds = %if.else
+  %SwitchLeaf = icmp eq i32 %17, 0
+  br i1 %SwitchLeaf, label %sw.bb, label %if.end84
+
+sw.bb:                                            ; preds = %LeafBlock
   %idxprom44 = sext i32 %conv to i64
   %arrayidx45 = getelementptr inbounds [3 x i16], [3 x i16]* @NCT6775_REG_CRITICAL_ENAB, i64 0, i64 %idxprom44
   %18 = load i16, i16* %arrayidx45, align 2, !tbaa !12
@@ -7344,7 +7453,7 @@ sw.bb:                                            ; preds = %if.else
   %call59 = call i32 @nct6775_write_value(%struct.nct6775_data* %0, i16 zeroext %20, i16 zeroext %conv58)
   br label %if.end84
 
-sw.bb60:                                          ; preds = %if.else
+sw.bb60:                                          ; preds = %NodeBlock
   %idxprom61 = sext i32 %conv to i64
   %arrayidx62 = getelementptr inbounds [5 x i16], [5 x i16]* @NCT6779_REG_CRITICAL_PWM, i64 0, i64 %idxprom61
   %21 = load i16, i16* %arrayidx62, align 2, !tbaa !12
@@ -7370,7 +7479,7 @@ sw.bb60:                                          ; preds = %if.else
   %call83 = call i32 @nct6775_write_value(%struct.nct6775_data* %0, i16 zeroext %25, i16 zeroext %conv82)
   br label %if.end84
 
-if.end84:                                         ; preds = %if.else, %sw.bb, %sw.bb60, %if.then31
+if.end84:                                         ; preds = %NodeBlock, %sw.bb, %sw.bb60, %LeafBlock, %if.then31
   %update_lock85 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %0, i32 0, i32 38
   call void @mutex_unlock(%struct.mutex* %update_lock85)
   br label %cleanup
@@ -8223,8 +8332,8 @@ if.end:                                           ; preds = %entry
   %or.cond = and i1 %cmp2, %cmp4
   %6 = load i64, i64* %val, align 8
   %cmp7 = icmp ne i64 %6, 4
-  %or.cond1 = and i1 %or.cond, %cmp7
-  br i1 %or.cond1, label %cleanup, label %if.end10
+  %or.cond5 = and i1 %or.cond, %cmp7
+  br i1 %or.cond5, label %cleanup, label %if.end10
 
 if.end10:                                         ; preds = %if.end
   %update_lock = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %call, i32 0, i32 38
@@ -8254,12 +8363,18 @@ if.end10:                                         ; preds = %if.end
   %shl21 = shl i32 2, %2
   %conv22 = trunc i32 %shl21 to i8
   %10 = load i64, i64* %val, align 8, !tbaa !115
-  switch i64 %10, label %sw.epilog [
-    i64 1, label %sw.bb
-    i64 3, label %sw.bb30
-  ]
+  %Pivot4 = icmp slt i64 %10, 3
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
-sw.bb:                                            ; preds = %if.end10
+NodeBlock:                                        ; preds = %if.end10
+  %Pivot = icmp slt i64 %10, 4
+  br i1 %Pivot, label %sw.bb30, label %sw.epilog
+
+LeafBlock:                                        ; preds = %if.end10
+  %SwitchLeaf = icmp eq i64 %10, 1
+  br i1 %SwitchLeaf, label %sw.bb, label %sw.epilog
+
+sw.bb:                                            ; preds = %LeafBlock
   %conv23 = zext i8 %conv22 to i32
   %conv24 = zext i8 %conv14 to i32
   %or = or i32 %conv24, %conv23
@@ -8270,16 +8385,16 @@ sw.bb:                                            ; preds = %if.end10
   %conv29 = trunc i32 %or28 to i8
   br label %sw.epilog
 
-sw.bb30:                                          ; preds = %if.end10
+sw.bb30:                                          ; preds = %NodeBlock
   %conv31 = zext i8 %conv22 to i32
   %conv32 = zext i8 %conv14 to i32
   %or33 = or i32 %conv32, %conv31
   %conv34 = trunc i32 %or33 to i8
   br label %sw.epilog
 
-sw.epilog:                                        ; preds = %sw.bb30, %sw.bb, %if.end10
-  %vbat.0 = phi i8 [ %conv14, %if.end10 ], [ %conv34, %sw.bb30 ], [ %conv25, %sw.bb ]
-  %diode.0 = phi i8 [ %conv20, %if.end10 ], [ %conv20, %sw.bb30 ], [ %conv29, %sw.bb ]
+sw.epilog:                                        ; preds = %NodeBlock, %LeafBlock, %sw.bb30, %sw.bb
+  %vbat.0 = phi i8 [ %conv25, %sw.bb ], [ %conv34, %sw.bb30 ], [ %conv14, %LeafBlock ], [ %conv14, %NodeBlock ]
+  %diode.0 = phi i8 [ %conv29, %sw.bb ], [ %conv20, %sw.bb30 ], [ %conv20, %LeafBlock ], [ %conv20, %NodeBlock ]
   %REG_VBAT35 = getelementptr inbounds %struct.nct6775_data, %struct.nct6775_data* %call, i32 0, i32 10
   %11 = load i16, i16* %REG_VBAT35, align 2, !tbaa !73
   %conv36 = zext i8 %vbat.0 to i16

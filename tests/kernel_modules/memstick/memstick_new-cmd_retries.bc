@@ -1333,40 +1333,60 @@ declare noalias i8* @__kmalloc(i64, i32) #3
 ; Function Attrs: alwaysinline nounwind uwtable
 define internal void @__write_once_size(i8* %p, i8* %res, i32 %size) #4 {
 entry:
-  switch i32 %size, label %sw.default [
-    i32 1, label %sw.bb
-    i32 2, label %sw.bb1
-    i32 4, label %sw.bb2
-    i32 8, label %sw.bb3
-  ]
+  %Pivot10 = icmp slt i32 %size, 4
+  br i1 %Pivot10, label %NodeBlock, label %NodeBlock7
 
-sw.bb:                                            ; preds = %entry
+NodeBlock7:                                       ; preds = %entry
+  %Pivot8 = icmp slt i32 %size, 8
+  br i1 %Pivot8, label %LeafBlock3, label %LeafBlock5
+
+LeafBlock5:                                       ; preds = %NodeBlock7
+  %SwitchLeaf6 = icmp eq i32 %size, 8
+  br i1 %SwitchLeaf6, label %sw.bb3, label %sw.default
+
+LeafBlock3:                                       ; preds = %NodeBlock7
+  %SwitchLeaf4 = icmp eq i32 %size, 4
+  br i1 %SwitchLeaf4, label %sw.bb2, label %sw.default
+
+NodeBlock:                                        ; preds = %entry
+  %Pivot = icmp slt i32 %size, 2
+  br i1 %Pivot, label %LeafBlock, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %size, 2
+  br i1 %SwitchLeaf2, label %sw.bb1, label %sw.default
+
+LeafBlock:                                        ; preds = %NodeBlock
+  %SwitchLeaf = icmp eq i32 %size, 1
+  br i1 %SwitchLeaf, label %sw.bb, label %sw.default
+
+sw.bb:                                            ; preds = %LeafBlock
   %0 = load i8, i8* %res, align 1, !tbaa !41
   store volatile i8 %0, i8* %p, align 1, !tbaa !41
   br label %sw.epilog
 
-sw.bb1:                                           ; preds = %entry
+sw.bb1:                                           ; preds = %LeafBlock1
   %1 = bitcast i8* %res to i16*
   %2 = load i16, i16* %1, align 2, !tbaa !67
   %3 = bitcast i8* %p to i16*
   store volatile i16 %2, i16* %3, align 2, !tbaa !67
   br label %sw.epilog
 
-sw.bb2:                                           ; preds = %entry
+sw.bb2:                                           ; preds = %LeafBlock3
   %4 = bitcast i8* %res to i32*
   %5 = load i32, i32* %4, align 4, !tbaa !6
   %6 = bitcast i8* %p to i32*
   store volatile i32 %5, i32* %6, align 4, !tbaa !6
   br label %sw.epilog
 
-sw.bb3:                                           ; preds = %entry
+sw.bb3:                                           ; preds = %LeafBlock5
   %7 = bitcast i8* %res to i64*
   %8 = load i64, i64* %7, align 8, !tbaa !40
   %9 = bitcast i8* %p to i64*
   store volatile i64 %8, i64* %9, align 8, !tbaa !40
   br label %sw.epilog
 
-sw.default:                                       ; preds = %entry
+sw.default:                                       ; preds = %LeafBlock, %LeafBlock1, %LeafBlock3, %LeafBlock5
   call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !69
   %conv = sext i32 %size to i64
   call void @llvm.memcpy.p0i8.p0i8.i64(i8* %p, i8* %res, i64 %conv, i32 1, i1 false)

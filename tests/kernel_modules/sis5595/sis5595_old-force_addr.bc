@@ -1820,65 +1820,88 @@ if.end:                                           ; preds = %entry
   %conv6 = sext i32 %call5 to i64
   %call7 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext 71)
   %7 = load i64, i64* %val, align 8, !tbaa !77
-  switch i64 %7, label %sw.default [
-    i64 1, label %sw.bb
-    i64 2, label %sw.epilog
-    i64 4, label %sw.bb15
-    i64 8, label %sw.bb19
-  ]
+  %Pivot10 = icmp slt i64 %7, 4
+  br i1 %Pivot10, label %NodeBlock, label %NodeBlock7
 
-sw.bb:                                            ; preds = %if.end
-  br label %sw.epilog
+NodeBlock7:                                       ; preds = %if.end
+  %Pivot8 = icmp slt i64 %7, 8
+  br i1 %Pivot8, label %LeafBlock3, label %LeafBlock5
 
-sw.bb15:                                          ; preds = %if.end
-  br label %sw.epilog
+LeafBlock5:                                       ; preds = %NodeBlock7
+  %SwitchLeaf6 = icmp eq i64 %7, 8
+  br i1 %SwitchLeaf6, label %sw.epilog, label %sw.default
 
-sw.bb19:                                          ; preds = %if.end
-  br label %sw.epilog
+LeafBlock3:                                       ; preds = %NodeBlock7
+  %SwitchLeaf4 = icmp eq i64 %7, 4
+  br i1 %SwitchLeaf4, label %sw.epilog, label %sw.default
 
-sw.default:                                       ; preds = %if.end
+NodeBlock:                                        ; preds = %if.end
+  %Pivot = icmp slt i64 %7, 2
+  br i1 %Pivot, label %LeafBlock, label %LeafBlock1
+
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i64 %7, 2
+  br i1 %SwitchLeaf2, label %sw.epilog, label %sw.default
+
+LeafBlock:                                        ; preds = %NodeBlock
+  %SwitchLeaf = icmp eq i64 %7, 1
+  br i1 %SwitchLeaf, label %sw.epilog, label %sw.default
+
+sw.default:                                       ; preds = %LeafBlock, %LeafBlock1, %LeafBlock3, %LeafBlock5
   %8 = load i64, i64* %val, align 8, !tbaa !77
   %call23 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev, i8* getelementptr inbounds ([62 x i8], [62 x i8]* @.str.36, i32 0, i32 0), i64 %8)
   %update_lock24 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock24)
   br label %cleanup
 
-sw.epilog:                                        ; preds = %sw.bb19, %sw.bb15, %sw.bb, %if.end
-  %.sink = phi i8 [ 3, %sw.bb19 ], [ 2, %sw.bb15 ], [ 0, %sw.bb ], [ 1, %if.end ]
+sw.epilog:                                        ; preds = %LeafBlock, %LeafBlock1, %LeafBlock3, %LeafBlock5
+  %.sink = phi i8 [ 1, %LeafBlock1 ], [ 2, %LeafBlock3 ], [ 3, %LeafBlock5 ], [ 0, %LeafBlock ]
   %fan_div20 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom21 = sext i32 %3 to i64
   %arrayidx22 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div20, i64 0, i64 %idxprom21
   store i8 %.sink, i8* %arrayidx22, align 1, !tbaa !65
-  switch i32 %3, label %sw.epilog39 [
-    i32 0, label %sw.bb25
-    i32 1, label %sw.epilog39.sink.split
-  ]
+  %Pivot17 = icmp slt i32 %3, 1
+  br i1 %Pivot17, label %LeafBlock12, label %LeafBlock14
 
-sw.bb25:                                          ; preds = %sw.epilog
-  br label %sw.epilog39.sink.split
+LeafBlock14:                                      ; preds = %sw.epilog
+  %SwitchLeaf15 = icmp eq i32 %3, 1
+  br i1 %SwitchLeaf15, label %sw.bb31, label %sw.epilog39
 
-sw.epilog39.sink.split:                           ; preds = %sw.bb25, %sw.epilog
-  %.sink3 = phi i32 [ 207, %sw.bb25 ], [ 63, %sw.epilog ]
-  %.sink1 = phi i32 [ 4, %sw.bb25 ], [ 6, %sw.epilog ]
-  %and32 = and i32 %call7, %.sink3
+LeafBlock12:                                      ; preds = %sw.epilog
+  %SwitchLeaf13 = icmp eq i32 %3, 0
+  br i1 %SwitchLeaf13, label %sw.bb25, label %sw.epilog39
+
+sw.bb25:                                          ; preds = %LeafBlock12
+  %and = and i32 %call7, 207
+  %fan_div26 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
+  %idxprom27 = sext i32 %3 to i64
+  %arrayidx28 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div26, i64 0, i64 %idxprom27
+  %9 = load i8, i8* %arrayidx28, align 1, !tbaa !65
+  %conv29 = zext i8 %9 to i32
+  %shl30 = shl i32 %conv29, 4
+  %or = or i32 %and, %shl30
+  br label %sw.epilog39
+
+sw.bb31:                                          ; preds = %LeafBlock14
+  %and32 = and i32 %call7, 63
   %fan_div33 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom34 = sext i32 %3 to i64
   %arrayidx35 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div33, i64 0, i64 %idxprom34
-  %9 = load i8, i8* %arrayidx35, align 1, !tbaa !65
-  %conv36 = zext i8 %9 to i32
-  %shl37 = shl i32 %conv36, %.sink1
+  %10 = load i8, i8* %arrayidx35, align 1, !tbaa !65
+  %conv36 = zext i8 %10 to i32
+  %shl37 = shl i32 %conv36, 6
   %or38 = or i32 %and32, %shl37
   br label %sw.epilog39
 
-sw.epilog39:                                      ; preds = %sw.epilog39.sink.split, %sw.epilog
-  %reg.0 = phi i32 [ %call7, %sw.epilog ], [ %or38, %sw.epilog39.sink.split ]
+sw.epilog39:                                      ; preds = %sw.bb31, %sw.bb25, %LeafBlock12, %LeafBlock14
+  %reg.0 = phi i32 [ %or, %sw.bb25 ], [ %or38, %sw.bb31 ], [ %call7, %LeafBlock14 ], [ %call7, %LeafBlock12 ]
   %conv40 = trunc i32 %reg.0 to i8
   call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext 71, i8 zeroext %conv40)
   %fan_div41 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom42 = sext i32 %3 to i64
   %arrayidx43 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div41, i64 0, i64 %idxprom42
-  %10 = load i8, i8* %arrayidx43, align 1, !tbaa !65
-  %conv44 = zext i8 %10 to i32
+  %11 = load i8, i8* %arrayidx43, align 1, !tbaa !65
+  %conv44 = zext i8 %11 to i32
   %shl45 = shl i32 1, %conv44
   %call46 = call zeroext i8 @FAN_TO_REG(i64 %conv6, i32 %shl45)
   %fan_min47 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
@@ -1890,16 +1913,16 @@ sw.epilog39:                                      ; preds = %sw.epilog39.sink.sp
   %fan_min51 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom52 = sext i32 %3 to i64
   %arrayidx53 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min51, i64 0, i64 %idxprom52
-  %11 = load i8, i8* %arrayidx53, align 1, !tbaa !65
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv50, i8 zeroext %11)
+  %12 = load i8, i8* %arrayidx53, align 1, !tbaa !65
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv50, i8 zeroext %12)
   %update_lock54 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock54)
   br label %cleanup
 
 cleanup:                                          ; preds = %sw.epilog39, %sw.default, %if.then
-  %retval.0 = phi i64 [ %conv, %if.then ], [ -22, %sw.default ], [ %count, %sw.epilog39 ]
-  %12 = bitcast i64* %val to i8*
-  call void @llvm.lifetime.end.p0i8(i64 8, i8* %12) #7
+  %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %sw.epilog39 ], [ -22, %sw.default ]
+  %13 = bitcast i64* %val to i8*
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* %13) #7
   ret i64 %retval.0
 }
 
