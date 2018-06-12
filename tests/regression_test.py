@@ -209,5 +209,6 @@ class TestClass(object):
                 result = functions_diff(task_spec.old_sliced,
                                         task_spec.new_sliced,
                                         funPair[0], funPair[1],
-                                        couplings.called)
+                                        couplings.called,
+                                        timeout=120)
                 assert result == expected

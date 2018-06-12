@@ -24,7 +24,8 @@ def _kill(processes):
         p.kill()
 
 
-def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
+def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
+                   verbose):
     """
     Run the comparison of semantics of two functions using the llreve tool and
     the Z3 SMT solver. The llreve tool takes compared functions in LLVM IR and
@@ -68,7 +69,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
 
     # Timeout for both tools is set to 40s. This might be set by parameter in
     # future.
-    timer = Timer(40, _kill, [[llreve_process, z3_process]])
+    timer = Timer(timeout, _kill, [[llreve_process, z3_process]])
     try:
         timer.start()
 
@@ -94,7 +95,8 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, verbose):
     return result
 
 
-def functions_diff(first, second, funFirst, funSecond, coupled, verbose=False):
+def functions_diff(first, second, funFirst, funSecond, coupled, timeout=40,
+                   verbose=False):
     """
     Compare two functions for semantic equality.
 
@@ -131,7 +133,7 @@ def functions_diff(first, second, funFirst, funSecond, coupled, verbose=False):
         assumptions = [c for c in coupled if c.diff <= assume_level]
         # Run the actual analysis
         result = _run_llreve_z3(first, second, funFirst, funSecond,
-                                assumptions, verbose)
+                                assumptions, timeout, verbose)
         # Stop the analysis when functions are proven to be equal
         if result == Result.EQUAL:
             if assume_level > 0:
