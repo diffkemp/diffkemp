@@ -1,12 +1,10 @@
-#! /usr/bin/env python
-
 """
 Regression testing using pytest.
-Individual tests are specified using YAML in
-the tests/test_specs/ directory. Each test describes a kernel module, two
-kernel versions between which the module is compared, and a list of compared
-module parameters. For each parameter, pairs of corresponding functions (using
-the parameter) along with the expected analysis results must be provided.
+Individual tests are specified using YAML in the tests/regression/test_specs/
+directory. Each test describes a kernel module, two kernel versions between
+which the module is compared, and a list of compared module parameters. For
+each parameter, pairs of corresponding functions (using the parameter) along
+with the expected analysis results must be provided.
 This script parses the test specification and prepares testing scenarions for
 pytest.
 """
@@ -21,8 +19,8 @@ import pytest
 import shutil
 import yaml
 
-specs_path = "tests/test_specs"
-tasks_path = "tests/kernel_modules"
+specs_path = "tests/regression/test_specs"
+tasks_path = "tests/regression/kernel_modules"
 
 
 def collect_task_specs():
