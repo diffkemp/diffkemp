@@ -135,6 +135,12 @@ def functions_diff(first, second, funFirst, funSecond, coupled, timeout=40,
         # Run the actual analysis
         result = _run_llreve_z3(first, second, funFirst, funSecond,
                                 assumptions, timeout, verbose)
+        # On timeout, stop the analysis because for many assumption levels,
+        # this could run for a long time. Moreover, if the analysis times out
+        # once, there is a high chance it will time out with more strict
+        # assumptions as well.
+        if result == Result.TIMEOUT:
+            break
         # Stop the analysis when functions are proven to be equal
         if result == Result.EQUAL:
             if assume_level > 0:
