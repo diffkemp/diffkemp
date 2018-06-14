@@ -145,7 +145,6 @@ class LlvmKernelBuilder:
         print "-------------------"
         if not os.path.isdir(self.kernel_path):
             self._get_kernel_source()
-            self._clean_kernel()
             self._symlink_gcc_header(7)
             self._configure_kernel()
 
@@ -183,9 +182,8 @@ class LlvmKernelBuilder:
 
     def _clean_object(self, obj):
         """Clean an object file"""
-        file = os.path.join(self.modules_dir, obj)
-        if os.path.isfile(file):
-            os.remove(file)
+        if os.path.isfile(obj):
+            os.remove(obj)
 
     def _clean_module(self, mod):
         """Clean an object file"""
@@ -256,7 +254,7 @@ class LlvmKernelBuilder:
         for cs in reversed(commands):
             for c in cs.split(";"):
                 if c.lstrip().startswith("gcc"):
-                    return c
+                    return c.lstrip()
         raise BuildException("Compiling {} did not run a gcc command".format(
                              object_file))
 
