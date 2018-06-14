@@ -51,6 +51,8 @@ class LlvmKernelBuilder:
     kernel_base_path = "kernel"
 
     def __init__(self, kernel_version, modules_dir, debug=False):
+        if not os.path.isdir(self.kernel_base_path):
+            os.mkdir(self.kernel_base_path)
         self.kernel_base_path = os.path.abspath(self.kernel_base_path)
         self.kernel_version = kernel_version
         self.kernel_path = os.path.join(self.kernel_base_path,
