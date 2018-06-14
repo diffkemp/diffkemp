@@ -82,6 +82,6 @@ def modules_diff(first, second, param, verbose=False):
     couplings.infer_for_param(param)
     for c in couplings.main:
         result = functions_diff(first_sliced, second_sliced, c.first, c.second,
-                                couplings.called, verbose)
+                                couplings.called, verbose=verbose)
         stat.log_result(result, c.first)
     return stat

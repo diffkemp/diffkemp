@@ -42,6 +42,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
     :param coupled: List of coupled functions (functions that are supposed to
                     correspond to each other in both modules). These are needed
                     for functions not having definintions.
+    :param timeout: Timeout for the analysis in seconds
     :param verbose: Verbosity option
     """
 
@@ -67,8 +68,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
                        stdin=llreve_process.stdout,
                        stdout=PIPE, stderr=stderr)
 
-    # Timeout for both tools is set to 40s. This might be set by parameter in
-    # future.
+    # Set timeout for both tools
     timer = Timer(timeout, _kill, [[llreve_process, z3_process]])
     try:
         timer.start()
@@ -113,6 +113,7 @@ def functions_diff(first, second, funFirst, funSecond, coupled, timeout=40,
     :param funSecond: Function from the second module to be compared
     :param coupled: List of coupled functions (functions that are supposed to
                     correspond to each other in both modules)
+    :param timeout: Timeout for analysis of a function pair (default is 40s)
     :param verbose: Verbosity option
     """
     if funFirst != funSecond:
