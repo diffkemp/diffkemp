@@ -16,7 +16,9 @@ jobs:
         - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
           "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release; ninja; cd .."
         - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
-          "pytest tests"
+          "pytest tests/unit_tests"
+        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+          "pytest tests/regression"
     
     - stage: linter
       script:
