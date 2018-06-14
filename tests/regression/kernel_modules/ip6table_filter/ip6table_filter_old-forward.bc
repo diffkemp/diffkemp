@@ -1,4 +1,4 @@
-; ModuleID = 'tests/kernel_modules/ip6table_filter/ip6table_filter_old.bc'
+; ModuleID = 'tests/regression/kernel_modules/ip6table_filter/ip6table_filter_old.bc'
 source_filename = "net/ipv6/netfilter/ip6table_filter.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
