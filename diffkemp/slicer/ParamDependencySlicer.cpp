@@ -348,7 +348,7 @@ bool ParamDependencySlicer::addAllOpsToIncluded(
 #endif
                 added = true;
                 addAllOpsToIncluded(OpInst);
-                if (isa<LoadInst>(Inst) && isa<AllocaInst>(OpInst))
+                if (isa<AllocaInst>(OpInst))
                     addStoresToIncluded(OpInst, Inst);
             }
         }
