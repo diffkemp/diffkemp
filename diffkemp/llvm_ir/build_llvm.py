@@ -246,8 +246,11 @@ class LlvmKernelBuilder:
         object_file = os.path.join(self.modules_dir, object_file)
         self._clean_object(object_file)
         with open(os.devnull, "w") as stderr:
-            output = check_output(["make", "V=1", object_file, "--just-print"],
-                                  stderr=stderr)
+            try:
+                output = check_output(["make", "V=1", object_file,
+                                       "--just-print"], stderr=stderr)
+            except CalledProcessError:
+                raise BuildException("Error compiling {}".format(object_file))
         os.chdir(cwd)
 
         commands = output.splitlines()
@@ -417,6 +420,20 @@ class LlvmKernelBuilder:
                     self.ld_to_llvm(command.split(";")[0]))
         return clang_commands
 
+    def build_llvm_file(self, file, command):
+        """
+        Build single source into LLVM IR
+        :param file: Name of the result file
+        :param command: Command to be executed
+        """
+        print "    [{}] {}".format(command[0], file)
+        with open(os.devnull, "w") as stderr:
+            try:
+                check_call(command, stderr=stderr)
+            except CalledProcessError:
+                raise BuildException("Building {} failed".format(file))
+        self.opt_llvm(file, command[0])
+
     def build_llvm_module(self, name, file_name, commands):
         """
         Build kernel module into LLVM IR.
@@ -424,17 +441,15 @@ class LlvmKernelBuilder:
         :param file_name: Name of the kernel object file without extension (can
                           be different from the module name).
         :param commands: List of clang/llvm-link commands to be executed
-        :returns Instance if LlvmKernelModule with information about files
+        :returns Instance of LlvmKernelModule with information about files
                  containing the compiled module
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         for command in commands:
             file = self.get_output_file(command)
-            print "    [{}] {}".format(command[0], file)
-            with open(os.devnull, "w") as stderr:
-                check_call(command, stderr=stderr)
-            self.opt_llvm(file, command[0])
+            self.build_llvm_file(file, command)
+
         if not os.path.isfile(os.path.join(self.modules_dir, "{}.bc".format(
                                                              file_name))):
             raise BuildException("Building {} did not produce LLVM IR file"
@@ -444,10 +459,31 @@ class LlvmKernelBuilder:
                                                              self.modules_dir))
         return mod
 
+    def build_file(self, file_name):
+        """
+        Build single object file.
+        First use kbuild to get the gcc command for building the file, then
+        convert it into corresponding clang command and run it.
+        :param file_name: Name of the file (without extension)
+        :returns Instance of LlvmKernelModule where the compiled file is the
+                 main module file and no kernel object file is provided.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        command = self.kbuild_object_command("{}.o".format(file_name))
+        command = self.gcc_to_llvm(command)
+        self.build_llvm_file(os.path.join(self.modules_dir,
+                                          "{}.bc".format(file_name)),
+                             command)
+        os.chdir(cwd)
+        return LlvmKernelModule(file_name, file_name,
+                                os.path.join(self.kernel_path,
+                                             self.modules_dir))
+
     def build_module(self, module, clean):
         """
         Build kernel module.
-        First use kbuild to build kernel object file. Then, transform kbuuld
+        First use kbuild to build kernel object file. Then, transform kbuild
         commands to the corresponding clang commands and build LLVM IR of the
         module.
         :param module: Name of the module
