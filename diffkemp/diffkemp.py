@@ -14,6 +14,7 @@ def __make_argument_parser():
     ap.add_argument("dest_version")
     ap.add_argument("-m", "--module", help="analyse only chosen module")
     ap.add_argument("-p", "--param", help="analyse only chosen parameter")
+    ap.add_argument("-f", "--file", help="analyse only chosen file")
     ap.add_argument("--build-only", help="only build modules to LLVM IR",
                     action="store_true")
     ap.add_argument("--rebuild", help="force rebuilding sources",
@@ -27,10 +28,17 @@ def __make_argument_parser():
     return ap
 
 
+def check_args(args, ap):
+    """Check if command line arguments are correct."""
+    if args.file and not args.param:
+        ap.error("-f requires -p to be entered")
+
+
 def run_from_cli():
     """ Main method to run the tool. """
     ap = __make_argument_parser()
     args = ap.parse_args()
+    check_args(args, ap)
 
     try:
         first_builder = LlvmKernelBuilder(args.src_version, args.modules_dir,
@@ -40,6 +48,8 @@ def run_from_cli():
                 args.module: first_builder.build_module(args.module,
                                                         args.rebuild)
             }
+        elif args.file:
+            first_mods = {args.file: first_builder.build_file(args.file)}
         else:
             first_mods = first_builder.build_modules_with_params(args.rebuild)
 
@@ -50,6 +60,8 @@ def run_from_cli():
                 args.module: second_builder.build_module(args.module,
                                                          args.rebuild)
             }
+        elif args.file:
+            second_mods = {args.file: second_builder.build_file(args.file)}
         else:
             second_mods = second_builder.build_modules_with_params(
                 args.rebuild)
