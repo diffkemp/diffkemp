@@ -86,6 +86,20 @@ def test_kbuild_module_fail(builder):
         builder.kbuild_module("rtctimer")
 
 
+def test_build_file(builder):
+    """Building single object into LLVM."""
+    mod = builder.build_file("init")
+    assert mod.llvm == "/diffkemp/kernel/linux-3.10/sound/core/init.bc"
+    assert os.path.isfile(mod.llvm)
+    assert mod.kernel_object is None
+
+
+def test_build_file_fail(builder):
+    """Try to build a file that has no source."""
+    with pytest.raises(BuildException):
+        builder.build_file("snd")
+
+
 def test_build_module(builder):
     """
     Building module into LLVM IR code.
