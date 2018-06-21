@@ -40,10 +40,6 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     bool uses_param = false;
     if (param) {
         for (auto &use : param->uses()) {
-            if (Fun.getName() == "ivtv_parse_std") {
-                use.getUser()->dump();
-                errs() << use.getUser() << "\n";
-            }
             if (auto UserInst = dyn_cast<Instruction>(use.getUser())) {
                 if (UserInst->getParent()->getParent() == &Fun)
                     uses_param = true;
