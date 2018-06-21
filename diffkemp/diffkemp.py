@@ -24,6 +24,9 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("--report-stat", help="report statistics of the analysis",
                     action="store_true")
+    ap.add_argument("--default-value",
+            help="print parameter default value (in LLVM IR form)",
+                    action="store_true")
     return ap
 
 
@@ -53,6 +56,33 @@ def run_from_cli():
         else:
             second_mods = second_builder.build_modules_with_params(
                 args.rebuild)
+
+        if args.default_value:
+            for module_name, module_src in first_mods.iteritems():
+                module_dst = second_mods.get(module_name)
+                if not module_dst:
+                    continue
+
+                module_src.collect_all_parameters()
+                module_dst.collect_all_parameters()
+
+                print module_name
+                if args.param:
+                    param_src = module_src.params.get(args.param)
+                    param_dst = module_dst.params.get(args.param)
+                    if param_src and param_dst:
+                        print "{}: {}".format(args.src_version,
+                                param_src.default_value)
+                        print "{}: {}".format(args.dest_version,
+                                param_dst.default_value)
+                    return 0
+
+                for param_name, param in module_src.params.iteritems():
+                    if module_dst.params.get(param_name):
+                        print "{}: {}".format(args.src_version, param.default_value)
+                        print "{}: {}".format(args.dest_version,
+                                module_dst.params[param_name].default_value)
+            return 0
 
         if args.build_only:
             print "Compiled modules in version {}:".format(args.src_version)

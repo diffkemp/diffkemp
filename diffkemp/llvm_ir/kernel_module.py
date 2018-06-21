@@ -6,6 +6,7 @@ Functions for working with parameters of modules.
 from diffkemp.slicer.slicer import slice_module
 from llvmcpy.llvm import *
 import os
+import re
 from subprocess import check_output
 
 
@@ -14,11 +15,12 @@ class ModuleParam:
     Kernel module parameter.
     Has name, type, and description.
     """
-    def __init__(self, name, varname, ctype, desc):
+    def __init__(self, name, varname, ctype, desc, default_value):
         self.name = name
         self.varname = varname
         self.ctype = ctype
         self.desc = desc
+        self.default_value = default_value
 
 
 class LlvmKernelModule:
@@ -64,6 +66,14 @@ class LlvmKernelModule:
 
         return param_var.get_name()
 
+    def _extract_param_default_value(self, param):
+        """Extract parameter default value from LLVM IR."""
+        regex = re.compile(r"@{}\s=.*".format(param))
+        with open(self.llvm) as llvm_ir_file:
+            for line in llvm_ir_file:
+                if regex.search(line):
+                    return line.rstrip()
+
     def find_param_var(self, param):
         """
         Find global variable in the module that corresponds to the given param.
@@ -104,10 +114,12 @@ class LlvmKernelModule:
             ctype = ctype[:-1]
             varname = self.find_param_var(name)
             if varname:
-                self.params[name] = ModuleParam(name, varname, ctype, desc)
+                default_value = self._extract_param_default_value(varname)
+                self.params[name] = ModuleParam(
+                    name, varname, ctype, desc, default_value)
 
     def set_param(self, param):
-        self.params = {param: ModuleParam(param, param, None, None)}
+        self.params = {param: ModuleParam(param, param, None, None, None)}
 
     def slice(self, param, verbose=False):
         """
