@@ -5,12 +5,12 @@ into LLVM IR.
 """
 
 import os
-import tarfile
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.module_analyser import *
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
 from subprocess import CalledProcessError, call, check_call, check_output
+from subprocess import Popen, PIPE
 from urllib import urlretrieve
 
 
@@ -62,8 +62,28 @@ class LlvmKernelBuilder:
 
         self._prepare_kernel()
 
-    def _get_kernel_source(self):
-        """Download the sources of the required kernel version."""
+    def _extract_tar(self, tarname):
+        """Extract kernel sources from .tar.xz file."""
+        cwd = os.getcwd()
+        os.chdir(self.kernel_base_path)
+        print "Extracting"
+        check_call(["tar", "-xJf", tarname])
+        os.remove(tarname)
+        dirname = tarname[:-7]
+        # If the produced directory does not have the expected name, rename it.
+        if dirname != self.kernel_path:
+            os.rename(dirname, self.kernel_path)
+        print "Done"
+        print("Kernel sources for version {} are in directory {}".format(
+              self.kernel_version, self.kernel_path))
+        os.chdir(cwd)
+
+    def _get_kernel_tar_from_upstream(self):
+        """
+        Download sources of the required kernel version from the upstream
+        (www.kernel.org). Sources are stored as .tar.xz file.
+        :returns Name of the tar file containing the sources.
+        """
         url = "https://www.kernel.org/pub/linux/kernel/"
 
         # Version directory (different naming style for versions under and
@@ -73,7 +93,7 @@ class LlvmKernelBuilder:
         else:
             url += "v{}.x/".format(self.kernel_version[:1])
 
-        tarname = "linux-{}.tar.gz".format(self.kernel_version)
+        tarname = "linux-{}.tar.xz".format(self.kernel_version)
         url += tarname
 
         # Download the tarball with kernel sources
@@ -81,19 +101,56 @@ class LlvmKernelBuilder:
         urlretrieve(url, os.path.join(self.kernel_base_path, tarname),
                     show_progress)
 
-        # Extract kernel sources
-        print "Extracting"
+        return tarname
+
+    def _get_kernel_tar_from_brew(self):
+        """
+        Download sources of the required kernel from Brew.
+        Sources are part of the SRPM package and need to be extracted out of
+        it.
+        :returns Name of the tar file containing the sources.
+        """
+        url = "http://download.eng.bos.redhat.com/brewroot/packages/kernel/"
+        version, release = self.kernel_version.split("-")
+        url += "{}/{}.el7/src/".format(version, release)
+        rpmname = "kernel-{}.el7.src.rpm".format(self.kernel_version)
+        url += rpmname
+        # Download the source RPM package
+        print "Downloading kernel version {}".format(self.kernel_version)
+        urlretrieve(url, os.path.join(self.kernel_base_path, rpmname),
+                    show_progress)
+
         cwd = os.getcwd()
         os.chdir(self.kernel_base_path)
-        tar = tarfile.open(tarname, "r:gz")
-        tar.extractall()
-        tar.close
+        # Extract files from SRPM package
+        with open(os.devnull, "w") as devnull:
+            rpm_cpio = Popen(["rpm2cpio", rpmname], stdout=PIPE,
+                             stderr=devnull)
+            check_call(["cpio", "-idmv"], stdin=rpm_cpio.stdout,
+                       stderr=devnull)
 
-        os.remove(tarname)
-        print "Done"
-        print("Kernel sources for version {} are in directory {}".format(
-              self.kernel_version, self.kernel_path))
+        # Delete all files but the tar.xz file (keep the directories since
+        # these are other kernels - RPM does not contain dirs)
+        tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
+        for f in os.listdir("."):
+            if os.path.isfile(f) and f != tarname:
+                os.remove(f)
         os.chdir(cwd)
+        return tarname
+
+    def _get_kernel_source(self):
+        """Download the sources of the required kernel version."""
+        # Download sources from upstream (kernel.org) or Brew
+        # The choice is done based on version string, if it has release part
+        # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
+        # raise exception on such version string).
+        try:
+            StrictVersion(self.kernel_version)
+            tarname = self._get_kernel_tar_from_upstream()
+        except ValueError:
+            tarname = self._get_kernel_tar_from_brew()
+
+        self._extract_tar(tarname)
 
     def _call_and_print(self, command, stdout=None, stderr=None):
         print "  {}".format(" ".join(command))
@@ -133,6 +190,7 @@ class LlvmKernelBuilder:
         print "Configuring and preparing modules"
         with open(os.devnull, 'w') as null:
             self._call_and_print(["make", "allmodconfig"], null, null)
+            self._disable_kabi_size_align_checks()
             self._call_and_print(["make", "prepare"], null, null)
             self._call_and_print(["make", "modules_prepare"], null, null)
         os.chdir(cwd)
@@ -171,6 +229,23 @@ class LlvmKernelBuilder:
                 src_file = os.path.join(include_path,
                                         "compiler-gcc{}.h".format(max_major))
                 os.symlink(src_file, dest_file)
+
+    def _disable_kabi_size_align_checks(self):
+        """
+        Set CONFIG_RH_KABI_SIZE_ALIGN_CHECKS=n in .config file. Compiling with
+        this option set to 'y' causes compilation failure.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        os.rename(".config", ".oldconfig")
+        with open(".oldconfig", "r") as oldconfig:
+            with open(".config", "w") as config:
+                for line in oldconfig:
+                    if "CONFIG_RH_KABI_SIZE_ALIGN_CHECKS" in line:
+                        config.write("CONFIG_RH_KABI_SIZE_ALIGN_CHECKS=n\n")
+                    else:
+                        config.write(line)
+        os.chdir(cwd)
 
     def _clean_kernel(self):
         """Clean whole kernel"""
