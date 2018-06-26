@@ -15,7 +15,7 @@ params:
       snoop_urb_data: not_equal
       proc_control: equal
       snoop_urb: not_equal
-      usbdev_open: not_equal
+      usbdev_open: equal
       proc_claim_port: not_equal
       async_completed: equal
       usbdev_do_ioctl: timeout
