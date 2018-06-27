@@ -9,6 +9,10 @@ import os
 from subprocess import check_output
 
 
+class KernelModuleException(Exception):
+    pass
+
+
 class ModuleParam:
     """
     Kernel module parameter.
@@ -34,13 +38,17 @@ class LlvmKernelModule:
         else:
             self.kernel_object = None
         self.params = dict()
-        self.llvm_module = None
+        self._parse_module()
 
     def _parse_module(self):
         """Parse module file into LLVM module using llvmcpy library"""
         buffer = create_memory_buffer_with_contents_of_file(self.llvm)
         context = get_global_context()
         self.llvm_module = context.parse_ir(buffer)
+
+    def _globvar_exists(self, param):
+        """Check if a global variable with the given name exists."""
+        return self.llvm_module.get_named_global(param) is not None
 
     def _extract_param_name(self, param_var):
         """
@@ -95,7 +103,6 @@ class LlvmKernelModule:
         Collect all parameters defined in the module.
         This is done by parsing output of `modinfo -p module.ko`.
         """
-        self._parse_module()
         self.params = dict()
         with open(os.devnull, "w") as stderr:
             modinfo = check_output(["modinfo", "-p", self.kernel_object],
@@ -110,7 +117,14 @@ class LlvmKernelModule:
                 self.params[name] = ModuleParam(name, varname, ctype, desc)
 
     def set_param(self, param):
-        self.params = {param: ModuleParam(param, param, None, None)}
+        """Set single parameter"""
+        globvar = param
+        if not self._globvar_exists(param):
+            globvar = self.find_param_var(param)
+        if globvar:
+            self.params = {globvar: ModuleParam(globvar, globvar, None, None)}
+        else:
+            raise KernelModuleException("Parameter {} not found".format(param))
 
     def slice(self, param, verbose=False):
         """

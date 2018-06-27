@@ -4,6 +4,7 @@ Mostly contains tests for searching module parameters.
 """
 
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
+from diffkemp.llvm_ir.kernel_module import KernelModuleException
 import pytest
 
 
@@ -39,3 +40,17 @@ def test_find_param_var():
     assert module.find_param_var("default_state") == "rfkill_default_state"
     assert module.find_param_var("master_switch_mode") == \
         "rfkill_master_switch_mode"
+
+
+def test_set_param(builder):
+    """Setting a single parameter"""
+    module = builder.build_module("snd", False)
+    module.set_param("cards_limit")
+    assert module.params.keys() == ["cards_limit"]
+
+
+def test_set_param_fail(builder):
+    """Trying to set an invalid parameter should raise an exception"""
+    module = builder.build_module("snd", False)
+    with pytest.raises(KernelModuleException):
+        module.set_param("card_limit")
