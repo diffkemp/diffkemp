@@ -61,6 +61,17 @@ class LlvmKernelBuilder:
         self.modules_path = os.path.join(self.kernel_path, self.modules_dir)
         self.debug = debug
 
+        # Deduce source where kernel will be downloaded from.
+        # The choice is done based on version string, if it has release part
+        # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
+        # raise exception on such version string).
+        try:
+            StrictVersion(kernel_version)
+            self.source = "upstream"
+        except ValueError:
+            self.source = "brew"
+
+        self.configfile = None
         self._prepare_kernel()
 
     def _extract_tar(self, tarname):
@@ -133,24 +144,21 @@ class LlvmKernelBuilder:
         # Delete all files but the tar.xz file (keep the directories since
         # these are other kernels - RPM does not contain dirs)
         tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
+        self.configfile = "kernel-{}-x86_64.config".format(
+            self.kernel_version.split("-")[0])
         for f in os.listdir("."):
-            if os.path.isfile(f) and f != tarname:
+            if os.path.isfile(f) and f != tarname and f != self.configfile:
                 os.remove(f)
+        self.configfile = os.path.abspath(self.configfile)
         os.chdir(cwd)
         return tarname
 
     def _get_kernel_source(self):
         """Download the sources of the required kernel version."""
-        # Download sources from upstream (kernel.org) or Brew
-        # The choice is done based on version string, if it has release part
-        # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
-        # raise exception on such version string).
-        try:
-            StrictVersion(self.kernel_version)
+        if self.source == "upstream":
             tarname = self._get_kernel_tar_from_upstream()
-        except ValueError:
+        else:
             tarname = self._get_kernel_tar_from_brew()
-
         self._extract_tar(tarname)
 
     def _call_and_print(self, command, stdout=None, stderr=None):
@@ -179,10 +187,10 @@ class LlvmKernelBuilder:
     def _configure_kernel(self):
         """
         Configure kernel.
-        When possible, everything should be compiled as module, otherwise it
-        should be compiled as built-in.
-        This can be achieved by commands:
-            make allmodconfig
+        For kernels downloaded from Brew, use the provided config file.
+        For kernels downloaded from upstream, configure all as module (run
+        `make allmodconfig`).
+        Then run:
             make prepare
             make modules_prepare
         """
@@ -190,8 +198,11 @@ class LlvmKernelBuilder:
         os.chdir(self.kernel_path)
         print "Configuring and preparing modules"
         with open(os.devnull, 'w') as null:
-            self._call_and_print(["make", "allmodconfig"], null, null)
-            self._disable_kabi_size_align_checks()
+            if self.configfile is not None:
+                os.rename(self.configfile, ".config")
+            else:
+                self._call_and_print(["make", "allmodconfig"], null, null)
+            # self._disable_kabi_size_align_checks()
             self._call_and_print(["make", "prepare"], null, null)
             self._call_and_print(["make", "modules_prepare"], null, null)
         os.chdir(cwd)
