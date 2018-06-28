@@ -345,7 +345,7 @@ class LlvmKernelBuilder:
         '_' by '-'.
         :returns Name used in the .ko file (possibly with underscores replaced
                  by dashes).
-                 List of commands that were used to comiple and link files in
+                 List of commands that were used to compile and link files in
                  the module.
         """
         cwd = os.getcwd()
@@ -373,6 +373,24 @@ class LlvmKernelBuilder:
         finally:
             os.chdir(cwd)
         return file_name, output.splitlines()
+
+    def kbuild_all_modules(self):
+        """
+        Build all kernel modules in modules_dir using Kbuild.
+        The command used is `make V=1 M=/path/to/mod`.
+        :returns List of commands that were used to compile and link modules.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        command = ["make", "V=1", "M={}".format(self.modules_dir)]
+
+        try:
+            output = self._call_output_and_print(command)
+            return output.splitlines()
+        except CalledProcessError:
+            raise BuildException("Could not build modules.")
+        finally:
+            os.chdir(cwd)
 
     def get_module_name(self, gcc_command):
         """
@@ -407,6 +425,28 @@ class LlvmKernelBuilder:
         if len(command) == index:
             raise BuildException("Broken command: {}".format("".join(command)))
         return command[index + 1]
+
+    def find_modules(self, commands):
+        """
+        Extract list of modules that were compiled using the given list of
+        commands.
+        :param commmands: List of GCC/LD commands.
+        :returns List of modules names.
+        """
+        result = []
+        for cmd in commands:
+            if cmd.lstrip().startswith("ld"):
+                try:
+                    mod = self.get_output_file(cmd.split())
+                    if mod.endswith(".ko"):
+                        result.append(
+                            os.path.relpath(mod, self.modules_path)[:-3])
+                    elif mod.endswith("built-in.o"):
+                        result.append(
+                            os.path.relpath(mod, self.modules_path)[:-2])
+                except BuildException:
+                    pass
+        return result
 
     def gcc_to_llvm(self, gcc_command):
         """
@@ -473,7 +513,7 @@ class LlvmKernelBuilder:
         except CalledProcessError:
             raise BuildException("Running opt failed")
 
-    def kbuild_to_llvm_commands(self, kbuild_commands, file_name):
+    def kbuild_to_llvm_commands(self, kbuild_commands, file_name=""):
         """
         Convers a list of Kbuild commands for building a module into a list of
         corresponding llvm/clang commands to build the module into LLVM IR.
@@ -506,9 +546,12 @@ class LlvmKernelBuilder:
         with open(os.devnull, "w") as stderr:
             try:
                 check_call(command, stderr=stderr)
+                self.opt_llvm(file, command[0])
             except CalledProcessError:
-                raise BuildException("Building {} failed".format(file))
-        self.opt_llvm(file, command[0])
+                # Do not raise exceptions if built-in.bc cannot be built. This
+                # always happens when files are built into modules.
+                if not file.endswith("built-in.bc"):
+                    raise BuildException("Building {} failed".format(file))
 
     def build_llvm_module(self, name, file_name, commands):
         """
@@ -568,6 +611,41 @@ class LlvmKernelBuilder:
         file_name, commands = self.kbuild_module(module)
         clang_commands = self.kbuild_to_llvm_commands(commands, file_name)
         return self.build_llvm_module(module, file_name, clang_commands)
+
+    def build_all_modules(self, clean):
+        """
+        Build all modules in the modules directory.
+        :return Dictionary of modules in form name -> module
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        print "Building all modules"
+        if clean:
+            self._clean_all_modules()
+
+        # Use Kbuild to build directory and extract names of built modules
+        gcc_commands = self.kbuild_all_modules()
+        modules = self.find_modules(gcc_commands)
+        # Build same files into LLVM
+        clang_commands = self.kbuild_to_llvm_commands(gcc_commands)
+        for command in clang_commands:
+            file = self.get_output_file(command)
+            self.build_llvm_file(file, command)
+
+        result = dict()
+        for mod in modules:
+            # Only create modules that have been actually built
+            if os.path.isfile(os.path.join(self.modules_dir,
+                                           "{}.bc".format(mod))):
+                # If the module name is "built-in", set it to the directory it
+                # is located in.
+                name = mod
+                if name == "built-in":
+                    name = os.path.basename(os.path.normpath(self.modules_dir))
+
+                result[name] = LlvmKernelModule(name, mod, self.modules_path)
+        os.chdir(cwd)
+        return result
 
     def build_modules_with_params(self, clean):
         """

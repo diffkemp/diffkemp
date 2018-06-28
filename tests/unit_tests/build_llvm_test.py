@@ -139,3 +139,16 @@ def test_build_modules_with_params():
 
     for n, m in modules.iteritems():
         assert os.path.isfile(m.llvm)
+
+
+def test_build_all_modules():
+    """
+    Building all modules in a folder.
+    Checks whether all modules are built.abs
+    """
+    builder = LlvmKernelBuilder("3.10", "sound/core/oss")
+    modules = builder.build_all_modules(True)
+    assert modules.keys() == ["snd-mixer-oss", "snd-pcm-oss"]
+
+    for n, m in modules.iteritems():
+        assert os.path.isfile(m.llvm)
