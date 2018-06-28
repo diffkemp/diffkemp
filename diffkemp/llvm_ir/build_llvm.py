@@ -58,6 +58,7 @@ class LlvmKernelBuilder:
         self.kernel_path = os.path.join(self.kernel_base_path,
                                         "linux-{}".format(self.kernel_version))
         self.modules_dir = modules_dir
+        self.modules_path = os.path.join(self.kernel_path, self.modules_dir)
         self.debug = debug
 
         self._prepare_kernel()
@@ -530,8 +531,7 @@ class LlvmKernelBuilder:
             raise BuildException("Building {} did not produce LLVM IR file"
                                  .format(name))
         os.chdir(cwd)
-        mod = LlvmKernelModule(name, file_name, os.path.join(self.kernel_path,
-                                                             self.modules_dir))
+        mod = LlvmKernelModule(name, file_name, self.modules_path)
         return mod
 
     def build_file(self, file_name):
@@ -551,9 +551,7 @@ class LlvmKernelBuilder:
                                           "{}.bc".format(file_name)),
                              command)
         os.chdir(cwd)
-        return LlvmKernelModule(file_name, file_name,
-                                os.path.join(self.kernel_path,
-                                             self.modules_dir))
+        return LlvmKernelModule(file_name, file_name, self.modules_path)
 
     def build_module(self, module, clean):
         """
@@ -581,8 +579,7 @@ class LlvmKernelBuilder:
         print "  Collecting modules"
         if clean:
             self._clean_all_modules()
-        sources = self._get_sources_with_params(os.path.join(self.kernel_path,
-                                                             self.modules_dir))
+        sources = self._get_sources_with_params(self.modules_path)
         modules = set()
         # First build objects from sources that contain definitions of
         # parameters. By building them, we can obtain names of modules they
