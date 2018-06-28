@@ -12,6 +12,8 @@ def __make_argument_parser():
     ap.add_argument("modules_dir")
     ap.add_argument("src_version")
     ap.add_argument("dest_version")
+    ap.add_argument("--modules-with-params", help="automatically detect all \
+                    modules containing parameters", action="store_true")
     ap.add_argument("-m", "--module", help="analyse only chosen module")
     ap.add_argument("-p", "--param", help="analyse only chosen parameter")
     ap.add_argument("-f", "--file", help="analyse only chosen file")
@@ -48,10 +50,12 @@ def run_from_cli():
                 args.module: first_builder.build_module(args.module,
                                                         args.rebuild)
             }
+        elif args.modules_with_params:
+            first_mods = first_builder.build_modules_with_params(args.rebuild)
         elif args.file:
             first_mods = {args.file: first_builder.build_file(args.file)}
         else:
-            first_mods = first_builder.build_modules_with_params(args.rebuild)
+            first_mods = first_builder.build_all_modules(args.rebuild)
 
         second_builder = LlvmKernelBuilder(args.dest_version, args.modules_dir,
                                            args.debug)
@@ -60,11 +64,13 @@ def run_from_cli():
                 args.module: second_builder.build_module(args.module,
                                                          args.rebuild)
             }
+        elif args.modules_with_params:
+            second_mods = second_builder.build_modules_with_params(
+                args.rebuild)
         elif args.file:
             second_mods = {args.file: second_builder.build_file(args.file)}
         else:
-            second_mods = second_builder.build_modules_with_params(
-                args.rebuild)
+            second_mods = second_builder.build_all_modules(args.rebuild)
 
         if args.build_only:
             print "Compiled modules in version {}:".format(args.src_version)
