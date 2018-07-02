@@ -320,6 +320,12 @@ class LlvmKernelBuilder:
         else:
             return gcc_param.translate(None, "\"")
 
+    def _get_ko_name(self, mod):
+        """Get name of an object file corresponding to a module"""
+        if mod == "built-in":
+            return "built-in.o"
+        return "{}.ko".format(mod)
+
     def kbuild_object_command(self, object_file):
         """
         Build the object file (.o) using KBuild.
@@ -362,8 +368,9 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         file_name = module
-        command = ["make", "V=1", "M={}".format(self.modules_dir),
-                   "{}.ko".format(file_name)]
+        command = ["make", "V=1", "M={}".format(self.modules_dir)]
+        if module != "built-in":
+            command.append("{}.ko".format(file_name))
 
         if not self._check_make_target(command):
             # If the target does not exist, replace "_" by "-" and try again
@@ -375,7 +382,8 @@ class LlvmKernelBuilder:
 
         try:
             output = self._call_output_and_print(command)
-            ko_file = os.path.join(self.modules_dir, "{}.ko".format(file_name))
+            ko_file = os.path.join(self.modules_dir,
+                                   self._get_ko_name(file_name))
             if not os.path.exists(ko_file):
                 raise BuildException("Could not build module {}"
                                      .format(module))
@@ -621,9 +629,11 @@ class LlvmKernelBuilder:
             self._clean_all_modules()
         file_name, commands = self.kbuild_module(module)
         clang_commands = self.kbuild_to_llvm_commands(commands, file_name)
+        if module == "built-in":
+            module = os.path.basename(os.path.normpath(self.modules_dir))
         return self.build_llvm_module(module, file_name, clang_commands)
 
-    def build_all_modules(self, clean):
+    def build_all_modules(self, clean=True):
         """
         Build all modules in the modules directory.
         :return Dictionary of modules in form name -> module
