@@ -60,7 +60,7 @@ class Statistics():
         return Result.UNKNOWN
 
 
-def modules_diff(first, second, param, verbose=False):
+def modules_diff(first, second, param, timeout, verbose=False):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
     :param first: File with LLVM IR of the first module
@@ -82,6 +82,6 @@ def modules_diff(first, second, param, verbose=False):
     couplings.infer_for_param(param)
     for c in couplings.main:
         result = functions_diff(first_sliced, second_sliced, c.first, c.second,
-                                couplings.called, verbose=verbose)
+                                couplings.called, timeout, verbose)
         stat.log_result(result, c.first)
     return stat

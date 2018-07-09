@@ -95,7 +95,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
     return result
 
 
-def functions_diff(first, second, funFirst, funSecond, coupled, timeout=40,
+def functions_diff(first, second, funFirst, funSecond, coupled, timeout,
                    verbose=False):
     """
     Compare two functions for semantic equality.

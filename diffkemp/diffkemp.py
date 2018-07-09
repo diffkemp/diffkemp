@@ -27,6 +27,8 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("--report-stat", help="report statistics of the analysis",
                     action="store_true")
+    ap.add_argument("-t", "--timeout", help="timeout in seconds for a single \
+                    parameter comparison")
     return ap
 
 
@@ -81,6 +83,9 @@ def run_from_cli():
                 print "{} ".format(mod_name)
             return 0
 
+        # Set timeout (default is 40s)
+        timeout = int(args.timeout) if args.timeout else 40
+
         print "Computing semantic difference of module parameters"
         print "--------------------------------------------------"
         result = Statistics()
@@ -102,7 +107,8 @@ def run_from_cli():
                     continue
                 print "  parameter {}".format(name)
                 # Compare modules
-                stat = modules_diff(first, second, param.varname, args.verbose)
+                stat = modules_diff(first, second, param.varname, timeout,
+                                    args.verbose)
                 print "    {}".format(str(stat.overall_result()).upper())
                 result.log_result(stat.overall_result(), "{}-{}".format(mod,
                                                                         name))
