@@ -1,0 +1,12 @@
+module: opl3
+path: sound/oss
+filename: opl3.c
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: io
+    functions:
+      cleanup_opl3: equal
+      init_opl3: timeout
+
