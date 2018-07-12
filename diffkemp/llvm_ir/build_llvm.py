@@ -596,6 +596,45 @@ class LlvmKernelBuilder:
         mod = LlvmKernelModule(name, file_name, self.modules_path)
         return mod
 
+    def link_modules(self, modules):
+        """
+        Link depending modules together.
+        Some modules depend on other modules, link those to them.
+        :param modules: Dict of form name -> LlvmKernelModule.
+        """
+        print "Linking dependent modules"
+        linked = set()
+        for name, mod in modules.iteritems():
+            if mod.depends is None:
+                continue
+            depmods = []
+            do_not_link = []
+            for depends in mod.depends:
+                # Find module with the given name (may require replacing dashes
+                # by underscores).
+                if depends in modules:
+                    modname = depends
+                elif depends.replace("-", "_") in modules:
+                    modname = depends.replace("-", "_")
+                else:
+                    continue
+                depmods.append(modules[modname])
+                # If a dependency module is linked, do not link its
+                # dependencies.
+                if modname in linked:
+                    for m in modules[modname].depends:
+                        if m in modules:
+                            do_not_link.append(m)
+                        if m.replace("-", "_") in modules:
+                            do_not_link.append(m.replace("-", "_"))
+
+            if depmods:
+                to_link = [d for d in depmods if d.name not in do_not_link]
+                print "  [llvm-link] {}".format(
+                    os.path.relpath(mod.llvm, self.kernel_path))
+                mod.link_modules(to_link)
+                linked.add(name)
+
     def build_file(self, file_name):
         """
         Build single object file.
@@ -671,6 +710,7 @@ class LlvmKernelBuilder:
                 llvm_modules[name] = LlvmKernelModule(name, mod,
                                                       self.modules_path)
         os.chdir(cwd)
+        self.link_modules(llvm_modules)
         return llvm_modules
 
     def build_modules_with_params(self, clean):
@@ -711,4 +751,5 @@ class LlvmKernelBuilder:
             except BuildException as e:
                 print "    {}".format(str(e))
         print ""
+        self.link_modules(llvm_modules)
         return llvm_modules
