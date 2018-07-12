@@ -144,11 +144,28 @@ def test_build_modules_with_params():
 def test_build_all_modules():
     """
     Building all modules in a folder.
-    Checks whether all modules are built.abs
+    Checks whether all modules are built.
     """
     builder = LlvmKernelBuilder("3.10", "sound/core/oss")
     modules = builder.build_all_modules(True)
-    assert modules.keys() == ["snd-mixer-oss", "snd-pcm-oss"]
+    assert sorted(modules.keys()) == sorted(["snd-mixer-oss", "snd-pcm-oss"])
 
     for n, m in modules.iteritems():
         assert os.path.isfile(m.llvm)
+
+
+def test_link_modules():
+    """
+    Linking dependent modules together.
+    Checks if, after linking, selected functions defined in one module are
+    defined in the other module as well.
+    """
+    builder = LlvmKernelBuilder("3.10", "sound/core/seq")
+    modules = builder.build_all_modules(True)
+    builder.link_modules(modules)
+
+    for f in ["snd_midi_event_encode", "snd_midi_event_reset_encode",
+              "snd_midi_event_free", "snd_midi_event_new",
+              "snd_midi_event_decode"]:
+        assert not modules["snd-seq-virmidi"].llvm_module \
+            .get_named_function(f).is_declaration()
