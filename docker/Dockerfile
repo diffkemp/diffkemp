@@ -4,16 +4,21 @@ ENV LLVM_VERSION 5.0.0
 ENV Z3_VERSION 4.5.0
 RUN dnf update -y && \
     dnf install -y \
+      bc \
       bison \
       cmake \
       curl \
+      elfutils-libelf-devel \
+      findutils \
       flex \
       gcc-c++ \
       gcc \
       gdb \
       git \
       gmp-devel \
+      module-init-tools \
       ninja-build \
+      openssl-devel \
       python \
       vim \
       xz
@@ -55,12 +60,5 @@ RUN pip install \
       progressbar \
 	  pytest \
 	  pyyaml
-# Install some additional packages - should be moved to top in future
-RUN dnf install -y \
-      bc \
-      elfutils-libelf-devel \
-      findutils \
-      module-init-tools \
-      openssl-devel
 ENV PYTHONPATH /diffkemp:/usr/lib/python2.7:/usr/lib/python3.6
 
