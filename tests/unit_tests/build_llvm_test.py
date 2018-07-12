@@ -106,7 +106,7 @@ def test_build_module(builder):
     Checks whether all necessary files are identified and built.
     """
     mod = builder.build_module("oss/snd_pcm_oss", True)
-    assert mod.name == "oss/snd_pcm_oss"
+    assert mod.name == "snd_pcm_oss"
 
     module_path = "/diffkemp/kernel/linux-3.10/sound/core/oss/"
     # Check if kernel object file exists and is correct in the module
@@ -134,8 +134,8 @@ def test_build_modules_with_params():
     """
     builder = LlvmKernelBuilder("3.10", "sound/core/seq")
     modules = builder.build_modules_with_params(True)
-    assert modules.keys() == ["snd_seq_midi", "snd_seq_dummy", "snd_seq",
-                              "oss/snd_seq_oss"]
+    assert sorted(modules.keys()) == sorted(["snd_seq_midi", "snd_seq_dummy",
+                                             "snd_seq", "snd_seq_oss"])
 
     for n, m in modules.iteritems():
         assert os.path.isfile(m.llvm)

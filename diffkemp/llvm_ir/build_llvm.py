@@ -630,8 +630,10 @@ class LlvmKernelBuilder:
         file_name, commands = self.kbuild_module(module)
         clang_commands = self.kbuild_to_llvm_commands(commands, file_name)
         if module == "built-in":
-            module = os.path.basename(os.path.normpath(self.modules_dir))
-        return self.build_llvm_module(module, file_name, clang_commands)
+            name = os.path.basename(os.path.normpath(self.modules_dir))
+        else:
+            name = os.path.basename(module)
+        return self.build_llvm_module(name, file_name, clang_commands)
 
     def build_all_modules(self, clean=True):
         """
@@ -653,7 +655,7 @@ class LlvmKernelBuilder:
             file = self.get_output_file(command)
             self.build_llvm_file(file, command)
 
-        result = dict()
+        llvm_modules = dict()
         for mod in modules:
             # Only create modules that have been actually built
             if os.path.isfile(os.path.join(self.modules_dir,
@@ -663,10 +665,13 @@ class LlvmKernelBuilder:
                 name = mod
                 if name == "built-in":
                     name = os.path.basename(os.path.normpath(self.modules_dir))
+                else:
+                    name = os.path.basename(name)
 
-                result[name] = LlvmKernelModule(name, mod, self.modules_path)
+                llvm_modules[name] = LlvmKernelModule(name, mod,
+                                                      self.modules_path)
         os.chdir(cwd)
-        return result
+        return llvm_modules
 
     def build_modules_with_params(self, clean):
         """
@@ -701,7 +706,8 @@ class LlvmKernelBuilder:
         for mod in modules:
             print "  {}".format(mod)
             try:
-                llvm_modules[mod] = self.build_module(mod, False)
+                llvm_mod = self.build_module(mod, False)
+                llvm_modules[llvm_mod.name] = llvm_mod
             except BuildException as e:
                 print "    {}".format(str(e))
         print ""
