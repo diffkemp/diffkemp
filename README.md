@@ -27,6 +27,17 @@ Currently, the main goal is a proof of concept.
 * slicer: Slicing of programs to remove the code that is not affected by the
   analysed parameter.
 
+## Running environment
+
+Since the tool uses some custom modifications to LLVM, it is recommended to run
+the tool in the prepared development container. The container image can be
+retrieved from DockerHub:
+[https://hub.docker.com/r/viktormalik/diffkemp/](https://hub.docker.com/r/viktormalik/diffkemp/)
+
+After that, the container can be run using
+
+    docker/run-container.sh
+
 ## Build
 	mkdir build
 	cd build
@@ -43,8 +54,8 @@ parameter can be chosen.
 The modules-dir is given relatively to the kernel directory.
 The tool is able to download necessary kernel sources.
 
-## Regression tests
+## Tests
 
-The project contains regression testing using pytest that can be run by:
+The project contains unit and regression testing using pytest that can be run by:
 
     pytest tests
