@@ -1,0 +1,12 @@
+module: sony-laptop
+path: drivers/platform/x86
+filename: sony-laptop.c
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: no_spic
+    functions:
+      sony_laptop_init: equal
+
+
