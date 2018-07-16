@@ -23,6 +23,12 @@ Currently, the main goal is a proof of concept.
 * llreve: Tool for regression verification of LLVM programs. It uses symbolic
   execution and an external SMT solver (currently Z3) to prove that two
   functions have the same semantics.
+  Since llreve is maintained as a separate project, it is included as a GIT
+  submodule in this repo. Clone either with `--recurse-submodules` or run after
+  clone:
+
+        git submodule init
+        git submodule update
 
 * slicer: Slicing of programs to remove the code that is not affected by the
   analysed parameter.
