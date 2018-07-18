@@ -121,22 +121,25 @@ class LlvmKernelModule:
         :param param_var: LLVM expression containing the variable
         :return Name of the variable
         """
-        if param_var.get_kind() != GlobalVariableValueKind:
+        if param_var.get_kind() == GlobalVariableValueKind:
+            if ("__param_arr" in param_var.get_name() or
+                    "__param_string" in param_var.get_name()):
+                # For array and string parameters, the actual variable is
+                # inside another structure as its last element
+                param_var_value = param_var.get_initializer()
+                # Get the last element
+                var_expr = param_var_value.get_operand(
+                    param_var_value.get_num_operands() - 1)
+                return self._extract_param_name(var_expr)
+            else:
+                return param_var.get_name()
+
+        if param_var.get_num_operands() == 1:
             # Variable can be inside bitcast or getelementptr, in both cases
             # it is inside the first operand of the expression
             return self._extract_param_name(param_var.get_operand(0))
 
-        if ("__param_arr" in param_var.get_name() or
-                "__param_string" in param_var.get_name()):
-            # For array and string parameters, the actual variable is inside
-            # another structure as its last element
-            param_var_value = param_var.get_initializer()
-            # Get the last element
-            var_expr = param_var_value.get_operand(
-                param_var_value.get_num_operands() - 1)
-            return self._extract_param_name(var_expr)
-
-        return param_var.get_name()
+        return None
 
     def find_param_var(self, param):
         """
@@ -156,10 +159,12 @@ class LlvmKernelModule:
         glob_value = glob.get_initializer()
         # Get the last element
         var_union = glob_value.get_operand(glob_value.get_num_operands() - 1)
-        # Last element is a struct with single element, get it
-        var = var_union.get_operand(0)
-
-        return self._extract_param_name(var)
+        if var_union.get_num_operands() == 1:
+            # Last element should be a struct with single element, get it
+            var = var_union.get_operand(0)
+            return self._extract_param_name(var)
+        else:
+            return None
 
     def collect_all_parameters(self):
         """
