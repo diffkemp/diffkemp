@@ -1,0 +1,13 @@
+module: tcp_bic
+path: net/ipv4
+filename: tcp_bic.c
+old_kernel: "3.10"
+new_kernel: "4.11"
+debug: true
+
+params:
+  - param: low_window
+    functions:
+      bictcp_update: equal
+      bictcp_recalc_ssthresh: equal
+
