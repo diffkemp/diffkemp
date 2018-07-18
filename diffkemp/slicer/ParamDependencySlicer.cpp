@@ -198,7 +198,7 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     // Clear BBs except first that have no incoming edges
     for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
         BasicBlock *BB = &*BB_it++;
-        if (pred_begin(BB) == pred_end(BB)) {
+        if (!isIncluded(BB) && pred_begin(BB) == pred_end(BB)) {
             DeleteDeadBlock(BB);
         }
     }
