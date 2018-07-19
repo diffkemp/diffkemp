@@ -42,6 +42,9 @@ class FunctionCollector():
             for instr in bb.iter_instructions():
                 if instr.get_instruction_opcode() == Call:
                     called = instr.get_called()
+                    if (called.get_kind() == ConstantExprValueKind):
+                        # Called function may be inside a bitcast
+                        called = called.get_operand(0)
                     # Collect all unsupported functions that are called
                     if (called.get_kind() == FunctionValueKind and
                             called.get_name() and
