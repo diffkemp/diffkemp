@@ -1,0 +1,11 @@
+module: ipmi_si 
+path: drivers/char/ipmi
+filename: ipmi_si_intf.c
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: irqs
+    functions:
+      hardcode_find_bmc: equal
+
