@@ -1,0 +1,12 @@
+module: gamecon
+path: drivers/input/joystick
+filename: gamecon.c
+old_kernel: "3.10"
+new_kernel: "4.11"
+
+params:
+  - param: gc_psx_delay
+    functions:
+      gc_psx_read_packet: equal
+      gc_psx_command: equal
+
