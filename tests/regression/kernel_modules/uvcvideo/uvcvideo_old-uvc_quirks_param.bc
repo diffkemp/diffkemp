@@ -769,10 +769,10 @@ target triple = "x86_64-unknown-linux-gnu"
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @uvc_probe(%struct.usb_interface* %intf, %struct.usb_device_id* %id) #0 {
-if.then13:
+entry:
   br label %if.end20
 
-if.end20:                                         ; preds = %if.then13
+if.end20:                                         ; preds = %entry
   %call21 = call i8* @kzalloc(i64 2272, i32 208)
   %0 = bitcast i8* %call21 to %struct.uvc_device*
   br label %if.end24

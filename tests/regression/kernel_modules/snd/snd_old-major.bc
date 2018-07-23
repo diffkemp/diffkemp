@@ -990,10 +990,10 @@ declare void @kfree(i8*) #1
 
 ; Function Attrs: nounwind uwtable
 define i32 @snd_register_device_for_dev(i32 %type, %struct.snd_card* %card, i32 %dev, %struct.file_operations* %f_ops, i8* %private_data, i8* %name, %struct.device* %device) #0 {
-if.end:
+entry:
   br label %if.end18
 
-if.end18:                                         ; preds = %if.end
+if.end18:                                         ; preds = %entry
   %call = call i8* @kmalloc(i64 48, i32 208)
   %0 = bitcast i8* %call to %struct.snd_minor*
   br label %cond.end

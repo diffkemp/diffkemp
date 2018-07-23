@@ -523,10 +523,10 @@ entry:
 
 ; Function Attrs: nounwind uwtable
 define i32 @memstick_next_req(%struct.memstick_host* %host, %struct.memstick_request** %mrq) #0 {
-if.end14:
+entry:
   br label %if.then16
 
-if.then16:                                        ; preds = %if.end14
+if.then16:                                        ; preds = %entry
   %0 = load i32, i32* @cmd_retries, align 4, !tbaa !6
   %cmp = icmp ugt i32 %0, 1
   %1 = load i32, i32* @cmd_retries, align 4

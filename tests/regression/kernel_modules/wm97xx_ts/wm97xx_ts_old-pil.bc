@@ -2916,10 +2916,10 @@ cleanup99:                                        ; preds = %if.then94, %land.lh
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9705_poll_touch(%struct.wm97xx.3* %wm, %struct.wm97xx_data* %data) #0 {
-if.end:
+entry:
   br label %if.end4
 
-if.end4:                                          ; preds = %if.end
+if.end4:                                          ; preds = %entry
   %0 = load i32, i32* @pil, align 4, !tbaa !60
   %tobool = icmp ne i32 %0, 0
   %p = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2

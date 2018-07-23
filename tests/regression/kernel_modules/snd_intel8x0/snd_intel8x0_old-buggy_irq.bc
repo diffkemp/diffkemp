@@ -633,10 +633,10 @@ declare i32 @__pci_register_driver(%struct.pci_driver*, %struct.module*, i8*) #1
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @snd_intel8x0_probe(%struct.pci_dev* %pci, %struct.pci_device_id* %pci_id) #2 {
-for.cond:
+entry:
   br label %for.end
 
-for.end:                                          ; preds = %for.cond
+for.end:                                          ; preds = %entry
   %0 = load i32, i32* @buggy_irq, align 4, !tbaa !2
   %cmp26 = icmp slt i32 %0, 0
   br i1 %cmp26, label %if.then28, label %cleanup

@@ -7022,7 +7022,7 @@ entry:
 
 ; Function Attrs: nounwind uwtable
 define internal i64 @ivtv_parse_std(%struct.ivtv.1060* %itv) #0 {
-LeafBlock:
+entry:
   br label %sw.epilog
 
 lor.lhs.false:                                    ; No predecessors!
@@ -7032,7 +7032,7 @@ lor.lhs.false:                                    ; No predecessors!
   %. = select i1 %cmp6, i64 1024, i64 512
   br label %UnifiedReturnBlock
 
-sw.epilog:                                        ; preds = %LeafBlock
+sw.epilog:                                        ; preds = %entry
   %1 = load i8, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @secam, i64 0, i64 0), align 1, !tbaa !142
   %conv11 = sext i8 %1 to i32
   %Pivot90 = icmp slt i32 %conv11, 76

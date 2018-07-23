@@ -42451,10 +42451,10 @@ cleanup:                                          ; preds = %error_decrease_mem,
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @usbdev_open(%struct.inode* %inode, %struct.file* %file) #0 {
-if.end:
+entry:
   br label %if.then2
 
-if.then2:                                         ; preds = %if.end
+if.then2:                                         ; preds = %entry
   %i_rdev = getelementptr inbounds %struct.inode, %struct.inode* %inode, i32 0, i32 13
   %0 = load i32, i32* %i_rdev, align 4, !tbaa !655
   %call3 = call %struct.usb_device* @usbdev_lookup_by_devt(i32 %0)
@@ -46379,10 +46379,10 @@ cleanup:                                          ; preds = %if.end217, %if.end2
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @proc_do_submiturb(%struct.usb_dev_state* %ps) #0 {
-if.end39:
+entry:
   br label %if.end44
 
-if.end44:                                         ; preds = %if.end39
+if.end44:                                         ; preds = %entry
   %call45 = call i8* @kmalloc.746(i64 8, i32 20971712)
   %0 = bitcast i8* %call45 to %struct.usb_ctrlrequest*
   br label %if.end89
@@ -46787,10 +46787,10 @@ entry:
 
 ; Function Attrs: nounwind uwtable
 define internal void @async_completed(%struct.urb* %urb) #0 {
-if.then:
+entry:
   br label %do.body
 
-do.body:                                          ; preds = %if.then
+do.body:                                          ; preds = %entry
   %0 = load i8, i8* @usbfs_snoop, align 1, !tbaa !113, !range !114
   %tobool11 = trunc i8 %0 to i1
   br i1 %tobool11, label %if.then12, label %if.end41

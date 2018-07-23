@@ -18089,10 +18089,10 @@ sw.epilog:                                        ; preds = %sw.bb3, %sw.bb, %Le
 
 ; Function Attrs: nounwind uwtable
 define internal zeroext i16 @xs_next_srcport(i16 zeroext %port) #0 {
-if.end:
+entry:
   br label %if.end4
 
-if.end4:                                          ; preds = %if.end
+if.end4:                                          ; preds = %entry
   %conv5 = zext i16 %port to i32
   %0 = load i32, i32* @xprt_min_resvport, align 4, !tbaa !49
   %cmp6 = icmp ule i32 %conv5, %0

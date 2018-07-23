@@ -1141,10 +1141,10 @@ declare void @mutex_unlock(%struct.mutex*) #1
 
 ; Function Attrs: nounwind uwtable
 define i32 @snd_register_device(i32 %type, %struct.snd_card* %card, i32 %dev, %struct.file_operations* %f_ops, i8* %private_data, %struct.device* %device) #0 {
-cond.true:
+entry:
   br label %cond.end
 
-cond.end:                                         ; preds = %cond.true
+cond.end:                                         ; preds = %entry
   %call28 = call i32 @snd_find_free_minor(i32 %type)
   br label %if.end32
 
