@@ -535,25 +535,27 @@ declare i32 @__pci_register_driver(%struct.pci_driver*, %struct.module*, i8*) #1
 define internal i32 @sis5595_pci_probe(%struct.pci_dev* %dev, %struct.pci_device_id* %id) #2 {
 entry:
   %address = alloca i16, align 2
+  %0 = bitcast i16* %address to i8*
+  call void @llvm.lifetime.start.p0i8(i64 2, i8* %0) #6
   br label %for.end
 
 for.end:                                          ; preds = %entry
-  %0 = load i16, i16* @force_addr, align 2, !tbaa !6
-  %conv = zext i16 %0 to i32
+  %1 = load i16, i16* @force_addr, align 2, !tbaa !6
+  %conv = zext i16 %1 to i32
   %and = and i32 %conv, -8
   %conv2 = trunc i32 %and to i16
   store i16 %conv2, i16* @force_addr, align 2, !tbaa !6
-  %1 = load i16, i16* @force_addr, align 2, !tbaa !6
-  %tobool3 = icmp ne i16 %1, 0
+  %2 = load i16, i16* @force_addr, align 2, !tbaa !6
+  %tobool3 = icmp ne i16 %2, 0
   br i1 %tobool3, label %if.then4, label %if.end8
 
 if.then4:                                         ; preds = %for.end
   %dev5 = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 35
-  %2 = load i16, i16* @force_addr, align 2, !tbaa !6
-  %conv6 = zext i16 %2 to i32
-  call void (%struct.device*, i8*, ...) @dev_warn(%struct.device* %dev5, i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.2, i32 0, i32 0), i32 %conv6)
   %3 = load i16, i16* @force_addr, align 2, !tbaa !6
-  call void @pci_write_config_word(%struct.pci_dev* %dev, i32 104, i16 zeroext %3)
+  %conv6 = zext i16 %3 to i32
+  call void (%struct.device*, i8*, ...) @dev_warn(%struct.device* %dev5, i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.2, i32 0, i32 0), i32 %conv6)
+  %4 = load i16, i16* @force_addr, align 2, !tbaa !6
+  call void @pci_write_config_word(%struct.pci_dev* %dev, i32 104, i16 zeroext %4)
   br label %if.end8
 
 if.end8:                                          ; preds = %if.then4, %for.end
@@ -561,24 +563,24 @@ if.end8:                                          ; preds = %if.then4, %for.end
   br label %if.end14
 
 if.end14:                                         ; preds = %if.end8
-  %4 = load i16, i16* %address, align 2, !tbaa !6
-  %conv15 = zext i16 %4 to i32
+  %5 = load i16, i16* %address, align 2, !tbaa !6
+  %conv15 = zext i16 %5 to i32
   %and16 = and i32 %conv15, -8
   %conv17 = trunc i32 %and16 to i16
   store i16 %conv17, i16* %address, align 2, !tbaa !6
   br label %if.end21
 
 if.end21:                                         ; preds = %if.end14
-  %5 = load i16, i16* @force_addr, align 2, !tbaa !6
-  %conv22 = zext i16 %5 to i32
+  %6 = load i16, i16* @force_addr, align 2, !tbaa !6
+  %conv22 = zext i16 %6 to i32
   %tobool23 = icmp ne i32 %conv22, 0
   br i1 %tobool23, label %land.lhs.true, label %cleanup77
 
 land.lhs.true:                                    ; preds = %if.end21
-  %6 = load i16, i16* %address, align 2, !tbaa !6
-  %conv24 = zext i16 %6 to i32
-  %7 = load i16, i16* @force_addr, align 2, !tbaa !6
-  %conv25 = zext i16 %7 to i32
+  %7 = load i16, i16* %address, align 2, !tbaa !6
+  %conv24 = zext i16 %7 to i32
+  %8 = load i16, i16* @force_addr, align 2, !tbaa !6
+  %conv25 = zext i16 %8 to i32
   %cmp26 = icmp ne i32 %conv24, %conv25
   br i1 %cmp26, label %if.then28, label %cleanup77
 
@@ -588,6 +590,8 @@ if.then28:                                        ; preds = %land.lhs.true
   br label %cleanup77
 
 cleanup77:                                        ; preds = %land.lhs.true, %if.end21, %if.then28
+  %9 = bitcast i16* %address to i8*
+  call void @llvm.lifetime.end.p0i8(i64 2, i8* %9) #6
   ret i32 0
 }
 
