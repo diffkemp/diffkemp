@@ -204,36 +204,24 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
     }
     // Erase basic blocks
     std::vector<BasicBlock *> BBToRemove;
-    for (auto BB_it = Fun.begin(); BB_it != Fun.end();) {
+    for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
+        // First, erase all blocks that can be erased, except the entry one
         BasicBlock *BB = &*BB_it++;
         if (!isIncluded(BB)) {
-            if (BB == &BB->getParent()->getEntryBlock()) {
-                // First block is simply deleted, incoming edges represent
-                // loop-back edges that will be deleted as well and hence
-                // can be removed
-                if (canRemoveFirstBlock(BB)) {
-                    for (auto Pred : predecessors(BB)) {
-                        auto PredTerm = Pred->getTerminator();
-                        unsigned succ_cnt = PredTerm->getNumSuccessors();
-                        for (unsigned succ = 0; succ < succ_cnt; ++succ) {
-                            if (PredTerm->getSuccessor(succ) == BB) {
-                                PredTerm->setSuccessor(succ, Pred);
-                            }
-                        }
-                    }
-                    DeleteDeadBlock(BB);
-                }
-            } else {
-                // When removing other than a first block, we need to
-                // redirect incoming edges into the successor (a block that
-                // is not included is guaranteed to have one successor).
-                if (canRemoveBlock(BB)) {
-                    bool removed =
-                            TryToSimplifyUncondBranchFromEmptyBlock(BB);
-                    assert(removed);
-                }
+            // When removing other than a first block, we need to
+            // redirect incoming edges into the successor (a block that
+            // is not included is guaranteed to have one successor).
+            if (canRemoveBlock(BB)) {
+                bool removed =
+                        TryToSimplifyUncondBranchFromEmptyBlock(BB);
+                assert(removed);
             }
         }
+    }
+    if (!isIncluded(&Fun.getEntryBlock()) &&
+        canRemoveFirstBlock(&Fun.getEntryBlock())) {
+        // Erase entry block if possible
+        DeleteDeadBlock(&Fun.getEntryBlock());
     }
 
 #ifdef DEBUG
