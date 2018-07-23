@@ -641,6 +641,17 @@ bool ParamDependencySlicer::addStoresToIncluded(const Instruction *Alloca,
                 }
             }
         }
+        // If alloca is bitcasted or GEP-ed, run search for current
+        if (auto BitCast = dyn_cast<BitCastInst>(Current)) {
+            if (BitCast->getOperand(0) == Alloca)
+                if (addStoresToIncluded(Current, Use))
+                    added = true;
+        }
+        if (auto GEP = dyn_cast<GetElementPtrInst>(Current)) {
+            if (GEP->getPointerOperand() == Alloca)
+                if (addStoresToIncluded(Current, Use))
+                    added = true;
+        }
 
         std::vector<const Instruction *> next;
         if (auto Branch = dyn_cast<BranchInst>(Current)) {
