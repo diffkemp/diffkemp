@@ -48,12 +48,12 @@ class LlvmKernelBuilder:
     """
 
     # Base path to kernel sources
-    kernel_base_path = "kernel"
+    kernel_base_dir = "kernel"
 
     def __init__(self, kernel_version, modules_dir, debug=False):
+        self.kernel_base_path = os.path.abspath(self.kernel_base_dir)
         if not os.path.isdir(self.kernel_base_path):
             os.mkdir(self.kernel_base_path)
-        self.kernel_base_path = os.path.abspath(self.kernel_base_path)
         self.kernel_version = kernel_version
         self.kernel_path = os.path.join(self.kernel_base_path,
                                         "linux-{}".format(self.kernel_version))
@@ -336,7 +336,8 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
 
-        object_file = os.path.join(self.modules_dir, object_file)
+        if not os.path.isabs(object_file):
+            object_file = os.path.join(self.modules_dir, object_file)
         self._clean_object(object_file)
         with open(os.devnull, "w") as stderr:
             try:
@@ -344,7 +345,8 @@ class LlvmKernelBuilder:
                                        "--just-print"], stderr=stderr)
             except CalledProcessError:
                 raise BuildException("Error compiling {}".format(object_file))
-        os.chdir(cwd)
+            finally:
+                os.chdir(cwd)
 
         commands = output.splitlines()
         for cs in reversed(commands):
@@ -385,6 +387,7 @@ class LlvmKernelBuilder:
             ko_file = os.path.join(self.modules_dir,
                                    self._get_ko_name(file_name))
             if not os.path.exists(ko_file):
+                os.chdir(cwd)
                 raise BuildException("Could not build module {}"
                                      .format(module))
         except CalledProcessError:
@@ -586,10 +589,15 @@ class LlvmKernelBuilder:
         os.chdir(self.kernel_path)
         for command in commands:
             file = self.get_output_file(command)
-            self.build_llvm_file(file, command)
+            try:
+                self.build_llvm_file(file, command)
+            except BuildException:
+                os.chdir(cwd)
+                raise
 
         if not os.path.isfile(os.path.join(self.modules_dir, "{}.bc".format(
                                                              file_name))):
+            os.chdir(cwd)
             raise BuildException("Building {} did not produce LLVM IR file"
                                  .format(name))
         os.chdir(cwd)
@@ -646,13 +654,17 @@ class LlvmKernelBuilder:
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
-        command = self.kbuild_object_command("{}.o".format(file_name))
-        command = self.gcc_to_llvm(command)
-        self.build_llvm_file(os.path.join(self.modules_dir,
-                                          "{}.bc".format(file_name)),
-                             command)
-        os.chdir(cwd)
-        return LlvmKernelModule(file_name, file_name, self.modules_path)
+        try:
+            command = self.kbuild_object_command("{}.o".format(file_name))
+            command = self.gcc_to_llvm(command)
+            self.build_llvm_file(os.path.join(self.modules_dir,
+                                              "{}.bc".format(file_name)),
+                                 command)
+            return LlvmKernelModule(file_name, file_name, self.modules_path)
+        except BuildException:
+            raise
+        finally:
+            os.chdir(cwd)
 
     def build_module(self, module, clean):
         """
