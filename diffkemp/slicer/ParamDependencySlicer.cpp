@@ -223,6 +223,13 @@ bool ParamDependencySlicer::runOnFunction(Function &Fun) {
         // Erase entry block if possible
         DeleteDeadBlock(&Fun.getEntryBlock());
     }
+    // Remove unreachable BBs (BBs with no incoming edges, except the first one)
+    for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
+        BasicBlock *BB = &*BB_it++;
+        if (pred_begin(BB) == pred_end(BB)) {
+            DeleteDeadBlock(BB);
+        }
+    }
 
 #ifdef DEBUG
     errs() << "Function " << Fun.getName().str() << " after cleanup:\n";
