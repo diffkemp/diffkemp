@@ -5833,9 +5833,6 @@ if.end79:                                         ; preds = %if.end
 for.inc:                                          ; preds = %if.end79
   %inc = add nsw i32 %i.0, 1
   br label %for.cond
-
-cleanup:                                          ; No predecessors!
-  ret i32 0
 }
 
 declare i32 @__pci_register_driver(%struct.pci_driver*, %struct.module*, i8*) #1

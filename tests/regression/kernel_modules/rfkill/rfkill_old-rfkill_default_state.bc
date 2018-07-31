@@ -2644,9 +2644,6 @@ for.body:                                         ; preds = %for.cond
   store i8 %frombool, i8* %cur, align 2, !tbaa !62
   %inc = add nsw i32 %i.0, 1
   br label %for.cond
-
-out:                                              ; No predecessors!
-  ret i32 0
 }
 
 declare i32 @__class_register(%struct.class*, %struct.lock_class_key*) #1

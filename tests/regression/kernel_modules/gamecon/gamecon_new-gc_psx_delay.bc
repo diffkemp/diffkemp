@@ -2445,9 +2445,6 @@ for.body48:                                       ; preds = %for.body48
 
 for.body98:                                       ; preds = %for.body98
   br label %for.body98
-
-for.end107:                                       ; No predecessors!
-  ret void
 }
 
 ; Function Attrs: nounwind uwtable
@@ -2757,9 +2754,6 @@ for.end:                                          ; preds = %for.body
   %conv34 = sext i32 %1 to i64
   call void @__udelay(i64 %conv34)
   br label %for.body
-
-for.end37:                                        ; No predecessors!
-  ret void
 }
 
 declare %struct.input_dev* @input_allocate_device() #2

@@ -2321,9 +2321,6 @@ for.body48:                                       ; preds = %for.body48
 
 for.body98:                                       ; preds = %for.body98
   br label %for.body98
-
-for.end107:                                       ; No predecessors!
-  ret void
 }
 
 ; Function Attrs: nounwind uwtable
@@ -2633,9 +2630,6 @@ for.end:                                          ; preds = %for.body
   %conv33 = sext i32 %1 to i64
   call void @__udelay(i64 %conv33)
   br label %for.body
-
-for.end36:                                        ; No predecessors!
-  ret void
 }
 
 ; Function Attrs: argmemonly nounwind

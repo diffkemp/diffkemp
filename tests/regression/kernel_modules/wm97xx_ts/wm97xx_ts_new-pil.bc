@@ -3170,15 +3170,8 @@ if.end:                                           ; preds = %entry
   %dig1.0 = select i1 %tobool26, i16 %conv30, i16 %conv25
   br label %if.end47
 
-if.else:                                          ; No predecessors!
-  %conv35 = zext i16 %0 to i32
-  %and36 = and i32 %conv35, -3081
-  %conv37 = trunc i32 %and36 to i16
-  br label %if.end47
-
-if.end47:                                         ; preds = %if.else, %if.end
-  %dig1.1 = phi i16 [ %dig1.0, %if.end ], [ %conv37, %if.else ]
-  call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.280*, i16, i16)*)(%struct.wm97xx.280* %wm, i16 zeroext 118, i16 zeroext %dig1.1)
+if.end47:                                         ; preds = %if.end
+  call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.280*, i16, i16)*)(%struct.wm97xx.280* %wm, i16 zeroext 118, i16 zeroext %dig1.0)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end47
