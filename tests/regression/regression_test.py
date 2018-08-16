@@ -12,7 +12,7 @@ pytest.
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
-from diffkemp.slicer.slicer import slice_module
+from diffkemp.simpll.simpll import simplify_modules_diff
 import glob
 import os
 import pytest
@@ -94,10 +94,10 @@ class TaskSpec:
         self.task_dir = os.path.join(tasks_path, module)
         self.old = os.path.join(self.task_dir, module + "_old.bc")
         self.new = os.path.join(self.task_dir, module + "_new.bc")
-        self.old_sliced = os.path.join(self.task_dir, module + "_old-" +
-                                       spec["param"] + ".bc")
-        self.new_sliced = os.path.join(self.task_dir, module + "_new-" +
-                                       spec["param"] + ".bc")
+        self.old_simpl = os.path.join(self.task_dir, module + "_old-" +
+                                      spec["param"] + ".bc")
+        self.new_simpl = os.path.join(self.task_dir, module + "_new-" +
+                                      spec["param"] + ".bc")
         self.old_src = os.path.join(self.task_dir, module + "_old.c")
         self.new_src = os.path.join(self.task_dir, module + "_new.c")
 
@@ -111,13 +111,15 @@ def _build_module(kernel_version, module_dir, module, debug):
     return llvm_mod
 
 
-def _copy_files(unsliced_src, unsliced_dest,
-                sliced_src, sliced_dest,
-                source_src, source_dest):
-    """Copy .bc file, sliced .bc file, and .c file"""
-    shutil.copyfile(unsliced_src, unsliced_dest)
-    shutil.copyfile(sliced_src, sliced_dest)
-    shutil.copyfile(source_src, source_dest)
+def prepare_module(spec, kernel_version, llvm, llvm_simpl, src):
+    if not os.path.isfile(llvm):
+        mod = _build_module(kernel_version, spec.module_dir, spec.module,
+                            spec.debug)
+        shutil.copyfile(mod.llvm, llvm)
+        mod_src = os.path.join(os.path.dirname(mod.llvm), spec.module_src)
+        shutil.copyfile(mod_src, src)
+    if not os.path.isfile(llvm_simpl):
+        shutil.copyfile(llvm, llvm_simpl)
 
 
 def prepare_task(spec):
@@ -130,24 +132,11 @@ def prepare_task(spec):
         os.mkdir(spec.task_dir)
 
     # Prepare old module
-    if not os.path.isfile(spec.old):
-        first_mod = _build_module(spec.old_kernel, spec.module_dir,
-                                  spec.module, spec.debug)
-        first_sliced = first_mod.slice(spec.param)
-        first_src = os.path.join(os.path.dirname(first_mod.llvm),
-                                 spec.module_src)
-        _copy_files(first_mod.llvm, spec.old, first_sliced, spec.old_sliced,
-                    first_src, spec.old_src)
-
+    prepare_module(spec, spec.old_kernel, spec.old, spec.old_simpl,
+                   spec.old_src)
     # Prepare new module
-    if not os.path.isfile(spec.new):
-        second_mod = _build_module(spec.new_kernel, spec.module_dir,
-                                   spec.module, spec.debug)
-        second_sliced = second_mod.slice(spec.param)
-        second_src = os.path.join(os.path.dirname(second_mod.llvm),
-                                  spec.module_src)
-        _copy_files(second_mod.llvm, spec.new, second_sliced, spec.new_sliced,
-                    second_src, spec.new_src)
+    prepare_module(spec, spec.new_kernel, spec.new, spec.new_simpl,
+                   spec.new_src)
 
 
 @pytest.fixture(params=[x[1] for x in specs],
@@ -162,34 +151,31 @@ def task_spec(request):
 class TestClass(object):
     """
     Main testing class. One object of the class is created for each testing
-    task. Contains 3 tests for slicing, function couplings collection, and the
+    task. Contains 2 tests for function couplings collection and for the
     actual function analysis (semantic comparison).
     """
-    def test_slicer(self, task_spec):
-        """
-        Test slicer. Will raise exception if the slicer does not produce valid
-        LLVM IR code. Also this method is useful so that slicing is re-run
-        before each analysis.
-        """
-        first = slice_module(task_spec.old, task_spec.param)
-        os.rename(first, task_spec.old_sliced)
-        second = slice_module(task_spec.new, task_spec.param)
-        os.rename(second, task_spec.new_sliced)
-
     def test_couplings(self, task_spec):
         """
         Test collection of function couplings. Checks whether the collected
         couplings of main functions (functions using the paramter of the
         analysis) match functions specified in the test spec.
         """
-        couplings = FunctionCouplings(task_spec.old_sliced,
-                                      task_spec.new_sliced)
+        couplings = FunctionCouplings(task_spec.old, task_spec.new)
         couplings.infer_for_param(task_spec.param)
 
         coupled = set([(c.first, c.second) for c in couplings.main])
         assert coupled == set(task_spec.functions.keys())
         assert couplings.uncoupled_first == task_spec.only_old
         assert couplings.uncoupled_second == task_spec.only_new
+
+    def test_simpll(self, task_spec):
+        couplings = FunctionCouplings(task_spec.old, task_spec.new)
+        couplings.infer_for_param(task_spec.param)
+        for fun_pair, expected in task_spec.functions.iteritems():
+            if expected != Result.TIMEOUT:
+                simplify_modules_diff(task_spec.old_simpl, task_spec.new_simpl,
+                                      fun_pair[0], fun_pair[1],
+                                      task_spec.param, verbose=True)
 
     def test_function_comparison(self, task_spec):
         """
@@ -199,14 +185,14 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        couplings = FunctionCouplings(task_spec.old_sliced,
-                                      task_spec.new_sliced)
+        couplings = FunctionCouplings(task_spec.old_simpl,
+                                      task_spec.new_simpl)
         couplings.infer_for_param(task_spec.param)
-        for funPair, expected in task_spec.functions.iteritems():
+        for fun_pair, expected in task_spec.functions.iteritems():
             if expected != Result.TIMEOUT:
-                result = functions_diff(task_spec.old_sliced,
-                                        task_spec.new_sliced,
-                                        funPair[0], funPair[1],
+                result = functions_diff(task_spec.old_simpl,
+                                        task_spec.new_simpl,
+                                        fun_pair[0], fun_pair[1],
                                         couplings.called,
                                         timeout=120)
                 assert result == expected

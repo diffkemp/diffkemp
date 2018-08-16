@@ -8,7 +8,7 @@ from __future__ import absolute_import
 from __future__ import division
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
-from diffkemp.slicer.slicer import SlicerException
+from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
 
 
 class Statistics():
@@ -69,19 +69,24 @@ def modules_diff(first, second, param, timeout, verbose=False):
                   using this variable are compared)
     """
     stat = Statistics()
-    # Slice IR files
-    try:
-        first_sliced = first.slice(param, verbose)
-        second_sliced = second.slice(param, verbose)
-    except SlicerException:
-        print "    Slicing has failed"
-        stat.log_result(Result.ERROR, "")
-        return stat
-
-    couplings = FunctionCouplings(first_sliced, second_sliced)
+    couplings = FunctionCouplings(first.llvm, second.llvm)
     couplings.infer_for_param(param)
-    for c in couplings.main:
-        result = functions_diff(first_sliced, second_sliced, c.first, c.second,
-                                couplings.called, timeout, verbose)
-        stat.log_result(result, c.first)
+    try:
+        for c in couplings.main:
+            # Simplify modules
+            first_simpl, second_simpl = simplify_modules_diff(first.llvm,
+                                                              second.llvm,
+                                                              c.first,
+                                                              c.second,
+                                                              param,
+                                                              param,
+                                                              verbose)
+            # Do semantic difference of modules
+            result = functions_diff(first_simpl, second_simpl, c.first,
+                                    c.second, couplings.called, timeout,
+                                    verbose)
+            stat.log_result(result, c.first)
+    except SimpLLException:
+        print "    Simplifying has failed"
+        stat.log_result(Result.ERROR, "")
     return stat

@@ -4,7 +4,6 @@ Functions for working with parameters of modules.
 """
 
 from copy import copy
-from diffkemp.slicer.slicer import slice_module
 from llvmcpy.llvm import *
 import os
 import shutil
@@ -193,13 +192,6 @@ class LlvmKernelModule:
             self.params = {globvar: ModuleParam(globvar, globvar, None, None)}
         else:
             raise KernelModuleException("Parameter {} not found".format(param))
-
-    def slice(self, param, verbose=False):
-        """
-        Slice the module w.r.t. to the given parameter.
-        """
-        sliced = slice_module(self.llvm, param, verbose)
-        return sliced
 
     def collect_functions(self):
         """
