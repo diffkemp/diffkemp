@@ -1,4 +1,4 @@
-; ModuleID = 'tests/regression/kernel_modules/tcp_bic/tcp_bic_new.bc'
+; ModuleID = 'tests/regression/kernel_modules/tcp_bic/tcp_bic_new-low_window.bc'
 source_filename = "net/ipv4/tcp_bic.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -817,29 +817,23 @@ target triple = "x86_64-unknown-linux-gnu"
 ; Function Attrs: nounwind uwtable
 define internal i32 @bictcp_register() #0 section ".init.text" !dbg !10312 {
 entry:
-  call void @llvm.dbg.value(metadata i8 0, i64 0, metadata !10314, metadata !10316), !dbg !10317
-  %tobool = trunc i8 0 to i1, !dbg !10318
-  br i1 %tobool, label %if.then, label %do.body1, !dbg !10317
+  %tobool = trunc i8 0 to i1, !dbg !10316
+  br i1 %tobool, label %if.then, label %do.body1, !dbg !10318
 
 if.then:                                          ; preds = %entry
-  call void @__compiletime_assert_225(), !dbg !10318
-  br label %do.body1, !dbg !10318
+  call void @__compiletime_assert_225(), !dbg !10316
+  br label %do.body1, !dbg !10316
 
 do.body1:                                         ; preds = %if.then, %entry
-  %tobool2 = trunc i8 0 to i1, !dbg !10320
-  %conv = zext i1 %tobool2 to i32, !dbg !10320
-  %mul = mul nsw i32 2, %conv, !dbg !10320
-  %sub = sub nsw i32 1, %mul, !dbg !10320
-  %0 = zext i32 %sub to i64, !dbg !10320
-  %call = call i32 @tcp_register_congestion_control(%struct.tcp_congestion_ops* @bictcp), !dbg !10322
-  ret i32 %call, !dbg !10323
+  %call = call i32 @tcp_register_congestion_control(%struct.tcp_congestion_ops* @bictcp), !dbg !10319
+  ret i32 %call, !dbg !10320
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @bictcp_unregister() #0 section ".exit.text" !dbg !10324 {
+define internal void @bictcp_unregister() #0 section ".exit.text" !dbg !10321 {
 entry:
-  call void @tcp_unregister_congestion_control(%struct.tcp_congestion_ops* @bictcp), !dbg !10325
-  ret void, !dbg !10326
+  call void @tcp_unregister_congestion_control(%struct.tcp_congestion_ops* @bictcp), !dbg !10322
+  ret void, !dbg !10323
 }
 
 ; Function Attrs: argmemonly nounwind
@@ -856,453 +850,213 @@ declare void @llvm.lifetime.end.p0i8(i64, i8* nocapture) #1
 declare i32 @tcp_register_congestion_control(%struct.tcp_congestion_ops*) #3
 
 ; Function Attrs: nounwind uwtable
-define internal void @bictcp_init(%struct.sock* %sk) #4 !dbg !10327 {
+define internal void @bictcp_init(%struct.sock* %sk) #4 !dbg !10324 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10329, metadata !10316), !dbg !10341
-  %call = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10342
-  %0 = bitcast i8* %call to %struct.bictcp*, !dbg !10342
-  call void @llvm.dbg.value(metadata %struct.bictcp* %0, i64 0, metadata !10330, metadata !10316), !dbg !10343
-  call void @bictcp_reset(%struct.bictcp* %0), !dbg !10344
-  %loss_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 2, !dbg !10345
-  store i32 0, i32* %loss_cwnd, align 4, !dbg !10346, !tbaa !10347
-  %1 = load i32, i32* @initial_ssthresh, align 4, !dbg !10352, !tbaa !10354
-  %tobool = icmp ne i32 %1, 0, !dbg !10352
-  br i1 %tobool, label %if.then, label %if.end, !dbg !10355
+  %call = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10338
+  %0 = bitcast i8* %call to %struct.bictcp*, !dbg !10338
+  call void @bictcp_reset(%struct.bictcp* %0), !dbg !10339
+  %loss_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 2, !dbg !10340
+  store i32 0, i32* %loss_cwnd, align 4, !dbg !10341, !tbaa !10342
+  %1 = load i32, i32* @initial_ssthresh, align 4, !dbg !10347, !tbaa !10349
+  %tobool = icmp ne i32 %1, 0, !dbg !10347
+  br i1 %tobool, label %if.then, label %if.end, !dbg !10350
 
 if.then:                                          ; preds = %entry
-  %2 = load i32, i32* @initial_ssthresh, align 4, !dbg !10356, !tbaa !10354
-  %call1 = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10357
-  %snd_ssthresh = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call1, i32 0, i32 52, !dbg !10358
-  store i32 %2, i32* %snd_ssthresh, align 8, !dbg !10359, !tbaa !10360
-  br label %if.end, !dbg !10357
+  %2 = load i32, i32* @initial_ssthresh, align 4, !dbg !10351, !tbaa !10349
+  %call1 = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10352
+  %snd_ssthresh = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call1, i32 0, i32 52, !dbg !10353
+  store i32 %2, i32* %snd_ssthresh, align 8, !dbg !10354, !tbaa !10355
+  br label %if.end, !dbg !10352
 
 if.end:                                           ; preds = %if.then, %entry
-  ret void, !dbg !10404
+  ret void, !dbg !10399
 }
 
 ; Function Attrs: nounwind uwtable
-define internal i32 @bictcp_recalc_ssthresh(%struct.sock* %sk) #4 !dbg !10405 {
-entry:
-  %__UNIQUE_ID_max1_80 = alloca i32, align 4
-  %__UNIQUE_ID_max2_81 = alloca i32, align 4
-  %__UNIQUE_ID_max1_82 = alloca i32, align 4
-  %__UNIQUE_ID_max2_83 = alloca i32, align 4
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10407, metadata !10316), !dbg !10419
-  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10420
-  call void @llvm.dbg.value(metadata %struct.tcp_sock* %call, i64 0, metadata !10408, metadata !10316), !dbg !10421
-  br label %if.end
-
-if.end:                                           ; preds = %entry
-  %snd_cwnd7 = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10422
-  %0 = load i32, i32* %snd_cwnd7, align 4, !dbg !10422, !tbaa !10423
-  %1 = load i32, i32* @low_window, align 4, !dbg !10424, !tbaa !10354
-  %cmp8 = icmp ule i32 %0, %1, !dbg !10425
-  br i1 %cmp8, label %if.then9, label %if.else14, !dbg !10426
-
-if.then9:                                         ; preds = %if.end
-  %2 = bitcast i32* %__UNIQUE_ID_max1_80 to i8*, !dbg !10427
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %2) #6, !dbg !10427
-  call void @llvm.dbg.declare(metadata i32* %__UNIQUE_ID_max1_80, metadata !10412, metadata !10316), !dbg !10427
-  %snd_cwnd10 = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10427
-  %3 = load i32, i32* %snd_cwnd10, align 4, !dbg !10427, !tbaa !10423
-  %shr = lshr i32 %3, 1, !dbg !10427
-  store i32 %shr, i32* %__UNIQUE_ID_max1_80, align 4, !dbg !10427, !tbaa !10354
-  %4 = bitcast i32* %__UNIQUE_ID_max2_81 to i8*, !dbg !10427
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %4) #6, !dbg !10427
-  call void @llvm.dbg.declare(metadata i32* %__UNIQUE_ID_max2_81, metadata !10415, metadata !10316), !dbg !10427
-  store i32 2, i32* %__UNIQUE_ID_max2_81, align 4, !dbg !10427, !tbaa !10354
-  %cmp11 = icmp eq i32* %__UNIQUE_ID_max1_80, %__UNIQUE_ID_max2_81, !dbg !10427
-  %conv = zext i1 %cmp11 to i32, !dbg !10427
-  %5 = load i32, i32* %__UNIQUE_ID_max1_80, align 4, !dbg !10427, !tbaa !10354
-  %6 = load i32, i32* %__UNIQUE_ID_max2_81, align 4, !dbg !10427, !tbaa !10354
-  %cmp12 = icmp ugt i32 %5, %6, !dbg !10427
-  %7 = load i32, i32* %__UNIQUE_ID_max1_80, align 4, !dbg !10427
-  %8 = load i32, i32* %__UNIQUE_ID_max2_81, align 4, !dbg !10427
-  %cond = select i1 %cmp12, i32 %7, i32 %8, !dbg !10427
-  %9 = bitcast i32* %__UNIQUE_ID_max2_81 to i8*, !dbg !10428
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %9) #6, !dbg !10428
-  %10 = bitcast i32* %__UNIQUE_ID_max1_80 to i8*, !dbg !10428
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %10) #6, !dbg !10428
-  br label %cleanup, !dbg !10429
-
-if.else14:                                        ; preds = %if.end
-  %11 = bitcast i32* %__UNIQUE_ID_max1_82 to i8*, !dbg !10430
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %11) #6, !dbg !10430
-  call void @llvm.dbg.declare(metadata i32* %__UNIQUE_ID_max1_82, metadata !10416, metadata !10316), !dbg !10430
-  %snd_cwnd15 = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10430
-  %12 = load i32, i32* %snd_cwnd15, align 4, !dbg !10430, !tbaa !10423
-  %13 = load i32, i32* @beta, align 4, !dbg !10430, !tbaa !10354
-  %mul16 = mul i32 %12, %13, !dbg !10430
-  %div17 = udiv i32 %mul16, 1024, !dbg !10430
-  store i32 %div17, i32* %__UNIQUE_ID_max1_82, align 4, !dbg !10430, !tbaa !10354
-  %14 = bitcast i32* %__UNIQUE_ID_max2_83 to i8*, !dbg !10430
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %14) #6, !dbg !10430
-  call void @llvm.dbg.declare(metadata i32* %__UNIQUE_ID_max2_83, metadata !10418, metadata !10316), !dbg !10430
-  store i32 2, i32* %__UNIQUE_ID_max2_83, align 4, !dbg !10430, !tbaa !10354
-  %cmp18 = icmp eq i32* %__UNIQUE_ID_max1_82, %__UNIQUE_ID_max2_83, !dbg !10430
-  %conv19 = zext i1 %cmp18 to i32, !dbg !10430
-  %15 = load i32, i32* %__UNIQUE_ID_max1_82, align 4, !dbg !10430, !tbaa !10354
-  %16 = load i32, i32* %__UNIQUE_ID_max2_83, align 4, !dbg !10430, !tbaa !10354
-  %cmp21 = icmp ugt i32 %15, %16, !dbg !10430
-  %17 = load i32, i32* %__UNIQUE_ID_max1_82, align 4, !dbg !10430
-  %18 = load i32, i32* %__UNIQUE_ID_max2_83, align 4, !dbg !10430
-  %cond26 = select i1 %cmp21, i32 %17, i32 %18, !dbg !10430
-  %19 = bitcast i32* %__UNIQUE_ID_max2_83 to i8*, !dbg !10431
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %19) #6, !dbg !10431
-  %20 = bitcast i32* %__UNIQUE_ID_max1_82 to i8*, !dbg !10431
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %20) #6, !dbg !10431
-  br label %cleanup, !dbg !10432
-
-cleanup:                                          ; preds = %if.else14, %if.then9
-  %retval.0 = phi i32 [ %cond, %if.then9 ], [ %cond26, %if.else14 ]
-  ret i32 %retval.0, !dbg !10433
-}
+declare i32 @bictcp_recalc_ssthresh(%struct.sock*) #4
 
 ; Function Attrs: nounwind uwtable
-define internal void @bictcp_cong_avoid(%struct.sock* %sk, i32 %ack, i32 %acked) #4 !dbg !10434 {
+define internal void @bictcp_cong_avoid(%struct.sock* %sk, i32 %ack, i32 %acked) #4 !dbg !10400 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10436, metadata !10316), !dbg !10441
-  call void @llvm.dbg.value(metadata i32 %ack, i64 0, metadata !10437, metadata !10316), !dbg !10442
-  call void @llvm.dbg.value(metadata i32 %acked, i64 0, metadata !10438, metadata !10316), !dbg !10443
-  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10444
-  call void @llvm.dbg.value(metadata %struct.tcp_sock* %call, i64 0, metadata !10439, metadata !10316), !dbg !10445
-  %call1 = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10446
-  %0 = bitcast i8* %call1 to %struct.bictcp*, !dbg !10446
-  call void @llvm.dbg.value(metadata %struct.bictcp* %0, i64 0, metadata !10440, metadata !10316), !dbg !10447
-  %call2 = call zeroext i1 @tcp_is_cwnd_limited(%struct.sock* %sk), !dbg !10448
-  br i1 %call2, label %if.end, label %cleanup.cont, !dbg !10450
+  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10407
+  %call1 = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10408
+  %0 = bitcast i8* %call1 to %struct.bictcp*, !dbg !10408
+  %call2 = call zeroext i1 @tcp_is_cwnd_limited(%struct.sock* %sk), !dbg !10409
+  br i1 %call2, label %if.end, label %cleanup.cont, !dbg !10411
 
 if.end:                                           ; preds = %entry
-  %call3 = call zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %call), !dbg !10451
-  br i1 %call3, label %if.then4, label %if.else, !dbg !10453
+  %call3 = call zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %call), !dbg !10412
+  br i1 %call3, label %if.then4, label %if.else, !dbg !10414
 
 if.then4:                                         ; preds = %if.end
-  %call5 = call i32 @tcp_slow_start(%struct.tcp_sock* %call, i32 %acked), !dbg !10454
-  br label %cleanup.cont, !dbg !10454
+  %call5 = call i32 @tcp_slow_start(%struct.tcp_sock* %call, i32 %acked), !dbg !10415
+  br label %cleanup.cont, !dbg !10415
 
 if.else:                                          ; preds = %if.end
-  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10455
-  %1 = load i32, i32* %snd_cwnd, align 4, !dbg !10455, !tbaa !10423
-  call void @bictcp_update(%struct.bictcp* %0, i32 %1), !dbg !10457
-  %cnt = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 0, !dbg !10458
-  %2 = load i32, i32* %cnt, align 4, !dbg !10458, !tbaa !10459
-  call void @tcp_cong_avoid_ai(%struct.tcp_sock* %call, i32 %2, i32 1), !dbg !10460
+  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10416
+  %1 = load i32, i32* %snd_cwnd, align 4, !dbg !10416, !tbaa !10418
+  call void @bictcp_update(%struct.bictcp* %0, i32 %1), !dbg !10419
+  %cnt = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 0, !dbg !10420
+  %2 = load i32, i32* %cnt, align 4, !dbg !10420, !tbaa !10421
+  call void @tcp_cong_avoid_ai(%struct.tcp_sock* %call, i32 %2, i32 1), !dbg !10422
   br label %cleanup.cont
 
 cleanup.cont:                                     ; preds = %if.else, %if.then4, %entry
-  %cleanup.dest.slot.0 = phi i32 [ 1, %entry ], [ 0, %if.else ], [ 0, %if.then4 ]
-  ret void, !dbg !10461
+  ret void, !dbg !10423
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @bictcp_state(%struct.sock* %sk, i8 zeroext %new_state) #4 !dbg !10462 {
+define internal void @bictcp_state(%struct.sock* %sk, i8 zeroext %new_state) #4 !dbg !10424 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10464, metadata !10316), !dbg !10466
-  call void @llvm.dbg.value(metadata i8 %new_state, i64 0, metadata !10465, metadata !10316), !dbg !10467
-  %conv = zext i8 %new_state to i32, !dbg !10468
-  %cmp = icmp eq i32 %conv, 4, !dbg !10470
-  br i1 %cmp, label %if.then, label %if.end, !dbg !10471
+  %conv = zext i8 %new_state to i32, !dbg !10428
+  %cmp = icmp eq i32 %conv, 4, !dbg !10430
+  br i1 %cmp, label %if.then, label %if.end, !dbg !10431
 
 if.then:                                          ; preds = %entry
-  %call = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10472
-  %0 = bitcast i8* %call to %struct.bictcp*, !dbg !10472
-  call void @bictcp_reset(%struct.bictcp* %0), !dbg !10473
-  br label %if.end, !dbg !10473
+  %call = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10432
+  %0 = bitcast i8* %call to %struct.bictcp*, !dbg !10432
+  call void @bictcp_reset(%struct.bictcp* %0), !dbg !10433
+  br label %if.end, !dbg !10433
 
 if.end:                                           ; preds = %if.then, %entry
-  ret void, !dbg !10474
+  ret void, !dbg !10434
 }
 
 ; Function Attrs: nounwind uwtable
-define internal i32 @bictcp_undo_cwnd(%struct.sock* %sk) #4 !dbg !10475 {
+define internal i32 @bictcp_undo_cwnd(%struct.sock* %sk) #4 !dbg !10435 {
 entry:
   %__UNIQUE_ID_max1_84 = alloca i32, align 4
   %__UNIQUE_ID_max2_85 = alloca i32, align 4
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10477, metadata !10316), !dbg !10485
-  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10486
-  call void @llvm.dbg.value(metadata %struct.tcp_sock* %call, i64 0, metadata !10478, metadata !10316), !dbg !10487
-  %call1 = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10488
-  %0 = bitcast i8* %call1 to %struct.bictcp*, !dbg !10488
-  call void @llvm.dbg.value(metadata %struct.bictcp* %0, i64 0, metadata !10479, metadata !10316), !dbg !10489
-  %1 = bitcast i32* %__UNIQUE_ID_max1_84 to i8*, !dbg !10490
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %1) #6, !dbg !10490
-  call void @llvm.dbg.declare(metadata i32* %__UNIQUE_ID_max1_84, metadata !10482, metadata !10316), !dbg !10490
-  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10490
-  %2 = load i32, i32* %snd_cwnd, align 4, !dbg !10490, !tbaa !10423
-  store i32 %2, i32* %__UNIQUE_ID_max1_84, align 4, !dbg !10490, !tbaa !10354
-  %3 = bitcast i32* %__UNIQUE_ID_max2_85 to i8*, !dbg !10490
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %3) #6, !dbg !10490
-  call void @llvm.dbg.declare(metadata i32* %__UNIQUE_ID_max2_85, metadata !10484, metadata !10316), !dbg !10490
-  %loss_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 2, !dbg !10490
-  %4 = load i32, i32* %loss_cwnd, align 4, !dbg !10490, !tbaa !10347
-  store i32 %4, i32* %__UNIQUE_ID_max2_85, align 4, !dbg !10490, !tbaa !10354
-  %cmp = icmp eq i32* %__UNIQUE_ID_max1_84, %__UNIQUE_ID_max2_85, !dbg !10490
-  %conv = zext i1 %cmp to i32, !dbg !10490
-  %5 = load i32, i32* %__UNIQUE_ID_max1_84, align 4, !dbg !10490, !tbaa !10354
-  %6 = load i32, i32* %__UNIQUE_ID_max2_85, align 4, !dbg !10490, !tbaa !10354
-  %cmp2 = icmp ugt i32 %5, %6, !dbg !10490
-  %7 = load i32, i32* %__UNIQUE_ID_max1_84, align 4, !dbg !10490
-  %8 = load i32, i32* %__UNIQUE_ID_max2_85, align 4, !dbg !10490
-  %cond = select i1 %cmp2, i32 %7, i32 %8, !dbg !10490
-  %9 = bitcast i32* %__UNIQUE_ID_max2_85 to i8*, !dbg !10491
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %9) #6, !dbg !10491
-  %10 = bitcast i32* %__UNIQUE_ID_max1_84 to i8*, !dbg !10491
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %10) #6, !dbg !10491
-  ret i32 %cond, !dbg !10492
+  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10447
+  %call1 = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10448
+  %0 = bitcast i8* %call1 to %struct.bictcp*, !dbg !10448
+  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10449
+  %1 = load i32, i32* %snd_cwnd, align 4, !dbg !10449, !tbaa !10418
+  store i32 %1, i32* %__UNIQUE_ID_max1_84, align 4, !dbg !10449, !tbaa !10349
+  %loss_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 2, !dbg !10449
+  %2 = load i32, i32* %loss_cwnd, align 4, !dbg !10449, !tbaa !10342
+  store i32 %2, i32* %__UNIQUE_ID_max2_85, align 4, !dbg !10449, !tbaa !10349
+  %3 = load i32, i32* %__UNIQUE_ID_max1_84, align 4, !dbg !10449, !tbaa !10349
+  %4 = load i32, i32* %__UNIQUE_ID_max2_85, align 4, !dbg !10449, !tbaa !10349
+  %cmp2 = icmp ugt i32 %3, %4, !dbg !10449
+  %5 = load i32, i32* %__UNIQUE_ID_max1_84, align 4, !dbg !10449
+  %6 = load i32, i32* %__UNIQUE_ID_max2_85, align 4, !dbg !10449
+  %cond = select i1 %cmp2, i32 %5, i32 %6, !dbg !10449
+  ret i32 %cond, !dbg !10450
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @bictcp_acked(%struct.sock* %sk, %struct.ack_sample* %sample) #4 !dbg !10493 {
+define internal void @bictcp_acked(%struct.sock* %sk, %struct.ack_sample* %sample) #4 !dbg !10451 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10495, metadata !10316), !dbg !10503
-  call void @llvm.dbg.value(metadata %struct.ack_sample* %sample, i64 0, metadata !10496, metadata !10316), !dbg !10504
-  %call = call %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk), !dbg !10505
-  call void @llvm.dbg.value(metadata %struct.inet_connection_sock* %call, i64 0, metadata !10497, metadata !10316), !dbg !10506
-  %icsk_ca_state = getelementptr inbounds %struct.inet_connection_sock, %struct.inet_connection_sock* %call, i32 0, i32 11, !dbg !10507
-  %bf.load = load i8, i8* %icsk_ca_state, align 8, !dbg !10507
-  %bf.clear = and i8 %bf.load, 63, !dbg !10507
-  %conv = zext i8 %bf.clear to i32, !dbg !10508
-  %cmp = icmp eq i32 %conv, 0, !dbg !10509
-  br i1 %cmp, label %if.then, label %if.end, !dbg !10510
+  %call = call %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk), !dbg !10461
+  %icsk_ca_state = getelementptr inbounds %struct.inet_connection_sock, %struct.inet_connection_sock* %call, i32 0, i32 11, !dbg !10462
+  %bf.load = load i8, i8* %icsk_ca_state, align 8, !dbg !10462
+  %bf.clear = and i8 %bf.load, 63, !dbg !10462
+  %conv = zext i8 %bf.clear to i32, !dbg !10463
+  %cmp = icmp eq i32 %conv, 0, !dbg !10464
+  br i1 %cmp, label %if.then, label %if.end, !dbg !10465
 
 if.then:                                          ; preds = %entry
-  %call2 = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10511
-  %0 = bitcast i8* %call2 to %struct.bictcp*, !dbg !10511
-  call void @llvm.dbg.value(metadata %struct.bictcp* %0, i64 0, metadata !10500, metadata !10316), !dbg !10512
-  %pkts_acked = getelementptr inbounds %struct.ack_sample, %struct.ack_sample* %sample, i32 0, i32 0, !dbg !10513
-  %1 = load i32, i32* %pkts_acked, align 4, !dbg !10513, !tbaa !10514
-  %delayed_ack = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 6, !dbg !10516
-  %2 = load i32, i32* %delayed_ack, align 4, !dbg !10516, !tbaa !10517
-  %shr = lshr i32 %2, 4, !dbg !10518
-  %sub = sub i32 %1, %shr, !dbg !10519
-  %delayed_ack3 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 6, !dbg !10520
-  %3 = load i32, i32* %delayed_ack3, align 4, !dbg !10521, !tbaa !10517
-  %add = add i32 %3, %sub, !dbg !10521
-  store i32 %add, i32* %delayed_ack3, align 4, !dbg !10521, !tbaa !10517
-  br label %if.end, !dbg !10522
+  %call2 = call i8* @inet_csk_ca(%struct.sock* %sk), !dbg !10466
+  %0 = bitcast i8* %call2 to %struct.bictcp*, !dbg !10466
+  %pkts_acked = getelementptr inbounds %struct.ack_sample, %struct.ack_sample* %sample, i32 0, i32 0, !dbg !10467
+  %1 = load i32, i32* %pkts_acked, align 4, !dbg !10467, !tbaa !10468
+  %delayed_ack = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 6, !dbg !10470
+  %2 = load i32, i32* %delayed_ack, align 4, !dbg !10470, !tbaa !10471
+  %shr = lshr i32 %2, 4, !dbg !10472
+  %sub = sub i32 %1, %shr, !dbg !10473
+  %delayed_ack3 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %0, i32 0, i32 6, !dbg !10474
+  %3 = load i32, i32* %delayed_ack3, align 4, !dbg !10475, !tbaa !10471
+  %add = add i32 %3, %sub, !dbg !10475
+  store i32 %add, i32* %delayed_ack3, align 4, !dbg !10475, !tbaa !10471
+  br label %if.end, !dbg !10476
 
 if.end:                                           ; preds = %if.then, %entry
-  ret void, !dbg !10523
+  ret void, !dbg !10477
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal i8* @inet_csk_ca(%struct.sock* %sk) #5 !dbg !10524 {
+define internal i8* @inet_csk_ca(%struct.sock* %sk) #5 !dbg !10478 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10528, metadata !10316), !dbg !10529
-  %call = call %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk), !dbg !10530
-  %icsk_ca_priv = getelementptr inbounds %struct.inet_connection_sock, %struct.inet_connection_sock* %call, i32 0, i32 21, !dbg !10531
-  %arraydecay = getelementptr inbounds [11 x i64], [11 x i64]* %icsk_ca_priv, i32 0, i32 0, !dbg !10530
-  %0 = bitcast i64* %arraydecay to i8*, !dbg !10532
-  ret i8* %0, !dbg !10533
+  %call = call %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk), !dbg !10483
+  %icsk_ca_priv = getelementptr inbounds %struct.inet_connection_sock, %struct.inet_connection_sock* %call, i32 0, i32 21, !dbg !10484
+  %arraydecay = getelementptr inbounds [11 x i64], [11 x i64]* %icsk_ca_priv, i32 0, i32 0, !dbg !10483
+  %0 = bitcast i64* %arraydecay to i8*, !dbg !10485
+  ret i8* %0, !dbg !10486
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal void @bictcp_reset(%struct.bictcp* %ca) #5 !dbg !10534 {
+define internal void @bictcp_reset(%struct.bictcp* %ca) #5 !dbg !10487 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.bictcp* %ca, i64 0, metadata !10538, metadata !10316), !dbg !10539
-  %cnt = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10540
-  store i32 0, i32* %cnt, align 4, !dbg !10541, !tbaa !10459
-  %last_max_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 1, !dbg !10542
-  store i32 0, i32* %last_max_cwnd, align 4, !dbg !10543, !tbaa !10544
-  %last_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 3, !dbg !10545
-  store i32 0, i32* %last_cwnd, align 4, !dbg !10546, !tbaa !10547
-  %last_time = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 4, !dbg !10548
-  store i32 0, i32* %last_time, align 4, !dbg !10549, !tbaa !10550
-  %epoch_start = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 5, !dbg !10551
-  store i32 0, i32* %epoch_start, align 4, !dbg !10552, !tbaa !10553
-  %delayed_ack = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 6, !dbg !10554
-  store i32 32, i32* %delayed_ack, align 4, !dbg !10555, !tbaa !10517
-  ret void, !dbg !10556
+  %cnt = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10492
+  store i32 0, i32* %cnt, align 4, !dbg !10493, !tbaa !10421
+  %last_max_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 1, !dbg !10494
+  store i32 0, i32* %last_max_cwnd, align 4, !dbg !10495, !tbaa !10496
+  %last_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 3, !dbg !10497
+  store i32 0, i32* %last_cwnd, align 4, !dbg !10498, !tbaa !10499
+  %last_time = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 4, !dbg !10500
+  store i32 0, i32* %last_time, align 4, !dbg !10501, !tbaa !10502
+  %epoch_start = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 5, !dbg !10503
+  store i32 0, i32* %epoch_start, align 4, !dbg !10504, !tbaa !10505
+  %delayed_ack = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 6, !dbg !10506
+  store i32 32, i32* %delayed_ack, align 4, !dbg !10507, !tbaa !10471
+  ret void, !dbg !10508
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal %struct.tcp_sock* @tcp_sk(%struct.sock* %sk) #5 !dbg !10557 {
+declare %struct.tcp_sock* @tcp_sk(%struct.sock*) #5
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk) #5 !dbg !10509 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10561, metadata !10316), !dbg !10562
-  %0 = bitcast %struct.sock* %sk to %struct.tcp_sock*, !dbg !10563
-  ret %struct.tcp_sock* %0, !dbg !10564
+  %0 = bitcast %struct.sock* %sk to %struct.inet_connection_sock*, !dbg !10514
+  ret %struct.inet_connection_sock* %0, !dbg !10515
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk) #5 !dbg !10565 {
+define internal zeroext i1 @tcp_is_cwnd_limited(%struct.sock* %sk) #5 !dbg !10516 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10569, metadata !10316), !dbg !10570
-  %0 = bitcast %struct.sock* %sk to %struct.inet_connection_sock*, !dbg !10571
-  ret %struct.inet_connection_sock* %0, !dbg !10572
-}
-
-; Function Attrs: inlinehint nounwind uwtable
-define internal zeroext i1 @tcp_is_cwnd_limited(%struct.sock* %sk) #5 !dbg !10573 {
-entry:
-  call void @llvm.dbg.value(metadata %struct.sock* %sk, i64 0, metadata !10575, metadata !10316), !dbg !10577
-  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10578
-  call void @llvm.dbg.value(metadata %struct.tcp_sock* %call, i64 0, metadata !10576, metadata !10316), !dbg !10579
-  %call1 = call zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %call), !dbg !10580
-  br i1 %call1, label %if.then, label %if.end, !dbg !10582
+  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10520
+  %call1 = call zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %call), !dbg !10521
+  br i1 %call1, label %if.then, label %if.end, !dbg !10523
 
 if.then:                                          ; preds = %entry
-  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10583
-  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10583, !tbaa !10423
-  %max_packets_out = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 44, !dbg !10584
-  %1 = load i32, i32* %max_packets_out, align 8, !dbg !10584, !tbaa !10585
-  %mul = mul i32 2, %1, !dbg !10586
-  %cmp = icmp ult i32 %0, %mul, !dbg !10587
-  br label %cleanup, !dbg !10588
+  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10524
+  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10524, !tbaa !10418
+  %max_packets_out = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 44, !dbg !10525
+  %1 = load i32, i32* %max_packets_out, align 8, !dbg !10525, !tbaa !10526
+  %mul = mul i32 2, %1, !dbg !10527
+  %cmp = icmp ult i32 %0, %mul, !dbg !10528
+  br label %cleanup, !dbg !10529
 
 if.end:                                           ; preds = %entry
-  %is_cwnd_limited = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 34, !dbg !10589
-  %bf.load = load i8, i8* %is_cwnd_limited, align 1, !dbg !10589
-  %bf.lshr = lshr i8 %bf.load, 5, !dbg !10589
-  %bf.clear = and i8 %bf.lshr, 1, !dbg !10589
-  %tobool = icmp ne i8 %bf.clear, 0, !dbg !10590
-  br label %cleanup, !dbg !10591
+  %is_cwnd_limited = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 34, !dbg !10530
+  %bf.load = load i8, i8* %is_cwnd_limited, align 1, !dbg !10530
+  %bf.lshr = lshr i8 %bf.load, 5, !dbg !10530
+  %bf.clear = and i8 %bf.lshr, 1, !dbg !10530
+  %tobool = icmp ne i8 %bf.clear, 0, !dbg !10531
+  br label %cleanup, !dbg !10532
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i1 [ %cmp, %if.then ], [ %tobool, %if.end ]
-  ret i1 %retval.0, !dbg !10592
+  ret i1 %retval.0, !dbg !10533
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %tp) #5 !dbg !10593 {
+define internal zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %tp) #5 !dbg !10534 {
 entry:
-  call void @llvm.dbg.value(metadata %struct.tcp_sock* %tp, i64 0, metadata !10597, metadata !10316), !dbg !10598
-  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 53, !dbg !10599
-  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10599, !tbaa !10423
-  %snd_ssthresh = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 52, !dbg !10600
-  %1 = load i32, i32* %snd_ssthresh, align 8, !dbg !10600, !tbaa !10360
-  %cmp = icmp ult i32 %0, %1, !dbg !10601
-  ret i1 %cmp, !dbg !10602
+  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 53, !dbg !10539
+  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10539, !tbaa !10418
+  %snd_ssthresh = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 52, !dbg !10540
+  %1 = load i32, i32* %snd_ssthresh, align 8, !dbg !10540, !tbaa !10355
+  %cmp = icmp ult i32 %0, %1, !dbg !10541
+  ret i1 %cmp, !dbg !10542
 }
 
 declare i32 @tcp_slow_start(%struct.tcp_sock*, i32) #3
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal void @bictcp_update(%struct.bictcp* %ca, i32 %cwnd) #5 !dbg !10603 {
-entry:
-  call void @llvm.dbg.value(metadata %struct.bictcp* %ca, i64 0, metadata !10607, metadata !10316), !dbg !10612
-  call void @llvm.dbg.value(metadata i32 %cwnd, i64 0, metadata !10608, metadata !10316), !dbg !10613
-  br label %if.end11
-
-if.end11:                                         ; preds = %entry
-  %0 = load i32, i32* @low_window, align 4, !dbg !10614, !tbaa !10354
-  %cmp12 = icmp ule i32 %cwnd, %0, !dbg !10616
-  br i1 %cmp12, label %if.then14, label %if.end15, !dbg !10617
-
-if.then14:                                        ; preds = %if.end11
-  %cnt = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10618
-  store i32 %cwnd, i32* %cnt, align 4, !dbg !10620, !tbaa !10459
-  br label %if.end81, !dbg !10621
-
-if.end15:                                         ; preds = %if.end11
-  %last_max_cwnd = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 1, !dbg !10622
-  %1 = load i32, i32* %last_max_cwnd, align 4, !dbg !10622, !tbaa !10544
-  %cmp16 = icmp ult i32 %cwnd, %1, !dbg !10623
-  %last_max_cwnd19 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 1
-  %2 = load i32, i32* %last_max_cwnd19, align 4, !tbaa !10544
-  br i1 %cmp16, label %if.then18, label %if.else36, !dbg !10624
-
-if.then18:                                        ; preds = %if.end15
-  %sub20 = sub i32 %2, %cwnd, !dbg !10625
-  %div = udiv i32 %sub20, 4, !dbg !10626
-  call void @llvm.dbg.value(metadata i32 %div, i64 0, metadata !10609, metadata !10316), !dbg !10627
-  %3 = load i32, i32* @max_increment, align 4, !dbg !10628, !tbaa !10354
-  %cmp21 = icmp ugt i32 %div, %3, !dbg !10630
-  br i1 %cmp21, label %if.then23, label %if.else, !dbg !10631
-
-if.then23:                                        ; preds = %if.then18
-  %4 = load i32, i32* @max_increment, align 4, !dbg !10632, !tbaa !10354
-  %div24 = udiv i32 %cwnd, %4, !dbg !10633
-  br label %if.end61, !dbg !10634
-
-if.else:                                          ; preds = %if.then18
-  %cmp26 = icmp ule i32 %div, 1, !dbg !10635
-  br i1 %cmp26, label %if.then28, label %if.else31, !dbg !10637
-
-if.then28:                                        ; preds = %if.else
-  %5 = load i32, i32* @smooth_part, align 4, !dbg !10638, !tbaa !10354
-  %mul = mul i32 %cwnd, %5, !dbg !10639
-  %div29 = udiv i32 %mul, 4, !dbg !10640
-  br label %if.end61, !dbg !10641
-
-if.else31:                                        ; preds = %if.else
-  %div32 = udiv i32 %cwnd, %div, !dbg !10642
-  br label %if.end61
-
-if.else36:                                        ; preds = %if.end15
-  %add = add i32 %2, 4, !dbg !10643
-  %cmp38 = icmp ult i32 %cwnd, %add, !dbg !10646
-  br i1 %cmp38, label %if.then40, label %if.else44, !dbg !10647
-
-if.then40:                                        ; preds = %if.else36
-  %6 = load i32, i32* @smooth_part, align 4, !dbg !10648, !tbaa !10354
-  %mul41 = mul i32 %cwnd, %6, !dbg !10649
-  %div42 = udiv i32 %mul41, 4, !dbg !10650
-  br label %if.end61, !dbg !10651
-
-if.else44:                                        ; preds = %if.else36
-  %last_max_cwnd45 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 1, !dbg !10652
-  %7 = load i32, i32* %last_max_cwnd45, align 4, !dbg !10652, !tbaa !10544
-  %8 = load i32, i32* @max_increment, align 4, !dbg !10654, !tbaa !10354
-  %mul46 = mul nsw i32 %8, 3, !dbg !10655
-  %add47 = add i32 %7, %mul46, !dbg !10656
-  %cmp48 = icmp ult i32 %cwnd, %add47, !dbg !10657
-  br i1 %cmp48, label %if.then50, label %if.else56, !dbg !10658
-
-if.then50:                                        ; preds = %if.else44
-  %mul51 = mul i32 %cwnd, 3, !dbg !10659
-  %last_max_cwnd52 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 1, !dbg !10660
-  %9 = load i32, i32* %last_max_cwnd52, align 4, !dbg !10660, !tbaa !10544
-  %sub53 = sub i32 %cwnd, %9, !dbg !10661
-  %div54 = udiv i32 %mul51, %sub53, !dbg !10662
-  br label %if.end61, !dbg !10663
-
-if.else56:                                        ; preds = %if.else44
-  %10 = load i32, i32* @max_increment, align 4, !dbg !10664, !tbaa !10354
-  %div57 = udiv i32 %cwnd, %10, !dbg !10665
-  br label %if.end61
-
-if.end61:                                         ; preds = %if.else56, %if.then50, %if.then40, %if.else31, %if.then28, %if.then23
-  %div57.sink.sink.sink = phi i32 [ %div24, %if.then23 ], [ %div32, %if.else31 ], [ %div29, %if.then28 ], [ %div42, %if.then40 ], [ %div57, %if.else56 ], [ %div54, %if.then50 ]
-  %cnt58 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0
-  store i32 %div57.sink.sink.sink, i32* %cnt58, align 4, !tbaa !10459
-  %last_max_cwnd62 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 1, !dbg !10666
-  %11 = load i32, i32* %last_max_cwnd62, align 4, !dbg !10666, !tbaa !10544
-  %cmp63 = icmp eq i32 %11, 0, !dbg !10668
-  br i1 %cmp63, label %if.then65, label %if.end72, !dbg !10669
-
-if.then65:                                        ; preds = %if.end61
-  %cnt66 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10670
-  %12 = load i32, i32* %cnt66, align 4, !dbg !10670, !tbaa !10459
-  %cmp67 = icmp ugt i32 %12, 20, !dbg !10673
-  br i1 %cmp67, label %if.then69, label %if.end72, !dbg !10674
-
-if.then69:                                        ; preds = %if.then65
-  %cnt70 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10675
-  store i32 20, i32* %cnt70, align 4, !dbg !10676, !tbaa !10459
-  br label %if.end72, !dbg !10677
-
-if.end72:                                         ; preds = %if.then69, %if.then65, %if.end61
-  %cnt73 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10678
-  %13 = load i32, i32* %cnt73, align 4, !dbg !10678, !tbaa !10459
-  %shl = shl i32 %13, 4, !dbg !10679
-  %delayed_ack = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 6, !dbg !10680
-  %14 = load i32, i32* %delayed_ack, align 4, !dbg !10680, !tbaa !10517
-  %div74 = udiv i32 %shl, %14, !dbg !10681
-  %cnt75 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10682
-  store i32 %div74, i32* %cnt75, align 4, !dbg !10683, !tbaa !10459
-  %cnt76 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10684
-  %15 = load i32, i32* %cnt76, align 4, !dbg !10684, !tbaa !10459
-  %cmp77 = icmp eq i32 %15, 0, !dbg !10686
-  br i1 %cmp77, label %if.then79, label %if.end81, !dbg !10687
-
-if.then79:                                        ; preds = %if.end72
-  %cnt80 = getelementptr inbounds %struct.bictcp, %struct.bictcp* %ca, i32 0, i32 0, !dbg !10688
-  store i32 1, i32* %cnt80, align 4, !dbg !10689, !tbaa !10459
-  br label %if.end81, !dbg !10690
-
-if.end81:                                         ; preds = %if.then79, %if.end72, %if.then14
-  ret void
-}
+declare void @bictcp_update(%struct.bictcp*, i32) #5
 
 declare void @tcp_cong_avoid_ai(%struct.tcp_sock*, i32, i32) #3
 
@@ -1317,7 +1071,6 @@ attributes #2 = { nounwind readnone speculatable }
 attributes #3 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #4 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #5 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #6 = { nounwind }
 
 !llvm.dbg.cu = !{!2}
 !llvm.module.flags = !{!10308, !10309, !10310}
@@ -11639,378 +11392,230 @@ attributes #6 = { nounwind }
 !10313 = !{!10314}
 !10314 = !DILocalVariable(name: "__cond", scope: !10315, file: !3, line: 225, type: !301)
 !10315 = distinct !DILexicalBlock(scope: !10312, file: !3, line: 225, column: 2)
-!10316 = !DIExpression()
-!10317 = !DILocation(line: 225, column: 2, scope: !10315)
-!10318 = !DILocation(line: 225, column: 2, scope: !10319)
-!10319 = distinct !DILexicalBlock(scope: !10315, file: !3, line: 225, column: 2)
-!10320 = !DILocation(line: 225, column: 2, scope: !10321)
-!10321 = distinct !DILexicalBlock(scope: !10315, file: !3, line: 225, column: 2)
-!10322 = !DILocation(line: 226, column: 9, scope: !10312)
-!10323 = !DILocation(line: 226, column: 2, scope: !10312)
-!10324 = distinct !DISubprogram(name: "bictcp_unregister", scope: !3, file: !3, line: 229, type: !3301, isLocal: true, isDefinition: true, scopeLine: 230, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !1859)
-!10325 = !DILocation(line: 231, column: 2, scope: !10324)
-!10326 = !DILocation(line: 232, column: 1, scope: !10324)
-!10327 = distinct !DISubprogram(name: "bictcp_init", scope: !3, file: !3, line: 70, type: !313, isLocal: true, isDefinition: true, scopeLine: 71, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10328)
-!10328 = !{!10329, !10330}
-!10329 = !DILocalVariable(name: "sk", arg: 1, scope: !10327, file: !3, line: 70, type: !215)
-!10330 = !DILocalVariable(name: "ca", scope: !10327, file: !3, line: 72, type: !10331)
-!10331 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10332, size: 64)
-!10332 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "bictcp", file: !3, line: 49, size: 224, elements: !10333)
-!10333 = !{!10334, !10335, !10336, !10337, !10338, !10339, !10340}
-!10334 = !DIDerivedType(tag: DW_TAG_member, name: "cnt", scope: !10332, file: !3, line: 50, baseType: !203, size: 32)
-!10335 = !DIDerivedType(tag: DW_TAG_member, name: "last_max_cwnd", scope: !10332, file: !3, line: 51, baseType: !203, size: 32, offset: 32)
-!10336 = !DIDerivedType(tag: DW_TAG_member, name: "loss_cwnd", scope: !10332, file: !3, line: 52, baseType: !203, size: 32, offset: 64)
-!10337 = !DIDerivedType(tag: DW_TAG_member, name: "last_cwnd", scope: !10332, file: !3, line: 53, baseType: !203, size: 32, offset: 96)
-!10338 = !DIDerivedType(tag: DW_TAG_member, name: "last_time", scope: !10332, file: !3, line: 54, baseType: !203, size: 32, offset: 128)
-!10339 = !DIDerivedType(tag: DW_TAG_member, name: "epoch_start", scope: !10332, file: !3, line: 55, baseType: !203, size: 32, offset: 160)
-!10340 = !DIDerivedType(tag: DW_TAG_member, name: "delayed_ack", scope: !10332, file: !3, line: 57, baseType: !203, size: 32, offset: 192)
-!10341 = !DILocation(line: 70, column: 38, scope: !10327)
-!10342 = !DILocation(line: 72, column: 22, scope: !10327)
-!10343 = !DILocation(line: 72, column: 17, scope: !10327)
-!10344 = !DILocation(line: 74, column: 2, scope: !10327)
-!10345 = !DILocation(line: 75, column: 6, scope: !10327)
-!10346 = !DILocation(line: 75, column: 16, scope: !10327)
-!10347 = !{!10348, !10349, i64 8}
-!10348 = !{!"bictcp", !10349, i64 0, !10349, i64 4, !10349, i64 8, !10349, i64 12, !10349, i64 16, !10349, i64 20, !10349, i64 24}
-!10349 = !{!"int", !10350, i64 0}
-!10350 = !{!"omnipotent char", !10351, i64 0}
-!10351 = !{!"Simple C/C++ TBAA"}
-!10352 = !DILocation(line: 77, column: 6, scope: !10353)
-!10353 = distinct !DILexicalBlock(scope: !10327, file: !3, line: 77, column: 6)
-!10354 = !{!10349, !10349, i64 0}
-!10355 = !DILocation(line: 77, column: 6, scope: !10327)
-!10356 = !DILocation(line: 78, column: 30, scope: !10353)
-!10357 = !DILocation(line: 78, column: 3, scope: !10353)
-!10358 = !DILocation(line: 78, column: 15, scope: !10353)
-!10359 = !DILocation(line: 78, column: 28, scope: !10353)
-!10360 = !{!10361, !10349, i64 2392}
-!10361 = !{!"tcp_sock", !10362, i64 0, !10366, i64 1992, !10366, i64 1994, !10349, i64 1996, !10383, i64 2000, !10349, i64 2008, !10349, i64 2012, !10349, i64 2016, !10349, i64 2020, !10349, i64 2024, !10349, i64 2028, !10349, i64 2032, !10349, i64 2036, !10383, i64 2040, !10349, i64 2048, !10349, i64 2052, !10349, i64 2056, !10349, i64 2060, !10349, i64 2064, !10349, i64 2068, !10376, i64 2072, !10396, i64 2088, !10349, i64 2208, !10349, i64 2212, !10349, i64 2216, !10349, i64 2220, !10349, i64 2224, !10349, i64 2228, !10397, i64 2232, !10366, i64 2256, !10349, i64 2260, !10350, i64 2264, !10350, i64 2276, !10350, i64 2276, !10350, i64 2276, !10350, i64 2276, !10350, i64 2277, !10350, i64 2277, !10350, i64 2277, !10350, i64 2277, !10350, i64 2277, !10350, i64 2278, !10350, i64 2279, !10350, i64 2279, !10350, i64 2279, !10350, i64 2279, !10350, i64 2279, !10350, i64 2279, !10349, i64 2280, !10349, i64 2284, !10349, i64 2288, !10349, i64 2292, !10349, i64 2296, !10349, i64 2300, !10399, i64 2304, !10349, i64 2328, !10349, i64 2332, !10349, i64 2336, !10349, i64 2340, !10366, i64 2344, !10350, i64 2346, !10350, i64 2347, !10349, i64 2348, !10349, i64 2352, !10400, i64 2360, !10349, i64 2392, !10349, i64 2396, !10349, i64 2400, !10349, i64 2404, !10349, i64 2408, !10349, i64 2412, !10349, i64 2416, !10349, i64 2420, !10349, i64 2424, !10349, i64 2428, !10349, i64 2432, !10349, i64 2436, !10398, i64 2440, !10398, i64 2448, !10349, i64 2456, !10349, i64 2460, !10349, i64 2464, !10349, i64 2468, !10349, i64 2472, !10349, i64 2476, !10349, i64 2480, !10349, i64 2484, !10349, i64 2488, !10367, i64 2496, !10367, i64 2504, !10401, i64 2512, !10367, i64 2520, !10350, i64 2528, !10350, i64 2536, !10350, i64 2568, !10367, i64 2600, !10349, i64 2608, !10349, i64 2612, !10349, i64 2616, !10349, i64 2620, !10349, i64 2624, !10349, i64 2628, !10349, i64 2632, !10349, i64 2636, !10349, i64 2640, !10349, i64 2644, !10349, i64 2648, !10402, i64 2652, !10402, i64 2664, !10403, i64 2676, !10349, i64 2684, !10367, i64 2688, !10367, i64 2696, !10367, i64 2704, !10367, i64 2712, !10367, i64 2720}
-!10362 = !{!"inet_connection_sock", !10363, i64 0, !10392, i64 1408, !10367, i64 1608, !10371, i64 1616, !10380, i64 1624, !10380, i64 1720, !10349, i64 1816, !10349, i64 1820, !10367, i64 1824, !10367, i64 1832, !10367, i64 1840, !10350, i64 1848, !10350, i64 1848, !10350, i64 1848, !10350, i64 1849, !10350, i64 1850, !10350, i64 1851, !10350, i64 1852, !10350, i64 1853, !10366, i64 1854, !10394, i64 1856, !10395, i64 1880, !10349, i64 1900, !10350, i64 1904}
-!10363 = !{!"inet_sock", !10364, i64 0, !10367, i64 1224, !10349, i64 1232, !10366, i64 1236, !10366, i64 1238, !10366, i64 1240, !10366, i64 1242, !10367, i64 1248, !10349, i64 1256, !10350, i64 1260, !10350, i64 1261, !10350, i64 1262, !10350, i64 1263, !10350, i64 1264, !10350, i64 1264, !10350, i64 1264, !10350, i64 1264, !10350, i64 1264, !10350, i64 1264, !10350, i64 1264, !10350, i64 1264, !10350, i64 1265, !10350, i64 1265, !10350, i64 1266, !10350, i64 1267, !10349, i64 1268, !10349, i64 1272, !10349, i64 1276, !10367, i64 1280, !10389, i64 1288}
-!10364 = !{!"sock", !10365, i64 0, !10373, i64 136, !10372, i64 352, !10349, i64 356, !10378, i64 360, !10378, i64 456, !10379, i64 552, !10349, i64 576, !10349, i64 580, !10349, i64 584, !10349, i64 588, !10367, i64 592, !10350, i64 600, !10350, i64 608, !10367, i64 624, !10367, i64 632, !10372, i64 640, !10349, i64 644, !10349, i64 648, !10372, i64 652, !10371, i64 656, !10367, i64 664, !10378, i64 672, !10349, i64 768, !10349, i64 772, !10349, i64 776, !10371, i64 784, !10380, i64 792, !10349, i64 888, !10349, i64 892, !10349, i64 896, !10349, i64 900, !10382, i64 904, !10383, i64 920, !10383, i64 928, !10349, i64 936, !10349, i64 940, !10349, i64 944, !10349, i64 948, !10350, i64 952, !10349, i64 952, !10349, i64 952, !10349, i64 952, !10349, i64 952, !10349, i64 952, !10349, i64 953, !10349, i64 954, !10366, i64 956, !10371, i64 960, !10367, i64 968, !10384, i64 976, !10349, i64 1048, !10349, i64 1052, !10349, i64 1056, !10349, i64 1060, !10372, i64 1064, !10367, i64 1072, !10367, i64 1080, !10371, i64 1088, !10383, i64 1096, !10366, i64 1104, !10350, i64 1106, !10349, i64 1108, !10367, i64 1112, !10367, i64 1120, !10367, i64 1128, !10387, i64 1136, !10367, i64 1144, !10367, i64 1152, !10367, i64 1160, !10367, i64 1168, !10367, i64 1176, !10367, i64 1184, !10367, i64 1192, !10367, i64 1200, !10388, i64 1208}
-!10365 = !{!"sock_common", !10350, i64 0, !10350, i64 8, !10350, i64 12, !10366, i64 16, !10350, i64 18, !10350, i64 19, !10350, i64 19, !10350, i64 19, !10350, i64 19, !10349, i64 20, !10350, i64 24, !10367, i64 40, !10368, i64 48, !10369, i64 56, !10369, i64 72, !10370, i64 88, !10350, i64 96, !10350, i64 104, !10350, i64 104, !10349, i64 120, !10350, i64 124, !10372, i64 128, !10350, i64 132, !10350, i64 132}
-!10366 = !{!"short", !10350, i64 0}
-!10367 = !{!"any pointer", !10350, i64 0}
-!10368 = !{!"", !10367, i64 0}
-!10369 = !{!"in6_addr", !10350, i64 0}
-!10370 = !{!"", !10371, i64 0}
-!10371 = !{!"long", !10350, i64 0}
-!10372 = !{!"", !10349, i64 0}
-!10373 = !{!"", !10374, i64 0, !10349, i64 72, !10375, i64 80, !10377, i64 168}
-!10374 = !{!"spinlock", !10350, i64 0}
-!10375 = !{!"__wait_queue_head", !10374, i64 0, !10376, i64 72}
-!10376 = !{!"list_head", !10367, i64 0, !10367, i64 8}
-!10377 = !{!"lockdep_map", !10367, i64 0, !10350, i64 8, !10367, i64 24, !10349, i64 32, !10371, i64 40}
-!10378 = !{!"sk_buff_head", !10367, i64 0, !10367, i64 8, !10349, i64 16, !10374, i64 24}
-!10379 = !{!"", !10372, i64 0, !10349, i64 4, !10367, i64 8, !10367, i64 16}
-!10380 = !{!"timer_list", !10381, i64 0, !10371, i64 16, !10367, i64 24, !10371, i64 32, !10349, i64 40, !10377, i64 48}
-!10381 = !{!"hlist_node", !10367, i64 0, !10367, i64 8}
-!10382 = !{!"page_frag", !10367, i64 0, !10349, i64 8, !10349, i64 12}
-!10383 = !{!"long long", !10350, i64 0}
-!10384 = !{!"", !10385, i64 0, !10349, i64 8, !10349, i64 12, !10367, i64 16, !10377, i64 24}
-!10385 = !{!"qrwlock", !10372, i64 0, !10386, i64 4}
-!10386 = !{!"qspinlock", !10372, i64 0}
-!10387 = !{!"sock_cgroup_data", !10350, i64 0}
-!10388 = !{!"callback_head", !10367, i64 0, !10367, i64 8}
-!10389 = !{!"inet_cork_full", !10390, i64 0, !10391, i64 40}
-!10390 = !{!"inet_cork", !10349, i64 0, !10349, i64 4, !10367, i64 8, !10349, i64 16, !10349, i64 20, !10367, i64 24, !10350, i64 32, !10350, i64 33, !10366, i64 34, !10350, i64 36}
-!10391 = !{!"flowi", !10350, i64 0}
-!10392 = !{!"request_sock_queue", !10374, i64 0, !10350, i64 72, !10349, i64 76, !10372, i64 80, !10372, i64 84, !10367, i64 88, !10367, i64 96, !10393, i64 104}
-!10393 = !{!"fastopen_queue", !10367, i64 0, !10367, i64 8, !10374, i64 16, !10349, i64 88, !10349, i64 92}
-!10394 = !{!"", !10350, i64 0, !10350, i64 1, !10350, i64 2, !10350, i64 3, !10349, i64 4, !10371, i64 8, !10349, i64 16, !10366, i64 20, !10366, i64 22}
-!10395 = !{!"", !10349, i64 0, !10349, i64 4, !10349, i64 8, !10349, i64 12, !10349, i64 16}
-!10396 = !{!"", !10378, i64 0, !10367, i64 96, !10367, i64 104, !10349, i64 112, !10349, i64 116}
-!10397 = !{!"tcp_rack", !10398, i64 0, !10349, i64 8, !10349, i64 12, !10350, i64 16, !10350, i64 17}
-!10398 = !{!"skb_mstamp", !10350, i64 0}
-!10399 = !{!"minmax", !10350, i64 0}
-!10400 = !{!"tcp_options_received", !10371, i64 0, !10349, i64 8, !10349, i64 12, !10349, i64 16, !10366, i64 20, !10366, i64 20, !10366, i64 20, !10366, i64 20, !10366, i64 20, !10366, i64 21, !10366, i64 21, !10350, i64 22, !10366, i64 24, !10366, i64 26}
-!10401 = !{!"rb_root", !10367, i64 0}
-!10402 = !{!"", !10349, i64 0, !10349, i64 4, !10349, i64 8}
-!10403 = !{!"", !10349, i64 0, !10349, i64 4}
-!10404 = !DILocation(line: 79, column: 1, scope: !10327)
-!10405 = distinct !DISubprogram(name: "bictcp_recalc_ssthresh", scope: !3, file: !3, line: 161, type: !9834, isLocal: true, isDefinition: true, scopeLine: 162, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10406)
-!10406 = !{!10407, !10408, !10411, !10412, !10415, !10416, !10418}
-!10407 = !DILocalVariable(name: "sk", arg: 1, scope: !10405, file: !3, line: 161, type: !215)
-!10408 = !DILocalVariable(name: "tp", scope: !10405, file: !3, line: 163, type: !10409)
-!10409 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10410, size: 64)
-!10410 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !9964)
-!10411 = !DILocalVariable(name: "ca", scope: !10405, file: !3, line: 164, type: !10331)
-!10412 = !DILocalVariable(name: "__UNIQUE_ID_max1_80", scope: !10413, file: !3, line: 178, type: !203)
-!10413 = distinct !DILexicalBlock(scope: !10414, file: !3, line: 178, column: 10)
-!10414 = distinct !DILexicalBlock(scope: !10405, file: !3, line: 177, column: 6)
-!10415 = !DILocalVariable(name: "__UNIQUE_ID_max2_81", scope: !10413, file: !3, line: 178, type: !204)
-!10416 = !DILocalVariable(name: "__UNIQUE_ID_max1_82", scope: !10417, file: !3, line: 180, type: !204)
-!10417 = distinct !DILexicalBlock(scope: !10414, file: !3, line: 180, column: 10)
-!10418 = !DILocalVariable(name: "__UNIQUE_ID_max2_83", scope: !10417, file: !3, line: 180, type: !204)
-!10419 = !DILocation(line: 161, column: 48, scope: !10405)
-!10420 = !DILocation(line: 163, column: 30, scope: !10405)
-!10421 = !DILocation(line: 163, column: 25, scope: !10405)
-!10422 = !DILocation(line: 177, column: 10, scope: !10414)
-!10423 = !{!10361, !10349, i64 2396}
-!10424 = !DILocation(line: 177, column: 22, scope: !10414)
-!10425 = !DILocation(line: 177, column: 19, scope: !10414)
-!10426 = !DILocation(line: 177, column: 6, scope: !10405)
-!10427 = !DILocation(line: 178, column: 10, scope: !10413)
-!10428 = !DILocation(line: 178, column: 10, scope: !10414)
-!10429 = !DILocation(line: 178, column: 3, scope: !10414)
-!10430 = !DILocation(line: 180, column: 10, scope: !10417)
-!10431 = !DILocation(line: 180, column: 10, scope: !10414)
-!10432 = !DILocation(line: 180, column: 3, scope: !10414)
-!10433 = !DILocation(line: 181, column: 1, scope: !10405)
-!10434 = distinct !DISubprogram(name: "bictcp_cong_avoid", scope: !3, file: !3, line: 141, type: !9838, isLocal: true, isDefinition: true, scopeLine: 142, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10435)
-!10435 = !{!10436, !10437, !10438, !10439, !10440}
-!10436 = !DILocalVariable(name: "sk", arg: 1, scope: !10434, file: !3, line: 141, type: !215)
-!10437 = !DILocalVariable(name: "ack", arg: 2, scope: !10434, file: !3, line: 141, type: !203)
-!10438 = !DILocalVariable(name: "acked", arg: 3, scope: !10434, file: !3, line: 141, type: !203)
-!10439 = !DILocalVariable(name: "tp", scope: !10434, file: !3, line: 143, type: !9963)
-!10440 = !DILocalVariable(name: "ca", scope: !10434, file: !3, line: 144, type: !10331)
-!10441 = !DILocation(line: 141, column: 44, scope: !10434)
-!10442 = !DILocation(line: 141, column: 52, scope: !10434)
-!10443 = !DILocation(line: 141, column: 61, scope: !10434)
-!10444 = !DILocation(line: 143, column: 24, scope: !10434)
-!10445 = !DILocation(line: 143, column: 19, scope: !10434)
-!10446 = !DILocation(line: 144, column: 22, scope: !10434)
-!10447 = !DILocation(line: 144, column: 17, scope: !10434)
-!10448 = !DILocation(line: 146, column: 7, scope: !10449)
-!10449 = distinct !DILexicalBlock(scope: !10434, file: !3, line: 146, column: 6)
-!10450 = !DILocation(line: 146, column: 6, scope: !10434)
-!10451 = !DILocation(line: 149, column: 6, scope: !10452)
-!10452 = distinct !DILexicalBlock(scope: !10434, file: !3, line: 149, column: 6)
-!10453 = !DILocation(line: 149, column: 6, scope: !10434)
-!10454 = !DILocation(line: 150, column: 3, scope: !10452)
-!10455 = !DILocation(line: 152, column: 25, scope: !10456)
-!10456 = distinct !DILexicalBlock(scope: !10452, file: !3, line: 151, column: 7)
-!10457 = !DILocation(line: 152, column: 3, scope: !10456)
-!10458 = !DILocation(line: 153, column: 29, scope: !10456)
-!10459 = !{!10348, !10349, i64 0}
-!10460 = !DILocation(line: 153, column: 3, scope: !10456)
-!10461 = !DILocation(line: 155, column: 1, scope: !10434)
-!10462 = distinct !DISubprogram(name: "bictcp_state", scope: !3, file: !3, line: 191, type: !9842, isLocal: true, isDefinition: true, scopeLine: 192, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10463)
-!10463 = !{!10464, !10465}
-!10464 = !DILocalVariable(name: "sk", arg: 1, scope: !10462, file: !3, line: 191, type: !215)
-!10465 = !DILocalVariable(name: "new_state", arg: 2, scope: !10462, file: !3, line: 191, type: !47)
-!10466 = !DILocation(line: 191, column: 39, scope: !10462)
-!10467 = !DILocation(line: 191, column: 46, scope: !10462)
-!10468 = !DILocation(line: 193, column: 6, scope: !10469)
-!10469 = distinct !DILexicalBlock(scope: !10462, file: !3, line: 193, column: 6)
-!10470 = !DILocation(line: 193, column: 16, scope: !10469)
-!10471 = !DILocation(line: 193, column: 6, scope: !10462)
-!10472 = !DILocation(line: 194, column: 16, scope: !10469)
-!10473 = !DILocation(line: 194, column: 3, scope: !10469)
-!10474 = !DILocation(line: 195, column: 1, scope: !10462)
-!10475 = distinct !DISubprogram(name: "bictcp_undo_cwnd", scope: !3, file: !3, line: 183, type: !9834, isLocal: true, isDefinition: true, scopeLine: 184, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10476)
-!10476 = !{!10477, !10478, !10479, !10482, !10484}
-!10477 = !DILocalVariable(name: "sk", arg: 1, scope: !10475, file: !3, line: 183, type: !215)
-!10478 = !DILocalVariable(name: "tp", scope: !10475, file: !3, line: 185, type: !10409)
-!10479 = !DILocalVariable(name: "ca", scope: !10475, file: !3, line: 186, type: !10480)
-!10480 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10481, size: 64)
-!10481 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !10332)
-!10482 = !DILocalVariable(name: "__UNIQUE_ID_max1_84", scope: !10483, file: !3, line: 188, type: !8079)
-!10483 = distinct !DILexicalBlock(scope: !10475, file: !3, line: 188, column: 9)
-!10484 = !DILocalVariable(name: "__UNIQUE_ID_max2_85", scope: !10483, file: !3, line: 188, type: !8079)
-!10485 = !DILocation(line: 183, column: 42, scope: !10475)
-!10486 = !DILocation(line: 185, column: 30, scope: !10475)
-!10487 = !DILocation(line: 185, column: 25, scope: !10475)
-!10488 = !DILocation(line: 186, column: 28, scope: !10475)
-!10489 = !DILocation(line: 186, column: 23, scope: !10475)
-!10490 = !DILocation(line: 188, column: 9, scope: !10483)
-!10491 = !DILocation(line: 188, column: 9, scope: !10475)
-!10492 = !DILocation(line: 188, column: 2, scope: !10475)
-!10493 = distinct !DISubprogram(name: "bictcp_acked", scope: !3, file: !3, line: 200, type: !9855, isLocal: true, isDefinition: true, scopeLine: 201, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10494)
-!10494 = !{!10495, !10496, !10497, !10500}
-!10495 = !DILocalVariable(name: "sk", arg: 1, scope: !10493, file: !3, line: 200, type: !215)
-!10496 = !DILocalVariable(name: "sample", arg: 2, scope: !10493, file: !3, line: 200, type: !9857)
-!10497 = !DILocalVariable(name: "icsk", scope: !10493, file: !3, line: 202, type: !10498)
-!10498 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10499, size: 64)
-!10499 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !9561)
-!10500 = !DILocalVariable(name: "ca", scope: !10501, file: !3, line: 205, type: !10331)
-!10501 = distinct !DILexicalBlock(scope: !10502, file: !3, line: 204, column: 42)
-!10502 = distinct !DILexicalBlock(scope: !10493, file: !3, line: 204, column: 6)
-!10503 = !DILocation(line: 200, column: 39, scope: !10493)
-!10504 = !DILocation(line: 200, column: 68, scope: !10493)
-!10505 = !DILocation(line: 202, column: 44, scope: !10493)
-!10506 = !DILocation(line: 202, column: 37, scope: !10493)
-!10507 = !DILocation(line: 204, column: 12, scope: !10502)
-!10508 = !DILocation(line: 204, column: 6, scope: !10502)
-!10509 = !DILocation(line: 204, column: 26, scope: !10502)
-!10510 = !DILocation(line: 204, column: 6, scope: !10493)
-!10511 = !DILocation(line: 205, column: 23, scope: !10501)
-!10512 = !DILocation(line: 205, column: 18, scope: !10501)
-!10513 = !DILocation(line: 207, column: 30, scope: !10501)
-!10514 = !{!10515, !10349, i64 0}
-!10515 = !{!"ack_sample", !10349, i64 0, !10349, i64 4, !10349, i64 8}
-!10516 = !DILocation(line: 208, column: 9, scope: !10501)
-!10517 = !{!10348, !10349, i64 24}
-!10518 = !DILocation(line: 208, column: 21, scope: !10501)
-!10519 = !DILocation(line: 207, column: 41, scope: !10501)
-!10520 = !DILocation(line: 207, column: 7, scope: !10501)
-!10521 = !DILocation(line: 207, column: 19, scope: !10501)
-!10522 = !DILocation(line: 209, column: 2, scope: !10501)
-!10523 = !DILocation(line: 210, column: 1, scope: !10493)
-!10524 = distinct !DISubprogram(name: "inet_csk_ca", scope: !9562, file: !9562, line: 151, type: !10525, isLocal: true, isDefinition: true, scopeLine: 152, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10527)
-!10525 = !DISubroutineType(types: !10526)
-!10526 = !{!342, !6777}
-!10527 = !{!10528}
-!10528 = !DILocalVariable(name: "sk", arg: 1, scope: !10524, file: !9562, line: 151, type: !6777)
-!10529 = !DILocation(line: 151, column: 52, scope: !10524)
-!10530 = !DILocation(line: 153, column: 17, scope: !10524)
-!10531 = !DILocation(line: 153, column: 31, scope: !10524)
-!10532 = !DILocation(line: 153, column: 9, scope: !10524)
-!10533 = !DILocation(line: 153, column: 2, scope: !10524)
-!10534 = distinct !DISubprogram(name: "bictcp_reset", scope: !3, file: !3, line: 60, type: !10535, isLocal: true, isDefinition: true, scopeLine: 61, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10537)
+!10316 = !DILocation(line: 225, column: 2, scope: !10317)
+!10317 = distinct !DILexicalBlock(scope: !10315, file: !3, line: 225, column: 2)
+!10318 = !DILocation(line: 225, column: 2, scope: !10315)
+!10319 = !DILocation(line: 226, column: 9, scope: !10312)
+!10320 = !DILocation(line: 226, column: 2, scope: !10312)
+!10321 = distinct !DISubprogram(name: "bictcp_unregister", scope: !3, file: !3, line: 229, type: !3301, isLocal: true, isDefinition: true, scopeLine: 230, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !1859)
+!10322 = !DILocation(line: 231, column: 2, scope: !10321)
+!10323 = !DILocation(line: 232, column: 1, scope: !10321)
+!10324 = distinct !DISubprogram(name: "bictcp_init", scope: !3, file: !3, line: 70, type: !313, isLocal: true, isDefinition: true, scopeLine: 71, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10325)
+!10325 = !{!10326, !10327}
+!10326 = !DILocalVariable(name: "sk", arg: 1, scope: !10324, file: !3, line: 70, type: !215)
+!10327 = !DILocalVariable(name: "ca", scope: !10324, file: !3, line: 72, type: !10328)
+!10328 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10329, size: 64)
+!10329 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "bictcp", file: !3, line: 49, size: 224, elements: !10330)
+!10330 = !{!10331, !10332, !10333, !10334, !10335, !10336, !10337}
+!10331 = !DIDerivedType(tag: DW_TAG_member, name: "cnt", scope: !10329, file: !3, line: 50, baseType: !203, size: 32)
+!10332 = !DIDerivedType(tag: DW_TAG_member, name: "last_max_cwnd", scope: !10329, file: !3, line: 51, baseType: !203, size: 32, offset: 32)
+!10333 = !DIDerivedType(tag: DW_TAG_member, name: "loss_cwnd", scope: !10329, file: !3, line: 52, baseType: !203, size: 32, offset: 64)
+!10334 = !DIDerivedType(tag: DW_TAG_member, name: "last_cwnd", scope: !10329, file: !3, line: 53, baseType: !203, size: 32, offset: 96)
+!10335 = !DIDerivedType(tag: DW_TAG_member, name: "last_time", scope: !10329, file: !3, line: 54, baseType: !203, size: 32, offset: 128)
+!10336 = !DIDerivedType(tag: DW_TAG_member, name: "epoch_start", scope: !10329, file: !3, line: 55, baseType: !203, size: 32, offset: 160)
+!10337 = !DIDerivedType(tag: DW_TAG_member, name: "delayed_ack", scope: !10329, file: !3, line: 57, baseType: !203, size: 32, offset: 192)
+!10338 = !DILocation(line: 72, column: 22, scope: !10324)
+!10339 = !DILocation(line: 74, column: 2, scope: !10324)
+!10340 = !DILocation(line: 75, column: 6, scope: !10324)
+!10341 = !DILocation(line: 75, column: 16, scope: !10324)
+!10342 = !{!10343, !10344, i64 8}
+!10343 = !{!"bictcp", !10344, i64 0, !10344, i64 4, !10344, i64 8, !10344, i64 12, !10344, i64 16, !10344, i64 20, !10344, i64 24}
+!10344 = !{!"int", !10345, i64 0}
+!10345 = !{!"omnipotent char", !10346, i64 0}
+!10346 = !{!"Simple C/C++ TBAA"}
+!10347 = !DILocation(line: 77, column: 6, scope: !10348)
+!10348 = distinct !DILexicalBlock(scope: !10324, file: !3, line: 77, column: 6)
+!10349 = !{!10344, !10344, i64 0}
+!10350 = !DILocation(line: 77, column: 6, scope: !10324)
+!10351 = !DILocation(line: 78, column: 30, scope: !10348)
+!10352 = !DILocation(line: 78, column: 3, scope: !10348)
+!10353 = !DILocation(line: 78, column: 15, scope: !10348)
+!10354 = !DILocation(line: 78, column: 28, scope: !10348)
+!10355 = !{!10356, !10344, i64 2392}
+!10356 = !{!"tcp_sock", !10357, i64 0, !10361, i64 1992, !10361, i64 1994, !10344, i64 1996, !10378, i64 2000, !10344, i64 2008, !10344, i64 2012, !10344, i64 2016, !10344, i64 2020, !10344, i64 2024, !10344, i64 2028, !10344, i64 2032, !10344, i64 2036, !10378, i64 2040, !10344, i64 2048, !10344, i64 2052, !10344, i64 2056, !10344, i64 2060, !10344, i64 2064, !10344, i64 2068, !10371, i64 2072, !10391, i64 2088, !10344, i64 2208, !10344, i64 2212, !10344, i64 2216, !10344, i64 2220, !10344, i64 2224, !10344, i64 2228, !10392, i64 2232, !10361, i64 2256, !10344, i64 2260, !10345, i64 2264, !10345, i64 2276, !10345, i64 2276, !10345, i64 2276, !10345, i64 2276, !10345, i64 2277, !10345, i64 2277, !10345, i64 2277, !10345, i64 2277, !10345, i64 2277, !10345, i64 2278, !10345, i64 2279, !10345, i64 2279, !10345, i64 2279, !10345, i64 2279, !10345, i64 2279, !10345, i64 2279, !10344, i64 2280, !10344, i64 2284, !10344, i64 2288, !10344, i64 2292, !10344, i64 2296, !10344, i64 2300, !10394, i64 2304, !10344, i64 2328, !10344, i64 2332, !10344, i64 2336, !10344, i64 2340, !10361, i64 2344, !10345, i64 2346, !10345, i64 2347, !10344, i64 2348, !10344, i64 2352, !10395, i64 2360, !10344, i64 2392, !10344, i64 2396, !10344, i64 2400, !10344, i64 2404, !10344, i64 2408, !10344, i64 2412, !10344, i64 2416, !10344, i64 2420, !10344, i64 2424, !10344, i64 2428, !10344, i64 2432, !10344, i64 2436, !10393, i64 2440, !10393, i64 2448, !10344, i64 2456, !10344, i64 2460, !10344, i64 2464, !10344, i64 2468, !10344, i64 2472, !10344, i64 2476, !10344, i64 2480, !10344, i64 2484, !10344, i64 2488, !10362, i64 2496, !10362, i64 2504, !10396, i64 2512, !10362, i64 2520, !10345, i64 2528, !10345, i64 2536, !10345, i64 2568, !10362, i64 2600, !10344, i64 2608, !10344, i64 2612, !10344, i64 2616, !10344, i64 2620, !10344, i64 2624, !10344, i64 2628, !10344, i64 2632, !10344, i64 2636, !10344, i64 2640, !10344, i64 2644, !10344, i64 2648, !10397, i64 2652, !10397, i64 2664, !10398, i64 2676, !10344, i64 2684, !10362, i64 2688, !10362, i64 2696, !10362, i64 2704, !10362, i64 2712, !10362, i64 2720}
+!10357 = !{!"inet_connection_sock", !10358, i64 0, !10387, i64 1408, !10362, i64 1608, !10366, i64 1616, !10375, i64 1624, !10375, i64 1720, !10344, i64 1816, !10344, i64 1820, !10362, i64 1824, !10362, i64 1832, !10362, i64 1840, !10345, i64 1848, !10345, i64 1848, !10345, i64 1848, !10345, i64 1849, !10345, i64 1850, !10345, i64 1851, !10345, i64 1852, !10345, i64 1853, !10361, i64 1854, !10389, i64 1856, !10390, i64 1880, !10344, i64 1900, !10345, i64 1904}
+!10358 = !{!"inet_sock", !10359, i64 0, !10362, i64 1224, !10344, i64 1232, !10361, i64 1236, !10361, i64 1238, !10361, i64 1240, !10361, i64 1242, !10362, i64 1248, !10344, i64 1256, !10345, i64 1260, !10345, i64 1261, !10345, i64 1262, !10345, i64 1263, !10345, i64 1264, !10345, i64 1264, !10345, i64 1264, !10345, i64 1264, !10345, i64 1264, !10345, i64 1264, !10345, i64 1264, !10345, i64 1264, !10345, i64 1265, !10345, i64 1265, !10345, i64 1266, !10345, i64 1267, !10344, i64 1268, !10344, i64 1272, !10344, i64 1276, !10362, i64 1280, !10384, i64 1288}
+!10359 = !{!"sock", !10360, i64 0, !10368, i64 136, !10367, i64 352, !10344, i64 356, !10373, i64 360, !10373, i64 456, !10374, i64 552, !10344, i64 576, !10344, i64 580, !10344, i64 584, !10344, i64 588, !10362, i64 592, !10345, i64 600, !10345, i64 608, !10362, i64 624, !10362, i64 632, !10367, i64 640, !10344, i64 644, !10344, i64 648, !10367, i64 652, !10366, i64 656, !10362, i64 664, !10373, i64 672, !10344, i64 768, !10344, i64 772, !10344, i64 776, !10366, i64 784, !10375, i64 792, !10344, i64 888, !10344, i64 892, !10344, i64 896, !10344, i64 900, !10377, i64 904, !10378, i64 920, !10378, i64 928, !10344, i64 936, !10344, i64 940, !10344, i64 944, !10344, i64 948, !10345, i64 952, !10344, i64 952, !10344, i64 952, !10344, i64 952, !10344, i64 952, !10344, i64 952, !10344, i64 953, !10344, i64 954, !10361, i64 956, !10366, i64 960, !10362, i64 968, !10379, i64 976, !10344, i64 1048, !10344, i64 1052, !10344, i64 1056, !10344, i64 1060, !10367, i64 1064, !10362, i64 1072, !10362, i64 1080, !10366, i64 1088, !10378, i64 1096, !10361, i64 1104, !10345, i64 1106, !10344, i64 1108, !10362, i64 1112, !10362, i64 1120, !10362, i64 1128, !10382, i64 1136, !10362, i64 1144, !10362, i64 1152, !10362, i64 1160, !10362, i64 1168, !10362, i64 1176, !10362, i64 1184, !10362, i64 1192, !10362, i64 1200, !10383, i64 1208}
+!10360 = !{!"sock_common", !10345, i64 0, !10345, i64 8, !10345, i64 12, !10361, i64 16, !10345, i64 18, !10345, i64 19, !10345, i64 19, !10345, i64 19, !10345, i64 19, !10344, i64 20, !10345, i64 24, !10362, i64 40, !10363, i64 48, !10364, i64 56, !10364, i64 72, !10365, i64 88, !10345, i64 96, !10345, i64 104, !10345, i64 104, !10344, i64 120, !10345, i64 124, !10367, i64 128, !10345, i64 132, !10345, i64 132}
+!10361 = !{!"short", !10345, i64 0}
+!10362 = !{!"any pointer", !10345, i64 0}
+!10363 = !{!"", !10362, i64 0}
+!10364 = !{!"in6_addr", !10345, i64 0}
+!10365 = !{!"", !10366, i64 0}
+!10366 = !{!"long", !10345, i64 0}
+!10367 = !{!"", !10344, i64 0}
+!10368 = !{!"", !10369, i64 0, !10344, i64 72, !10370, i64 80, !10372, i64 168}
+!10369 = !{!"spinlock", !10345, i64 0}
+!10370 = !{!"__wait_queue_head", !10369, i64 0, !10371, i64 72}
+!10371 = !{!"list_head", !10362, i64 0, !10362, i64 8}
+!10372 = !{!"lockdep_map", !10362, i64 0, !10345, i64 8, !10362, i64 24, !10344, i64 32, !10366, i64 40}
+!10373 = !{!"sk_buff_head", !10362, i64 0, !10362, i64 8, !10344, i64 16, !10369, i64 24}
+!10374 = !{!"", !10367, i64 0, !10344, i64 4, !10362, i64 8, !10362, i64 16}
+!10375 = !{!"timer_list", !10376, i64 0, !10366, i64 16, !10362, i64 24, !10366, i64 32, !10344, i64 40, !10372, i64 48}
+!10376 = !{!"hlist_node", !10362, i64 0, !10362, i64 8}
+!10377 = !{!"page_frag", !10362, i64 0, !10344, i64 8, !10344, i64 12}
+!10378 = !{!"long long", !10345, i64 0}
+!10379 = !{!"", !10380, i64 0, !10344, i64 8, !10344, i64 12, !10362, i64 16, !10372, i64 24}
+!10380 = !{!"qrwlock", !10367, i64 0, !10381, i64 4}
+!10381 = !{!"qspinlock", !10367, i64 0}
+!10382 = !{!"sock_cgroup_data", !10345, i64 0}
+!10383 = !{!"callback_head", !10362, i64 0, !10362, i64 8}
+!10384 = !{!"inet_cork_full", !10385, i64 0, !10386, i64 40}
+!10385 = !{!"inet_cork", !10344, i64 0, !10344, i64 4, !10362, i64 8, !10344, i64 16, !10344, i64 20, !10362, i64 24, !10345, i64 32, !10345, i64 33, !10361, i64 34, !10345, i64 36}
+!10386 = !{!"flowi", !10345, i64 0}
+!10387 = !{!"request_sock_queue", !10369, i64 0, !10345, i64 72, !10344, i64 76, !10367, i64 80, !10367, i64 84, !10362, i64 88, !10362, i64 96, !10388, i64 104}
+!10388 = !{!"fastopen_queue", !10362, i64 0, !10362, i64 8, !10369, i64 16, !10344, i64 88, !10344, i64 92}
+!10389 = !{!"", !10345, i64 0, !10345, i64 1, !10345, i64 2, !10345, i64 3, !10344, i64 4, !10366, i64 8, !10344, i64 16, !10361, i64 20, !10361, i64 22}
+!10390 = !{!"", !10344, i64 0, !10344, i64 4, !10344, i64 8, !10344, i64 12, !10344, i64 16}
+!10391 = !{!"", !10373, i64 0, !10362, i64 96, !10362, i64 104, !10344, i64 112, !10344, i64 116}
+!10392 = !{!"tcp_rack", !10393, i64 0, !10344, i64 8, !10344, i64 12, !10345, i64 16, !10345, i64 17}
+!10393 = !{!"skb_mstamp", !10345, i64 0}
+!10394 = !{!"minmax", !10345, i64 0}
+!10395 = !{!"tcp_options_received", !10366, i64 0, !10344, i64 8, !10344, i64 12, !10344, i64 16, !10361, i64 20, !10361, i64 20, !10361, i64 20, !10361, i64 20, !10361, i64 20, !10361, i64 21, !10361, i64 21, !10345, i64 22, !10361, i64 24, !10361, i64 26}
+!10396 = !{!"rb_root", !10362, i64 0}
+!10397 = !{!"", !10344, i64 0, !10344, i64 4, !10344, i64 8}
+!10398 = !{!"", !10344, i64 0, !10344, i64 4}
+!10399 = !DILocation(line: 79, column: 1, scope: !10324)
+!10400 = distinct !DISubprogram(name: "bictcp_cong_avoid", scope: !3, file: !3, line: 141, type: !9838, isLocal: true, isDefinition: true, scopeLine: 142, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10401)
+!10401 = !{!10402, !10403, !10404, !10405, !10406}
+!10402 = !DILocalVariable(name: "sk", arg: 1, scope: !10400, file: !3, line: 141, type: !215)
+!10403 = !DILocalVariable(name: "ack", arg: 2, scope: !10400, file: !3, line: 141, type: !203)
+!10404 = !DILocalVariable(name: "acked", arg: 3, scope: !10400, file: !3, line: 141, type: !203)
+!10405 = !DILocalVariable(name: "tp", scope: !10400, file: !3, line: 143, type: !9963)
+!10406 = !DILocalVariable(name: "ca", scope: !10400, file: !3, line: 144, type: !10328)
+!10407 = !DILocation(line: 143, column: 24, scope: !10400)
+!10408 = !DILocation(line: 144, column: 22, scope: !10400)
+!10409 = !DILocation(line: 146, column: 7, scope: !10410)
+!10410 = distinct !DILexicalBlock(scope: !10400, file: !3, line: 146, column: 6)
+!10411 = !DILocation(line: 146, column: 6, scope: !10400)
+!10412 = !DILocation(line: 149, column: 6, scope: !10413)
+!10413 = distinct !DILexicalBlock(scope: !10400, file: !3, line: 149, column: 6)
+!10414 = !DILocation(line: 149, column: 6, scope: !10400)
+!10415 = !DILocation(line: 150, column: 3, scope: !10413)
+!10416 = !DILocation(line: 152, column: 25, scope: !10417)
+!10417 = distinct !DILexicalBlock(scope: !10413, file: !3, line: 151, column: 7)
+!10418 = !{!10356, !10344, i64 2396}
+!10419 = !DILocation(line: 152, column: 3, scope: !10417)
+!10420 = !DILocation(line: 153, column: 29, scope: !10417)
+!10421 = !{!10343, !10344, i64 0}
+!10422 = !DILocation(line: 153, column: 3, scope: !10417)
+!10423 = !DILocation(line: 155, column: 1, scope: !10400)
+!10424 = distinct !DISubprogram(name: "bictcp_state", scope: !3, file: !3, line: 191, type: !9842, isLocal: true, isDefinition: true, scopeLine: 192, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10425)
+!10425 = !{!10426, !10427}
+!10426 = !DILocalVariable(name: "sk", arg: 1, scope: !10424, file: !3, line: 191, type: !215)
+!10427 = !DILocalVariable(name: "new_state", arg: 2, scope: !10424, file: !3, line: 191, type: !47)
+!10428 = !DILocation(line: 193, column: 6, scope: !10429)
+!10429 = distinct !DILexicalBlock(scope: !10424, file: !3, line: 193, column: 6)
+!10430 = !DILocation(line: 193, column: 16, scope: !10429)
+!10431 = !DILocation(line: 193, column: 6, scope: !10424)
+!10432 = !DILocation(line: 194, column: 16, scope: !10429)
+!10433 = !DILocation(line: 194, column: 3, scope: !10429)
+!10434 = !DILocation(line: 195, column: 1, scope: !10424)
+!10435 = distinct !DISubprogram(name: "bictcp_undo_cwnd", scope: !3, file: !3, line: 183, type: !9834, isLocal: true, isDefinition: true, scopeLine: 184, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10436)
+!10436 = !{!10437, !10438, !10441, !10444, !10446}
+!10437 = !DILocalVariable(name: "sk", arg: 1, scope: !10435, file: !3, line: 183, type: !215)
+!10438 = !DILocalVariable(name: "tp", scope: !10435, file: !3, line: 185, type: !10439)
+!10439 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10440, size: 64)
+!10440 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !9964)
+!10441 = !DILocalVariable(name: "ca", scope: !10435, file: !3, line: 186, type: !10442)
+!10442 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10443, size: 64)
+!10443 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !10329)
+!10444 = !DILocalVariable(name: "__UNIQUE_ID_max1_84", scope: !10445, file: !3, line: 188, type: !8079)
+!10445 = distinct !DILexicalBlock(scope: !10435, file: !3, line: 188, column: 9)
+!10446 = !DILocalVariable(name: "__UNIQUE_ID_max2_85", scope: !10445, file: !3, line: 188, type: !8079)
+!10447 = !DILocation(line: 185, column: 30, scope: !10435)
+!10448 = !DILocation(line: 186, column: 28, scope: !10435)
+!10449 = !DILocation(line: 188, column: 9, scope: !10445)
+!10450 = !DILocation(line: 188, column: 2, scope: !10435)
+!10451 = distinct !DISubprogram(name: "bictcp_acked", scope: !3, file: !3, line: 200, type: !9855, isLocal: true, isDefinition: true, scopeLine: 201, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10452)
+!10452 = !{!10453, !10454, !10455, !10458}
+!10453 = !DILocalVariable(name: "sk", arg: 1, scope: !10451, file: !3, line: 200, type: !215)
+!10454 = !DILocalVariable(name: "sample", arg: 2, scope: !10451, file: !3, line: 200, type: !9857)
+!10455 = !DILocalVariable(name: "icsk", scope: !10451, file: !3, line: 202, type: !10456)
+!10456 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10457, size: 64)
+!10457 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !9561)
+!10458 = !DILocalVariable(name: "ca", scope: !10459, file: !3, line: 205, type: !10328)
+!10459 = distinct !DILexicalBlock(scope: !10460, file: !3, line: 204, column: 42)
+!10460 = distinct !DILexicalBlock(scope: !10451, file: !3, line: 204, column: 6)
+!10461 = !DILocation(line: 202, column: 44, scope: !10451)
+!10462 = !DILocation(line: 204, column: 12, scope: !10460)
+!10463 = !DILocation(line: 204, column: 6, scope: !10460)
+!10464 = !DILocation(line: 204, column: 26, scope: !10460)
+!10465 = !DILocation(line: 204, column: 6, scope: !10451)
+!10466 = !DILocation(line: 205, column: 23, scope: !10459)
+!10467 = !DILocation(line: 207, column: 30, scope: !10459)
+!10468 = !{!10469, !10344, i64 0}
+!10469 = !{!"ack_sample", !10344, i64 0, !10344, i64 4, !10344, i64 8}
+!10470 = !DILocation(line: 208, column: 9, scope: !10459)
+!10471 = !{!10343, !10344, i64 24}
+!10472 = !DILocation(line: 208, column: 21, scope: !10459)
+!10473 = !DILocation(line: 207, column: 41, scope: !10459)
+!10474 = !DILocation(line: 207, column: 7, scope: !10459)
+!10475 = !DILocation(line: 207, column: 19, scope: !10459)
+!10476 = !DILocation(line: 209, column: 2, scope: !10459)
+!10477 = !DILocation(line: 210, column: 1, scope: !10451)
+!10478 = distinct !DISubprogram(name: "inet_csk_ca", scope: !9562, file: !9562, line: 151, type: !10479, isLocal: true, isDefinition: true, scopeLine: 152, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10481)
+!10479 = !DISubroutineType(types: !10480)
+!10480 = !{!342, !6777}
+!10481 = !{!10482}
+!10482 = !DILocalVariable(name: "sk", arg: 1, scope: !10478, file: !9562, line: 151, type: !6777)
+!10483 = !DILocation(line: 153, column: 17, scope: !10478)
+!10484 = !DILocation(line: 153, column: 31, scope: !10478)
+!10485 = !DILocation(line: 153, column: 9, scope: !10478)
+!10486 = !DILocation(line: 153, column: 2, scope: !10478)
+!10487 = distinct !DISubprogram(name: "bictcp_reset", scope: !3, file: !3, line: 60, type: !10488, isLocal: true, isDefinition: true, scopeLine: 61, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10490)
+!10488 = !DISubroutineType(types: !10489)
+!10489 = !{null, !10328}
+!10490 = !{!10491}
+!10491 = !DILocalVariable(name: "ca", arg: 1, scope: !10487, file: !3, line: 60, type: !10328)
+!10492 = !DILocation(line: 62, column: 6, scope: !10487)
+!10493 = !DILocation(line: 62, column: 10, scope: !10487)
+!10494 = !DILocation(line: 63, column: 6, scope: !10487)
+!10495 = !DILocation(line: 63, column: 20, scope: !10487)
+!10496 = !{!10343, !10344, i64 4}
+!10497 = !DILocation(line: 64, column: 6, scope: !10487)
+!10498 = !DILocation(line: 64, column: 16, scope: !10487)
+!10499 = !{!10343, !10344, i64 12}
+!10500 = !DILocation(line: 65, column: 6, scope: !10487)
+!10501 = !DILocation(line: 65, column: 16, scope: !10487)
+!10502 = !{!10343, !10344, i64 16}
+!10503 = !DILocation(line: 66, column: 6, scope: !10487)
+!10504 = !DILocation(line: 66, column: 18, scope: !10487)
+!10505 = !{!10343, !10344, i64 20}
+!10506 = !DILocation(line: 67, column: 6, scope: !10487)
+!10507 = !DILocation(line: 67, column: 18, scope: !10487)
+!10508 = !DILocation(line: 68, column: 1, scope: !10487)
+!10509 = distinct !DISubprogram(name: "inet_csk", scope: !9562, file: !9562, line: 146, type: !10510, isLocal: true, isDefinition: true, scopeLine: 147, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10512)
+!10510 = !DISubroutineType(types: !10511)
+!10511 = !{!9560, !6777}
+!10512 = !{!10513}
+!10513 = !DILocalVariable(name: "sk", arg: 1, scope: !10509, file: !9562, line: 146, type: !6777)
+!10514 = !DILocation(line: 148, column: 9, scope: !10509)
+!10515 = !DILocation(line: 148, column: 2, scope: !10509)
+!10516 = distinct !DISubprogram(name: "tcp_is_cwnd_limited", scope: !9541, file: !9541, line: 1130, type: !6775, isLocal: true, isDefinition: true, scopeLine: 1131, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10517)
+!10517 = !{!10518, !10519}
+!10518 = !DILocalVariable(name: "sk", arg: 1, scope: !10516, file: !9541, line: 1130, type: !6777)
+!10519 = !DILocalVariable(name: "tp", scope: !10516, file: !9541, line: 1132, type: !10439)
+!10520 = !DILocation(line: 1132, column: 30, scope: !10516)
+!10521 = !DILocation(line: 1135, column: 6, scope: !10522)
+!10522 = distinct !DILexicalBlock(scope: !10516, file: !9541, line: 1135, column: 6)
+!10523 = !DILocation(line: 1135, column: 6, scope: !10516)
+!10524 = !DILocation(line: 1136, column: 14, scope: !10522)
+!10525 = !DILocation(line: 1136, column: 33, scope: !10522)
+!10526 = !{!10356, !10344, i64 2336}
+!10527 = !DILocation(line: 1136, column: 27, scope: !10522)
+!10528 = !DILocation(line: 1136, column: 23, scope: !10522)
+!10529 = !DILocation(line: 1136, column: 3, scope: !10522)
+!10530 = !DILocation(line: 1138, column: 13, scope: !10516)
+!10531 = !DILocation(line: 1138, column: 9, scope: !10516)
+!10532 = !DILocation(line: 1138, column: 2, scope: !10516)
+!10533 = !DILocation(line: 1139, column: 1, scope: !10516)
+!10534 = distinct !DISubprogram(name: "tcp_in_slow_start", scope: !9541, file: !9541, line: 1065, type: !10535, isLocal: true, isDefinition: true, scopeLine: 1066, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10537)
 !10535 = !DISubroutineType(types: !10536)
-!10536 = !{null, !10331}
+!10536 = !{!301, !10439}
 !10537 = !{!10538}
-!10538 = !DILocalVariable(name: "ca", arg: 1, scope: !10534, file: !3, line: 60, type: !10331)
-!10539 = !DILocation(line: 60, column: 48, scope: !10534)
-!10540 = !DILocation(line: 62, column: 6, scope: !10534)
-!10541 = !DILocation(line: 62, column: 10, scope: !10534)
-!10542 = !DILocation(line: 63, column: 6, scope: !10534)
-!10543 = !DILocation(line: 63, column: 20, scope: !10534)
-!10544 = !{!10348, !10349, i64 4}
-!10545 = !DILocation(line: 64, column: 6, scope: !10534)
-!10546 = !DILocation(line: 64, column: 16, scope: !10534)
-!10547 = !{!10348, !10349, i64 12}
-!10548 = !DILocation(line: 65, column: 6, scope: !10534)
-!10549 = !DILocation(line: 65, column: 16, scope: !10534)
-!10550 = !{!10348, !10349, i64 16}
-!10551 = !DILocation(line: 66, column: 6, scope: !10534)
-!10552 = !DILocation(line: 66, column: 18, scope: !10534)
-!10553 = !{!10348, !10349, i64 20}
-!10554 = !DILocation(line: 67, column: 6, scope: !10534)
-!10555 = !DILocation(line: 67, column: 18, scope: !10534)
-!10556 = !DILocation(line: 68, column: 1, scope: !10534)
-!10557 = distinct !DISubprogram(name: "tcp_sk", scope: !9965, file: !9965, line: 392, type: !10558, isLocal: true, isDefinition: true, scopeLine: 393, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10560)
-!10558 = !DISubroutineType(types: !10559)
-!10559 = !{!9963, !6777}
-!10560 = !{!10561}
-!10561 = !DILocalVariable(name: "sk", arg: 1, scope: !10557, file: !9965, line: 392, type: !6777)
-!10562 = !DILocation(line: 392, column: 58, scope: !10557)
-!10563 = !DILocation(line: 394, column: 9, scope: !10557)
-!10564 = !DILocation(line: 394, column: 2, scope: !10557)
-!10565 = distinct !DISubprogram(name: "inet_csk", scope: !9562, file: !9562, line: 146, type: !10566, isLocal: true, isDefinition: true, scopeLine: 147, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10568)
-!10566 = !DISubroutineType(types: !10567)
-!10567 = !{!9560, !6777}
-!10568 = !{!10569}
-!10569 = !DILocalVariable(name: "sk", arg: 1, scope: !10565, file: !9562, line: 146, type: !6777)
-!10570 = !DILocation(line: 146, column: 72, scope: !10565)
-!10571 = !DILocation(line: 148, column: 9, scope: !10565)
-!10572 = !DILocation(line: 148, column: 2, scope: !10565)
-!10573 = distinct !DISubprogram(name: "tcp_is_cwnd_limited", scope: !9541, file: !9541, line: 1130, type: !6775, isLocal: true, isDefinition: true, scopeLine: 1131, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10574)
-!10574 = !{!10575, !10576}
-!10575 = !DILocalVariable(name: "sk", arg: 1, scope: !10573, file: !9541, line: 1130, type: !6777)
-!10576 = !DILocalVariable(name: "tp", scope: !10573, file: !9541, line: 1132, type: !10409)
-!10577 = !DILocation(line: 1130, column: 59, scope: !10573)
-!10578 = !DILocation(line: 1132, column: 30, scope: !10573)
-!10579 = !DILocation(line: 1132, column: 25, scope: !10573)
-!10580 = !DILocation(line: 1135, column: 6, scope: !10581)
-!10581 = distinct !DILexicalBlock(scope: !10573, file: !9541, line: 1135, column: 6)
-!10582 = !DILocation(line: 1135, column: 6, scope: !10573)
-!10583 = !DILocation(line: 1136, column: 14, scope: !10581)
-!10584 = !DILocation(line: 1136, column: 33, scope: !10581)
-!10585 = !{!10361, !10349, i64 2336}
-!10586 = !DILocation(line: 1136, column: 27, scope: !10581)
-!10587 = !DILocation(line: 1136, column: 23, scope: !10581)
-!10588 = !DILocation(line: 1136, column: 3, scope: !10581)
-!10589 = !DILocation(line: 1138, column: 13, scope: !10573)
-!10590 = !DILocation(line: 1138, column: 9, scope: !10573)
-!10591 = !DILocation(line: 1138, column: 2, scope: !10573)
-!10592 = !DILocation(line: 1139, column: 1, scope: !10573)
-!10593 = distinct !DISubprogram(name: "tcp_in_slow_start", scope: !9541, file: !9541, line: 1065, type: !10594, isLocal: true, isDefinition: true, scopeLine: 1066, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10596)
-!10594 = !DISubroutineType(types: !10595)
-!10595 = !{!301, !10409}
-!10596 = !{!10597}
-!10597 = !DILocalVariable(name: "tp", arg: 1, scope: !10593, file: !9541, line: 1065, type: !10409)
-!10598 = !DILocation(line: 1065, column: 61, scope: !10593)
-!10599 = !DILocation(line: 1067, column: 13, scope: !10593)
-!10600 = !DILocation(line: 1067, column: 28, scope: !10593)
-!10601 = !DILocation(line: 1067, column: 22, scope: !10593)
-!10602 = !DILocation(line: 1067, column: 2, scope: !10593)
-!10603 = distinct !DISubprogram(name: "bictcp_update", scope: !3, file: !3, line: 84, type: !10604, isLocal: true, isDefinition: true, scopeLine: 85, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10606)
-!10604 = !DISubroutineType(types: !10605)
-!10605 = !{null, !10331, !203}
-!10606 = !{!10607, !10608, !10609}
-!10607 = !DILocalVariable(name: "ca", arg: 1, scope: !10603, file: !3, line: 84, type: !10331)
-!10608 = !DILocalVariable(name: "cwnd", arg: 2, scope: !10603, file: !3, line: 84, type: !203)
-!10609 = !DILocalVariable(name: "dist", scope: !10610, file: !3, line: 104, type: !234)
-!10610 = distinct !DILexicalBlock(scope: !10611, file: !3, line: 103, column: 32)
-!10611 = distinct !DILexicalBlock(scope: !10603, file: !3, line: 103, column: 6)
-!10612 = !DILocation(line: 84, column: 49, scope: !10603)
-!10613 = !DILocation(line: 84, column: 57, scope: !10603)
-!10614 = !DILocation(line: 97, column: 14, scope: !10615)
-!10615 = distinct !DILexicalBlock(scope: !10603, file: !3, line: 97, column: 6)
-!10616 = !DILocation(line: 97, column: 11, scope: !10615)
-!10617 = !DILocation(line: 97, column: 6, scope: !10603)
-!10618 = !DILocation(line: 98, column: 7, scope: !10619)
-!10619 = distinct !DILexicalBlock(scope: !10615, file: !3, line: 97, column: 26)
-!10620 = !DILocation(line: 98, column: 11, scope: !10619)
-!10621 = !DILocation(line: 99, column: 3, scope: !10619)
-!10622 = !DILocation(line: 103, column: 17, scope: !10611)
-!10623 = !DILocation(line: 103, column: 11, scope: !10611)
-!10624 = !DILocation(line: 103, column: 6, scope: !10603)
-!10625 = !DILocation(line: 104, column: 35, scope: !10610)
-!10626 = !DILocation(line: 105, column: 4, scope: !10610)
-!10627 = !DILocation(line: 104, column: 9, scope: !10610)
-!10628 = !DILocation(line: 107, column: 14, scope: !10629)
-!10629 = distinct !DILexicalBlock(scope: !10610, file: !3, line: 107, column: 7)
-!10630 = !DILocation(line: 107, column: 12, scope: !10629)
-!10631 = !DILocation(line: 107, column: 7, scope: !10610)
-!10632 = !DILocation(line: 109, column: 21, scope: !10629)
-!10633 = !DILocation(line: 109, column: 19, scope: !10629)
-!10634 = !DILocation(line: 109, column: 4, scope: !10629)
-!10635 = !DILocation(line: 110, column: 17, scope: !10636)
-!10636 = distinct !DILexicalBlock(scope: !10629, file: !3, line: 110, column: 12)
-!10637 = !DILocation(line: 110, column: 12, scope: !10629)
-!10638 = !DILocation(line: 112, column: 22, scope: !10636)
-!10639 = !DILocation(line: 112, column: 20, scope: !10636)
-!10640 = !DILocation(line: 112, column: 35, scope: !10636)
-!10641 = !DILocation(line: 112, column: 4, scope: !10636)
-!10642 = !DILocation(line: 115, column: 19, scope: !10636)
-!10643 = !DILocation(line: 118, column: 32, scope: !10644)
-!10644 = distinct !DILexicalBlock(scope: !10645, file: !3, line: 118, column: 7)
-!10645 = distinct !DILexicalBlock(scope: !10611, file: !3, line: 116, column: 9)
-!10646 = !DILocation(line: 118, column: 12, scope: !10644)
-!10647 = !DILocation(line: 118, column: 7, scope: !10645)
-!10648 = !DILocation(line: 120, column: 22, scope: !10644)
-!10649 = !DILocation(line: 120, column: 20, scope: !10644)
-!10650 = !DILocation(line: 120, column: 35, scope: !10644)
-!10651 = !DILocation(line: 120, column: 4, scope: !10644)
-!10652 = !DILocation(line: 121, column: 23, scope: !10653)
-!10653 = distinct !DILexicalBlock(scope: !10644, file: !3, line: 121, column: 12)
-!10654 = !DILocation(line: 121, column: 39, scope: !10653)
-!10655 = !DILocation(line: 121, column: 52, scope: !10653)
-!10656 = !DILocation(line: 121, column: 37, scope: !10653)
-!10657 = !DILocation(line: 121, column: 17, scope: !10653)
-!10658 = !DILocation(line: 121, column: 12, scope: !10644)
-!10659 = !DILocation(line: 123, column: 20, scope: !10653)
-!10660 = !DILocation(line: 124, column: 19, scope: !10653)
-!10661 = !DILocation(line: 124, column: 13, scope: !10653)
-!10662 = !DILocation(line: 124, column: 5, scope: !10653)
-!10663 = !DILocation(line: 123, column: 4, scope: !10653)
-!10664 = !DILocation(line: 127, column: 21, scope: !10653)
-!10665 = !DILocation(line: 127, column: 19, scope: !10653)
-!10666 = !DILocation(line: 131, column: 10, scope: !10667)
-!10667 = distinct !DILexicalBlock(scope: !10603, file: !3, line: 131, column: 6)
-!10668 = !DILocation(line: 131, column: 24, scope: !10667)
-!10669 = !DILocation(line: 131, column: 6, scope: !10603)
-!10670 = !DILocation(line: 132, column: 11, scope: !10671)
-!10671 = distinct !DILexicalBlock(scope: !10672, file: !3, line: 132, column: 7)
-!10672 = distinct !DILexicalBlock(scope: !10667, file: !3, line: 131, column: 30)
-!10673 = !DILocation(line: 132, column: 15, scope: !10671)
-!10674 = !DILocation(line: 132, column: 7, scope: !10672)
-!10675 = !DILocation(line: 133, column: 8, scope: !10671)
-!10676 = !DILocation(line: 133, column: 12, scope: !10671)
-!10677 = !DILocation(line: 133, column: 4, scope: !10671)
-!10678 = !DILocation(line: 136, column: 17, scope: !10603)
-!10679 = !DILocation(line: 136, column: 21, scope: !10603)
-!10680 = !DILocation(line: 136, column: 47, scope: !10603)
-!10681 = !DILocation(line: 136, column: 41, scope: !10603)
-!10682 = !DILocation(line: 136, column: 6, scope: !10603)
-!10683 = !DILocation(line: 136, column: 10, scope: !10603)
-!10684 = !DILocation(line: 137, column: 10, scope: !10685)
-!10685 = distinct !DILexicalBlock(scope: !10603, file: !3, line: 137, column: 6)
-!10686 = !DILocation(line: 137, column: 14, scope: !10685)
-!10687 = !DILocation(line: 137, column: 6, scope: !10603)
-!10688 = !DILocation(line: 138, column: 7, scope: !10685)
-!10689 = !DILocation(line: 138, column: 11, scope: !10685)
-!10690 = !DILocation(line: 138, column: 3, scope: !10685)
+!10538 = !DILocalVariable(name: "tp", arg: 1, scope: !10534, file: !9541, line: 1065, type: !10439)
+!10539 = !DILocation(line: 1067, column: 13, scope: !10534)
+!10540 = !DILocation(line: 1067, column: 28, scope: !10534)
+!10541 = !DILocation(line: 1067, column: 22, scope: !10534)
+!10542 = !DILocation(line: 1067, column: 2, scope: !10534)

@@ -1,4 +1,4 @@
-; ModuleID = 'tests/regression/kernel_modules/ip6table_filter/ip6table_filter_old.bc'
+; ModuleID = 'tests/regression/kernel_modules/ip6table_filter/ip6table_filter_old-forward.bc'
 source_filename = "net/ipv6/netfilter/ip6table_filter.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -708,12 +708,11 @@ entry:
 if.end:                                           ; preds = %entry
   %1 = load i8, i8* @forward, align 1, !tbaa !61, !range !62
   %tobool = trunc i8 %1 to i1
-  %2 = zext i1 %tobool to i64
   %cond = select i1 %tobool, i32 -2, i32 -1
   %entries = getelementptr inbounds %struct.ip6t_replace, %struct.ip6t_replace* %0, i32 0, i32 8
   %arraydecay = getelementptr inbounds [0 x %struct.ip6t_entry], [0 x %struct.ip6t_entry]* %entries, i32 0, i32 0
-  %3 = bitcast %struct.ip6t_entry* %arraydecay to %struct.ip6t_standard*
-  %arrayidx = getelementptr inbounds %struct.ip6t_standard, %struct.ip6t_standard* %3, i64 1
+  %2 = bitcast %struct.ip6t_entry* %arraydecay to %struct.ip6t_standard*
+  %arrayidx = getelementptr inbounds %struct.ip6t_standard, %struct.ip6t_standard* %2, i64 1
   %target = getelementptr inbounds %struct.ip6t_standard, %struct.ip6t_standard* %arrayidx, i32 0, i32 1
   %verdict = getelementptr inbounds %struct.xt_standard_target, %struct.xt_standard_target* %target, i32 0, i32 1
   store i32 %cond, i32* %verdict, align 8, !tbaa !63
@@ -748,11 +747,9 @@ entry:
 
 if.then:                                          ; preds = %entry
   %call1 = call i64 @PTR_ERR(i8* %ptr)
-  %conv = trunc i64 %call1 to i32
   br label %return
 
 return:                                           ; preds = %if.then, %entry
-  %retval.0 = phi i32 [ %conv, %if.then ], [ 0, %entry ]
   ret void
 }
 

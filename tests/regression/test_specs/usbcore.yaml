@@ -13,12 +13,12 @@ params:
     functions:
       proc_do_submiturb: equal
       snoop_urb_data: not_equal
-      proc_control: not_equal
+      proc_control: equal
       snoop_urb: not_equal
       usbdev_open: equal
-      proc_claim_port: not_equal
+      proc_claim_port: equal
       async_completed: equal
-      usbdev_do_ioctl: timeout
+      usbdev_do_ioctl: equal
       proc_reapurbnonblock: only_new
       proc_reapurbnonblock_compat: only_new
       proc_reapurb: only_new

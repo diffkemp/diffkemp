@@ -1,4 +1,4 @@
-; ModuleID = 'tests/regression/kernel_modules/ip6table_filter/ip6table_filter_new.bc'
+; ModuleID = 'tests/regression/kernel_modules/ip6table_filter/ip6table_filter_new-forward.bc'
 source_filename = "net/ipv6/netfilter/ip6table_filter.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -834,32 +834,43 @@ declare void @kfree(i8*) #2
 ; Function Attrs: argmemonly nounwind
 declare void @llvm.lifetime.end.p0i8(i64, i8* nocapture) #1
 
-; Function Attrs: nounwind uwtable
-define internal i32 @ip6table_filter_table_init(%struct.net* %net) #3 {
+; Function Attrs: alwaysinline nounwind uwtable
+define internal i32 @ip6table_filter_table_init(%struct.net* %net) #5 {
 entry:
-  br label %if.end
+  %ipv6 = getelementptr inbounds %struct.net, %struct.net* %net, i32 0, i32 31
+  %ip6table_filter = getelementptr inbounds %struct.netns_ipv6, %struct.netns_ipv6* %ipv6, i32 0, i32 6
+  %0 = load %struct.xt_table*, %struct.xt_table** %ip6table_filter, align 64, !tbaa !9
+  %tobool = icmp ne %struct.xt_table* %0, null
+  br i1 %tobool, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %entry
   %call = call i8* @ip6t_alloc_initial_table(%struct.xt_table* @packet_filter)
-  %0 = bitcast i8* %call to %struct.ip6t_replace*
-  br label %if.end2
+  %1 = bitcast i8* %call to %struct.ip6t_replace*
+  %cmp = icmp eq %struct.ip6t_replace* %1, null
+  br i1 %cmp, label %cleanup, label %if.end2
 
 if.end2:                                          ; preds = %if.end
-  %1 = load i8, i8* @forward, align 1, !tbaa !75, !range !76
-  %tobool3 = trunc i8 %1 to i1
-  %2 = zext i1 %tobool3 to i64
+  %2 = load i8, i8* @forward, align 1, !tbaa !75, !range !76
+  %tobool3 = trunc i8 %2 to i1
   %cond = select i1 %tobool3, i32 -2, i32 -1
-  %entries = getelementptr inbounds %struct.ip6t_replace, %struct.ip6t_replace* %0, i32 0, i32 8
+  %entries = getelementptr inbounds %struct.ip6t_replace, %struct.ip6t_replace* %1, i32 0, i32 8
   %arraydecay = getelementptr inbounds [0 x %struct.ip6t_entry], [0 x %struct.ip6t_entry]* %entries, i32 0, i32 0
   %3 = bitcast %struct.ip6t_entry* %arraydecay to %struct.ip6t_standard*
   %arrayidx = getelementptr inbounds %struct.ip6t_standard, %struct.ip6t_standard* %3, i64 1
   %target = getelementptr inbounds %struct.ip6t_standard, %struct.ip6t_standard* %arrayidx, i32 0, i32 1
   %verdict = getelementptr inbounds %struct.xt_standard_target, %struct.xt_standard_target* %target, i32 0, i32 1
   store i32 %cond, i32* %verdict, align 8, !tbaa !77
+  %4 = load %struct.nf_hook_ops*, %struct.nf_hook_ops** @filter_ops, align 8, !tbaa !2
+  %ipv64 = getelementptr inbounds %struct.net, %struct.net* %net, i32 0, i32 31
+  %ip6table_filter5 = getelementptr inbounds %struct.netns_ipv6, %struct.netns_ipv6* %ipv64, i32 0, i32 6
+  %call6 = call i32 @ip6t_register_table(%struct.net* %net, %struct.xt_table* @packet_filter, %struct.ip6t_replace* %1, %struct.nf_hook_ops* %4, %struct.xt_table** %ip6table_filter5)
+  %5 = bitcast %struct.ip6t_replace* %1 to i8*
+  call void @kfree(i8* %5)
   br label %cleanup
 
-cleanup:                                          ; preds = %if.end2
-  ret i32 0
+cleanup:                                          ; preds = %if.end2, %if.end, %entry
+  %retval.0 = phi i32 [ %call6, %if.end2 ], [ 0, %entry ], [ -12, %if.end ]
+  ret i32 %retval.0
 }
 
 declare i8* @ip6t_alloc_initial_table(%struct.xt_table*) #2
@@ -869,7 +880,7 @@ declare i32 @ip6t_register_table(%struct.net*, %struct.xt_table*, %struct.ip6t_r
 declare i32 @ip6t_do_table(%struct.sk_buff*, %struct.nf_hook_state*, %struct.xt_table*) #2
 
 ; Function Attrs: nounwind readnone
-declare i64 @llvm.expect.i64(i64, i64) #5
+declare i64 @llvm.expect.i64(i64, i64) #6
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @ip6table_filter_net_init(%struct.net* %net) #3 {
@@ -882,11 +893,42 @@ lor.lhs.false:                                    ; preds = %entry
   br i1 %tobool, label %return, label %if.then
 
 if.then:                                          ; preds = %lor.lhs.false
-  %call = call i32 @ip6table_filter_table_init(%struct.net* %net)
+  %ipv6.i = getelementptr inbounds %struct.net, %struct.net* %net, i32 0, i32 31
+  %ip6table_filter.i = getelementptr inbounds %struct.netns_ipv6, %struct.netns_ipv6* %ipv6.i, i32 0, i32 6
+  %1 = load %struct.xt_table*, %struct.xt_table** %ip6table_filter.i, align 64, !tbaa !9
+  %tobool.i = icmp ne %struct.xt_table* %1, null
+  br i1 %tobool.i, label %ip6table_filter_table_init.exit, label %if.end.i
+
+if.end.i:                                         ; preds = %if.then
+  %call.i = call i8* @ip6t_alloc_initial_table(%struct.xt_table* @packet_filter) #7
+  %2 = bitcast i8* %call.i to %struct.ip6t_replace*
+  %cmp.i = icmp eq %struct.ip6t_replace* %2, null
+  br i1 %cmp.i, label %ip6table_filter_table_init.exit, label %if.end2.i
+
+if.end2.i:                                        ; preds = %if.end.i
+  %3 = load i8, i8* @forward, align 1, !tbaa !75, !range !76
+  %tobool3.i = trunc i8 %3 to i1
+  %cond.i = select i1 %tobool3.i, i32 -2, i32 -1
+  %entries.i = getelementptr inbounds %struct.ip6t_replace, %struct.ip6t_replace* %2, i32 0, i32 8
+  %arraydecay.i = getelementptr inbounds [0 x %struct.ip6t_entry], [0 x %struct.ip6t_entry]* %entries.i, i32 0, i32 0
+  %4 = bitcast %struct.ip6t_entry* %arraydecay.i to %struct.ip6t_standard*
+  %arrayidx.i = getelementptr inbounds %struct.ip6t_standard, %struct.ip6t_standard* %4, i64 1
+  %target.i = getelementptr inbounds %struct.ip6t_standard, %struct.ip6t_standard* %arrayidx.i, i32 0, i32 1
+  %verdict.i = getelementptr inbounds %struct.xt_standard_target, %struct.xt_standard_target* %target.i, i32 0, i32 1
+  store i32 %cond.i, i32* %verdict.i, align 8, !tbaa !77
+  %5 = load %struct.nf_hook_ops*, %struct.nf_hook_ops** @filter_ops, align 8, !tbaa !2
+  %ipv64.i = getelementptr inbounds %struct.net, %struct.net* %net, i32 0, i32 31
+  %ip6table_filter5.i = getelementptr inbounds %struct.netns_ipv6, %struct.netns_ipv6* %ipv64.i, i32 0, i32 6
+  %call6.i = call i32 @ip6t_register_table(%struct.net* %net, %struct.xt_table* @packet_filter, %struct.ip6t_replace* %2, %struct.nf_hook_ops* %5, %struct.xt_table** %ip6table_filter5.i) #7
+  call void @kfree(i8* %call.i) #7
+  br label %ip6table_filter_table_init.exit
+
+ip6table_filter_table_init.exit:                  ; preds = %if.end2.i, %if.end.i, %if.then
+  %retval.0.i = phi i32 [ %call6.i, %if.end2.i ], [ 0, %if.then ], [ -12, %if.end.i ]
   br label %return
 
-return:                                           ; preds = %if.then, %lor.lhs.false
-  %retval.0 = phi i32 [ %call, %if.then ], [ 0, %lor.lhs.false ]
+return:                                           ; preds = %ip6table_filter_table_init.exit, %lor.lhs.false
+  %retval.0 = phi i32 [ %retval.0.i, %ip6table_filter_table_init.exit ], [ 0, %lor.lhs.false ]
   ret i32 %retval.0
 }
 
@@ -923,7 +965,9 @@ attributes #1 = { argmemonly nounwind }
 attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #3 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #4 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #5 = { nounwind readnone }
+attributes #5 = { alwaysinline nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind readnone }
+attributes #7 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.ident = !{!1}

@@ -1,4 +1,4 @@
-; ModuleID = 'tests/regression/kernel_modules/i2c-algo-bit/i2c-algo-bit_old.bc'
+; ModuleID = 'tests/regression/kernel_modules/i2c-algo-bit/i2c-algo-bit_old-bit_test.bc'
 source_filename = "drivers/i2c/algos/i2c-algo-bit.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -548,15 +548,14 @@ do.body114:                                       ; preds = %if.then104
 if.then127:                                       ; preds = %do.body114
   %dev128 = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
   %cmp129 = icmp eq i32 %call105, 1
-  %12 = zext i1 %cmp129 to i64
   %cond = select i1 %cmp129, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.10, i32 0, i32 0)
   %call131 = call i32 (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @bit_xfer.descriptor.7 to %struct._ddebug*), %struct.device* %dev128, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.8, i32 0, i32 0), i32 %call105, i8* %cond)
   br label %if.end140
 
 if.end140:                                        ; preds = %if.then127, %do.body114, %if.then104
   %len = getelementptr inbounds %struct.i2c_msg, %struct.i2c_msg* %arrayidx, i32 0, i32 2
-  %13 = load i16, i16* %len, align 4, !tbaa !47
-  %conv141 = zext i16 %13 to i32
+  %12 = load i16, i16* %len, align 4, !tbaa !47
+  %conv141 = zext i16 %12 to i32
   %cmp142 = icmp slt i32 %call105, %conv141
   br i1 %cmp142, label %if.then144, label %for.inc
 
@@ -568,8 +567,8 @@ if.then144:                                       ; preds = %if.end140
 if.else:                                          ; preds = %if.end99
   %call150 = call i32 @sendbytes(%struct.i2c_adapter* %i2c_adap, %struct.i2c_msg* %arrayidx)
   %cmp151 = icmp sge i32 %call150, 1
-  %14 = load i32, i32* @i2c_debug, align 4
-  %cmp155 = icmp sge i32 %14, 2
+  %13 = load i32, i32* @i2c_debug, align 4
+  %cmp155 = icmp sge i32 %13, 2
   %or.cond2 = and i1 %cmp151, %cmp155
   br i1 %or.cond2, label %do.body159, label %if.end186
 
@@ -590,15 +589,14 @@ do.body159:                                       ; preds = %if.else
 if.then172:                                       ; preds = %do.body159
   %dev173 = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
   %cmp174 = icmp eq i32 %call150, 1
-  %15 = zext i1 %cmp174 to i64
   %cond176 = select i1 %cmp174, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.10, i32 0, i32 0)
   %call177 = call i32 (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @bit_xfer.descriptor.11 to %struct._ddebug*), %struct.device* %dev173, i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.12, i32 0, i32 0), i32 %call150, i8* %cond176)
   br label %if.end186
 
 if.end186:                                        ; preds = %if.then172, %do.body159, %if.else
   %len187 = getelementptr inbounds %struct.i2c_msg, %struct.i2c_msg* %arrayidx, i32 0, i32 2
-  %16 = load i16, i16* %len187, align 4, !tbaa !47
-  %conv188 = zext i16 %16 to i32
+  %14 = load i16, i16* %len187, align 4, !tbaa !47
+  %conv188 = zext i16 %14 to i32
   %cmp189 = icmp slt i32 %call150, %conv188
   br i1 %cmp189, label %if.then191, label %for.inc
 
@@ -613,8 +611,8 @@ for.inc:                                          ; preds = %if.end186, %if.end1
 
 do.body198:                                       ; preds = %if.then191, %if.then144, %if.then84, %do.body71, %do.body66, %for.cond
   %ret.2 = phi i32 [ %.call105, %if.then144 ], [ %.call150, %if.then191 ], [ %call61, %do.body71 ], [ %call61, %if.then84 ], [ %call61, %do.body66 ], [ %i.0, %for.cond ]
-  %17 = load i32, i32* @i2c_debug, align 4, !tbaa !42
-  %cmp199 = icmp sge i32 %17, 3
+  %15 = load i32, i32* @i2c_debug, align 4, !tbaa !42
+  %cmp199 = icmp sge i32 %15, 3
   br i1 %cmp199, label %do.body203, label %do.end226
 
 do.body203:                                       ; preds = %do.body198
@@ -639,14 +637,14 @@ if.then216:                                       ; preds = %do.body203
 do.end226:                                        ; preds = %if.then216, %do.body203, %do.body198
   call void @i2c_stop(%struct.i2c_algo_bit_data* %1)
   %post_xfer = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 6
-  %18 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer, align 8, !tbaa !48
-  %tobool227 = icmp ne void (%struct.i2c_adapter*)* %18, null
+  %16 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer, align 8, !tbaa !48
+  %tobool227 = icmp ne void (%struct.i2c_adapter*)* %16, null
   br i1 %tobool227, label %if.then228, label %cleanup
 
 if.then228:                                       ; preds = %do.end226
   %post_xfer229 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 6
-  %19 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer229, align 8, !tbaa !48
-  call void %19(%struct.i2c_adapter* %i2c_adap)
+  %17 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer229, align 8, !tbaa !48
+  call void %17(%struct.i2c_adapter* %i2c_adap)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.then228, %do.end226, %if.then
@@ -663,35 +661,19 @@ entry:
 ; Function Attrs: nounwind uwtable
 define i32 @i2c_bit_add_bus(%struct.i2c_adapter* %adap) #1 {
 entry:
-  %call = call i32 @__i2c_bit_add_bus(%struct.i2c_adapter* %adap)
+  %call = call i32 @__i2c_bit_add_bus(%struct.i2c_adapter* %adap, i32 (%struct.i2c_adapter*)* @i2c_add_adapter)
   ret i32 %call
 }
 
 ; Function Attrs: nounwind uwtable
-define internal i32 @__i2c_bit_add_bus(%struct.i2c_adapter* %adap) #1 {
-entry:
-  %0 = load i32, i32* @bit_test, align 4, !tbaa !42
-  %tobool = icmp ne i32 %0, 0
-  br i1 %tobool, label %if.then, label %cleanup
-
-if.then:                                          ; preds = %entry
-  %call = call i32 @test_bus(%struct.i2c_adapter* %adap)
-  %1 = load i32, i32* @bit_test, align 4, !tbaa !42
-  %cmp = icmp sge i32 %1, 2
-  %cmp1 = icmp slt i32 %call, 0
-  %or.cond = and i1 %cmp, %cmp1
-  br i1 %or.cond, label %cleanup, label %cleanup
-
-cleanup:                                          ; preds = %entry, %if.then, %if.then
-  ret i32 0
-}
+declare i32 @__i2c_bit_add_bus(%struct.i2c_adapter*, i32 (%struct.i2c_adapter*)*) #1
 
 declare i32 @i2c_add_adapter(%struct.i2c_adapter*) #2
 
 ; Function Attrs: nounwind uwtable
 define i32 @i2c_bit_add_numbered_bus(%struct.i2c_adapter* %adap) #1 {
 entry:
-  %call = call i32 @__i2c_bit_add_bus(%struct.i2c_adapter* %adap)
+  %call = call i32 @__i2c_bit_add_bus(%struct.i2c_adapter* %adap, i32 (%struct.i2c_adapter*)* @i2c_add_numbered_adapter)
   ret i32 %call
 }
 
@@ -808,14 +790,13 @@ do.end28:                                         ; preds = %if.then22, %do.body
   br i1 %or.cond, label %if.end36, label %if.then33
 
 if.then33:                                        ; preds = %do.end28
-  %dev34 = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
-  %call35 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev34, i8* getelementptr inbounds ([31 x i8], [31 x i8]* @.str.17, i32 0, i32 0))
+  %7 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %cleanup
 
 if.end36:                                         ; preds = %do.end28
   %addr37 = getelementptr inbounds %struct.i2c_msg, %struct.i2c_msg* %msg, i32 0, i32 0
-  %7 = load i16, i16* %addr37, align 8, !tbaa !46
-  %conv38 = zext i16 %7 to i32
+  %8 = load i16, i16* %addr37, align 8, !tbaa !46
+  %conv38 = zext i16 %8 to i32
   %and39 = and i32 %conv38, 255
   %conv40 = trunc i32 %and39 to i8
   %call41 = call i32 @i2c_outb(%struct.i2c_adapter* %i2c_adap, i8 zeroext %conv40)
@@ -825,8 +806,7 @@ if.end36:                                         ; preds = %do.end28
   br i1 %or.cond1, label %if.end49, label %if.then46
 
 if.then46:                                        ; preds = %if.end36
-  %dev47 = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
-  %call48 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev47, i8* getelementptr inbounds ([26 x i8], [26 x i8]* @.str.18, i32 0, i32 0))
+  %9 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %cleanup
 
 if.end49:                                         ; preds = %if.end36
@@ -836,8 +816,8 @@ if.end49:                                         ; preds = %if.end36
   br i1 %tobool52, label %do.body54, label %if.end121
 
 do.body54:                                        ; preds = %if.end49
-  %8 = load i32, i32* @i2c_debug, align 4, !tbaa !42
-  %cmp55 = icmp sge i32 %8, 3
+  %10 = load i32, i32* @i2c_debug, align 4, !tbaa !42
+  %cmp55 = icmp sge i32 %10, 3
   br i1 %cmp55, label %do.body59, label %do.end82
 
 do.body59:                                        ; preds = %do.body54
@@ -871,8 +851,7 @@ do.end82:                                         ; preds = %if.then72, %do.body
   br i1 %or.cond2, label %if.end121, label %if.then91
 
 if.then91:                                        ; preds = %do.end82
-  %dev92 = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
-  %call93 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev92, i8* getelementptr inbounds ([31 x i8], [31 x i8]* @.str.20, i32 0, i32 0))
+  %11 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %cleanup
 
 if.else:                                          ; preds = %cond.end
@@ -959,15 +938,14 @@ if.then17:                                        ; preds = %if.then14
   br label %if.end19
 
 if.end19:                                         ; preds = %if.then17, %if.then14
-  %dev = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
-  %call20 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev, i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.35, i32 0, i32 0), i32 %call)
+  %3 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %cleanup
 
 if.end21:                                         ; preds = %if.then9
   %add = add nsw i32 %dec, %call
   %len22 = getelementptr inbounds %struct.i2c_msg, %struct.i2c_msg* %msg, i32 0, i32 2
-  %3 = load i16, i16* %len22, align 4, !tbaa !47
-  %conv23 = zext i16 %3 to i32
+  %4 = load i16, i16* %len22, align 4, !tbaa !47
+  %conv23 = zext i16 %4 to i32
   %add24 = add nsw i32 %conv23, %call
   %conv25 = trunc i32 %add24 to i16
   store i16 %conv25, i16* %len22, align 4, !tbaa !47
@@ -975,8 +953,8 @@ if.end21:                                         ; preds = %if.then9
 
 do.body:                                          ; preds = %if.end21, %if.then
   %count.1 = phi i32 [ %add, %if.end21 ], [ %dec, %if.then ]
-  %4 = load i32, i32* @i2c_debug, align 4, !tbaa !42
-  %cmp27 = icmp sge i32 %4, 2
+  %5 = load i32, i32* @i2c_debug, align 4, !tbaa !42
+  %cmp27 = icmp sge i32 %5, 2
   br i1 %cmp27, label %do.body31, label %do.end49
 
 do.body31:                                        ; preds = %do.body
@@ -1001,7 +979,6 @@ if.then37:                                        ; preds = %do.body31
 
 cond.false:                                       ; preds = %if.then37
   %tobool41 = icmp ne i32 %count.1, 0
-  %5 = zext i1 %tobool41 to i64
   %cond = select i1 %tobool41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.33, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.34, i32 0, i32 0)
   br label %cond.end
 
@@ -1071,15 +1048,14 @@ if.then:                                          ; preds = %lor.lhs.false, %whi
 
 if.else:                                          ; preds = %lor.lhs.false
   %cmp10 = icmp eq i32 %call, 0
-  %dev = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
   br i1 %cmp10, label %if.then12, label %if.else14
 
 if.then12:                                        ; preds = %if.else
-  %call13 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str.40, i32 0, i32 0))
+  %4 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %cleanup
 
 if.else14:                                        ; preds = %if.else
-  %call16 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str.41, i32 0, i32 0), i32 %call)
+  %5 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.else14, %if.then12, %while.cond
@@ -1116,7 +1092,7 @@ entry:
   %0 = load void (i8*, i32)*, void (i8*, i32)** %setscl, align 8, !tbaa !55
   %data = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 0
   %1 = load i8*, i8** %data, align 8, !tbaa !50
-  call void %0(i8* %1, i32 0)
+  call void @"simpll__indirect$0"(i8* %1, i32 0, void (i8*, i32)* %0)
   %udelay = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 7
   %2 = load i32, i32* %udelay, align 8, !tbaa !51
   %div = sdiv i32 %2, 2
@@ -1132,7 +1108,7 @@ entry:
   %0 = load void (i8*, i32)*, void (i8*, i32)** %setsda, align 8, !tbaa !49
   %data = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 0
   %1 = load i8*, i8** %data, align 8, !tbaa !50
-  call void %0(i8* %1, i32 1)
+  call void @"simpll__indirect$0"(i8* %1, i32 1, void (i8*, i32)* %0)
   %udelay = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 7
   %2 = load i32, i32* %udelay, align 8, !tbaa !51
   %add = add nsw i32 %2, 1
@@ -1145,15 +1121,11 @@ entry:
 ; Function Attrs: nounwind uwtable
 define internal i32 @sclhi(%struct.i2c_algo_bit_data* %adap) #1 {
 entry:
-  %__dummy = alloca i64, align 8
-  %__dummy2 = alloca i64, align 8
-  %__dummy5 = alloca i64, align 8
-  %__dummy26 = alloca i64, align 8
   %setscl = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 2
   %0 = load void (i8*, i32)*, void (i8*, i32)** %setscl, align 8, !tbaa !55
   %data = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 0
   %1 = load i8*, i8** %data, align 8, !tbaa !50
-  call void %0(i8* %1, i32 1)
+  call void @"simpll__indirect$0"(i8* %1, i32 1, void (i8*, i32)* %0)
   %getscl = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 4
   %2 = load i32 (i8*)*, i32 (i8*)** %getscl, align 8, !tbaa !56
   %tobool = icmp ne i32 (i8*)* %2, null
@@ -1168,52 +1140,32 @@ while.cond:                                       ; preds = %if.end22, %if.end
   %4 = load i32 (i8*)*, i32 (i8*)** %getscl1, align 8, !tbaa !56
   %data2 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 0
   %5 = load i8*, i8** %data2, align 8, !tbaa !50
-  %call = call i32 %4(i8* %5)
-  %tobool3 = icmp ne i32 %call, 0
+  %6 = call i32 @"simpll__indirect$1"(i8* %5, i32 (i8*)* %4)
+  %tobool3 = icmp ne i32 %6, 0
   %lnot = xor i1 %tobool3, true
   br i1 %lnot, label %while.body, label %while.end
 
 while.body:                                       ; preds = %while.cond
-  %6 = bitcast i64* %__dummy to i8*
-  call void @llvm.lifetime.start.p0i8(i64 8, i8* %6) #5
-  %7 = bitcast i64* %__dummy2 to i8*
-  call void @llvm.lifetime.start.p0i8(i64 8, i8* %7) #5
-  %cmp = icmp eq i64* %__dummy, %__dummy2
-  %conv = zext i1 %cmp to i32
-  %8 = bitcast i64* %__dummy2 to i8*
-  call void @llvm.lifetime.end.p0i8(i64 8, i8* %8) #5
-  %9 = bitcast i64* %__dummy to i8*
-  call void @llvm.lifetime.end.p0i8(i64 8, i8* %9) #5
   %tobool4 = icmp ne i32 1, 0
   br i1 %tobool4, label %land.lhs.true, label %if.end22
 
 land.lhs.true:                                    ; preds = %while.body
-  %10 = bitcast i64* %__dummy5 to i8*
-  call void @llvm.lifetime.start.p0i8(i64 8, i8* %10) #5
-  %11 = bitcast i64* %__dummy26 to i8*
-  call void @llvm.lifetime.start.p0i8(i64 8, i8* %11) #5
-  %cmp7 = icmp eq i64* %__dummy5, %__dummy26
-  %conv8 = zext i1 %cmp7 to i32
-  %12 = bitcast i64* %__dummy26 to i8*
-  call void @llvm.lifetime.end.p0i8(i64 8, i8* %12) #5
-  %13 = bitcast i64* %__dummy5 to i8*
-  call void @llvm.lifetime.end.p0i8(i64 8, i8* %13) #5
   %timeout = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 8
-  %14 = load i32, i32* %timeout, align 4, !tbaa !58
-  %conv12 = sext i32 %14 to i64
+  %7 = load i32, i32* %timeout, align 4, !tbaa !58
+  %conv12 = sext i32 %7 to i64
   %add = add i64 %3, %conv12
-  %15 = load volatile i64, i64* @jiffies, align 8, !tbaa !57
-  %sub = sub nsw i64 %add, %15
+  %8 = load volatile i64, i64* @jiffies, align 8, !tbaa !57
+  %sub = sub nsw i64 %add, %8
   %cmp13 = icmp slt i64 %sub, 0
   br i1 %cmp13, label %if.then15, label %if.end22
 
 if.then15:                                        ; preds = %land.lhs.true
   %getscl16 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 4
-  %16 = load i32 (i8*)*, i32 (i8*)** %getscl16, align 8, !tbaa !56
+  %9 = load i32 (i8*)*, i32 (i8*)** %getscl16, align 8, !tbaa !56
   %data17 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 0
-  %17 = load i8*, i8** %data17, align 8, !tbaa !50
-  %call18 = call i32 %16(i8* %17)
-  %tobool19 = icmp ne i32 %call18, 0
+  %10 = load i8*, i8** %data17, align 8, !tbaa !50
+  %11 = call i32 @"simpll__indirect$1"(i8* %10, i32 (i8*)* %9)
+  %tobool19 = icmp ne i32 %11, 0
   br i1 %tobool19, label %while.end, label %cleanup
 
 if.end22:                                         ; preds = %land.lhs.true, %while.body
@@ -1221,10 +1173,10 @@ if.end22:                                         ; preds = %land.lhs.true, %whi
   br label %while.cond
 
 while.end:                                        ; preds = %if.then15, %while.cond
-  %18 = load volatile i64, i64* @jiffies, align 8, !tbaa !57
-  %cmp23 = icmp ne i64 %18, %3
-  %19 = load i32, i32* @i2c_debug, align 4
-  %cmp26 = icmp sge i32 %19, 3
+  %12 = load volatile i64, i64* @jiffies, align 8, !tbaa !57
+  %cmp23 = icmp ne i64 %12, %3
+  %13 = load i32, i32* @i2c_debug, align 4
+  %cmp26 = icmp sge i32 %13, 3
   %or.cond = and i1 %cmp23, %cmp26
   br i1 %or.cond, label %do.body, label %done
 
@@ -1243,15 +1195,15 @@ do.body:                                          ; preds = %while.end
   br i1 %tobool33, label %if.then34, label %done
 
 if.then34:                                        ; preds = %do.body
-  %20 = load volatile i64, i64* @jiffies, align 8, !tbaa !57
-  %sub35 = sub i64 %20, %3
-  %call36 = call i32 (%struct._ddebug*, i8*, ...) @__dynamic_pr_debug(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @sclhi.descriptor to %struct._ddebug*), i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.15, i32 0, i32 0), i64 %sub35)
+  %14 = load volatile i64, i64* @jiffies, align 8, !tbaa !57
+  %sub35 = sub i64 %14, %3
+  call void (%struct._ddebug*, i8*, ...) @__dynamic_pr_debug(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @sclhi.descriptor to %struct._ddebug*), i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.15, i32 0, i32 0), i64 %sub35)
   br label %done
 
 done:                                             ; preds = %if.then34, %do.body, %while.end, %entry
   %udelay = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 7
-  %21 = load i32, i32* %udelay, align 8, !tbaa !51
-  %conv39 = sext i32 %21 to i64
+  %15 = load i32, i32* %udelay, align 8, !tbaa !51
+  %conv39 = sext i32 %15 to i64
   call void @__udelay(i64 %conv39)
   br label %cleanup
 
@@ -1267,12 +1219,10 @@ entry:
   ret void
 }
 
-declare i32 @__dynamic_pr_debug(%struct._ddebug*, i8*, ...) #2
-
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @rep_nop() #0 {
 entry:
-  call void asm sideeffect "rep; nop", "~{memory},~{dirflag},~{fpsr},~{flags}"() #5, !srcloc !59
+  call void @"simpll__inlineasm$2"()
   ret void
 }
 
@@ -1386,12 +1336,10 @@ if.then68:                                        ; preds = %do.body55
   %conv70 = zext i8 %addr to i32
   %and71 = and i32 %conv70, 1
   %tobool72 = icmp ne i32 %and71, 0
-  %6 = zext i1 %tobool72 to i64
   %cond = select i1 %tobool72, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.24, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.25, i32 0, i32 0)
   %conv73 = zext i8 %addr to i32
   %shr = ashr i32 %conv73, 1
   %cmp74 = icmp eq i32 %ret.1, 1
-  %7 = zext i1 %cmp74 to i64
   %cond76 = select i1 %cmp74, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.26, i32 0, i32 0), i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.27, i32 0, i32 0)
   %call77 = call i32 (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @try_address.descriptor.22 to %struct._ddebug*), %struct.device* %dev69, i8* getelementptr inbounds ([42 x i8], [42 x i8]* @.str.23, i32 0, i32 0), i32 %add, i8* %cond, i32 %shr, i8* %cond76)
   br label %if.end86
@@ -1497,7 +1445,7 @@ if.then44:                                        ; preds = %do.body31
 
 if.end56:                                         ; preds = %for.end
   %getsda = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 3
-  %7 = load i32 (i8*)*, i32 (i8*)** %getsda, align 8, !tbaa !60
+  %7 = load i32 (i8*)*, i32 (i8*)** %getsda, align 8, !tbaa !59
   %data57 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
   %8 = load i8*, i8** %data57, align 8, !tbaa !50
   %call58 = call i32 %7(i8* %8)
@@ -1526,7 +1474,6 @@ if.then80:                                        ; preds = %do.body67
   %dev81 = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
   %conv82 = zext i8 %c to i32
   %tobool83 = icmp ne i32 %lnot.ext61, 0
-  %10 = zext i1 %tobool83 to i64
   %cond = select i1 %tobool83, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.33, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.34, i32 0, i32 0)
   %call84 = call i32 (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @i2c_outb.descriptor.31 to %struct._ddebug*), %struct.device* %dev81, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str.32, i32 0, i32 0), i32 %conv82, i8* %cond)
   br label %do.end92
@@ -1592,7 +1539,7 @@ if.end15:                                         ; preds = %for.body
   %mul = mul nsw i32 %conv16, 2
   %conv17 = trunc i32 %mul to i8
   %getsda = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 3
-  %3 = load i32 (i8*)*, i32 (i8*)** %getsda, align 8, !tbaa !60
+  %3 = load i32 (i8*)*, i32 (i8*)** %getsda, align 8, !tbaa !59
   %data = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
   %4 = load i8*, i8** %data, align 8, !tbaa !50
   %call18 = call i32 %3(i8* %4)
@@ -1654,8 +1601,7 @@ if.end:                                           ; preds = %if.then, %entry
   br i1 %cmp, label %if.then2, label %if.end4
 
 if.then2:                                         ; preds = %if.end
-  %dev = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 7
-  %call3 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* %dev, i8* getelementptr inbounds ([28 x i8], [28 x i8]* @.str.39, i32 0, i32 0))
+  %5 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %cleanup
 
 if.end4:                                          ; preds = %if.end
@@ -1674,7 +1620,7 @@ entry:
   %0 = load void (i8*, i32)*, void (i8*, i32)** %setsda, align 8, !tbaa !49
   %data = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 0
   %1 = load i8*, i8** %data, align 8, !tbaa !50
-  call void %0(i8* %1, i32 0)
+  call void @"simpll__indirect$0"(i8* %1, i32 0, void (i8*, i32)* %0)
   %udelay = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %adap, i32 0, i32 7
   %2 = load i32, i32* %udelay, align 8, !tbaa !51
   %add = add nsw i32 %2, 1
@@ -1685,13 +1631,11 @@ entry:
 }
 
 ; Function Attrs: nounwind uwtable
-define internal i32 @test_bus(%struct.i2c_adapter* %i2c_adap) #1 {
+define internal void @test_bus(%struct.i2c_adapter* %i2c_adap) #1 {
 entry:
   %algo_data = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 3
   %0 = load i8*, i8** %algo_data, align 8, !tbaa !12
   %1 = bitcast i8* %0 to %struct.i2c_algo_bit_data*
-  %name1 = getelementptr inbounds %struct.i2c_adapter, %struct.i2c_adapter* %i2c_adap, i32 0, i32 9
-  %arraydecay = getelementptr inbounds [48 x i8], [48 x i8]* %name1, i32 0, i32 0
   %pre_xfer = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 5
   %2 = load i32 (%struct.i2c_adapter*)*, i32 (%struct.i2c_adapter*)** %pre_xfer, align 8, !tbaa !40
   %tobool = icmp ne i32 (%struct.i2c_adapter*)* %2, null
@@ -1700,77 +1644,77 @@ entry:
 if.then:                                          ; preds = %entry
   %pre_xfer2 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 5
   %3 = load i32 (%struct.i2c_adapter*)*, i32 (%struct.i2c_adapter*)** %pre_xfer2, align 8, !tbaa !40
-  %call = call i32 %3(%struct.i2c_adapter* %i2c_adap)
-  %cmp = icmp slt i32 %call, 0
+  %4 = call i32 @"simpll__indirect$3"(%struct.i2c_adapter* %i2c_adap, i32 (%struct.i2c_adapter*)* %3)
+  %cmp = icmp slt i32 %4, 0
   br i1 %cmp, label %cleanup, label %if.end4
 
 if.end4:                                          ; preds = %if.then, %entry
   %getscl = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %4 = load i32 (i8*)*, i32 (i8*)** %getscl, align 8, !tbaa !56
-  %cmp5 = icmp eq i32 (i8*)* %4, null
+  %5 = load i32 (i8*)*, i32 (i8*)** %getscl, align 8, !tbaa !56
+  %cmp5 = icmp eq i32 (i8*)* %5, null
   br i1 %cmp5, label %if.then6, label %if.end8
 
 if.then6:                                         ; preds = %if.end4
-  %call7 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @.str.44, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %if.end8
 
 if.end8:                                          ; preds = %if.then6, %if.end4
   %getsda = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 3
-  %5 = load i32 (i8*)*, i32 (i8*)** %getsda, align 8, !tbaa !60
+  %6 = load i32 (i8*)*, i32 (i8*)** %getsda, align 8, !tbaa !59
   %data = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %6 = load i8*, i8** %data, align 8, !tbaa !50
-  %call9 = call i32 %5(i8* %6)
+  %7 = load i8*, i8** %data, align 8, !tbaa !50
+  %8 = call i32 @"simpll__indirect$1"(i8* %7, i32 (i8*)* %6)
   %getscl10 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %7 = load i32 (i8*)*, i32 (i8*)** %getscl10, align 8, !tbaa !56
-  %cmp11 = icmp eq i32 (i8*)* %7, null
+  %9 = load i32 (i8*)*, i32 (i8*)** %getscl10, align 8, !tbaa !56
+  %cmp11 = icmp eq i32 (i8*)* %9, null
   br i1 %cmp11, label %cond.end, label %cond.false
 
 cond.false:                                       ; preds = %if.end8
   %getscl12 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %8 = load i32 (i8*)*, i32 (i8*)** %getscl12, align 8, !tbaa !56
+  %10 = load i32 (i8*)*, i32 (i8*)** %getscl12, align 8, !tbaa !56
   %data13 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %9 = load i8*, i8** %data13, align 8, !tbaa !50
-  %call14 = call i32 %8(i8* %9)
+  %11 = load i8*, i8** %data13, align 8, !tbaa !50
+  %12 = call i32 @"simpll__indirect$1"(i8* %11, i32 (i8*)* %10)
   br label %cond.end
 
 cond.end:                                         ; preds = %cond.false, %if.end8
-  %cond = phi i32 [ %call14, %cond.false ], [ 1, %if.end8 ]
+  %cond = phi i32 [ %12, %cond.false ], [ 1, %if.end8 ]
   %tobool15 = icmp ne i32 %cond, 0
-  %tobool16 = icmp ne i32 %call9, 0
+  %tobool16 = icmp ne i32 %8, 0
   %or.cond = and i1 %tobool15, %tobool16
   br i1 %or.cond, label %if.end19, label %if.then17
 
 if.then17:                                        ; preds = %cond.end
-  %call18 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @.str.45, i32 0, i32 0), i8* %arraydecay, i32 %cond, i32 %call9)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end19:                                         ; preds = %cond.end
   call void @sdalo(%struct.i2c_algo_bit_data* %1)
   %getsda20 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 3
-  %10 = load i32 (i8*)*, i32 (i8*)** %getsda20, align 8, !tbaa !60
+  %13 = load i32 (i8*)*, i32 (i8*)** %getsda20, align 8, !tbaa !59
   %data21 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %11 = load i8*, i8** %data21, align 8, !tbaa !50
-  %call22 = call i32 %10(i8* %11)
+  %14 = load i8*, i8** %data21, align 8, !tbaa !50
+  %15 = call i32 @"simpll__indirect$1"(i8* %14, i32 (i8*)* %13)
   %getscl23 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %12 = load i32 (i8*)*, i32 (i8*)** %getscl23, align 8, !tbaa !56
-  %cmp24 = icmp eq i32 (i8*)* %12, null
+  %16 = load i32 (i8*)*, i32 (i8*)** %getscl23, align 8, !tbaa !56
+  %cmp24 = icmp eq i32 (i8*)* %16, null
   br i1 %cmp24, label %cond.end30, label %cond.false26
 
 cond.false26:                                     ; preds = %if.end19
   %getscl27 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %13 = load i32 (i8*)*, i32 (i8*)** %getscl27, align 8, !tbaa !56
+  %17 = load i32 (i8*)*, i32 (i8*)** %getscl27, align 8, !tbaa !56
   %data28 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %14 = load i8*, i8** %data28, align 8, !tbaa !50
-  %call29 = call i32 %13(i8* %14)
+  %18 = load i8*, i8** %data28, align 8, !tbaa !50
+  %19 = call i32 @"simpll__indirect$1"(i8* %18, i32 (i8*)* %17)
   br label %cond.end30
 
 cond.end30:                                       ; preds = %cond.false26, %if.end19
-  %cond31 = phi i32 [ %call29, %cond.false26 ], [ 1, %if.end19 ]
-  %tobool32 = icmp ne i32 %call22, 0
+  %cond31 = phi i32 [ %19, %cond.false26 ], [ 1, %if.end19 ]
+  %tobool32 = icmp ne i32 %15, 0
   br i1 %tobool32, label %if.then33, label %if.end35
 
 if.then33:                                        ; preds = %cond.end30
-  %call34 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.46, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end35:                                         ; preds = %cond.end30
@@ -1778,36 +1722,36 @@ if.end35:                                         ; preds = %cond.end30
   br i1 %tobool36, label %if.end39, label %if.then37
 
 if.then37:                                        ; preds = %if.end35
-  %call38 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([49 x i8], [49 x i8]* @.str.47, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end39:                                         ; preds = %if.end35
   call void @sdahi(%struct.i2c_algo_bit_data* %1)
   %getsda40 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 3
-  %15 = load i32 (i8*)*, i32 (i8*)** %getsda40, align 8, !tbaa !60
+  %20 = load i32 (i8*)*, i32 (i8*)** %getsda40, align 8, !tbaa !59
   %data41 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %16 = load i8*, i8** %data41, align 8, !tbaa !50
-  %call42 = call i32 %15(i8* %16)
+  %21 = load i8*, i8** %data41, align 8, !tbaa !50
+  %22 = call i32 @"simpll__indirect$1"(i8* %21, i32 (i8*)* %20)
   %getscl43 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %17 = load i32 (i8*)*, i32 (i8*)** %getscl43, align 8, !tbaa !56
-  %cmp44 = icmp eq i32 (i8*)* %17, null
+  %23 = load i32 (i8*)*, i32 (i8*)** %getscl43, align 8, !tbaa !56
+  %cmp44 = icmp eq i32 (i8*)* %23, null
   br i1 %cmp44, label %cond.end50, label %cond.false46
 
 cond.false46:                                     ; preds = %if.end39
   %getscl47 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %18 = load i32 (i8*)*, i32 (i8*)** %getscl47, align 8, !tbaa !56
+  %24 = load i32 (i8*)*, i32 (i8*)** %getscl47, align 8, !tbaa !56
   %data48 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %19 = load i8*, i8** %data48, align 8, !tbaa !50
-  %call49 = call i32 %18(i8* %19)
+  %25 = load i8*, i8** %data48, align 8, !tbaa !50
+  %26 = call i32 @"simpll__indirect$1"(i8* %25, i32 (i8*)* %24)
   br label %cond.end50
 
 cond.end50:                                       ; preds = %cond.false46, %if.end39
-  %cond51 = phi i32 [ %call49, %cond.false46 ], [ 1, %if.end39 ]
-  %tobool52 = icmp ne i32 %call42, 0
+  %cond51 = phi i32 [ %26, %cond.false46 ], [ 1, %if.end39 ]
+  %tobool52 = icmp ne i32 %22, 0
   br i1 %tobool52, label %if.end55, label %if.then53
 
 if.then53:                                        ; preds = %cond.end50
-  %call54 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.48, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end55:                                         ; preds = %cond.end50
@@ -1815,128 +1759,138 @@ if.end55:                                         ; preds = %cond.end50
   br i1 %tobool56, label %if.end59, label %if.then57
 
 if.then57:                                        ; preds = %if.end55
-  %call58 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([50 x i8], [50 x i8]* @.str.49, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end59:                                         ; preds = %if.end55
   call void @scllo(%struct.i2c_algo_bit_data* %1)
   %getsda60 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 3
-  %20 = load i32 (i8*)*, i32 (i8*)** %getsda60, align 8, !tbaa !60
+  %27 = load i32 (i8*)*, i32 (i8*)** %getsda60, align 8, !tbaa !59
   %data61 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %21 = load i8*, i8** %data61, align 8, !tbaa !50
-  %call62 = call i32 %20(i8* %21)
+  %28 = load i8*, i8** %data61, align 8, !tbaa !50
+  %29 = call i32 @"simpll__indirect$1"(i8* %28, i32 (i8*)* %27)
   %getscl63 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %22 = load i32 (i8*)*, i32 (i8*)** %getscl63, align 8, !tbaa !56
-  %cmp64 = icmp eq i32 (i8*)* %22, null
+  %30 = load i32 (i8*)*, i32 (i8*)** %getscl63, align 8, !tbaa !56
+  %cmp64 = icmp eq i32 (i8*)* %30, null
   br i1 %cmp64, label %cond.end70, label %cond.false66
 
 cond.false66:                                     ; preds = %if.end59
   %getscl67 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %23 = load i32 (i8*)*, i32 (i8*)** %getscl67, align 8, !tbaa !56
+  %31 = load i32 (i8*)*, i32 (i8*)** %getscl67, align 8, !tbaa !56
   %data68 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %24 = load i8*, i8** %data68, align 8, !tbaa !50
-  %call69 = call i32 %23(i8* %24)
+  %32 = load i8*, i8** %data68, align 8, !tbaa !50
+  %33 = call i32 @"simpll__indirect$1"(i8* %32, i32 (i8*)* %31)
   br label %cond.end70
 
 cond.end70:                                       ; preds = %cond.false66, %if.end59
-  %cond71 = phi i32 [ %call69, %cond.false66 ], [ 0, %if.end59 ]
+  %cond71 = phi i32 [ %33, %cond.false66 ], [ 0, %if.end59 ]
   %tobool72 = icmp ne i32 %cond71, 0
   br i1 %tobool72, label %if.then73, label %if.end75
 
 if.then73:                                        ; preds = %cond.end70
-  %call74 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.50, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end75:                                         ; preds = %cond.end70
-  %tobool76 = icmp ne i32 %call62, 0
+  %tobool76 = icmp ne i32 %29, 0
   br i1 %tobool76, label %if.end79, label %if.then77
 
 if.then77:                                        ; preds = %if.end75
-  %call78 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([49 x i8], [49 x i8]* @.str.51, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end79:                                         ; preds = %if.end75
   %call80 = call i32 @sclhi(%struct.i2c_algo_bit_data* %1)
   %getsda81 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 3
-  %25 = load i32 (i8*)*, i32 (i8*)** %getsda81, align 8, !tbaa !60
+  %34 = load i32 (i8*)*, i32 (i8*)** %getsda81, align 8, !tbaa !59
   %data82 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %26 = load i8*, i8** %data82, align 8, !tbaa !50
-  %call83 = call i32 %25(i8* %26)
+  %35 = load i8*, i8** %data82, align 8, !tbaa !50
+  %36 = call i32 @"simpll__indirect$1"(i8* %35, i32 (i8*)* %34)
   %getscl84 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %27 = load i32 (i8*)*, i32 (i8*)** %getscl84, align 8, !tbaa !56
-  %cmp85 = icmp eq i32 (i8*)* %27, null
+  %37 = load i32 (i8*)*, i32 (i8*)** %getscl84, align 8, !tbaa !56
+  %cmp85 = icmp eq i32 (i8*)* %37, null
   br i1 %cmp85, label %cond.end91, label %cond.false87
 
 cond.false87:                                     ; preds = %if.end79
   %getscl88 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 4
-  %28 = load i32 (i8*)*, i32 (i8*)** %getscl88, align 8, !tbaa !56
+  %38 = load i32 (i8*)*, i32 (i8*)** %getscl88, align 8, !tbaa !56
   %data89 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 0
-  %29 = load i8*, i8** %data89, align 8, !tbaa !50
-  %call90 = call i32 %28(i8* %29)
+  %39 = load i8*, i8** %data89, align 8, !tbaa !50
+  %40 = call i32 @"simpll__indirect$1"(i8* %39, i32 (i8*)* %38)
   br label %cond.end91
 
 cond.end91:                                       ; preds = %cond.false87, %if.end79
-  %cond92 = phi i32 [ %call90, %cond.false87 ], [ 1, %if.end79 ]
+  %cond92 = phi i32 [ %40, %cond.false87 ], [ 1, %if.end79 ]
   %tobool93 = icmp ne i32 %cond92, 0
   br i1 %tobool93, label %if.end96, label %if.then94
 
 if.then94:                                        ; preds = %cond.end91
-  %call95 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.52, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end96:                                         ; preds = %cond.end91
-  %tobool97 = icmp ne i32 %call83, 0
+  %tobool97 = icmp ne i32 %36, 0
   br i1 %tobool97, label %if.end100, label %if.then98
 
 if.then98:                                        ; preds = %if.end96
-  %call99 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([50 x i8], [50 x i8]* @.str.53, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %bailout
 
 if.end100:                                        ; preds = %if.end96
   %post_xfer = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 6
-  %30 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer, align 8, !tbaa !48
-  %tobool101 = icmp ne void (%struct.i2c_adapter*)* %30, null
+  %41 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer, align 8, !tbaa !48
+  %tobool101 = icmp ne void (%struct.i2c_adapter*)* %41, null
   br i1 %tobool101, label %if.then102, label %if.end104
 
 if.then102:                                       ; preds = %if.end100
   %post_xfer103 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 6
-  %31 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer103, align 8, !tbaa !48
-  call void %31(%struct.i2c_adapter* %i2c_adap)
+  %42 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer103, align 8, !tbaa !48
+  call void @"simpll__indirect$4"(%struct.i2c_adapter* %i2c_adap, void (%struct.i2c_adapter*)* %42)
   br label %if.end104
 
 if.end104:                                        ; preds = %if.then102, %if.end100
-  %call105 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.54, i32 0, i32 0), i8* %arraydecay)
+  call void (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 bailout:                                          ; preds = %if.then98, %if.then94, %if.then77, %if.then73, %if.then57, %if.then53, %if.then37, %if.then33, %if.then17
   call void @sdahi(%struct.i2c_algo_bit_data* %1)
   %call106 = call i32 @sclhi(%struct.i2c_algo_bit_data* %1)
   %post_xfer107 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 6
-  %32 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer107, align 8, !tbaa !48
-  %tobool108 = icmp ne void (%struct.i2c_adapter*)* %32, null
+  %43 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer107, align 8, !tbaa !48
+  %tobool108 = icmp ne void (%struct.i2c_adapter*)* %43, null
   br i1 %tobool108, label %if.then109, label %cleanup
 
 if.then109:                                       ; preds = %bailout
   %post_xfer110 = getelementptr inbounds %struct.i2c_algo_bit_data, %struct.i2c_algo_bit_data* %1, i32 0, i32 6
-  %33 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer110, align 8, !tbaa !48
-  call void %33(%struct.i2c_adapter* %i2c_adap)
+  %44 = load void (%struct.i2c_adapter*)*, void (%struct.i2c_adapter*)** %post_xfer110, align 8, !tbaa !48
+  call void @"simpll__indirect$4"(%struct.i2c_adapter* %i2c_adap, void (%struct.i2c_adapter*)* %44)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.then109, %bailout, %if.end104, %if.then
-  %retval.0 = phi i32 [ 0, %if.end104 ], [ -19, %if.then ], [ -19, %if.then109 ], [ -19, %bailout ]
-  ret i32 %retval.0
+  ret void
 }
 
 declare i32 @dev_warn(%struct.device*, i8*, ...) #2
 
-declare i32 @printk(i8*, ...) #2
+declare void @__dynamic_pr_debug(%struct._ddebug*, i8*, ...) #2
+
+declare void @printk(i8*, ...) #2
+
+declare void @"simpll__indirect$0"(i8*, i32, void (i8*, i32)*)
+
+declare i32 @"simpll__indirect$1"(i8*, i32 (i8*)*)
+
+declare void @"simpll__inlineasm$2"()
+
+declare i32 @"simpll__indirect$3"(%struct.i2c_adapter*, i32 (%struct.i2c_adapter*)*)
+
+declare void @"simpll__indirect$4"(%struct.i2c_adapter*, void (%struct.i2c_adapter*)*)
 
 attributes #0 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #3 = { argmemonly nounwind }
 attributes #4 = { nounwind readnone }
-attributes #5 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.ident = !{!1}
@@ -2000,5 +1954,4 @@ attributes #5 = { nounwind }
 !56 = !{!41, !4, i64 32}
 !57 = !{!19, !19, i64 0}
 !58 = !{!41, !14, i64 60}
-!59 = !{i32 615020}
-!60 = !{!41, !4, i64 24}
+!59 = !{!41, !4, i64 24}

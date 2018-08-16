@@ -1,4 +1,4 @@
-; ModuleID = 'tests/regression/kernel_modules/opl3/opl3_new.bc'
+; ModuleID = 'tests/regression/kernel_modules/opl3/opl3_new-io.bc'
 source_filename = "sound/oss/opl3.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -369,24 +369,24 @@ target triple = "x86_64-unknown-linux-gnu"
 @llvm.used = appending global [3 x i8*] [i8* bitcast (%struct.kernel_param* @__param_io to i8*), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @__UNIQUE_ID_iotype12, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @__UNIQUE_ID_license13, i32 0, i32 0)], section "llvm.metadata"
 
 @init_module = alias i32 (), i32 ()* @init_opl3
-@cleanup_module = alias void (), void ()* @cleanup_opl3
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @init_opl3() #0 section ".init.text" {
 entry:
-  %0 = load i32, i32* @io, align 4, !tbaa !2
-  %cmp = icmp ne i32 %0, -1
+  %0 = call i32 (i8*, ...) @printk(i8* null)
+  %1 = load i32, i32* @io, align 4, !tbaa !2
+  %cmp = icmp ne i32 %1, -1
   br i1 %cmp, label %if.then, label %return
 
 if.then:                                          ; preds = %entry
-  %1 = load i32, i32* @io, align 4, !tbaa !2
-  %call1 = call i32 @opl3_detect(i32 %1)
+  %2 = load i32, i32* @io, align 4, !tbaa !2
+  %call1 = call i32 @opl3_detect(i32 %2)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.end, label %return
 
 if.end:                                           ; preds = %if.then
-  %2 = load i32, i32* @io, align 4, !tbaa !2
-  %call3 = call i32 @opl3_init(i32 %2, %struct.module* @__this_module)
+  %3 = load i32, i32* @io, align 4, !tbaa !2
+  %call3 = call i32 @opl3_init(i32 %3, %struct.module* @__this_module)
   store i32 %call3, i32* @me, align 4, !tbaa !2
   br label %return
 
@@ -396,55 +396,7 @@ return:                                           ; preds = %if.end, %if.then, %
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @cleanup_opl3() #0 section ".exit.text" {
-entry:
-  %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %tobool = icmp ne %struct.opl_devinfo* %0, null
-  %1 = load i32, i32* @io, align 4
-  %cmp = icmp ne i32 %1, -1
-  %or.cond = and i1 %tobool, %cmp
-  br i1 %or.cond, label %if.then, label %if.end9
-
-if.then:                                          ; preds = %entry
-  %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %base = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 0
-  %3 = load i32, i32* %base, align 8, !tbaa !8
-  %tobool1 = icmp ne i32 %3, 0
-  br i1 %tobool1, label %if.then2, label %if.end8
-
-if.then2:                                         ; preds = %if.then
-  %4 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %base3 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 0
-  %5 = load i32, i32* %base3, align 8, !tbaa !8
-  %conv = sext i32 %5 to i64
-  call void @__release_region(%struct.resource* @ioport_resource, i64 %conv, i64 4)
-  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %is_opl4 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 14
-  %7 = load i32, i32* %is_opl4, align 8, !tbaa !11
-  %tobool4 = icmp ne i32 %7, 0
-  br i1 %tobool4, label %if.then5, label %if.end8
-
-if.then5:                                         ; preds = %if.then2
-  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %base6 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 0
-  %9 = load i32, i32* %base6, align 8, !tbaa !8
-  %sub = sub nsw i32 %9, 8
-  %conv7 = sext i32 %sub to i64
-  call void @__release_region(%struct.resource* @ioport_resource, i64 %conv7, i64 2)
-  br label %if.end8
-
-if.end8:                                          ; preds = %if.then5, %if.then2, %if.then
-  %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %11 = bitcast %struct.opl_devinfo* %10 to i8*
-  call void @kfree(i8* %11)
-  store %struct.opl_devinfo* null, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %12 = load i32, i32* @me, align 4, !tbaa !2
-  call void @sound_unload_synthdev(i32 %12)
-  br label %if.end9
-
-if.end9:                                          ; preds = %if.end8, %entry
-  ret void
-}
+declare void @cleanup_opl3() #0 section ".exit.text"
 
 declare i32 @printk(i8*, ...) #1
 
@@ -456,30 +408,30 @@ entry:
   br i1 %cmp, label %if.then, label %if.end
 
 if.then:                                          ; preds = %entry
-  %call = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.1, i32 0, i32 0))
+  %1 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end:                                           ; preds = %entry
   %call1 = call i8* @kzalloc(i64 11656, i32 20971712)
-  %1 = bitcast i8* %call1 to %struct.opl_devinfo*
-  store %struct.opl_devinfo* %1, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %cmp2 = icmp eq %struct.opl_devinfo* %2, null
+  %2 = bitcast i8* %call1 to %struct.opl_devinfo*
+  store %struct.opl_devinfo* %2, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %3 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %cmp2 = icmp eq %struct.opl_devinfo* %3, null
   br i1 %cmp2, label %if.then3, label %if.end5
 
 if.then3:                                         ; preds = %if.end
-  %call4 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([66 x i8], [66 x i8]* @.str.2, i32 0, i32 0))
+  %4 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end5:                                          ; preds = %if.end
-  %3 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %3, i32 0, i32 10
+  %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 10
   %name = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info, i32 0, i32 0
   %arraydecay = getelementptr inbounds [30 x i8], [30 x i8]* %name, i32 0, i32 0
   %call6 = call i8* @strcpy(i8* %arraydecay, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.3, i32 0, i32 0))
   %conv = sext i32 %ioaddr to i64
-  %4 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info7 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 10
+  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info7 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 10
   %name8 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info7, i32 0, i32 0
   %arraydecay9 = getelementptr inbounds [30 x i8], [30 x i8]* %name8, i32 0, i32 0
   %call10 = call %struct.resource* @__request_region(%struct.resource* @ioport_resource, i64 %conv, i64 4, i8* %arraydecay9, i32 0)
@@ -487,12 +439,12 @@ if.end5:                                          ; preds = %if.end
   br i1 %tobool, label %if.end13, label %if.then11
 
 if.then11:                                        ; preds = %if.end5
-  %call12 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([38 x i8], [38 x i8]* @.str.4, i32 0, i32 0), i32 %ioaddr)
+  %7 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup_devc
 
 if.end13:                                         ; preds = %if.end5
-  %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %base = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 0
+  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %base = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 0
   store i32 %ioaddr, i32* %base, align 8, !tbaa !8
   call void @opl3_command(i32 %ioaddr, i32 4, i32 96)
   call void @opl3_command(i32 %ioaddr, i32 4, i32 128)
@@ -512,7 +464,7 @@ if.end13:                                         ; preds = %if.end5
   br i1 %or.cond2, label %if.then29, label %if.end32
 
 if.then29:                                        ; preds = %if.end13
-  %call31 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str.5, i32 0, i32 0), i32 %conv30)
+  %9 = call i32 (i8*, ...) @printk(i8* null)
   %conv76 = sext i32 %ioaddr to i64
   call void @__release_region(%struct.resource* @ioport_resource, i64 %conv76, i64 4)
   br label %cleanup_devc
@@ -608,9 +560,9 @@ for.end:                                          ; preds = %for.cond
   br label %cleanup
 
 cleanup_devc:                                     ; preds = %if.then29, %if.then11
-  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %7 = bitcast %struct.opl_devinfo* %6 to i8*
-  call void @kfree(i8* %7)
+  %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %11 = bitcast %struct.opl_devinfo* %10 to i8*
+  call void @kfree(i8* %11)
   store %struct.opl_devinfo* null, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   br label %cleanup
 
@@ -627,7 +579,7 @@ entry:
   br i1 %cmp, label %if.then, label %if.end
 
 if.then:                                          ; preds = %entry
-  %call = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @.str.7, i32 0, i32 0))
+  %1 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end:                                           ; preds = %entry
@@ -636,67 +588,67 @@ if.end:                                           ; preds = %entry
   br i1 %cmp2, label %if.then3, label %if.end5
 
 if.then3:                                         ; preds = %if.end
-  %call4 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([31 x i8], [31 x i8]* @.str.8, i32 0, i32 0))
+  %2 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end5:                                          ; preds = %if.end
-  %1 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %1, i32 0, i32 3
-  store i32 9, i32* %nr_voice, align 4, !tbaa !12
-  %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 10
-  %device = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info, i32 0, i32 1
-  store i32 0, i32* %device, align 8, !tbaa !13
   %3 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info6 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %3, i32 0, i32 10
-  %synth_type = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info6, i32 0, i32 2
-  store i32 0, i32* %synth_type, align 4, !tbaa !14
+  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %3, i32 0, i32 3
+  store i32 9, i32* %nr_voice, align 4, !tbaa !11
   %4 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info7 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 10
-  %synth_subtype = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info7, i32 0, i32 3
-  store i32 0, i32* %synth_subtype, align 8, !tbaa !15
+  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 10
+  %device = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info, i32 0, i32 1
+  store i32 0, i32* %device, align 8, !tbaa !12
   %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info8 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 10
-  %perc_mode = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info8, i32 0, i32 4
-  store i32 0, i32* %perc_mode, align 4, !tbaa !16
+  %fm_info6 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 10
+  %synth_type = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info6, i32 0, i32 2
+  store i32 0, i32* %synth_type, align 4, !tbaa !13
   %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info9 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 10
-  %nr_voices = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info9, i32 0, i32 5
-  store i32 9, i32* %nr_voices, align 8, !tbaa !17
+  %fm_info7 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 10
+  %synth_subtype = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info7, i32 0, i32 3
+  store i32 0, i32* %synth_subtype, align 8, !tbaa !14
   %7 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info10 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %7, i32 0, i32 10
-  %nr_drums = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info10, i32 0, i32 6
-  store i32 0, i32* %nr_drums, align 4, !tbaa !18
+  %fm_info8 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %7, i32 0, i32 10
+  %perc_mode = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info8, i32 0, i32 4
+  store i32 0, i32* %perc_mode, align 4, !tbaa !15
   %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info11 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 10
-  %instr_bank_size = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info11, i32 0, i32 7
-  store i32 256, i32* %instr_bank_size, align 8, !tbaa !19
+  %fm_info9 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 10
+  %nr_voices = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info9, i32 0, i32 5
+  store i32 9, i32* %nr_voices, align 8, !tbaa !16
   %9 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info12 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %9, i32 0, i32 10
-  %capabilities = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info12, i32 0, i32 8
-  store i32 0, i32* %capabilities, align 4, !tbaa !20
+  %fm_info10 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %9, i32 0, i32 10
+  %nr_drums = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info10, i32 0, i32 6
+  store i32 0, i32* %nr_drums, align 4, !tbaa !17
   %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %left_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 1
-  store i32 %ioaddr, i32* %left_io, align 4, !tbaa !21
-  %add = add nsw i32 %ioaddr, 2
+  %fm_info11 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 10
+  %instr_bank_size = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info11, i32 0, i32 7
+  store i32 256, i32* %instr_bank_size, align 8, !tbaa !18
   %11 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %right_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %11, i32 0, i32 2
-  store i32 %add, i32* %right_io, align 8, !tbaa !22
-  %12 = load i32, i32* @detected_model, align 4, !tbaa !2
-  %cmp13 = icmp sle i32 %12, 2
+  %fm_info12 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %11, i32 0, i32 10
+  %capabilities = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info12, i32 0, i32 8
+  store i32 0, i32* %capabilities, align 4, !tbaa !19
+  %12 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %left_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %12, i32 0, i32 1
+  store i32 %ioaddr, i32* %left_io, align 4, !tbaa !20
+  %add = add nsw i32 %ioaddr, 2
   %13 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %13, i32 0, i32 12
+  %right_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %13, i32 0, i32 2
+  store i32 %add, i32* %right_io, align 8, !tbaa !21
+  %14 = load i32, i32* @detected_model, align 4, !tbaa !2
+  %cmp13 = icmp sle i32 %14, 2
+  %15 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %15, i32 0, i32 12
   br i1 %cmp13, label %if.end19.sink.split, label %if.else
 
 if.else:                                          ; preds = %if.end5
-  store i32 2, i32* %model, align 8, !tbaa !23
-  %14 = load i32, i32* @detected_model, align 4, !tbaa !2
-  %cmp16 = icmp eq i32 %14, 4
+  store i32 2, i32* %model, align 8, !tbaa !22
+  %16 = load i32, i32* @detected_model, align 4, !tbaa !2
+  %cmp16 = icmp eq i32 %16, 4
   br i1 %cmp16, label %if.then17, label %if.end19
 
 if.then17:                                        ; preds = %if.else
-  %15 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %is_opl4 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %15, i32 0, i32 14
+  %17 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %is_opl4 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %17, i32 0, i32 14
   br label %if.end19.sink.split
 
 if.end19.sink.split:                              ; preds = %if.then17, %if.end5
@@ -705,9 +657,9 @@ if.end19.sink.split:                              ; preds = %if.then17, %if.end5
   br label %if.end19
 
 if.end19:                                         ; preds = %if.end19.sink.split, %if.else
-  %16 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info20 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %16, i32 0, i32 10
-  store %struct.synth_info* %fm_info20, %struct.synth_info** getelementptr inbounds (%struct.synth_operations, %struct.synth_operations* @opl3_operations, i32 0, i32 2), align 8, !tbaa !24
+  %18 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info20 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %18, i32 0, i32 10
+  store %struct.synth_info* %fm_info20, %struct.synth_info** getelementptr inbounds (%struct.synth_operations, %struct.synth_operations* @opl3_operations, i32 0, i32 2), align 8, !tbaa !23
   %idxprom = sext i32 %call1 to i64
   %arrayidx = getelementptr inbounds [11 x %struct.synth_operations*], [11 x %struct.synth_operations*]* @synth_devs, i64 0, i64 %idxprom
   store %struct.synth_operations* @opl3_operations, %struct.synth_operations** %arrayidx, align 8, !tbaa !6
@@ -717,32 +669,32 @@ if.end19:                                         ; preds = %if.end19.sink.split
 if.then21:                                        ; preds = %if.end19
   %idxprom22 = sext i32 %call1 to i64
   %arrayidx23 = getelementptr inbounds [11 x %struct.synth_operations*], [11 x %struct.synth_operations*]* @synth_devs, i64 0, i64 %idxprom22
-  %17 = load %struct.synth_operations*, %struct.synth_operations** %arrayidx23, align 8, !tbaa !6
-  %owner24 = getelementptr inbounds %struct.synth_operations, %struct.synth_operations* %17, i32 0, i32 0
-  store %struct.module* %owner, %struct.module** %owner24, align 8, !tbaa !27
+  %19 = load %struct.synth_operations*, %struct.synth_operations** %arrayidx23, align 8, !tbaa !6
+  %owner24 = getelementptr inbounds %struct.synth_operations, %struct.synth_operations* %19, i32 0, i32 0
+  store %struct.module* %owner, %struct.module** %owner24, align 8, !tbaa !26
   br label %if.end25
 
 if.end25:                                         ; preds = %if.then21, %if.end19
   call void @sequencer_init()
-  %18 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %18, i32 0, i32 6
-  store %struct.voice_alloc_info* getelementptr inbounds (%struct.synth_operations, %struct.synth_operations* @opl3_operations, i32 0, i32 23), %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !28
-  %19 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %chn_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %19, i32 0, i32 7
-  store %struct.channel_info* getelementptr inbounds (%struct.synth_operations, %struct.synth_operations* @opl3_operations, i32 0, i32 24, i64 0), %struct.channel_info** %chn_info, align 8, !tbaa !29
   %20 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %model26 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %20, i32 0, i32 12
-  %21 = load i32, i32* %model26, align 8, !tbaa !23
-  %cmp27 = icmp eq i32 %21, 2
+  %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %20, i32 0, i32 6
+  store %struct.voice_alloc_info* getelementptr inbounds (%struct.synth_operations, %struct.synth_operations* @opl3_operations, i32 0, i32 23), %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !27
+  %21 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %chn_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %21, i32 0, i32 7
+  store %struct.channel_info* getelementptr inbounds (%struct.synth_operations, %struct.synth_operations* @opl3_operations, i32 0, i32 24, i64 0), %struct.channel_info** %chn_info, align 8, !tbaa !28
   %22 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %model26 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %22, i32 0, i32 12
+  %23 = load i32, i32* %model26, align 8, !tbaa !22
+  %cmp27 = icmp eq i32 %23, 2
+  %24 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   br i1 %cmp27, label %if.then28, label %if.else69
 
 if.then28:                                        ; preds = %if.end25
-  %is_opl429 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %22, i32 0, i32 14
-  %23 = load i32, i32* %is_opl429, align 8, !tbaa !11
-  %tobool30 = icmp ne i32 %23, 0
-  %24 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info32 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %24, i32 0, i32 10
+  %is_opl429 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %24, i32 0, i32 14
+  %25 = load i32, i32* %is_opl429, align 8, !tbaa !29
+  %tobool30 = icmp ne i32 %25, 0
+  %26 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info32 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %26, i32 0, i32 10
   %name = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info32, i32 0, i32 0
   %arraydecay = getelementptr inbounds [30 x i8], [30 x i8]* %name, i32 0, i32 0
   br i1 %tobool30, label %if.then31, label %if.else34
@@ -756,28 +708,28 @@ if.else34:                                        ; preds = %if.then28
   br label %if.end39
 
 if.end39:                                         ; preds = %if.else34, %if.then31
-  %25 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice40 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %25, i32 0, i32 3
-  store i32 18, i32* %nr_voice40, align 4, !tbaa !12
-  %26 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %v_alloc41 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %26, i32 0, i32 6
-  %27 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc41, align 8, !tbaa !28
-  %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %27, i32 0, i32 0
-  store i32 18, i32* %max_voice, align 4, !tbaa !30
+  %27 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %nr_voice40 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %27, i32 0, i32 3
+  store i32 18, i32* %nr_voice40, align 4, !tbaa !11
   %28 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info42 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %28, i32 0, i32 10
-  %nr_drums43 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info42, i32 0, i32 6
-  store i32 0, i32* %nr_drums43, align 4, !tbaa !18
-  %29 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info44 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %29, i32 0, i32 10
-  %synth_subtype45 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info44, i32 0, i32 3
-  store i32 1, i32* %synth_subtype45, align 8, !tbaa !15
+  %v_alloc41 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %28, i32 0, i32 6
+  %29 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc41, align 8, !tbaa !27
+  %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %29, i32 0, i32 0
+  store i32 18, i32* %max_voice, align 4, !tbaa !30
   %30 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info46 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %30, i32 0, i32 10
+  %fm_info42 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %30, i32 0, i32 10
+  %nr_drums43 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info42, i32 0, i32 6
+  store i32 0, i32* %nr_drums43, align 4, !tbaa !17
+  %31 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info44 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %31, i32 0, i32 10
+  %synth_subtype45 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info44, i32 0, i32 3
+  store i32 1, i32* %synth_subtype45, align 8, !tbaa !14
+  %32 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info46 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %32, i32 0, i32 10
   %capabilities47 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info46, i32 0, i32 8
-  %31 = load i32, i32* %capabilities47, align 4, !tbaa !20
-  %or = or i32 %31, 2
-  store i32 %or, i32* %capabilities47, align 4, !tbaa !20
+  %33 = load i32, i32* %capabilities47, align 4, !tbaa !19
+  %or = or i32 %33, 2
+  store i32 %or, i32* %capabilities47, align 4, !tbaa !19
   br label %for.cond
 
 for.cond:                                         ; preds = %if.end66, %if.end39
@@ -789,24 +741,24 @@ for.body:                                         ; preds = %for.cond
   %idxprom49 = sext i32 %i.0 to i64
   %arrayidx50 = getelementptr inbounds [18 x %struct.physical_voice_info], [18 x %struct.physical_voice_info]* @pv_map, i64 0, i64 %idxprom49
   %ioaddr51 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx50, i32 0, i32 2
-  %32 = load i16, i16* %ioaddr51, align 2, !tbaa !31
-  %conv = zext i16 %32 to i32
+  %34 = load i16, i16* %ioaddr51, align 2, !tbaa !31
+  %conv = zext i16 %34 to i32
   %cmp52 = icmp eq i32 %conv, 0
-  %33 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %35 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   br i1 %cmp52, label %if.then54, label %if.else60
 
 if.then54:                                        ; preds = %for.body
-  %left_io55 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %33, i32 0, i32 1
-  %34 = load i32, i32* %left_io55, align 4, !tbaa !21
+  %left_io55 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %35, i32 0, i32 1
+  %36 = load i32, i32* %left_io55, align 4, !tbaa !20
   br label %if.end66
 
 if.else60:                                        ; preds = %for.body
-  %right_io61 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %33, i32 0, i32 2
-  %35 = load i32, i32* %right_io61, align 8, !tbaa !22
+  %right_io61 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %35, i32 0, i32 2
+  %37 = load i32, i32* %right_io61, align 8, !tbaa !21
   br label %if.end66
 
 if.end66:                                         ; preds = %if.else60, %if.then54
-  %.sink = phi i32 [ %35, %if.else60 ], [ %34, %if.then54 ]
+  %.sink = phi i32 [ %37, %if.else60 ], [ %36, %if.then54 ]
   %conv62 = trunc i32 %.sink to i16
   %idxprom63 = sext i32 %i.0 to i64
   %arrayidx64 = getelementptr inbounds [18 x %struct.physical_voice_info], [18 x %struct.physical_voice_info]* @pv_map, i64 0, i64 %idxprom63
@@ -816,33 +768,33 @@ if.end66:                                         ; preds = %if.else60, %if.then
   br label %for.cond
 
 for.end:                                          ; preds = %for.cond
-  %36 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %right_io67 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %36, i32 0, i32 2
-  %37 = load i32, i32* %right_io67, align 8, !tbaa !22
-  call void @opl3_command(i32 %37, i32 5, i32 1)
   %38 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %right_io68 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %38, i32 0, i32 2
-  %39 = load i32, i32* %right_io68, align 8, !tbaa !22
-  call void @opl3_command(i32 %39, i32 4, i32 0)
+  %right_io67 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %38, i32 0, i32 2
+  %39 = load i32, i32* %right_io67, align 8, !tbaa !21
+  call void @opl3_command(i32 %39, i32 5, i32 1)
+  %40 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %right_io68 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %40, i32 0, i32 2
+  %41 = load i32, i32* %right_io68, align 8, !tbaa !21
+  call void @opl3_command(i32 %41, i32 4, i32 0)
   br label %if.end91
 
 if.else69:                                        ; preds = %if.end25
-  %fm_info70 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %22, i32 0, i32 10
+  %fm_info70 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %24, i32 0, i32 10
   %name71 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info70, i32 0, i32 0
   %arraydecay72 = getelementptr inbounds [30 x i8], [30 x i8]* %name71, i32 0, i32 0
   %call73 = call i8* @strcpy(i8* %arraydecay72, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str.11, i32 0, i32 0))
-  %40 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice74 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %40, i32 0, i32 3
-  store i32 9, i32* %nr_voice74, align 4, !tbaa !12
-  %41 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %v_alloc75 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %41, i32 0, i32 6
-  %42 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc75, align 8, !tbaa !28
-  %max_voice76 = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %42, i32 0, i32 0
-  store i32 9, i32* %max_voice76, align 4, !tbaa !30
+  %42 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %nr_voice74 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %42, i32 0, i32 3
+  store i32 9, i32* %nr_voice74, align 4, !tbaa !11
   %43 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info77 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %43, i32 0, i32 10
+  %v_alloc75 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %43, i32 0, i32 6
+  %44 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc75, align 8, !tbaa !27
+  %max_voice76 = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %44, i32 0, i32 0
+  store i32 9, i32* %max_voice76, align 4, !tbaa !30
+  %45 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info77 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %45, i32 0, i32 10
   %nr_drums78 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info77, i32 0, i32 6
-  store i32 0, i32* %nr_drums78, align 4, !tbaa !18
+  store i32 0, i32* %nr_drums78, align 4, !tbaa !17
   br label %for.cond79
 
 for.cond79:                                       ; preds = %for.body82, %if.else69
@@ -851,10 +803,10 @@ for.cond79:                                       ; preds = %for.body82, %if.els
   br i1 %cmp80, label %for.body82, label %if.end91
 
 for.body82:                                       ; preds = %for.cond79
-  %44 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %left_io83 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %44, i32 0, i32 1
-  %45 = load i32, i32* %left_io83, align 4, !tbaa !21
-  %conv84 = trunc i32 %45 to i16
+  %46 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %left_io83 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %46, i32 0, i32 1
+  %47 = load i32, i32* %left_io83, align 4, !tbaa !20
+  %conv84 = trunc i32 %47 to i16
   %idxprom85 = sext i32 %i.1 to i64
   %arrayidx86 = getelementptr inbounds [18 x %struct.physical_voice_info], [18 x %struct.physical_voice_info]* @pv_map, i64 0, i64 %idxprom85
   %ioaddr87 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx86, i32 0, i32 2
@@ -863,8 +815,8 @@ for.body82:                                       ; preds = %for.cond79
   br label %for.cond79
 
 if.end91:                                         ; preds = %for.cond79, %for.end
-  %46 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info92 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %46, i32 0, i32 10
+  %48 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info92 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %48, i32 0, i32 10
   %name93 = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info92, i32 0, i32 0
   %arraydecay94 = getelementptr inbounds [30 x i8], [30 x i8]* %name93, i32 0, i32 0
   call void @conf_printf2(i8* %arraydecay94, i32 %ioaddr, i32 0, i32 -1, i32 -1)
@@ -876,8 +828,8 @@ for.cond95:                                       ; preds = %for.body98, %if.end
   br i1 %cmp96, label %for.body98, label %cleanup
 
 for.body98:                                       ; preds = %for.cond95
-  %47 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %i_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %47, i32 0, i32 8
+  %49 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %i_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %49, i32 0, i32 8
   %idxprom99 = sext i32 %i.2 to i64
   %arrayidx100 = getelementptr inbounds [256 x %struct.sbi_instrument], [256 x %struct.sbi_instrument]* %i_map, i64 0, i64 %idxprom99
   %channel = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %arrayidx100, i32 0, i32 2
@@ -897,8 +849,8 @@ declare void @llvm.lifetime.start.p0i8(i64, i8* nocapture) #3
 define internal i8* @kzalloc(i64 %size, i32 %flags) #4 {
 entry:
   %or = or i32 %flags, 32768
-  %call = call i8* @kmalloc(i64 %size, i32 %or)
-  ret i8* %call
+  %call.i = call noalias i8* @__kmalloc(i64 %size, i32 %or) #7
+  ret i8* %call.i
 }
 
 declare i8* @strcpy(i8*, i8*) #1
@@ -913,7 +865,7 @@ entry:
   call void @outb(i8 zeroext %conv, i32 %io_addr)
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 12
-  %1 = load i32, i32* %model, align 8, !tbaa !23
+  %1 = load i32, i32* %model, align 8, !tbaa !22
   %cmp = icmp ne i32 %1, 2
   br i1 %cmp, label %if.then, label %if.else
 
@@ -941,7 +893,7 @@ if.end:                                           ; preds = %for.cond, %if.then
   call void @outb(i8 zeroext %conv5, i32 %add)
   %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %model6 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 12
-  %3 = load i32, i32* %model6, align 8, !tbaa !23
+  %3 = load i32, i32* %model6, align 8, !tbaa !22
   %cmp7 = icmp ne i32 %3, 2
   br i1 %cmp7, label %if.then9, label %if.else10
 
@@ -969,14 +921,14 @@ if.end19:                                         ; preds = %for.cond11, %if.the
 ; Function Attrs: inlinehint nounwind uwtable
 define internal zeroext i8 @inb(i32 %port) #4 {
 entry:
-  %0 = call i8 asm sideeffect "inb ${1:w}, ${0:b}", "={ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i32 %port) #8, !srcloc !36
+  %0 = call i8 asm sideeffect "inb ${1:w}, ${0:b}", "={ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i32 %port) #7, !srcloc !36
   ret i8 %0
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @outb(i8 zeroext %value, i32 %port) #4 {
 entry:
-  call void asm sideeffect "outb ${0:b}, ${1:w}", "{ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i8 %value, i32 %port) #8, !srcloc !37
+  call void asm sideeffect "outb ${0:b}, ${1:w}", "{ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i8 %value, i32 %port) #7, !srcloc !37
   ret void
 }
 
@@ -988,13 +940,6 @@ declare void @__release_region(%struct.resource*, i64, i64) #1
 declare void @llvm.lifetime.end.p0i8(i64, i8* nocapture) #3
 
 declare void @kfree(i8*) #1
-
-; Function Attrs: alwaysinline nounwind uwtable
-define internal i8* @kmalloc(i64 %size, i32 %flags) #5 {
-entry:
-  %call = call noalias i8* @__kmalloc(i64 %size, i32 %flags)
-  ret i8* %call
-}
 
 declare noalias i8* @__kmalloc(i64, i32) #1
 
@@ -1019,42 +964,41 @@ if.end:                                           ; preds = %entry
   store i32 1, i32* %busy1, align 4, !tbaa !38
   %3 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %3, i32 0, i32 12
-  %4 = load i32, i32* %model, align 8, !tbaa !23
+  %4 = load i32, i32* %model, align 8, !tbaa !22
   %cmp = icmp eq i32 %4, 2
-  %5 = zext i1 %cmp to i64
   %cond = select i1 %cmp, i32 18, i32 9
+  %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 3
+  store i32 %cond, i32* %nr_voice, align 4, !tbaa !11
   %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 3
-  store i32 %cond, i32* %nr_voice, align 4, !tbaa !12
-  %7 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %7, i32 0, i32 6
-  %8 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !28
-  %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %8, i32 0, i32 0
+  %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 6
+  %7 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !27
+  %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %7, i32 0, i32 0
   store i32 %cond, i32* %max_voice, align 4, !tbaa !30
-  %9 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %v_alloc2 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %9, i32 0, i32 6
-  %10 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc2, align 8, !tbaa !28
-  %timestamp = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %10, i32 0, i32 4
+  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %v_alloc2 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 6
+  %9 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc2, align 8, !tbaa !27
+  %timestamp = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %9, i32 0, i32 4
   store i32 0, i32* %timestamp, align 4, !tbaa !39
   br label %for.cond
 
 for.cond:                                         ; preds = %for.body, %if.end
   %i.0 = phi i32 [ 0, %if.end ], [ %inc, %for.body ]
   %cmp3 = icmp slt i32 %i.0, 18
-  %11 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   br i1 %cmp3, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
-  %v_alloc4 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %11, i32 0, i32 6
-  %12 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc4, align 8, !tbaa !28
-  %map = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %12, i32 0, i32 3
+  %v_alloc4 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 6
+  %11 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc4, align 8, !tbaa !27
+  %map = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %11, i32 0, i32 3
   %idxprom = sext i32 %i.0 to i64
   %arrayidx = getelementptr inbounds [32 x i16], [32 x i16]* %map, i64 0, i64 %idxprom
   store i16 0, i16* %arrayidx, align 2, !tbaa !40
-  %13 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %v_alloc5 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %13, i32 0, i32 6
-  %14 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc5, align 8, !tbaa !28
-  %alloc_times = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %14, i32 0, i32 5
+  %12 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %v_alloc5 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %12, i32 0, i32 6
+  %13 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc5, align 8, !tbaa !27
+  %alloc_times = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %13, i32 0, i32 5
   %idxprom6 = sext i32 %i.0 to i64
   %arrayidx7 = getelementptr inbounds [32 x i32], [32 x i32]* %alloc_times, i64 0, i64 %idxprom6
   store i32 0, i32* %arrayidx7, align 4, !tbaa !2
@@ -1062,23 +1006,23 @@ for.body:                                         ; preds = %for.cond
   br label %for.cond
 
 for.end:                                          ; preds = %for.cond
-  %cmask = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %11, i32 0, i32 13
+  %cmask = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 13
   store i8 0, i8* %cmask, align 4, !tbaa !41
-  %15 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %model8 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %15, i32 0, i32 12
-  %16 = load i32, i32* %model8, align 8, !tbaa !23
-  %cmp9 = icmp eq i32 %16, 2
+  %14 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %model8 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %14, i32 0, i32 12
+  %15 = load i32, i32* %model8, align 8, !tbaa !22
+  %cmp9 = icmp eq i32 %15, 2
   br i1 %cmp9, label %if.then10, label %cleanup
 
 if.then10:                                        ; preds = %for.end
-  %17 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %right_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %17, i32 0, i32 2
-  %18 = load i32, i32* %right_io, align 8, !tbaa !22
-  %19 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %cmask11 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %19, i32 0, i32 13
-  %20 = load i8, i8* %cmask11, align 4, !tbaa !41
-  %conv = zext i8 %20 to i32
-  call void @opl3_command(i32 %18, i32 4, i32 %conv)
+  %16 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %right_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %16, i32 0, i32 2
+  %17 = load i32, i32* %right_io, align 8, !tbaa !21
+  %18 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %cmask11 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %18, i32 0, i32 13
+  %19 = load i8, i8* %cmask11, align 4, !tbaa !41
+  %conv = zext i8 %19 to i32
+  call void @opl3_command(i32 %17, i32 4, i32 %conv)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.then10, %for.end, %entry
@@ -1094,26 +1038,25 @@ entry:
   store i32 0, i32* %busy, align 4, !tbaa !38
   %1 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %1, i32 0, i32 12
-  %2 = load i32, i32* %model, align 8, !tbaa !23
+  %2 = load i32, i32* %model, align 8, !tbaa !22
   %cmp = icmp eq i32 %2, 2
-  %3 = zext i1 %cmp to i64
   %cond = select i1 %cmp, i32 18, i32 9
+  %3 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %3, i32 0, i32 3
+  store i32 %cond, i32* %nr_voice, align 4, !tbaa !11
   %4 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 3
-  store i32 %cond, i32* %nr_voice, align 4, !tbaa !12
-  %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 6
-  %6 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !28
-  %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %6, i32 0, i32 0
+  %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 6
+  %5 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !27
+  %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %5, i32 0, i32 0
   store i32 %cond, i32* %max_voice, align 4, !tbaa !30
-  %7 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %7, i32 0, i32 10
+  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 10
   %nr_drums = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info, i32 0, i32 6
-  store i32 0, i32* %nr_drums, align 4, !tbaa !18
-  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info1 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 10
+  store i32 0, i32* %nr_drums, align 4, !tbaa !17
+  %7 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info1 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %7, i32 0, i32 10
   %perc_mode = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info1, i32 0, i32 4
-  store i32 0, i32* %perc_mode, align 4, !tbaa !16
+  store i32 0, i32* %perc_mode, align 4, !tbaa !15
   call void @opl3_reset(i32 %dev)
   ret void
 }
@@ -1122,8 +1065,6 @@ entry:
 define internal i32 @opl3_ioctl(i32 %dev, i32 %cmd, i8* %arg) #2 {
 entry:
   %ins = alloca %struct.sbi_instrument, align 4
-  %0 = bitcast %struct.sbi_instrument* %ins to i8*
-  call void @llvm.lifetime.start.p0i8(i64 40, i8* %0) #8
   %Pivot10 = icmp slt i32 %cmd, 1074024719
   br i1 %Pivot10, label %NodeBlock, label %NodeBlock7
 
@@ -1152,68 +1093,114 @@ LeafBlock:                                        ; preds = %NodeBlock
   br i1 %SwitchLeaf, label %cleanup, label %sw.default
 
 sw.bb:                                            ; preds = %LeafBlock5
-  %call = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([72 x i8], [72 x i8]* @.str.13, i32 0, i32 0))
+  %0 = call i32 (i8*, ...) @printk(i8* null)
   %1 = bitcast %struct.sbi_instrument* %ins to i8*
-  %call1 = call i64 @copy_from_user(i8* %1, i8* %arg, i64 40)
-  %tobool = icmp ne i64 %call1, 0
+  %2 = call i64 @llvm.objectsize.i64.p0i8(i8* %1, i1 false, i1 true) #7
+  %conv.i = trunc i64 %2 to i32
+  call void @__might_fault(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.15, i32 0, i32 0), i32 696) #7
+  call void @kasan_check_write(i8* %1, i32 40) #7
+  %cmp.i = icmp slt i32 %conv.i, 0
+  %conv3.i = sext i32 %conv.i to i64
+  %cmp4.i = icmp uge i64 %conv3.i, 40
+  %3 = select i1 %cmp.i, i1 true, i1 %cmp4.i
+  %lnot.ext.i = zext i1 %3 to i32
+  %conv7.i = sext i32 %lnot.ext.i to i64
+  %expval.i = call i64 @llvm.expect.i64(i64 %conv7.i, i64 1) #7
+  %tobool.i = icmp ne i64 %expval.i, 0
+  br i1 %tobool.i, label %if.then.i, label %if.else.i
+
+if.then.i:                                        ; preds = %sw.bb
+  call void @__check_object_size(i8* %1, i64 40, i1 zeroext false) #7
+  %call.i = call i64 @_copy_from_user(i8* %1, i8* %arg, i32 40) #7
+  br label %copy_from_user.exit
+
+if.else.i:                                        ; preds = %sw.bb
+  call void @copy_user_overflow(i32 %conv.i, i64 40) #7
+  br label %copy_from_user.exit
+
+copy_from_user.exit:                              ; preds = %if.else.i, %if.then.i
+  %n.addr.0.i = phi i64 [ %call.i, %if.then.i ], [ 40, %if.else.i ]
+  %tobool = icmp ne i64 %n.addr.0.i, 0
   br i1 %tobool, label %cleanup, label %if.end
 
-if.end:                                           ; preds = %sw.bb
+if.end:                                           ; preds = %copy_from_user.exit
   %channel = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %2 = load i32, i32* %channel, align 4, !tbaa !34
-  %cmp = icmp slt i32 %2, 0
+  %4 = load i32, i32* %channel, align 4, !tbaa !34
+  %cmp = icmp slt i32 %4, 0
   br i1 %cmp, label %if.then4, label %lor.lhs.false
 
 lor.lhs.false:                                    ; preds = %if.end
   %channel2 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %3 = load i32, i32* %channel2, align 4, !tbaa !34
-  %cmp3 = icmp sge i32 %3, 256
+  %5 = load i32, i32* %channel2, align 4, !tbaa !34
+  %cmp3 = icmp sge i32 %5, 256
   br i1 %cmp3, label %if.then4, label %if.end7
 
 if.then4:                                         ; preds = %lor.lhs.false, %if.end
-  %channel5 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %4 = load i32, i32* %channel5, align 4, !tbaa !34
-  %call6 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([42 x i8], [42 x i8]* @.str.14, i32 0, i32 0), i32 %4)
+  %6 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end7:                                          ; preds = %lor.lhs.false
   %channel8 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %5 = load i32, i32* %channel8, align 4, !tbaa !34
-  %call9 = call i32 @store_instr(i32 %5, %struct.sbi_instrument* %ins)
+  %7 = load i32, i32* %channel8, align 4, !tbaa !34
+  %call9 = call i32 @store_instr(i32 %7, %struct.sbi_instrument* %ins)
   br label %cleanup
 
 sw.bb10:                                          ; preds = %LeafBlock1
-  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 3
-  %7 = load i32, i32* %nr_voice, align 4, !tbaa !12
-  %cmp11 = icmp eq i32 %7, 12
+  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 3
+  %9 = load i32, i32* %nr_voice, align 4, !tbaa !11
+  %cmp11 = icmp eq i32 %9, 12
   br i1 %cmp11, label %cond.end, label %cond.false
 
 cond.false:                                       ; preds = %sw.bb10
-  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice12 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 3
-  %9 = load i32, i32* %nr_voice12, align 4, !tbaa !12
+  %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %nr_voice12 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 3
+  %11 = load i32, i32* %nr_voice12, align 4, !tbaa !11
   br label %cond.end
 
 cond.end:                                         ; preds = %cond.false, %sw.bb10
-  %cond = phi i32 [ %9, %cond.false ], [ 6, %sw.bb10 ]
-  %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 10
+  %cond = phi i32 [ %11, %cond.false ], [ 6, %sw.bb10 ]
+  %12 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %12, i32 0, i32 10
   %nr_voices = getelementptr inbounds %struct.synth_info, %struct.synth_info* %fm_info, i32 0, i32 5
-  store i32 %cond, i32* %nr_voices, align 8, !tbaa !17
-  %11 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %fm_info13 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %11, i32 0, i32 10
-  %12 = bitcast %struct.synth_info* %fm_info13 to i8*
-  %call14 = call i64 @copy_to_user(i8* %arg, i8* %12, i64 140)
-  %tobool15 = icmp ne i64 %call14, 0
+  store i32 %cond, i32* %nr_voices, align 8, !tbaa !16
+  %13 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %fm_info13 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %13, i32 0, i32 10
+  %14 = bitcast %struct.synth_info* %fm_info13 to i8*
+  %15 = call i64 @llvm.objectsize.i64.p0i8(i8* %14, i1 false, i1 true) #7
+  %conv.i1 = trunc i64 %15 to i32
+  call void @kasan_check_read(i8* %14, i32 140) #7
+  call void @__might_fault(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.15, i32 0, i32 0), i32 718) #7
+  %cmp.i2 = icmp slt i32 %conv.i1, 0
+  %conv3.i3 = sext i32 %conv.i1 to i64
+  %cmp4.i4 = icmp uge i64 %conv3.i3, 140
+  %16 = select i1 %cmp.i2, i1 true, i1 %cmp4.i4
+  %lnot.ext.i6 = zext i1 %16 to i32
+  %conv7.i7 = sext i32 %lnot.ext.i6 to i64
+  %expval.i8 = call i64 @llvm.expect.i64(i64 %conv7.i7, i64 1) #7
+  %tobool.i9 = icmp ne i64 %expval.i8, 0
+  br i1 %tobool.i9, label %if.then.i11, label %if.else.i12
+
+if.then.i11:                                      ; preds = %cond.end
+  call void @__check_object_size(i8* %14, i64 140, i1 zeroext true) #7
+  %call.i10 = call i64 @_copy_to_user(i8* %arg, i8* %14, i32 140) #7
+  br label %copy_to_user.exit
+
+if.else.i12:                                      ; preds = %cond.end
+  call void @copy_user_overflow(i32 %conv.i1, i64 140) #7
+  br label %copy_to_user.exit
+
+copy_to_user.exit:                                ; preds = %if.else.i12, %if.then.i11
+  %n.addr.0.i13 = phi i64 [ %call.i10, %if.then.i11 ], [ 140, %if.else.i12 ]
+  %tobool15 = icmp ne i64 %n.addr.0.i13, 0
   %. = select i1 %tobool15, i32 -14, i32 0
   br label %cleanup
 
 sw.bb19:                                          ; preds = %LeafBlock3
-  %13 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %13, i32 0, i32 12
-  %14 = load i32, i32* %model, align 8, !tbaa !23
-  %cmp20 = icmp eq i32 %14, 2
+  %17 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %17, i32 0, i32 12
+  %18 = load i32, i32* %model, align 8, !tbaa !22
+  %cmp20 = icmp eq i32 %18, 2
   br i1 %cmp20, label %if.then21, label %cleanup
 
 if.then21:                                        ; preds = %sw.bb19
@@ -1223,10 +1210,8 @@ if.then21:                                        ; preds = %sw.bb19
 sw.default:                                       ; preds = %LeafBlock, %LeafBlock1, %LeafBlock3, %LeafBlock5
   br label %cleanup
 
-cleanup:                                          ; preds = %sw.default, %if.then21, %sw.bb19, %cond.end, %if.end7, %if.then4, %sw.bb, %LeafBlock
-  %retval.0 = phi i32 [ -22, %sw.default ], [ -22, %if.then4 ], [ %call9, %if.end7 ], [ -14, %sw.bb ], [ %., %cond.end ], [ 2147483647, %LeafBlock ], [ 0, %if.then21 ], [ 0, %sw.bb19 ]
-  %15 = bitcast %struct.sbi_instrument* %ins to i8*
-  call void @llvm.lifetime.end.p0i8(i64 40, i8* %15) #8
+cleanup:                                          ; preds = %sw.default, %if.then21, %sw.bb19, %copy_to_user.exit, %if.end7, %if.then4, %copy_from_user.exit, %LeafBlock
+  %retval.0 = phi i32 [ -22, %sw.default ], [ -22, %if.then4 ], [ %call9, %if.end7 ], [ -14, %copy_from_user.exit ], [ %., %copy_to_user.exit ], [ 2147483647, %LeafBlock ], [ 0, %if.then21 ], [ 0, %sw.bb19 ]
   ret i32 %retval.0
 }
 
@@ -1239,14 +1224,14 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %lor.lhs.false
   %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 6
-  %3 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !28
+  %3 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !27
   %map2 = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %3, i32 0, i32 3
   %idxprom = sext i32 %voice to i64
   %arrayidx = getelementptr inbounds [32 x i16], [32 x i16]* %map2, i64 0, i64 %idxprom
@@ -1340,37 +1325,33 @@ define internal i32 @opl3_start_note(i32 %dev, i32 %voice, i32 %note, i32 %volum
 entry:
   %block = alloca i32, align 4
   %fnum = alloca i32, align 4
-  %0 = bitcast i32* %block to i8*
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %0) #8
-  %1 = bitcast i32* %fnum to i8*
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %1) #8
   %cmp = icmp slt i32 %voice, 0
   br i1 %cmp, label %cleanup, label %lor.lhs.false
 
 lor.lhs.false:                                    ; preds = %entry
-  %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 3
-  %3 = load i32, i32* %nr_voice, align 4, !tbaa !12
-  %cmp1 = icmp sge i32 %voice, %3
+  %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
+  %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %lor.lhs.false
-  %4 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %lv_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 4
+  %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %lv_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 4
   %idxprom = sext i32 %voice to i64
   %arrayidx = getelementptr inbounds [18 x i32], [18 x i32]* %lv_map, i64 0, i64 %idxprom
-  %5 = load i32, i32* %arrayidx, align 4, !tbaa !2
-  %idxprom2 = sext i32 %5 to i64
+  %3 = load i32, i32* %arrayidx, align 4, !tbaa !2
+  %idxprom2 = sext i32 %3 to i64
   %arrayidx3 = getelementptr inbounds [18 x %struct.physical_voice_info], [18 x %struct.physical_voice_info]* @pv_map, i64 0, i64 %idxprom2
-  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 5
+  %4 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 5
   %idxprom4 = sext i32 %voice to i64
   %arrayidx5 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc, i64 0, i64 %idxprom4
   %panning = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx5, i32 0, i32 7
-  %7 = load i32, i32* %panning, align 8, !tbaa !49
+  %5 = load i32, i32* %panning, align 8, !tbaa !49
   %voice_mode6 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 1
-  %8 = load i8, i8* %voice_mode6, align 1, !tbaa !42
-  %conv = zext i8 %8 to i32
+  %6 = load i8, i8* %voice_mode6, align 1, !tbaa !42
+  %conv = zext i8 %6 to i32
   %cmp7 = icmp eq i32 %conv, 0
   br i1 %cmp7, label %cleanup, label %if.end10
 
@@ -1379,145 +1360,144 @@ if.end10:                                         ; preds = %if.end
   br i1 %cmp11, label %if.then13, label %if.end18
 
 if.then13:                                        ; preds = %if.end10
-  %9 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc14 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %9, i32 0, i32 5
+  %7 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc14 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %7, i32 0, i32 5
   %idxprom15 = sext i32 %voice to i64
   %arrayidx16 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc14, i64 0, i64 %idxprom15
   %volume17 = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx16, i32 0, i32 5
-  %10 = load i32, i32* %volume17, align 8, !tbaa !48
-  call void @set_voice_volume(i32 %voice, i32 %volume, i32 %10)
+  %8 = load i32, i32* %volume17, align 8, !tbaa !48
+  call void @set_voice_volume(i32 %voice, i32 %volume, i32 %8)
   br label %cleanup
 
 if.end18:                                         ; preds = %if.end10
   %ioaddr = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %11 = load i16, i16* %ioaddr, align 2, !tbaa !31
-  %conv19 = zext i16 %11 to i32
+  %9 = load i16, i16* %ioaddr, align 2, !tbaa !31
+  %conv19 = zext i16 %9 to i32
   %op = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx20 = getelementptr inbounds [4 x i8], [4 x i8]* %op, i64 0, i64 1
-  %12 = load i8, i8* %arrayidx20, align 1, !tbaa !54
-  %conv21 = zext i8 %12 to i32
+  %10 = load i8, i8* %arrayidx20, align 1, !tbaa !54
+  %conv21 = zext i8 %10 to i32
   %add = add nsw i32 64, %conv21
   call void @opl3_command(i32 %conv19, i32 %add, i32 255)
   %ioaddr22 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %13 = load i16, i16* %ioaddr22, align 2, !tbaa !31
-  %conv23 = zext i16 %13 to i32
+  %11 = load i16, i16* %ioaddr22, align 2, !tbaa !31
+  %conv23 = zext i16 %11 to i32
   %op24 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx25 = getelementptr inbounds [4 x i8], [4 x i8]* %op24, i64 0, i64 0
-  %14 = load i8, i8* %arrayidx25, align 2, !tbaa !54
-  %conv26 = zext i8 %14 to i32
+  %12 = load i8, i8* %arrayidx25, align 2, !tbaa !54
+  %conv26 = zext i8 %12 to i32
   %add27 = add nsw i32 64, %conv26
   call void @opl3_command(i32 %conv23, i32 %add27, i32 255)
   %voice_mode28 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 1
-  %15 = load i8, i8* %voice_mode28, align 1, !tbaa !42
-  %conv29 = zext i8 %15 to i32
+  %13 = load i8, i8* %voice_mode28, align 1, !tbaa !42
+  %conv29 = zext i8 %13 to i32
   %cmp30 = icmp eq i32 %conv29, 4
   br i1 %cmp30, label %if.then32, label %if.end45
 
 if.then32:                                        ; preds = %if.end18
   %ioaddr33 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %16 = load i16, i16* %ioaddr33, align 2, !tbaa !31
-  %conv34 = zext i16 %16 to i32
+  %14 = load i16, i16* %ioaddr33, align 2, !tbaa !31
+  %conv34 = zext i16 %14 to i32
   %op35 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx36 = getelementptr inbounds [4 x i8], [4 x i8]* %op35, i64 0, i64 2
-  %17 = load i8, i8* %arrayidx36, align 2, !tbaa !54
-  %conv37 = zext i8 %17 to i32
+  %15 = load i8, i8* %arrayidx36, align 2, !tbaa !54
+  %conv37 = zext i8 %15 to i32
   %add38 = add nsw i32 64, %conv37
   call void @opl3_command(i32 %conv34, i32 %add38, i32 255)
   %ioaddr39 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %18 = load i16, i16* %ioaddr39, align 2, !tbaa !31
-  %conv40 = zext i16 %18 to i32
+  %16 = load i16, i16* %ioaddr39, align 2, !tbaa !31
+  %conv40 = zext i16 %16 to i32
   %op41 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx42 = getelementptr inbounds [4 x i8], [4 x i8]* %op41, i64 0, i64 3
-  %19 = load i8, i8* %arrayidx42, align 1, !tbaa !54
-  %conv43 = zext i8 %19 to i32
+  %17 = load i8, i8* %arrayidx42, align 1, !tbaa !54
+  %conv43 = zext i8 %17 to i32
   %add44 = add nsw i32 64, %conv43
   call void @opl3_command(i32 %conv40, i32 %add44, i32 255)
   br label %if.end45
 
 if.end45:                                         ; preds = %if.then32, %if.end18
   %ioaddr46 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %20 = load i16, i16* %ioaddr46, align 2, !tbaa !31
-  %conv47 = zext i16 %20 to i32
+  %18 = load i16, i16* %ioaddr46, align 2, !tbaa !31
+  %conv47 = zext i16 %18 to i32
   %voice_num = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 0
-  %21 = load i8, i8* %voice_num, align 2, !tbaa !43
-  %conv48 = zext i8 %21 to i32
+  %19 = load i8, i8* %voice_num, align 2, !tbaa !43
+  %conv48 = zext i8 %19 to i32
   %add49 = add nsw i32 176, %conv48
   call void @opl3_command(i32 %conv47, i32 %add49, i32 0)
-  %22 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %act_i = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %22, i32 0, i32 9
+  %20 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %act_i = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %20, i32 0, i32 9
   %idxprom50 = sext i32 %voice to i64
   %arrayidx51 = getelementptr inbounds [18 x %struct.sbi_instrument*], [18 x %struct.sbi_instrument*]* %act_i, i64 0, i64 %idxprom50
-  %23 = load %struct.sbi_instrument*, %struct.sbi_instrument** %arrayidx51, align 8, !tbaa !6
-  %tobool = icmp ne %struct.sbi_instrument* %23, null
-  %24 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8
-  %i_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %24, i32 0, i32 8
+  %21 = load %struct.sbi_instrument*, %struct.sbi_instrument** %arrayidx51, align 8, !tbaa !6
+  %tobool = icmp ne %struct.sbi_instrument* %21, null
+  %22 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8
+  %i_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %22, i32 0, i32 8
   %arrayidx53 = getelementptr inbounds [256 x %struct.sbi_instrument], [256 x %struct.sbi_instrument]* %i_map, i64 0, i64 0
-  %instr.0 = select i1 %tobool, %struct.sbi_instrument* %23, %struct.sbi_instrument* %arrayidx53
+  %instr.0 = select i1 %tobool, %struct.sbi_instrument* %21, %struct.sbi_instrument* %arrayidx53
   %channel = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 2
-  %25 = load i32, i32* %channel, align 4, !tbaa !34
-  %cmp55 = icmp slt i32 %25, 0
+  %23 = load i32, i32* %channel, align 4, !tbaa !34
+  %cmp55 = icmp slt i32 %23, 0
   br i1 %cmp55, label %if.then57, label %if.end58
 
 if.then57:                                        ; preds = %if.end45
-  %call = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @.str.18, i32 0, i32 0), i32 %voice)
+  %24 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end58:                                         ; preds = %if.end45
   %voice_mode59 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 1
-  %26 = load i8, i8* %voice_mode59, align 1, !tbaa !42
-  %conv60 = zext i8 %26 to i32
+  %25 = load i8, i8* %voice_mode59, align 1, !tbaa !42
+  %conv60 = zext i8 %25 to i32
   %cmp61 = icmp eq i32 %conv60, 2
   br i1 %cmp61, label %land.lhs.true, label %if.end67
 
 land.lhs.true:                                    ; preds = %if.end58
   %key = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 0
-  %27 = load i16, i16* %key, align 4, !tbaa !55
-  %conv63 = zext i16 %27 to i32
+  %26 = load i16, i16* %key, align 4, !tbaa !55
+  %conv63 = zext i16 %26 to i32
   %cmp64 = icmp eq i32 %conv63, 1021
   br i1 %cmp64, label %cleanup, label %if.end67
 
 if.end67:                                         ; preds = %land.lhs.true, %if.end58
   %voice_mode68 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 1
-  %28 = load i8, i8* %voice_mode68, align 1, !tbaa !42
-  %conv69 = zext i8 %28 to i32
+  %27 = load i8, i8* %voice_mode68, align 1, !tbaa !42
+  %conv69 = zext i8 %27 to i32
   %cmp70 = icmp eq i32 %conv69, 4
   br i1 %cmp70, label %if.then72, label %if.end94
 
 if.then72:                                        ; preds = %if.end67
   %ioaddr73 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %29 = load i16, i16* %ioaddr73, align 2, !tbaa !31
-  %conv74 = zext i16 %29 to i32
-  %30 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %left_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %30, i32 0, i32 1
-  %31 = load i32, i32* %left_io, align 4, !tbaa !21
-  %cmp75 = icmp eq i32 %conv74, %31
-  %32 = zext i1 %cmp75 to i64
+  %28 = load i16, i16* %ioaddr73, align 2, !tbaa !31
+  %conv74 = zext i16 %28 to i32
+  %29 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %left_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %29, i32 0, i32 1
+  %30 = load i32, i32* %left_io, align 4, !tbaa !20
+  %cmp75 = icmp eq i32 %conv74, %30
   %cond = select i1 %cmp75, i32 0, i32 3
   %voice_num77 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 0
-  %33 = load i8, i8* %voice_num77, align 2, !tbaa !43
-  %conv78 = zext i8 %33 to i32
+  %31 = load i8, i8* %voice_num77, align 2, !tbaa !43
+  %conv78 = zext i8 %31 to i32
   %add79 = add nsw i32 %cond, %conv78
   %key80 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 0
-  %34 = load i16, i16* %key80, align 4, !tbaa !55
-  %conv81 = zext i16 %34 to i32
+  %32 = load i16, i16* %key80, align 4, !tbaa !55
+  %conv81 = zext i16 %32 to i32
   %cmp82 = icmp ne i32 %conv81, 1021
   %shl = shl i32 1, %add79
   br i1 %cmp82, label %if.then84, label %if.else
 
 if.then84:                                        ; preds = %if.then72
   %neg = xor i32 %shl, -1
-  %35 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %cmask = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %35, i32 0, i32 13
-  %36 = load i8, i8* %cmask, align 4, !tbaa !41
-  %conv85 = zext i8 %36 to i32
+  %33 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %cmask = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %33, i32 0, i32 13
+  %34 = load i8, i8* %cmask, align 4, !tbaa !41
+  %conv85 = zext i8 %34 to i32
   %and = and i32 %conv85, %neg
   br label %if.end91
 
 if.else:                                          ; preds = %if.then72
-  %37 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %cmask88 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %37, i32 0, i32 13
-  %38 = load i8, i8* %cmask88, align 4, !tbaa !41
-  %conv89 = zext i8 %38 to i32
+  %35 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %cmask88 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %35, i32 0, i32 13
+  %36 = load i8, i8* %cmask88, align 4, !tbaa !41
+  %conv89 = zext i8 %36 to i32
   %or = or i32 %conv89, %shl
   br label %if.end91
 
@@ -1527,133 +1507,133 @@ if.end91:                                         ; preds = %if.else, %if.then84
   %voice_mode.0 = phi i32 [ 2, %if.then84 ], [ %conv69, %if.else ]
   %conv90 = trunc i32 %or.sink to i8
   store i8 %conv90, i8* %cmask88.sink, align 4, !tbaa !41
+  %37 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %right_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %37, i32 0, i32 2
+  %38 = load i32, i32* %right_io, align 8, !tbaa !21
   %39 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %right_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %39, i32 0, i32 2
-  %40 = load i32, i32* %right_io, align 8, !tbaa !22
-  %41 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %cmask92 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %41, i32 0, i32 13
-  %42 = load i8, i8* %cmask92, align 4, !tbaa !41
-  %conv93 = zext i8 %42 to i32
-  call void @opl3_command(i32 %40, i32 4, i32 %conv93)
+  %cmask92 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %39, i32 0, i32 13
+  %40 = load i8, i8* %cmask92, align 4, !tbaa !41
+  %conv93 = zext i8 %40 to i32
+  call void @opl3_command(i32 %38, i32 4, i32 %conv93)
   br label %if.end94
 
 if.end94:                                         ; preds = %if.end91, %if.end67
   %voice_mode.1 = phi i32 [ %voice_mode.0, %if.end91 ], [ %conv69, %if.end67 ]
   %ioaddr95 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %43 = load i16, i16* %ioaddr95, align 2, !tbaa !31
-  %conv96 = zext i16 %43 to i32
+  %41 = load i16, i16* %ioaddr95, align 2, !tbaa !31
+  %conv96 = zext i16 %41 to i32
   %op97 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx98 = getelementptr inbounds [4 x i8], [4 x i8]* %op97, i64 0, i64 0
-  %44 = load i8, i8* %arrayidx98, align 2, !tbaa !54
-  %conv99 = zext i8 %44 to i32
+  %42 = load i8, i8* %arrayidx98, align 2, !tbaa !54
+  %conv99 = zext i8 %42 to i32
   %add100 = add nsw i32 32, %conv99
   %operators = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx101 = getelementptr inbounds [32 x i8], [32 x i8]* %operators, i64 0, i64 0
-  %45 = load i8, i8* %arrayidx101, align 4, !tbaa !54
-  %conv102 = zext i8 %45 to i32
+  %43 = load i8, i8* %arrayidx101, align 4, !tbaa !54
+  %conv102 = zext i8 %43 to i32
   call void @opl3_command(i32 %conv96, i32 %add100, i32 %conv102)
   %ioaddr103 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %46 = load i16, i16* %ioaddr103, align 2, !tbaa !31
-  %conv104 = zext i16 %46 to i32
+  %44 = load i16, i16* %ioaddr103, align 2, !tbaa !31
+  %conv104 = zext i16 %44 to i32
   %op105 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx106 = getelementptr inbounds [4 x i8], [4 x i8]* %op105, i64 0, i64 1
-  %47 = load i8, i8* %arrayidx106, align 1, !tbaa !54
-  %conv107 = zext i8 %47 to i32
+  %45 = load i8, i8* %arrayidx106, align 1, !tbaa !54
+  %conv107 = zext i8 %45 to i32
   %add108 = add nsw i32 32, %conv107
   %operators109 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx110 = getelementptr inbounds [32 x i8], [32 x i8]* %operators109, i64 0, i64 1
-  %48 = load i8, i8* %arrayidx110, align 1, !tbaa !54
-  %conv111 = zext i8 %48 to i32
+  %46 = load i8, i8* %arrayidx110, align 1, !tbaa !54
+  %conv111 = zext i8 %46 to i32
   call void @opl3_command(i32 %conv104, i32 %add108, i32 %conv111)
   %ioaddr112 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %49 = load i16, i16* %ioaddr112, align 2, !tbaa !31
-  %conv113 = zext i16 %49 to i32
+  %47 = load i16, i16* %ioaddr112, align 2, !tbaa !31
+  %conv113 = zext i16 %47 to i32
   %op114 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx115 = getelementptr inbounds [4 x i8], [4 x i8]* %op114, i64 0, i64 0
-  %50 = load i8, i8* %arrayidx115, align 2, !tbaa !54
-  %conv116 = zext i8 %50 to i32
+  %48 = load i8, i8* %arrayidx115, align 2, !tbaa !54
+  %conv116 = zext i8 %48 to i32
   %add117 = add nsw i32 96, %conv116
   %operators118 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx119 = getelementptr inbounds [32 x i8], [32 x i8]* %operators118, i64 0, i64 4
-  %51 = load i8, i8* %arrayidx119, align 4, !tbaa !54
-  %conv120 = zext i8 %51 to i32
+  %49 = load i8, i8* %arrayidx119, align 4, !tbaa !54
+  %conv120 = zext i8 %49 to i32
   call void @opl3_command(i32 %conv113, i32 %add117, i32 %conv120)
   %ioaddr121 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %52 = load i16, i16* %ioaddr121, align 2, !tbaa !31
-  %conv122 = zext i16 %52 to i32
+  %50 = load i16, i16* %ioaddr121, align 2, !tbaa !31
+  %conv122 = zext i16 %50 to i32
   %op123 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx124 = getelementptr inbounds [4 x i8], [4 x i8]* %op123, i64 0, i64 1
-  %53 = load i8, i8* %arrayidx124, align 1, !tbaa !54
-  %conv125 = zext i8 %53 to i32
+  %51 = load i8, i8* %arrayidx124, align 1, !tbaa !54
+  %conv125 = zext i8 %51 to i32
   %add126 = add nsw i32 96, %conv125
   %operators127 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx128 = getelementptr inbounds [32 x i8], [32 x i8]* %operators127, i64 0, i64 5
-  %54 = load i8, i8* %arrayidx128, align 1, !tbaa !54
-  %conv129 = zext i8 %54 to i32
+  %52 = load i8, i8* %arrayidx128, align 1, !tbaa !54
+  %conv129 = zext i8 %52 to i32
   call void @opl3_command(i32 %conv122, i32 %add126, i32 %conv129)
   %ioaddr130 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %55 = load i16, i16* %ioaddr130, align 2, !tbaa !31
-  %conv131 = zext i16 %55 to i32
+  %53 = load i16, i16* %ioaddr130, align 2, !tbaa !31
+  %conv131 = zext i16 %53 to i32
   %op132 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx133 = getelementptr inbounds [4 x i8], [4 x i8]* %op132, i64 0, i64 0
-  %56 = load i8, i8* %arrayidx133, align 2, !tbaa !54
-  %conv134 = zext i8 %56 to i32
+  %54 = load i8, i8* %arrayidx133, align 2, !tbaa !54
+  %conv134 = zext i8 %54 to i32
   %add135 = add nsw i32 128, %conv134
   %operators136 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx137 = getelementptr inbounds [32 x i8], [32 x i8]* %operators136, i64 0, i64 6
-  %57 = load i8, i8* %arrayidx137, align 2, !tbaa !54
-  %conv138 = zext i8 %57 to i32
+  %55 = load i8, i8* %arrayidx137, align 2, !tbaa !54
+  %conv138 = zext i8 %55 to i32
   call void @opl3_command(i32 %conv131, i32 %add135, i32 %conv138)
   %ioaddr139 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %58 = load i16, i16* %ioaddr139, align 2, !tbaa !31
-  %conv140 = zext i16 %58 to i32
+  %56 = load i16, i16* %ioaddr139, align 2, !tbaa !31
+  %conv140 = zext i16 %56 to i32
   %op141 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx142 = getelementptr inbounds [4 x i8], [4 x i8]* %op141, i64 0, i64 1
-  %59 = load i8, i8* %arrayidx142, align 1, !tbaa !54
-  %conv143 = zext i8 %59 to i32
+  %57 = load i8, i8* %arrayidx142, align 1, !tbaa !54
+  %conv143 = zext i8 %57 to i32
   %add144 = add nsw i32 128, %conv143
   %operators145 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx146 = getelementptr inbounds [32 x i8], [32 x i8]* %operators145, i64 0, i64 7
-  %60 = load i8, i8* %arrayidx146, align 1, !tbaa !54
-  %conv147 = zext i8 %60 to i32
+  %58 = load i8, i8* %arrayidx146, align 1, !tbaa !54
+  %conv147 = zext i8 %58 to i32
   call void @opl3_command(i32 %conv140, i32 %add144, i32 %conv147)
   %ioaddr148 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %61 = load i16, i16* %ioaddr148, align 2, !tbaa !31
-  %conv149 = zext i16 %61 to i32
+  %59 = load i16, i16* %ioaddr148, align 2, !tbaa !31
+  %conv149 = zext i16 %59 to i32
   %op150 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx151 = getelementptr inbounds [4 x i8], [4 x i8]* %op150, i64 0, i64 0
-  %62 = load i8, i8* %arrayidx151, align 2, !tbaa !54
-  %conv152 = zext i8 %62 to i32
+  %60 = load i8, i8* %arrayidx151, align 2, !tbaa !54
+  %conv152 = zext i8 %60 to i32
   %add153 = add nsw i32 224, %conv152
   %operators154 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx155 = getelementptr inbounds [32 x i8], [32 x i8]* %operators154, i64 0, i64 8
-  %63 = load i8, i8* %arrayidx155, align 4, !tbaa !54
-  %conv156 = zext i8 %63 to i32
+  %61 = load i8, i8* %arrayidx155, align 4, !tbaa !54
+  %conv156 = zext i8 %61 to i32
   call void @opl3_command(i32 %conv149, i32 %add153, i32 %conv156)
   %ioaddr157 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %64 = load i16, i16* %ioaddr157, align 2, !tbaa !31
-  %conv158 = zext i16 %64 to i32
+  %62 = load i16, i16* %ioaddr157, align 2, !tbaa !31
+  %conv158 = zext i16 %62 to i32
   %op159 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx160 = getelementptr inbounds [4 x i8], [4 x i8]* %op159, i64 0, i64 1
-  %65 = load i8, i8* %arrayidx160, align 1, !tbaa !54
-  %conv161 = zext i8 %65 to i32
+  %63 = load i8, i8* %arrayidx160, align 1, !tbaa !54
+  %conv161 = zext i8 %63 to i32
   %add162 = add nsw i32 224, %conv161
   %operators163 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx164 = getelementptr inbounds [32 x i8], [32 x i8]* %operators163, i64 0, i64 9
-  %66 = load i8, i8* %arrayidx164, align 1, !tbaa !54
-  %conv165 = zext i8 %66 to i32
+  %64 = load i8, i8* %arrayidx164, align 1, !tbaa !54
+  %conv165 = zext i8 %64 to i32
   call void @opl3_command(i32 %conv158, i32 %add162, i32 %conv165)
   %operators166 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx167 = getelementptr inbounds [32 x i8], [32 x i8]* %operators166, i64 0, i64 10
-  %67 = load i8, i8* %arrayidx167, align 2, !tbaa !54
-  %cmp168 = icmp ne i32 %7, 65535
+  %65 = load i8, i8* %arrayidx167, align 2, !tbaa !54
+  %cmp168 = icmp ne i32 %5, 65535
   br i1 %cmp168, label %if.then170, label %if.end193
 
 if.then170:                                       ; preds = %if.end94
-  %conv171 = zext i8 %67 to i32
+  %conv171 = zext i8 %65 to i32
   %and172 = and i32 %conv171, -49
   %conv173 = trunc i32 %and172 to i8
-  %cmp174 = icmp slt i32 %7, -64
+  %cmp174 = icmp slt i32 %5, -64
   br i1 %cmp174, label %if.then176, label %if.else180
 
 if.then176:                                       ; preds = %if.then170
@@ -1662,7 +1642,7 @@ if.then176:                                       ; preds = %if.then170
   br label %if.end192
 
 if.else180:                                       ; preds = %if.then170
-  %cmp181 = icmp sgt i32 %7, 64
+  %cmp181 = icmp sgt i32 %5, 64
   %conv184 = zext i8 %conv173 to i32
   %.sink = select i1 %cmp181, i32 32, i32 48
   %or189 = or i32 %conv184, %.sink
@@ -1674,7 +1654,7 @@ if.end192:                                        ; preds = %if.else180, %if.the
   br label %if.end193
 
 if.end193:                                        ; preds = %if.end192, %if.end94
-  %fpc.2 = phi i8 [ %conv190, %if.end192 ], [ %67, %if.end94 ]
+  %fpc.2 = phi i8 [ %conv190, %if.end192 ], [ %65, %if.end94 ]
   %conv194 = zext i8 %fpc.2 to i32
   %and195 = and i32 %conv194, 48
   %tobool196 = icmp ne i32 %and195, 0
@@ -1683,11 +1663,11 @@ if.end193:                                        ; preds = %if.end192, %if.end9
   %conv200 = trunc i32 %or199 to i8
   %fpc.3 = select i1 %tobool196, i8 %fpc.2, i8 %conv200
   %ioaddr202 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %68 = load i16, i16* %ioaddr202, align 2, !tbaa !31
-  %conv203 = zext i16 %68 to i32
+  %66 = load i16, i16* %ioaddr202, align 2, !tbaa !31
+  %conv203 = zext i16 %66 to i32
   %voice_num204 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 0
-  %69 = load i8, i8* %voice_num204, align 2, !tbaa !43
-  %conv205 = zext i8 %69 to i32
+  %67 = load i8, i8* %voice_num204, align 2, !tbaa !43
+  %conv205 = zext i8 %67 to i32
   %add206 = add nsw i32 192, %conv205
   %conv207 = zext i8 %fpc.3 to i32
   call void @opl3_command(i32 %conv203, i32 %add206, i32 %conv207)
@@ -1696,125 +1676,125 @@ if.end193:                                        ; preds = %if.end192, %if.end9
 
 if.then210:                                       ; preds = %if.end193
   %ioaddr211 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %70 = load i16, i16* %ioaddr211, align 2, !tbaa !31
-  %conv212 = zext i16 %70 to i32
+  %68 = load i16, i16* %ioaddr211, align 2, !tbaa !31
+  %conv212 = zext i16 %68 to i32
   %op213 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx214 = getelementptr inbounds [4 x i8], [4 x i8]* %op213, i64 0, i64 2
-  %71 = load i8, i8* %arrayidx214, align 2, !tbaa !54
-  %conv215 = zext i8 %71 to i32
+  %69 = load i8, i8* %arrayidx214, align 2, !tbaa !54
+  %conv215 = zext i8 %69 to i32
   %add216 = add nsw i32 32, %conv215
   %operators217 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx218 = getelementptr inbounds [32 x i8], [32 x i8]* %operators217, i64 0, i64 11
-  %72 = load i8, i8* %arrayidx218, align 1, !tbaa !54
-  %conv219 = zext i8 %72 to i32
+  %70 = load i8, i8* %arrayidx218, align 1, !tbaa !54
+  %conv219 = zext i8 %70 to i32
   call void @opl3_command(i32 %conv212, i32 %add216, i32 %conv219)
   %ioaddr220 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %73 = load i16, i16* %ioaddr220, align 2, !tbaa !31
-  %conv221 = zext i16 %73 to i32
+  %71 = load i16, i16* %ioaddr220, align 2, !tbaa !31
+  %conv221 = zext i16 %71 to i32
   %op222 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx223 = getelementptr inbounds [4 x i8], [4 x i8]* %op222, i64 0, i64 3
-  %74 = load i8, i8* %arrayidx223, align 1, !tbaa !54
-  %conv224 = zext i8 %74 to i32
+  %72 = load i8, i8* %arrayidx223, align 1, !tbaa !54
+  %conv224 = zext i8 %72 to i32
   %add225 = add nsw i32 32, %conv224
   %operators226 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx227 = getelementptr inbounds [32 x i8], [32 x i8]* %operators226, i64 0, i64 12
-  %75 = load i8, i8* %arrayidx227, align 4, !tbaa !54
-  %conv228 = zext i8 %75 to i32
+  %73 = load i8, i8* %arrayidx227, align 4, !tbaa !54
+  %conv228 = zext i8 %73 to i32
   call void @opl3_command(i32 %conv221, i32 %add225, i32 %conv228)
   %ioaddr229 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %76 = load i16, i16* %ioaddr229, align 2, !tbaa !31
-  %conv230 = zext i16 %76 to i32
+  %74 = load i16, i16* %ioaddr229, align 2, !tbaa !31
+  %conv230 = zext i16 %74 to i32
   %op231 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx232 = getelementptr inbounds [4 x i8], [4 x i8]* %op231, i64 0, i64 2
-  %77 = load i8, i8* %arrayidx232, align 2, !tbaa !54
-  %conv233 = zext i8 %77 to i32
+  %75 = load i8, i8* %arrayidx232, align 2, !tbaa !54
+  %conv233 = zext i8 %75 to i32
   %add234 = add nsw i32 96, %conv233
   %operators235 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx236 = getelementptr inbounds [32 x i8], [32 x i8]* %operators235, i64 0, i64 15
-  %78 = load i8, i8* %arrayidx236, align 1, !tbaa !54
-  %conv237 = zext i8 %78 to i32
+  %76 = load i8, i8* %arrayidx236, align 1, !tbaa !54
+  %conv237 = zext i8 %76 to i32
   call void @opl3_command(i32 %conv230, i32 %add234, i32 %conv237)
   %ioaddr238 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %79 = load i16, i16* %ioaddr238, align 2, !tbaa !31
-  %conv239 = zext i16 %79 to i32
+  %77 = load i16, i16* %ioaddr238, align 2, !tbaa !31
+  %conv239 = zext i16 %77 to i32
   %op240 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx241 = getelementptr inbounds [4 x i8], [4 x i8]* %op240, i64 0, i64 3
-  %80 = load i8, i8* %arrayidx241, align 1, !tbaa !54
-  %conv242 = zext i8 %80 to i32
+  %78 = load i8, i8* %arrayidx241, align 1, !tbaa !54
+  %conv242 = zext i8 %78 to i32
   %add243 = add nsw i32 96, %conv242
   %operators244 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx245 = getelementptr inbounds [32 x i8], [32 x i8]* %operators244, i64 0, i64 16
-  %81 = load i8, i8* %arrayidx245, align 4, !tbaa !54
-  %conv246 = zext i8 %81 to i32
+  %79 = load i8, i8* %arrayidx245, align 4, !tbaa !54
+  %conv246 = zext i8 %79 to i32
   call void @opl3_command(i32 %conv239, i32 %add243, i32 %conv246)
   %ioaddr247 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %82 = load i16, i16* %ioaddr247, align 2, !tbaa !31
-  %conv248 = zext i16 %82 to i32
+  %80 = load i16, i16* %ioaddr247, align 2, !tbaa !31
+  %conv248 = zext i16 %80 to i32
   %op249 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx250 = getelementptr inbounds [4 x i8], [4 x i8]* %op249, i64 0, i64 2
-  %83 = load i8, i8* %arrayidx250, align 2, !tbaa !54
-  %conv251 = zext i8 %83 to i32
+  %81 = load i8, i8* %arrayidx250, align 2, !tbaa !54
+  %conv251 = zext i8 %81 to i32
   %add252 = add nsw i32 128, %conv251
   %operators253 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx254 = getelementptr inbounds [32 x i8], [32 x i8]* %operators253, i64 0, i64 17
-  %84 = load i8, i8* %arrayidx254, align 1, !tbaa !54
-  %conv255 = zext i8 %84 to i32
+  %82 = load i8, i8* %arrayidx254, align 1, !tbaa !54
+  %conv255 = zext i8 %82 to i32
   call void @opl3_command(i32 %conv248, i32 %add252, i32 %conv255)
   %ioaddr256 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %85 = load i16, i16* %ioaddr256, align 2, !tbaa !31
-  %conv257 = zext i16 %85 to i32
+  %83 = load i16, i16* %ioaddr256, align 2, !tbaa !31
+  %conv257 = zext i16 %83 to i32
   %op258 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx259 = getelementptr inbounds [4 x i8], [4 x i8]* %op258, i64 0, i64 3
-  %86 = load i8, i8* %arrayidx259, align 1, !tbaa !54
-  %conv260 = zext i8 %86 to i32
+  %84 = load i8, i8* %arrayidx259, align 1, !tbaa !54
+  %conv260 = zext i8 %84 to i32
   %add261 = add nsw i32 128, %conv260
   %operators262 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx263 = getelementptr inbounds [32 x i8], [32 x i8]* %operators262, i64 0, i64 18
-  %87 = load i8, i8* %arrayidx263, align 2, !tbaa !54
-  %conv264 = zext i8 %87 to i32
+  %85 = load i8, i8* %arrayidx263, align 2, !tbaa !54
+  %conv264 = zext i8 %85 to i32
   call void @opl3_command(i32 %conv257, i32 %add261, i32 %conv264)
   %ioaddr265 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %88 = load i16, i16* %ioaddr265, align 2, !tbaa !31
-  %conv266 = zext i16 %88 to i32
+  %86 = load i16, i16* %ioaddr265, align 2, !tbaa !31
+  %conv266 = zext i16 %86 to i32
   %op267 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx268 = getelementptr inbounds [4 x i8], [4 x i8]* %op267, i64 0, i64 2
-  %89 = load i8, i8* %arrayidx268, align 2, !tbaa !54
-  %conv269 = zext i8 %89 to i32
+  %87 = load i8, i8* %arrayidx268, align 2, !tbaa !54
+  %conv269 = zext i8 %87 to i32
   %add270 = add nsw i32 224, %conv269
   %operators271 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx272 = getelementptr inbounds [32 x i8], [32 x i8]* %operators271, i64 0, i64 19
-  %90 = load i8, i8* %arrayidx272, align 1, !tbaa !54
-  %conv273 = zext i8 %90 to i32
+  %88 = load i8, i8* %arrayidx272, align 1, !tbaa !54
+  %conv273 = zext i8 %88 to i32
   call void @opl3_command(i32 %conv266, i32 %add270, i32 %conv273)
   %ioaddr274 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %91 = load i16, i16* %ioaddr274, align 2, !tbaa !31
-  %conv275 = zext i16 %91 to i32
+  %89 = load i16, i16* %ioaddr274, align 2, !tbaa !31
+  %conv275 = zext i16 %89 to i32
   %op276 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 3
   %arrayidx277 = getelementptr inbounds [4 x i8], [4 x i8]* %op276, i64 0, i64 3
-  %92 = load i8, i8* %arrayidx277, align 1, !tbaa !54
-  %conv278 = zext i8 %92 to i32
+  %90 = load i8, i8* %arrayidx277, align 1, !tbaa !54
+  %conv278 = zext i8 %90 to i32
   %add279 = add nsw i32 224, %conv278
   %operators280 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx281 = getelementptr inbounds [32 x i8], [32 x i8]* %operators280, i64 0, i64 20
-  %93 = load i8, i8* %arrayidx281, align 4, !tbaa !54
-  %conv282 = zext i8 %93 to i32
+  %91 = load i8, i8* %arrayidx281, align 4, !tbaa !54
+  %conv282 = zext i8 %91 to i32
   call void @opl3_command(i32 %conv275, i32 %add279, i32 %conv282)
   %operators283 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr.0, i32 0, i32 3
   %arrayidx284 = getelementptr inbounds [32 x i8], [32 x i8]* %operators283, i64 0, i64 21
-  %94 = load i8, i8* %arrayidx284, align 1, !tbaa !54
-  %conv285 = zext i8 %94 to i32
+  %92 = load i8, i8* %arrayidx284, align 1, !tbaa !54
+  %conv285 = zext i8 %92 to i32
   %and286 = and i32 %conv285, 48
   %tobool287 = icmp ne i32 %and286, 0
-  %conv289 = zext i8 %94 to i32
+  %conv289 = zext i8 %92 to i32
   %or290 = or i32 %conv289, 48
   %conv291 = trunc i32 %or290 to i8
-  %fpc.4 = select i1 %tobool287, i8 %94, i8 %conv291
+  %fpc.4 = select i1 %tobool287, i8 %92, i8 %conv291
   %ioaddr293 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %95 = load i16, i16* %ioaddr293, align 2, !tbaa !31
-  %conv294 = zext i16 %95 to i32
+  %93 = load i16, i16* %ioaddr293, align 2, !tbaa !31
+  %conv294 = zext i16 %93 to i32
   %voice_num295 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 0
-  %96 = load i8, i8* %voice_num295, align 2, !tbaa !43
-  %conv296 = zext i8 %96 to i32
+  %94 = load i8, i8* %voice_num295, align 2, !tbaa !43
+  %conv296 = zext i8 %94 to i32
   %add297 = add nsw i32 192, %conv296
   %add298 = add nsw i32 %add297, 3
   %conv299 = zext i8 %fpc.4 to i32
@@ -1822,92 +1802,91 @@ if.then210:                                       ; preds = %if.end193
   br label %if.end300
 
 if.end300:                                        ; preds = %if.then210, %if.end193
-  %97 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc301 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %97, i32 0, i32 5
+  %95 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc301 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %95, i32 0, i32 5
   %idxprom302 = sext i32 %voice to i64
   %arrayidx303 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc301, i64 0, i64 %idxprom302
   %mode = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx303, i32 0, i32 6
   store i32 %voice_mode.1, i32* %mode, align 4, !tbaa !53
-  %98 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc304 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %98, i32 0, i32 5
+  %96 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc304 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %96, i32 0, i32 5
   %idxprom305 = sext i32 %voice to i64
   %arrayidx306 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc304, i64 0, i64 %idxprom305
   %volume307 = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx306, i32 0, i32 5
-  %99 = load i32, i32* %volume307, align 8, !tbaa !48
-  call void @set_voice_volume(i32 %voice, i32 %volume, i32 %99)
+  %97 = load i32, i32* %volume307, align 8, !tbaa !48
+  call void @set_voice_volume(i32 %voice, i32 %volume, i32 %97)
   %call308 = call i32 @note_to_freq(i32 %note)
   %div = sdiv i32 %call308, 1000
   %conv309 = sext i32 %div to i64
-  %100 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc310 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %100, i32 0, i32 5
+  %98 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc310 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %98, i32 0, i32 5
   %idxprom311 = sext i32 %voice to i64
   %arrayidx312 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc310, i64 0, i64 %idxprom311
   %orig_freq = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx312, i32 0, i32 3
   store i64 %conv309, i64* %orig_freq, align 8, !tbaa !51
-  %conv313 = trunc i64 %conv309 to i32
-  %101 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc314 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %101, i32 0, i32 5
+  %99 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc314 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %99, i32 0, i32 5
   %idxprom315 = sext i32 %voice to i64
   %arrayidx316 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc314, i64 0, i64 %idxprom315
   %orig_freq317 = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx316, i32 0, i32 3
-  %102 = load i64, i64* %orig_freq317, align 8, !tbaa !51
-  %103 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc318 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %103, i32 0, i32 5
+  %100 = load i64, i64* %orig_freq317, align 8, !tbaa !51
+  %101 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc318 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %101, i32 0, i32 5
   %idxprom319 = sext i32 %voice to i64
   %arrayidx320 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc318, i64 0, i64 %idxprom319
   %bender = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx320, i32 0, i32 1
-  %104 = load i64, i64* %bender, align 8, !tbaa !47
-  %conv321 = trunc i64 %104 to i32
-  %105 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc322 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %105, i32 0, i32 5
+  %102 = load i64, i64* %bender, align 8, !tbaa !47
+  %conv321 = trunc i64 %102 to i32
+  %103 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc322 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %103, i32 0, i32 5
   %idxprom323 = sext i32 %voice to i64
   %arrayidx324 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc322, i64 0, i64 %idxprom323
   %bender_range = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx324, i32 0, i32 2
-  %106 = load i64, i64* %bender_range, align 8, !tbaa !50
-  %conv325 = trunc i64 %106 to i32
-  %call326 = call i64 @compute_finetune(i64 %102, i32 %conv321, i32 %conv325, i32 0)
+  %104 = load i64, i64* %bender_range, align 8, !tbaa !50
+  %conv325 = trunc i64 %104 to i32
+  %call326 = call i64 @compute_finetune(i64 %100, i32 %conv321, i32 %conv325, i32 0)
   %conv327 = trunc i64 %call326 to i32
   %conv328 = sext i32 %conv327 to i64
-  %107 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc329 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %107, i32 0, i32 5
+  %105 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc329 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %105, i32 0, i32 5
   %idxprom330 = sext i32 %voice to i64
   %arrayidx331 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc329, i64 0, i64 %idxprom330
   %current_freq = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx331, i32 0, i32 4
   store i64 %conv328, i64* %current_freq, align 8, !tbaa !52
   call void @freq_to_fnum(i32 %conv327, i32* %block, i32* %fnum)
-  %108 = load i32, i32* %fnum, align 4, !tbaa !2
-  %and332 = and i32 %108, 255
+  %106 = load i32, i32* %fnum, align 4, !tbaa !2
+  %and332 = and i32 %106, 255
   %conv333 = trunc i32 %and332 to i8
   %ioaddr334 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %109 = load i16, i16* %ioaddr334, align 2, !tbaa !31
-  %conv335 = zext i16 %109 to i32
+  %107 = load i16, i16* %ioaddr334, align 2, !tbaa !31
+  %conv335 = zext i16 %107 to i32
   %voice_num336 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 0
-  %110 = load i8, i8* %voice_num336, align 2, !tbaa !43
-  %conv337 = zext i8 %110 to i32
+  %108 = load i8, i8* %voice_num336, align 2, !tbaa !43
+  %conv337 = zext i8 %108 to i32
   %add338 = add nsw i32 160, %conv337
   %conv339 = zext i8 %conv333 to i32
   call void @opl3_command(i32 %conv335, i32 %add338, i32 %conv339)
-  %111 = load i32, i32* %block, align 4, !tbaa !2
-  %and340 = and i32 %111, 7
+  %109 = load i32, i32* %block, align 4, !tbaa !2
+  %and340 = and i32 %109, 7
   %shl341 = shl i32 %and340, 2
   %or342 = or i32 32, %shl341
-  %112 = load i32, i32* %fnum, align 4, !tbaa !2
-  %shr = ashr i32 %112, 8
+  %110 = load i32, i32* %fnum, align 4, !tbaa !2
+  %shr = ashr i32 %110, 8
   %and343 = and i32 %shr, 3
   %or344 = or i32 %or342, %and343
   %conv345 = trunc i32 %or344 to i8
-  %113 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc346 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %113, i32 0, i32 5
+  %111 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc346 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %111, i32 0, i32 5
   %idxprom347 = sext i32 %voice to i64
   %arrayidx348 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc346, i64 0, i64 %idxprom347
   %keyon_byte = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx348, i32 0, i32 0
   store i8 %conv345, i8* %keyon_byte, align 8, !tbaa !44
   %ioaddr349 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %114 = load i16, i16* %ioaddr349, align 2, !tbaa !31
-  %conv350 = zext i16 %114 to i32
+  %112 = load i16, i16* %ioaddr349, align 2, !tbaa !31
+  %conv350 = zext i16 %112 to i32
   %voice_num351 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 0
-  %115 = load i8, i8* %voice_num351, align 2, !tbaa !43
-  %conv352 = zext i8 %115 to i32
+  %113 = load i8, i8* %voice_num351, align 2, !tbaa !43
+  %conv352 = zext i8 %113 to i32
   %add353 = add nsw i32 176, %conv352
   %conv354 = zext i8 %conv345 to i32
   call void @opl3_command(i32 %conv350, i32 %add353, i32 %conv354)
@@ -1916,11 +1895,11 @@ if.end300:                                        ; preds = %if.then210, %if.end
 
 if.then357:                                       ; preds = %if.end300
   %ioaddr358 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 2
-  %116 = load i16, i16* %ioaddr358, align 2, !tbaa !31
-  %conv359 = zext i16 %116 to i32
+  %114 = load i16, i16* %ioaddr358, align 2, !tbaa !31
+  %conv359 = zext i16 %114 to i32
   %voice_num360 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx3, i32 0, i32 0
-  %117 = load i8, i8* %voice_num360, align 2, !tbaa !43
-  %conv361 = zext i8 %117 to i32
+  %115 = load i8, i8* %voice_num360, align 2, !tbaa !43
+  %conv361 = zext i8 %115 to i32
   %add362 = add nsw i32 176, %conv361
   %add363 = add nsw i32 %add362, 3
   %conv364 = zext i8 %conv345 to i32
@@ -1928,10 +1907,6 @@ if.then357:                                       ; preds = %if.end300
   br label %cleanup
 
 cleanup:                                          ; preds = %if.then357, %if.end300, %land.lhs.true, %if.then57, %if.then13, %if.end, %lor.lhs.false, %entry
-  %118 = bitcast i32* %fnum to i8*
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %118) #8
-  %119 = bitcast i32* %block to i8*
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %119) #8
   ret i32 0
 }
 
@@ -1944,7 +1919,7 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %return, label %if.end
 
@@ -1994,7 +1969,7 @@ for.cond1:                                        ; preds = %if.end, %for.end
   %i.1 = phi i32 [ 0, %for.end ], [ %inc73, %if.end ]
   %1 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %1, i32 0, i32 3
-  %2 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %2 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp2 = icmp slt i32 %i.1, %2
   %3 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   br i1 %cmp2, label %for.body3, label %for.end74
@@ -2114,17 +2089,17 @@ if.end:                                           ; preds = %if.then, %for.body3
 
 for.end74:                                        ; preds = %for.cond1
   %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %3, i32 0, i32 12
-  %30 = load i32, i32* %model, align 8, !tbaa !23
+  %30 = load i32, i32* %model, align 8, !tbaa !22
   %cmp75 = icmp eq i32 %30, 2
   br i1 %cmp75, label %if.then77, label %if.end89
 
 if.then77:                                        ; preds = %for.end74
   %31 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice78 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %31, i32 0, i32 3
-  store i32 18, i32* %nr_voice78, align 4, !tbaa !12
+  store i32 18, i32* %nr_voice78, align 4, !tbaa !11
   %32 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %32, i32 0, i32 6
-  %33 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !28
+  %33 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !27
   %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %33, i32 0, i32 0
   store i32 18, i32* %max_voice, align 4, !tbaa !30
   br label %for.cond79
@@ -2156,38 +2131,58 @@ entry:
 define internal i32 @opl3_load_patch(i32 %dev, i32 %format, i8* %addr, i32 %count, i32 %pmgr_flag) #2 {
 entry:
   %ins = alloca %struct.sbi_instrument, align 4
-  %0 = bitcast %struct.sbi_instrument* %ins to i8*
-  call void @llvm.lifetime.start.p0i8(i64 40, i8* %0) #8
   %conv = sext i32 %count to i64
   %cmp = icmp ult i64 %conv, 40
   br i1 %cmp, label %if.then, label %if.end
 
 if.then:                                          ; preds = %entry
-  %call = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.19, i32 0, i32 0))
+  %0 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end:                                           ; preds = %entry
   %1 = bitcast %struct.sbi_instrument* %ins to i8*
-  %call2 = call i64 @copy_from_user(i8* %1, i8* %addr, i64 40)
-  %tobool = icmp ne i64 %call2, 0
+  %2 = call i64 @llvm.objectsize.i64.p0i8(i8* %1, i1 false, i1 true) #7
+  %conv.i = trunc i64 %2 to i32
+  call void @__might_fault(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.15, i32 0, i32 0), i32 696) #7
+  call void @kasan_check_write(i8* %1, i32 40) #7
+  %cmp.i = icmp slt i32 %conv.i, 0
+  %conv3.i = sext i32 %conv.i to i64
+  %cmp4.i = icmp uge i64 %conv3.i, 40
+  %3 = select i1 %cmp.i, i1 true, i1 %cmp4.i
+  %lnot.ext.i = zext i1 %3 to i32
+  %conv7.i = sext i32 %lnot.ext.i to i64
+  %expval.i = call i64 @llvm.expect.i64(i64 %conv7.i, i64 1) #7
+  %tobool.i = icmp ne i64 %expval.i, 0
+  br i1 %tobool.i, label %if.then.i, label %if.else.i
+
+if.then.i:                                        ; preds = %if.end
+  call void @__check_object_size(i8* %1, i64 40, i1 zeroext false) #7
+  %call.i = call i64 @_copy_from_user(i8* %1, i8* %addr, i32 40) #7
+  br label %copy_from_user.exit
+
+if.else.i:                                        ; preds = %if.end
+  call void @copy_user_overflow(i32 %conv.i, i64 40) #7
+  br label %copy_from_user.exit
+
+copy_from_user.exit:                              ; preds = %if.else.i, %if.then.i
+  %n.addr.0.i = phi i64 [ %call.i, %if.then.i ], [ 40, %if.else.i ]
+  %tobool = icmp ne i64 %n.addr.0.i, 0
   br i1 %tobool, label %cleanup, label %if.end4
 
-if.end4:                                          ; preds = %if.end
+if.end4:                                          ; preds = %copy_from_user.exit
   %channel = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %2 = load i32, i32* %channel, align 4, !tbaa !34
-  %cmp5 = icmp slt i32 %2, 0
+  %4 = load i32, i32* %channel, align 4, !tbaa !34
+  %cmp5 = icmp slt i32 %4, 0
   br i1 %cmp5, label %if.then10, label %lor.lhs.false
 
 lor.lhs.false:                                    ; preds = %if.end4
   %channel7 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %3 = load i32, i32* %channel7, align 4, !tbaa !34
-  %cmp8 = icmp sge i32 %3, 256
+  %5 = load i32, i32* %channel7, align 4, !tbaa !34
+  %cmp8 = icmp sge i32 %5, 256
   br i1 %cmp8, label %if.then10, label %if.end13
 
 if.then10:                                        ; preds = %lor.lhs.false, %if.end4
-  %channel11 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %4 = load i32, i32* %channel11, align 4, !tbaa !34
-  %call12 = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([42 x i8], [42 x i8]* @.str.14, i32 0, i32 0), i32 %4)
+  %6 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end13:                                         ; preds = %lor.lhs.false
@@ -2195,14 +2190,12 @@ if.end13:                                         ; preds = %lor.lhs.false
   %key = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 0
   store i16 %conv14, i16* %key, align 4, !tbaa !55
   %channel15 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %ins, i32 0, i32 2
-  %5 = load i32, i32* %channel15, align 4, !tbaa !34
-  %call16 = call i32 @store_instr(i32 %5, %struct.sbi_instrument* %ins)
+  %7 = load i32, i32* %channel15, align 4, !tbaa !34
+  %call16 = call i32 @store_instr(i32 %7, %struct.sbi_instrument* %ins)
   br label %cleanup
 
-cleanup:                                          ; preds = %if.end13, %if.then10, %if.end, %if.then
-  %retval.0 = phi i32 [ -22, %if.then ], [ -22, %if.then10 ], [ %call16, %if.end13 ], [ -14, %if.end ]
-  %6 = bitcast %struct.sbi_instrument* %ins to i8*
-  call void @llvm.lifetime.end.p0i8(i64 40, i8* %6) #8
+cleanup:                                          ; preds = %if.end13, %if.then10, %copy_from_user.exit, %if.then
+  %retval.0 = phi i32 [ -22, %if.then ], [ -22, %if.then10 ], [ %call16, %if.end13 ], [ -14, %copy_from_user.exit ]
   ret i32 %retval.0
 }
 
@@ -2215,7 +2208,7 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %cleanup.cont, label %if.end
 
@@ -2469,7 +2462,6 @@ if.then155:                                       ; preds = %if.else
   br label %cleanup.cont
 
 cleanup.cont:                                     ; preds = %if.then155, %if.else, %sw.bb93, %sw.bb64, %sw.bb35, %sw.bb, %LeafBlock, %LeafBlock1, %if.end, %lor.lhs.false, %entry
-  %cleanup.dest.slot.0 = phi i32 [ 1, %lor.lhs.false ], [ 1, %entry ], [ 1, %if.end ], [ 0, %if.else ], [ 0, %if.then155 ], [ 0, %sw.bb ], [ 0, %sw.bb35 ], [ 0, %sw.bb64 ], [ 0, %sw.bb93 ], [ 0, %LeafBlock1 ], [ 0, %LeafBlock ]
   ret void
 }
 
@@ -2482,7 +2474,7 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %sw.epilog, label %NodeBlock7
 
@@ -2558,7 +2550,7 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %return, label %if.end
 
@@ -2590,7 +2582,7 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %return, label %if.end
 
@@ -2614,7 +2606,7 @@ entry:
 if.else:                                          ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %chn_info = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 7
-  %1 = load %struct.channel_info*, %struct.channel_info** %chn_info, align 8, !tbaa !29
+  %1 = load %struct.channel_info*, %struct.channel_info** %chn_info, align 8, !tbaa !28
   %idxprom = sext i32 %chn to i64
   %arrayidx = getelementptr inbounds %struct.channel_info, %struct.channel_info* %1, i64 %idxprom
   %pgm_num = getelementptr inbounds %struct.channel_info, %struct.channel_info* %arrayidx, i32 0, i32 0
@@ -2635,14 +2627,14 @@ if.end:                                           ; preds = %if.else, %entry
 lor.lhs.false5:                                   ; preds = %if.end
   %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 3
-  %6 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %6 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp6 = icmp ne i32 %6, 12
   br i1 %cmp6, label %if.end16, label %if.else8
 
 if.else8:                                         ; preds = %lor.lhs.false5
   %7 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice9 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %7, i32 0, i32 3
-  %8 = load i32, i32* %nr_voice9, align 4, !tbaa !12
+  %8 = load i32, i32* %nr_voice9, align 4, !tbaa !11
   %cmp10 = icmp eq i32 %8, 12
   br i1 %cmp10, label %if.then11, label %if.end16
 
@@ -2662,12 +2654,12 @@ if.end16:                                         ; preds = %if.then11, %if.else
 if.else18:                                        ; preds = %if.end16
   %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice19 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 3
-  %11 = load i32, i32* %nr_voice19, align 4, !tbaa !12
+  %11 = load i32, i32* %nr_voice19, align 4, !tbaa !11
   %cmp20 = icmp eq i32 %11, 12
   %. = select i1 %cmp20, i32 6, i32 0
   %12 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice25 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %12, i32 0, i32 3
-  %13 = load i32, i32* %nr_voice25, align 4, !tbaa !12
+  %13 = load i32, i32* %nr_voice25, align 4, !tbaa !11
   br label %if.end26
 
 if.end26:                                         ; preds = %if.else18, %if.end16
@@ -2720,14 +2712,14 @@ for.end:                                          ; preds = %for.cond
   %.best.0 = select i1 %cmp45, i32 0, i32 %best.0
   %17 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice49 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %17, i32 0, i32 3
-  %18 = load i32, i32* %nr_voice49, align 4, !tbaa !12
+  %18 = load i32, i32* %nr_voice49, align 4, !tbaa !11
   %cmp50 = icmp sgt i32 %.best.0, %18
   br i1 %cmp50, label %if.then52, label %cleanup
 
 if.then52:                                        ; preds = %for.end
   %19 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice53 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %19, i32 0, i32 3
-  %20 = load i32, i32* %nr_voice53, align 4, !tbaa !12
+  %20 = load i32, i32* %nr_voice53, align 4, !tbaa !11
   %sub = sub nsw i32 %.best.0, %20
   br label %cleanup
 
@@ -2745,7 +2737,7 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %cleanup.cont, label %if.end
 
@@ -2805,43 +2797,7 @@ if.end6:                                          ; preds = %if.end
   br label %cleanup.cont
 
 cleanup.cont:                                     ; preds = %if.end6, %if.end, %lor.lhs.false, %entry
-  %cleanup.dest.slot.0 = phi i32 [ 0, %if.end6 ], [ 1, %lor.lhs.false ], [ 1, %entry ], [ 1, %if.end ]
   ret void
-}
-
-; Function Attrs: alwaysinline nounwind uwtable
-define internal i64 @copy_from_user(i8* %to, i8* %from, i64 %n) #5 {
-entry:
-  %0 = call i64 @llvm.objectsize.i64.p0i8(i8* %to, i1 false, i1 true)
-  %conv = trunc i64 %0 to i32
-  call void @__might_fault(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.15, i32 0, i32 0), i32 696)
-  %conv1 = trunc i64 %n to i32
-  call void @kasan_check_write(i8* %to, i32 %conv1)
-  %cmp = icmp slt i32 %conv, 0
-  %conv3 = sext i32 %conv to i64
-  %cmp4 = icmp uge i64 %conv3, %n
-  %1 = select i1 %cmp, i1 true, i1 %cmp4
-  %lnot = xor i1 %1, true
-  %lnot6 = xor i1 %lnot, true
-  %lnot.ext = zext i1 %lnot6 to i32
-  %conv7 = sext i32 %lnot.ext to i64
-  %expval = call i64 @llvm.expect.i64(i64 %conv7, i64 1)
-  %tobool = icmp ne i64 %expval, 0
-  br i1 %tobool, label %if.then, label %if.else
-
-if.then:                                          ; preds = %entry
-  call void @check_object_size(i8* %to, i64 %n, i1 zeroext false)
-  %conv8 = trunc i64 %n to i32
-  %call = call i64 @_copy_from_user(i8* %to, i8* %from, i32 %conv8)
-  br label %if.end
-
-if.else:                                          ; preds = %entry
-  call void @copy_user_overflow(i32 %conv, i64 %n)
-  br label %if.end
-
-if.end:                                           ; preds = %if.else, %if.then
-  %n.addr.0 = phi i64 [ %call, %if.then ], [ %n, %if.else ]
-  ret i64 %n.addr.0
 }
 
 ; Function Attrs: nounwind uwtable
@@ -2863,15 +2819,12 @@ land.lhs.true:                                    ; preds = %entry
 lor.lhs.false:                                    ; preds = %land.lhs.true
   %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %model = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 12
-  %3 = load i32, i32* %model, align 8, !tbaa !23
+  %3 = load i32, i32* %model, align 8, !tbaa !22
   %cmp6 = icmp ne i32 %3, 2
   br i1 %cmp6, label %if.then, label %if.end
 
 if.then:                                          ; preds = %lor.lhs.false, %land.lhs.true
-  %key8 = getelementptr inbounds %struct.sbi_instrument, %struct.sbi_instrument* %instr, i32 0, i32 0
-  %4 = load i16, i16* %key8, align 4, !tbaa !55
-  %conv9 = zext i16 %4 to i32
-  %call = call i32 (i8*, ...) @printk(i8* getelementptr inbounds ([53 x i8], [53 x i8]* @.str.17, i32 0, i32 0), i32 %conv9)
+  %4 = call i32 (i8*, ...) @printk(i8* null)
   br label %if.end
 
 if.end:                                           ; preds = %if.then, %lor.lhs.false, %entry
@@ -2885,41 +2838,6 @@ if.end:                                           ; preds = %if.then, %lor.lhs.f
   ret i32 0
 }
 
-; Function Attrs: alwaysinline nounwind uwtable
-define internal i64 @copy_to_user(i8* %to, i8* %from, i64 %n) #5 {
-entry:
-  %0 = call i64 @llvm.objectsize.i64.p0i8(i8* %from, i1 false, i1 true)
-  %conv = trunc i64 %0 to i32
-  %conv1 = trunc i64 %n to i32
-  call void @kasan_check_read(i8* %from, i32 %conv1)
-  call void @__might_fault(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @.str.15, i32 0, i32 0), i32 718)
-  %cmp = icmp slt i32 %conv, 0
-  %conv3 = sext i32 %conv to i64
-  %cmp4 = icmp uge i64 %conv3, %n
-  %1 = select i1 %cmp, i1 true, i1 %cmp4
-  %lnot = xor i1 %1, true
-  %lnot6 = xor i1 %lnot, true
-  %lnot.ext = zext i1 %lnot6 to i32
-  %conv7 = sext i32 %lnot.ext to i64
-  %expval = call i64 @llvm.expect.i64(i64 %conv7, i64 1)
-  %tobool = icmp ne i64 %expval, 0
-  br i1 %tobool, label %if.then, label %if.else
-
-if.then:                                          ; preds = %entry
-  call void @check_object_size(i8* %from, i64 %n, i1 zeroext true)
-  %conv8 = trunc i64 %n to i32
-  %call = call i64 @_copy_to_user(i8* %to, i8* %from, i32 %conv8)
-  br label %if.end
-
-if.else:                                          ; preds = %entry
-  call void @copy_user_overflow(i32 %conv, i64 %n)
-  br label %if.end
-
-if.end:                                           ; preds = %if.else, %if.then
-  %n.addr.0 = phi i64 [ %call, %if.then ], [ %n, %if.else ]
-  ret i64 %n.addr.0
-}
-
 ; Function Attrs: nounwind uwtable
 define internal void @enter_4op_mode() #2 {
 entry:
@@ -2928,7 +2846,7 @@ entry:
   store i8 63, i8* %cmask, align 4, !tbaa !41
   %1 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %right_io = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %1, i32 0, i32 2
-  %2 = load i32, i32* %right_io, align 8, !tbaa !22
+  %2 = load i32, i32* %right_io, align 8, !tbaa !21
   call void @opl3_command(i32 %2, i32 4, i32 63)
   br label %for.cond
 
@@ -3016,33 +2934,24 @@ for.body30:                                       ; preds = %for.cond28
 for.end37:                                        ; preds = %for.cond28
   %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 3
-  store i32 12, i32* %nr_voice, align 4, !tbaa !12
+  store i32 12, i32* %nr_voice, align 4, !tbaa !11
   %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %v_alloc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 6
-  %7 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !28
+  %7 = load %struct.voice_alloc_info*, %struct.voice_alloc_info** %v_alloc, align 8, !tbaa !27
   %max_voice = getelementptr inbounds %struct.voice_alloc_info, %struct.voice_alloc_info* %7, i32 0, i32 0
   store i32 12, i32* %max_voice, align 4, !tbaa !30
   ret void
 }
 
 ; Function Attrs: nounwind readnone speculatable
-declare i64 @llvm.objectsize.i64.p0i8(i8*, i1, i1) #6
+declare i64 @llvm.objectsize.i64.p0i8(i8*, i1, i1) #5
 
 declare void @__might_fault(i8*, i32) #1
 
 declare void @kasan_check_write(i8*, i32) #1
 
 ; Function Attrs: nounwind readnone
-declare i64 @llvm.expect.i64(i64, i64) #7
-
-; Function Attrs: alwaysinline nounwind uwtable
-define internal void @check_object_size(i8* %ptr, i64 %n, i1 zeroext %to_user) #5 {
-entry:
-  %frombool = zext i1 %to_user to i8
-  %tobool = trunc i8 %frombool to i1
-  call void @__check_object_size(i8* %ptr, i64 %n, i1 zeroext %tobool)
-  ret void
-}
+declare i64 @llvm.expect.i64(i64, i64) #6
 
 declare i64 @_copy_from_user(i8*, i8*, i32) #1
 
@@ -3063,12 +2972,6 @@ if.then:                                          ; preds = %entry
   br label %if.end
 
 if.end:                                           ; preds = %if.then, %entry
-  %tobool3 = icmp ne i32 1, 0
-  %lnot4 = xor i1 %tobool3, true
-  %lnot6 = xor i1 %lnot4, true
-  %lnot.ext7 = zext i1 %lnot6 to i32
-  %conv8 = sext i32 %lnot.ext7 to i64
-  %expval9 = call i64 @llvm.expect.i64(i64 %conv8, i64 0)
   ret void
 }
 
@@ -3089,17 +2992,13 @@ entry:
   %vol2 = alloca i8, align 1
   %vol3 = alloca i8, align 1
   %vol4 = alloca i8, align 1
-  call void @llvm.lifetime.start.p0i8(i64 1, i8* %vol1) #8
-  call void @llvm.lifetime.start.p0i8(i64 1, i8* %vol2) #8
-  call void @llvm.lifetime.start.p0i8(i64 1, i8* %vol3) #8
-  call void @llvm.lifetime.start.p0i8(i64 1, i8* %vol4) #8
   %cmp = icmp slt i32 %voice, 0
   br i1 %cmp, label %cleanup, label %lor.lhs.false
 
 lor.lhs.false:                                    ; preds = %entry
   %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
   %nr_voice = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 3
-  %1 = load i32, i32* %nr_voice, align 4, !tbaa !12
+  %1 = load i32, i32* %nr_voice, align 4, !tbaa !11
   %cmp1 = icmp sge i32 %voice, %1
   br i1 %cmp1, label %cleanup, label %if.end
 
@@ -3304,11 +3203,6 @@ sw.epilog:                                        ; preds = %sw.bb61, %sw.bb60, 
   br label %cleanup
 
 cleanup:                                          ; preds = %sw.epilog, %if.end30, %if.end11, %if.end, %lor.lhs.false, %entry
-  %cleanup.dest.slot.0 = phi i32 [ 1, %lor.lhs.false ], [ 1, %entry ], [ 1, %if.end ], [ 1, %if.end11 ], [ 0, %sw.epilog ], [ 0, %if.end30 ]
-  call void @llvm.lifetime.end.p0i8(i64 1, i8* %vol4) #8
-  call void @llvm.lifetime.end.p0i8(i64 1, i8* %vol3) #8
-  call void @llvm.lifetime.end.p0i8(i64 1, i8* %vol2) #8
-  call void @llvm.lifetime.end.p0i8(i64 1, i8* %vol1) #8
   ret void
 }
 
@@ -3415,27 +3309,23 @@ define internal void @bend_pitch(i32 %voice, i32 %value) #2 {
 entry:
   %block = alloca i32, align 4
   %fnum = alloca i32, align 4
-  %0 = bitcast i32* %block to i8*
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %0) #8
-  %1 = bitcast i32* %fnum to i8*
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* %1) #8
-  %2 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %lv_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %2, i32 0, i32 4
+  %0 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %lv_map = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %0, i32 0, i32 4
   %idxprom = sext i32 %voice to i64
   %arrayidx = getelementptr inbounds [18 x i32], [18 x i32]* %lv_map, i64 0, i64 %idxprom
-  %3 = load i32, i32* %arrayidx, align 4, !tbaa !2
-  %idxprom1 = sext i32 %3 to i64
+  %1 = load i32, i32* %arrayidx, align 4, !tbaa !2
+  %idxprom1 = sext i32 %1 to i64
   %arrayidx2 = getelementptr inbounds [18 x %struct.physical_voice_info], [18 x %struct.physical_voice_info]* @pv_map, i64 0, i64 %idxprom1
   %voice_mode = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx2, i32 0, i32 1
-  %4 = load i8, i8* %voice_mode, align 1, !tbaa !42
-  %conv = zext i8 %4 to i32
+  %2 = load i8, i8* %voice_mode, align 1, !tbaa !42
+  %conv = zext i8 %2 to i32
   %cmp = icmp eq i32 %conv, 0
   br i1 %cmp, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %entry
   %conv4 = sext i32 %value to i64
-  %5 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %5, i32 0, i32 5
+  %3 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %3, i32 0, i32 5
   %idxprom5 = sext i32 %voice to i64
   %arrayidx6 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc, i64 0, i64 %idxprom5
   %bender = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx6, i32 0, i32 1
@@ -3444,92 +3334,87 @@ if.end:                                           ; preds = %entry
   br i1 %tobool, label %if.end8, label %cleanup
 
 if.end8:                                          ; preds = %if.end
-  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc9 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 5
+  %4 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc9 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %4, i32 0, i32 5
   %idxprom10 = sext i32 %voice to i64
   %arrayidx11 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc9, i64 0, i64 %idxprom10
   %keyon_byte = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx11, i32 0, i32 0
-  %7 = load i8, i8* %keyon_byte, align 8, !tbaa !44
-  %conv12 = zext i8 %7 to i32
+  %5 = load i8, i8* %keyon_byte, align 8, !tbaa !44
+  %conv12 = zext i8 %5 to i32
   %and = and i32 %conv12, 32
   %tobool13 = icmp ne i32 %and, 0
   br i1 %tobool13, label %if.end15, label %cleanup
 
 if.end15:                                         ; preds = %if.end8
-  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc16 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 5
+  %6 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc16 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %6, i32 0, i32 5
   %idxprom17 = sext i32 %voice to i64
   %arrayidx18 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc16, i64 0, i64 %idxprom17
   %orig_freq = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx18, i32 0, i32 3
-  %9 = load i64, i64* %orig_freq, align 8, !tbaa !51
-  %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc19 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 5
+  %7 = load i64, i64* %orig_freq, align 8, !tbaa !51
+  %8 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc19 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %8, i32 0, i32 5
   %idxprom20 = sext i32 %voice to i64
   %arrayidx21 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc19, i64 0, i64 %idxprom20
   %bender22 = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx21, i32 0, i32 1
-  %11 = load i64, i64* %bender22, align 8, !tbaa !47
-  %conv23 = trunc i64 %11 to i32
-  %12 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc24 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %12, i32 0, i32 5
+  %9 = load i64, i64* %bender22, align 8, !tbaa !47
+  %conv23 = trunc i64 %9 to i32
+  %10 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc24 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %10, i32 0, i32 5
   %idxprom25 = sext i32 %voice to i64
   %arrayidx26 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc24, i64 0, i64 %idxprom25
   %bender_range = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx26, i32 0, i32 2
-  %13 = load i64, i64* %bender_range, align 8, !tbaa !50
-  %conv27 = trunc i64 %13 to i32
-  %call = call i64 @compute_finetune(i64 %9, i32 %conv23, i32 %conv27, i32 0)
+  %11 = load i64, i64* %bender_range, align 8, !tbaa !50
+  %conv27 = trunc i64 %11 to i32
+  %call = call i64 @compute_finetune(i64 %7, i32 %conv23, i32 %conv27, i32 0)
   %conv28 = trunc i64 %call to i32
   %conv29 = sext i32 %conv28 to i64
-  %14 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc30 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %14, i32 0, i32 5
+  %12 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc30 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %12, i32 0, i32 5
   %idxprom31 = sext i32 %voice to i64
   %arrayidx32 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc30, i64 0, i64 %idxprom31
   %current_freq = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx32, i32 0, i32 4
   store i64 %conv29, i64* %current_freq, align 8, !tbaa !52
   call void @freq_to_fnum(i32 %conv28, i32* %block, i32* %fnum)
-  %15 = load i32, i32* %fnum, align 4, !tbaa !2
-  %and33 = and i32 %15, 255
+  %13 = load i32, i32* %fnum, align 4, !tbaa !2
+  %and33 = and i32 %13, 255
   %conv34 = trunc i32 %and33 to i8
   %ioaddr = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx2, i32 0, i32 2
-  %16 = load i16, i16* %ioaddr, align 2, !tbaa !31
-  %conv35 = zext i16 %16 to i32
+  %14 = load i16, i16* %ioaddr, align 2, !tbaa !31
+  %conv35 = zext i16 %14 to i32
   %voice_num = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx2, i32 0, i32 0
-  %17 = load i8, i8* %voice_num, align 2, !tbaa !43
-  %conv36 = zext i8 %17 to i32
+  %15 = load i8, i8* %voice_num, align 2, !tbaa !43
+  %conv36 = zext i8 %15 to i32
   %add = add nsw i32 160, %conv36
   %conv37 = zext i8 %conv34 to i32
   call void @opl3_command(i32 %conv35, i32 %add, i32 %conv37)
-  %18 = load i32, i32* %block, align 4, !tbaa !2
-  %and38 = and i32 %18, 7
+  %16 = load i32, i32* %block, align 4, !tbaa !2
+  %and38 = and i32 %16, 7
   %shl = shl i32 %and38, 2
   %or = or i32 32, %shl
-  %19 = load i32, i32* %fnum, align 4, !tbaa !2
-  %shr = ashr i32 %19, 8
+  %17 = load i32, i32* %fnum, align 4, !tbaa !2
+  %shr = ashr i32 %17, 8
   %and39 = and i32 %shr, 3
   %or40 = or i32 %or, %and39
   %conv41 = trunc i32 %or40 to i8
-  %20 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
-  %voc42 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %20, i32 0, i32 5
+  %18 = load %struct.opl_devinfo*, %struct.opl_devinfo** @devc, align 8, !tbaa !6
+  %voc42 = getelementptr inbounds %struct.opl_devinfo, %struct.opl_devinfo* %18, i32 0, i32 5
   %idxprom43 = sext i32 %voice to i64
   %arrayidx44 = getelementptr inbounds [18 x %struct.voice_info], [18 x %struct.voice_info]* %voc42, i64 0, i64 %idxprom43
   %keyon_byte45 = getelementptr inbounds %struct.voice_info, %struct.voice_info* %arrayidx44, i32 0, i32 0
   store i8 %conv41, i8* %keyon_byte45, align 8, !tbaa !44
   %ioaddr46 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx2, i32 0, i32 2
-  %21 = load i16, i16* %ioaddr46, align 2, !tbaa !31
-  %conv47 = zext i16 %21 to i32
+  %19 = load i16, i16* %ioaddr46, align 2, !tbaa !31
+  %conv47 = zext i16 %19 to i32
   %voice_num48 = getelementptr inbounds %struct.physical_voice_info, %struct.physical_voice_info* %arrayidx2, i32 0, i32 0
-  %22 = load i8, i8* %voice_num48, align 2, !tbaa !43
-  %conv49 = zext i8 %22 to i32
+  %20 = load i8, i8* %voice_num48, align 2, !tbaa !43
+  %conv49 = zext i8 %20 to i32
   %add50 = add nsw i32 176, %conv49
   %conv51 = zext i8 %conv41 to i32
   call void @opl3_command(i32 %conv47, i32 %add50, i32 %conv51)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end15, %if.end8, %if.end, %entry
-  %cleanup.dest.slot.0 = phi i32 [ 0, %if.end15 ], [ 1, %entry ], [ 1, %if.end ], [ 1, %if.end8 ]
-  %23 = bitcast i32* %fnum to i8*
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %23) #8
-  %24 = bitcast i32* %block to i8*
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* %24) #8
   ret void
 }
 
@@ -3540,10 +3425,9 @@ attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-
 attributes #2 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #3 = { argmemonly nounwind }
 attributes #4 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #5 = { alwaysinline nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #6 = { nounwind readnone speculatable }
-attributes #7 = { nounwind readnone }
-attributes #8 = { nounwind }
+attributes #5 = { nounwind readnone speculatable }
+attributes #6 = { nounwind readnone }
+attributes #7 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.ident = !{!1}
@@ -3559,26 +3443,26 @@ attributes #8 = { nounwind }
 !8 = !{!9, !3, i64 0}
 !9 = !{!"opl_devinfo", !3, i64 0, !3, i64 4, !3, i64 8, !3, i64 12, !4, i64 16, !4, i64 88, !7, i64 1096, !7, i64 1104, !4, i64 1112, !4, i64 11352, !10, i64 11496, !3, i64 11636, !3, i64 11640, !4, i64 11644, !3, i64 11648}
 !10 = !{!"synth_info", !4, i64 0, !3, i64 32, !3, i64 36, !3, i64 40, !3, i64 44, !3, i64 48, !3, i64 52, !3, i64 56, !3, i64 60, !4, i64 64}
-!11 = !{!9, !3, i64 11648}
-!12 = !{!9, !3, i64 12}
-!13 = !{!9, !3, i64 11528}
-!14 = !{!9, !3, i64 11532}
-!15 = !{!9, !3, i64 11536}
-!16 = !{!9, !3, i64 11540}
-!17 = !{!9, !3, i64 11544}
-!18 = !{!9, !3, i64 11548}
-!19 = !{!9, !3, i64 11552}
-!20 = !{!9, !3, i64 11556}
-!21 = !{!9, !3, i64 4}
-!22 = !{!9, !3, i64 8}
-!23 = !{!9, !3, i64 11640}
-!24 = !{!25, !7, i64 16}
-!25 = !{!"synth_operations", !7, i64 0, !7, i64 8, !7, i64 16, !3, i64 24, !3, i64 28, !3, i64 32, !7, i64 40, !7, i64 48, !7, i64 56, !7, i64 64, !7, i64 72, !7, i64 80, !7, i64 88, !7, i64 96, !7, i64 104, !7, i64 112, !7, i64 120, !7, i64 128, !7, i64 136, !7, i64 144, !7, i64 152, !7, i64 160, !7, i64 168, !26, i64 176, !4, i64 384, !3, i64 2624, !4, i64 2628, !3, i64 2692}
-!26 = !{!"voice_alloc_info", !3, i64 0, !3, i64 4, !3, i64 8, !4, i64 12, !3, i64 76, !4, i64 80}
-!27 = !{!25, !7, i64 0}
-!28 = !{!9, !7, i64 1096}
-!29 = !{!9, !7, i64 1104}
-!30 = !{!26, !3, i64 0}
+!11 = !{!9, !3, i64 12}
+!12 = !{!9, !3, i64 11528}
+!13 = !{!9, !3, i64 11532}
+!14 = !{!9, !3, i64 11536}
+!15 = !{!9, !3, i64 11540}
+!16 = !{!9, !3, i64 11544}
+!17 = !{!9, !3, i64 11548}
+!18 = !{!9, !3, i64 11552}
+!19 = !{!9, !3, i64 11556}
+!20 = !{!9, !3, i64 4}
+!21 = !{!9, !3, i64 8}
+!22 = !{!9, !3, i64 11640}
+!23 = !{!24, !7, i64 16}
+!24 = !{!"synth_operations", !7, i64 0, !7, i64 8, !7, i64 16, !3, i64 24, !3, i64 28, !3, i64 32, !7, i64 40, !7, i64 48, !7, i64 56, !7, i64 64, !7, i64 72, !7, i64 80, !7, i64 88, !7, i64 96, !7, i64 104, !7, i64 112, !7, i64 120, !7, i64 128, !7, i64 136, !7, i64 144, !7, i64 152, !7, i64 160, !7, i64 168, !25, i64 176, !4, i64 384, !3, i64 2624, !4, i64 2628, !3, i64 2692}
+!25 = !{!"voice_alloc_info", !3, i64 0, !3, i64 4, !3, i64 8, !4, i64 12, !3, i64 76, !4, i64 80}
+!26 = !{!24, !7, i64 0}
+!27 = !{!9, !7, i64 1096}
+!28 = !{!9, !7, i64 1104}
+!29 = !{!9, !3, i64 11648}
+!30 = !{!25, !3, i64 0}
 !31 = !{!32, !33, i64 2}
 !32 = !{!"physical_voice_info", !4, i64 0, !4, i64 1, !33, i64 2, !4, i64 4}
 !33 = !{!"short", !4, i64 0}
@@ -3587,7 +3471,7 @@ attributes #8 = { nounwind }
 !36 = !{i32 -2145153767}
 !37 = !{i32 -2145153969}
 !38 = !{!9, !3, i64 11636}
-!39 = !{!26, !3, i64 76}
+!39 = !{!25, !3, i64 76}
 !40 = !{!33, !33, i64 0}
 !41 = !{!9, !4, i64 11644}
 !42 = !{!32, !4, i64 1}
