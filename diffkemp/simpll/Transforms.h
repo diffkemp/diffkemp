@@ -1,0 +1,48 @@
+//===------------- Transforms.h - Simplifications of modules --------------===//
+//
+//       SimpLL - Program simplifier for analysis of semantic difference      //
+//
+// This file is published under Apache 2.0 license. See LICENSE for details.
+// Author: Viktor Malik, vmalik@redhat.com
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// This file contains the declaration of functions that do the actual
+/// simplification of programs so that they are later easier to be compared for
+/// semantic difference.
+///
+//===----------------------------------------------------------------------===//
+
+#ifndef DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H
+#define DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H
+
+#include "Config.h"
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Module.h>
+
+using namespace llvm;
+
+/// Preprocessing transformations - run independently on each module at the
+/// beginning.
+/// \param Mod Module to simplify.
+/// \param Main Function that is to be compared in the module. Can be set to
+///             NULL, but specifying this optimizes the transformations.
+/// \param Var Global variable w.r.t. to whose value the semantic diff will be
+///            done. Can be set to NULL, but specifying this enables more
+///            aggresive simplification.
+void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var);
+
+/// Simplify two corresponding modules for the purpose of their subsequent
+/// semantic difference analysis. Tries to remove all the code that is
+/// syntactically equal between the modules which should decrease the complexity
+/// of the semantic diff.
+void simplifyModulesDiff(Config &config);
+
+/// Preprocessing transformations - run independently on each module at the
+/// end.
+/// \param Mod Module to simplify.
+/// \param Main Function that is to be compared in the module. Can be set to
+///             NULL, but specifying this optimizes the transformations.
+void postprocessModule(Module &Mod, Function *Main = nullptr);
+
+#endif //DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H

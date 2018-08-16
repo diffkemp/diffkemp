@@ -5,5 +5,6 @@ add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
+add_subdirectory(diffkemp/simpll)
 add_subdirectory(diffkemp/slicer)
 add_subdirectory(diffkemp/llreve/reve)
