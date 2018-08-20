@@ -121,7 +121,11 @@ class FunctionCouplings():
         self.uncoupled_first = uncoupled(main_first, self.main)
         self.uncoupled_second = uncoupled(main_second, self.main)
 
+    def infer_called_by(self, fun_first, fun_second):
+        """
+        Find couplings of functions that are called by the given function pair.
+        """
         # Compute functions called by main
-        called_first = self._fun_collector_first.called_by(main_first)
-        called_second = self._fun_collector_second.called_by(main_second)
+        called_first = self._fun_collector_first.called_by([fun_first])
+        called_second = self._fun_collector_second.called_by([fun_second])
         self.called = self._infer_from_sets(called_first, called_second)

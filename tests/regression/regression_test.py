@@ -118,8 +118,6 @@ def prepare_module(spec, kernel_version, llvm, llvm_simpl, src):
         shutil.copyfile(mod.llvm, llvm)
         mod_src = os.path.join(os.path.dirname(mod.llvm), spec.module_src)
         shutil.copyfile(mod_src, src)
-    if not os.path.isfile(llvm_simpl):
-        shutil.copyfile(llvm, llvm_simpl)
 
 
 def prepare_task(spec):
@@ -169,13 +167,22 @@ class TestClass(object):
         assert couplings.uncoupled_second == task_spec.only_new
 
     def test_simpll(self, task_spec):
+        """
+        Test simplifying modules with the SimpLL tool. Simplification must
+        not fail and produce a valid LLVM IR file.
+        """
+        # First, copy LLVM IR files (simplification for all functions will be
+        # done on task_spec.old_simpl and task_spec.new_simpl).
+        shutil.copyfile(task_spec.old, task_spec.old_simpl)
+        shutil.copyfile(task_spec.new, task_spec.new_simpl)
+        # Calculate couplings and run simplification
         couplings = FunctionCouplings(task_spec.old, task_spec.new)
         couplings.infer_for_param(task_spec.param)
         for fun_pair, expected in task_spec.functions.iteritems():
             if expected != Result.TIMEOUT:
                 simplify_modules_diff(task_spec.old_simpl, task_spec.new_simpl,
                                       fun_pair[0], fun_pair[1],
-                                      task_spec.param, verbose=True)
+                                      task_spec.param)
 
     def test_function_comparison(self, task_spec):
         """
@@ -190,6 +197,7 @@ class TestClass(object):
         couplings.infer_for_param(task_spec.param)
         for fun_pair, expected in task_spec.functions.iteritems():
             if expected != Result.TIMEOUT:
+                couplings.infer_called_by(fun_pair[0], fun_pair[1])
                 result = functions_diff(task_spec.old_simpl,
                                         task_spec.new_simpl,
                                         fun_pair[0], fun_pair[1],
