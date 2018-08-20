@@ -2826,7 +2826,88 @@ cleanup:                                          ; preds = %if.end47
 }
 
 ; Function Attrs: nounwind uwtable
-declare void @wm9705_phy_init(%struct.wm97xx.3*) #0
+define internal void @wm9705_phy_init(%struct.wm97xx.3* %wm) #0 {
+entry:
+  %0 = load i32, i32* @pil, align 4, !tbaa !52
+  %cmp = icmp eq i32 %0, 2
+  br i1 %cmp, label %if.then, label %if.else
+
+if.then:                                          ; preds = %entry
+  %conv = zext i16 8192 to i32
+  %or = or i32 %conv, 128
+  %conv1 = trunc i32 %or to i16
+  %bf.load = load i32, i32* getelementptr inbounds (%struct._ddebug, %struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9705_phy_init.descriptor to %struct._ddebug*), i32 0, i32 4), align 8
+  %bf.lshr = lshr i32 %bf.load, 18
+  %bf.clear = and i32 %bf.lshr, 255
+  %and = and i32 %bf.clear, 1
+  %tobool = icmp ne i32 %and, 0
+  %lnot = xor i1 %tobool, true
+  %lnot3 = xor i1 %lnot, true
+  %lnot.ext = zext i1 %lnot3 to i32
+  %conv4 = sext i32 %lnot.ext to i64
+  %expval = call i64 @llvm.expect.i64(i64 %conv4, i64 0)
+  %tobool5 = icmp ne i64 %expval, 0
+  br i1 %tobool5, label %if.then6, label %if.end34
+
+if.then6:                                         ; preds = %if.then
+  %dev = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 8
+  %1 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
+  call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9705_phy_init.descriptor to %struct._ddebug*), %struct.device* %1, i8* getelementptr inbounds ([47 x i8], [47 x i8]* @.str.9.61, i32 0, i32 0))
+  br label %if.end34
+
+if.else:                                          ; preds = %entry
+  %2 = load i32, i32* @pil, align 4, !tbaa !52
+  %tobool9 = icmp ne i32 %2, 0
+  br i1 %tobool9, label %do.body12, label %if.end34
+
+do.body12:                                        ; preds = %if.else
+  %bf.load13 = load i32, i32* getelementptr inbounds (%struct._ddebug, %struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9705_phy_init.descriptor.7 to %struct._ddebug*), i32 0, i32 4), align 8
+  %bf.lshr14 = lshr i32 %bf.load13, 18
+  %bf.clear15 = and i32 %bf.lshr14, 255
+  %and16 = and i32 %bf.clear15, 1
+  %tobool17 = icmp ne i32 %and16, 0
+  %lnot18 = xor i1 %tobool17, true
+  %lnot20 = xor i1 %lnot18, true
+  %lnot.ext21 = zext i1 %lnot20 to i32
+  %conv22 = sext i32 %lnot.ext21 to i64
+  %expval23 = call i64 @llvm.expect.i64(i64 %conv22, i64 0)
+  %tobool24 = icmp ne i64 %expval23, 0
+  br i1 %tobool24, label %if.then25, label %if.end34
+
+if.then25:                                        ; preds = %do.body12
+  %dev26 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 8
+  %3 = load %struct.device*, %struct.device** %dev26, align 8, !tbaa !42
+  call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9705_phy_init.descriptor.7 to %struct._ddebug*), %struct.device* %3, i8* getelementptr inbounds ([47 x i8], [47 x i8]* @.str.10.62, i32 0, i32 0))
+  br label %if.end34
+
+if.end34:                                         ; preds = %if.then25, %do.body12, %if.else, %if.then6, %if.then
+  %dig2.0 = phi i16 [ %conv1, %if.then6 ], [ %conv1, %if.then ], [ 8192, %do.body12 ], [ 8192, %if.then25 ], [ 8192, %if.else ]
+  %4 = load i32, i32* @pil, align 4, !tbaa !52
+  %tobool35 = icmp ne i32 %4, 0
+  br i1 %tobool35, label %do.end98, label %if.then36
+
+if.then36:                                        ; preds = %if.end34
+  store i32 0, i32* @pressure, align 4, !tbaa !52
+  br label %do.end98
+
+do.end98:                                         ; preds = %if.then36, %if.end34
+  %5 = load i32, i32* @pdd, align 4, !tbaa !52
+  %and99 = and i32 %5, 15
+  %conv100 = zext i16 %dig2.0 to i32
+  %or101 = or i32 %conv100, %and99
+  %conv102 = trunc i32 %or101 to i16
+  br label %do.end125
+
+do.end125:                                        ; preds = %do.end98
+  %6 = load i32, i32* @mask, align 4, !tbaa !52
+  %and126 = and i32 %6, 3
+  %shl127 = shl i32 %and126, 4
+  %conv128 = zext i16 %conv102 to i32
+  %or129 = or i32 %conv128, %shl127
+  %conv130 = trunc i32 %or129 to i16
+  call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.3*, i16, i16)*)(%struct.wm97xx.3* %wm, i16 zeroext 120, i16 zeroext %conv130)
+  ret void
+}
 
 ; Function Attrs: nounwind uwtable
 define internal void @wm9705_dig_enable(%struct.wm97xx.3* %wm, i32 %enable) #0 {

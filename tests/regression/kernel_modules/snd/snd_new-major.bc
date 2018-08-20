@@ -1083,6 +1083,7 @@ module asm "\09.previous\09\09\09\09\09"
 @__kstrtab_snd_jack_add_new_kctl = internal constant [22 x i8] c"snd_jack_add_new_kctl\00", section "__ksymtab_strings", align 1
 
 @init_module = alias i32 (), i32 ()* @alsa_sound_init
+@cleanup_module = alias void (), void ()* @alsa_sound_exit
 
 ; Function Attrs: nounwind uwtable
 define i32 @snd_unregister_device(%struct.device* %dev) #0 {
@@ -1646,7 +1647,12 @@ cleanup.cont:                                     ; preds = %sw.epilog, %LeafBlo
 }
 
 ; Function Attrs: nounwind uwtable
-declare void @alsa_sound_exit() #3 section ".exit.text"
+define internal void @alsa_sound_exit() #3 section ".exit.text" {
+entry:
+  %0 = load i32, i32* @major, align 4, !tbaa !9
+  call void @unregister_chrdev(i32 %0, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.16, i32 0, i32 0))
+  ret void
+}
 
 ; Function Attrs: nounwind uwtable
 define i32 @snd_power_wait(%struct.snd_card* %card, i32 %power_state) #0 {

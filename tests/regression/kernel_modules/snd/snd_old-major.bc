@@ -876,6 +876,7 @@ target triple = "x86_64-unknown-linux-gnu"
 @__crc_snd_jack_new = extern_weak global i8*, align 8
 
 @init_module = alias i32 (), i32 ()* @alsa_sound_init
+@cleanup_module = alias void (), void ()* @alsa_sound_exit
 
 ; Function Attrs: nounwind uwtable
 define i32 @snd_add_device_sysfs_file(i32 %type, %struct.snd_card* %card, i32 %dev, %struct.device_attribute* %attr) #0 {
@@ -1572,7 +1573,12 @@ cleanup.cont:                                     ; preds = %sw.epilog, %LeafBlo
 }
 
 ; Function Attrs: nounwind uwtable
-declare void @alsa_sound_exit() #4 section ".exit.text"
+define internal void @alsa_sound_exit() #4 section ".exit.text" {
+entry:
+  %0 = load i32, i32* @major, align 4, !tbaa !25
+  call void @unregister_chrdev(i32 %0, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.17, i32 0, i32 0))
+  ret void
+}
 
 ; Function Attrs: nounwind uwtable
 define i32 @snd_power_wait(%struct.snd_card* %card, i32 %power_state) #0 {
