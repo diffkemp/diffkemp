@@ -18,7 +18,7 @@ params:
       usbdev_open: equal
       proc_claim_port: equal
       async_completed: equal
-      usbdev_do_ioctl: equal
+      usbdev_do_ioctl: timeout
       proc_reapurbnonblock: only_new
       proc_reapurbnonblock_compat: only_new
       proc_reapurb: only_new

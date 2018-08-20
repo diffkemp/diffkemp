@@ -397,12 +397,12 @@ target triple = "x86_64-unknown-linux-gnu"
 %struct.usb_hcd.2297 = type { %struct.usb_bus, %struct.arch_spinlock, i8*, i32, [24 x i8], %struct.timer_list, %struct.urb*, %struct.work_struct, %struct.hc_driver.2300*, %struct.usb_phy*, i64, i8, i32, i8*, i64, i64, i32, %struct.mutex*, %struct.usb_hcd.2297*, %struct.usb_hcd.2297*, [4 x %struct.dma_pool*], i32, [0 x i64] }
 %struct.hc_driver.2300 = type { i8*, i8*, i64, i32 (%struct.usb_hcd.2297*)*, i32, {}*, {}*, i32 (%struct.usb_hcd.2297*, i1)*, i32 (%struct.usb_hcd.2297*, i1)*, void (%struct.usb_hcd.2297*)*, void (%struct.usb_hcd.2297*)*, {}*, i32 (%struct.usb_hcd.2297*, %struct.urb*, i32)*, i32 (%struct.usb_hcd.2297*, %struct.urb*, i32)*, i32 (%struct.usb_hcd.2297*, %struct.urb*, i32)*, void (%struct.usb_hcd.2297*, %struct.urb*)*, void (%struct.usb_hcd.2297*, %struct.usb_host_endpoint*)*, void (%struct.usb_hcd.2297*, %struct.usb_host_endpoint*)*, i32 (%struct.usb_hcd.2297*, i8*)*, i32 (%struct.usb_hcd.2297*, i16, i16, i16, i8*, i16)*, {}*, {}*, i32 (%struct.usb_hcd.2297*, i32)*, void (%struct.usb_hcd.2297*, i32)*, i32 (%struct.usb_hcd.2297*, i32)*, void (%struct.usb_hcd.2297*, %struct.usb_host_endpoint*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*)*, void (%struct.usb_hcd.2297*, %struct.usb_device*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, %struct.usb_host_endpoint**, i32, i32, i32)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, %struct.usb_host_endpoint**, i32, i32)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, %struct.usb_host_endpoint*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, %struct.usb_host_endpoint*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*)*, void (%struct.usb_hcd.2297*, %struct.usb_device*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, %struct.usb_tt*, i32)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, i32)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, i32)*, i32 (%struct.usb_hcd.2297*, %struct.usb_device*, i32)*, i32 (%struct.usb_hcd.2297*, i32)* }
 %struct.async = type { %struct.list_head, %struct.dev_state*, %struct.pid*, %struct.cred*, i32, i32, i8*, i8*, %struct.urb*, i32, i32, i32, i8, i8 }
+%struct.usbdevfs_ctrltransfer32 = type { i8, i8, i16, i16, i16, i32, i32 }
 %struct.usbdevfs_ctrltransfer = type { i8, i8, i16, i16, i16, i32, i8* }
 %struct.usbdevfs_bulktransfer = type { i32, i32, i32, i8* }
 %struct.usbdevfs_getdriver = type { i32, [256 x i8] }
 %struct.usbdevfs_connectinfo = type { i32, i8 }
 %struct.usbdevfs_urb = type { i8, i8, i32, i32, i8*, i32, i32, i32, i32, i32, i32, i8*, [0 x %struct.uid_gid_extent] }
-%struct.usbdevfs_ctrltransfer32 = type { i8, i8, i16, i16, i16, i32, i32 }
 %struct.usbdevfs_urb32 = type { i8, i8, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, [0 x %struct.uid_gid_extent] }
 %struct.usbdevfs_ioctl = type { i32, i32, i8* }
 %struct.__large_struct = type { [100 x i64] }
@@ -34715,7 +34715,8 @@ if.end:                                           ; preds = %land.lhs.true, %ent
 ; Function Attrs: nounwind uwtable
 define internal i64 @usbdev_ioctl(%struct.file* %file, i32 %cmd, i64 %arg) #0 {
 entry:
-  %call = call i64 @usbdev_do_ioctl(i32 %cmd)
+  %0 = inttoptr i64 %arg to i8*
+  %call = call i64 @usbdev_do_ioctl(%struct.file* %file, i32 %cmd, i8* %0)
   %conv = trunc i64 %call to i32
   %conv1 = sext i32 %conv to i64
   ret i64 %conv1
@@ -34726,14 +34727,42 @@ define internal i64 @usbdev_compat_ioctl(%struct.file* %file, i32 %cmd, i64 %arg
 entry:
   %conv = trunc i64 %arg to i32
   %call = call i8* @compat_ptr(i32 %conv)
-  %call1 = call i64 @usbdev_do_ioctl(i32 %cmd)
+  %call1 = call i64 @usbdev_do_ioctl(%struct.file* %file, i32 %cmd, i8* %call)
   %conv2 = trunc i64 %call1 to i32
   %conv3 = sext i32 %conv2 to i64
   ret i64 %conv3
 }
 
 ; Function Attrs: nounwind uwtable
-declare i32 @usbdev_open(%struct.inode*, %struct.file*) #0
+define internal i32 @usbdev_open(%struct.inode* %inode, %struct.file* %file) #0 {
+entry:
+  br label %if.then2
+
+if.then2:                                         ; preds = %entry
+  %i_rdev = getelementptr inbounds %struct.inode, %struct.inode* %inode, i32 0, i32 13
+  %0 = load i32, i32* %i_rdev, align 4, !tbaa !565
+  %conv.i = zext i32 %0 to i64
+  %1 = inttoptr i64 %conv.i to i8*
+  %call.i = call %struct.device* @bus_find_device(%struct.bus_type* @usb_bus_type, %struct.device* null, i8* %1, i32 (%struct.device*, i8*)* @match_devt) #8
+  br label %if.end4
+
+if.end4:                                          ; preds = %if.then2
+  br label %if.end15
+
+if.end15:                                         ; preds = %if.end4
+  %2 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool45 = trunc i8 %2 to i1
+  br i1 %tobool45, label %if.then46, label %cleanup
+
+if.then46:                                        ; preds = %if.end15
+  %3 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
+  %4 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
+  call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
+  br label %cleanup
+
+cleanup:                                          ; preds = %if.then46, %if.end15
+  ret i32 0
+}
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @usbdev_release(%struct.inode* %inode, %struct.file* %file) #0 {
@@ -35141,15 +35170,6 @@ entry:
   ret void
 }
 
-; Function Attrs: nounwind uwtable
-define internal void @usbdev_lookup_by_devt(i32 %devt) #0 {
-entry:
-  %conv = zext i32 %devt to i64
-  %0 = inttoptr i64 %conv to i8*
-  %call = call %struct.device* @bus_find_device(%struct.bus_type* @usb_bus_type, %struct.device* null, i8* %0, i32 (%struct.device*, i8*)* @match_devt)
-  ret void
-}
-
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @task_pid() #1 {
 entry:
@@ -35182,9 +35202,6 @@ entry:
 }
 
 declare void @security_task_getsecid(%struct.task_struct*, i32*) #2
-
-; Function Attrs: inlinehint nounwind uwtable
-declare void @task_pid_nr() #1
 
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @get_new_cred(%struct.cred* %cred) #1 {
@@ -35223,11 +35240,42 @@ entry:
 }
 
 ; Function Attrs: nounwind uwtable
-define internal i64 @usbdev_do_ioctl(i32 %cmd) #0 {
+define internal i64 @usbdev_do_ioctl(%struct.file* %file, i32 %cmd, i8* %p) #0 {
 entry:
-  br label %NodeBlock95
+  %coerce = alloca %struct.load_weight, align 8
+  %coerce31 = alloca %struct.load_weight, align 8
+  %coerce47 = alloca %struct.load_weight, align 8
+  %coerce73 = alloca %struct.load_weight, align 8
+  %coerce129 = alloca %struct.load_weight, align 8
+  %coerce145 = alloca %struct.load_weight, align 8
+  %coerce161 = alloca %struct.load_weight, align 8
+  %coerce187 = alloca %struct.load_weight, align 8
+  %coerce318 = alloca %struct.load_weight, align 8
+  %private_data = getelementptr inbounds %struct.file, %struct.file* %file, i32 0, i32 15
+  %0 = load i8*, i8** %private_data, align 8, !tbaa !593
+  %1 = bitcast i8* %0 to %struct.dev_state*
+  %call = call %struct.inode* @file_inode(%struct.file* %file)
+  %dev1 = getelementptr inbounds %struct.dev_state, %struct.dev_state* %1, i32 0, i32 1
+  %2 = load %struct.usb_device*, %struct.usb_device** %dev1, align 8, !tbaa !594
+  %f_mode = getelementptr inbounds %struct.file, %struct.file* %file, i32 0, i32 8
+  %3 = load i32, i32* %f_mode, align 4, !tbaa !596
+  %and = and i32 %3, 2
+  %tobool = icmp ne i32 %and, 0
+  br i1 %tobool, label %if.end, label %cleanup
 
-NodeBlock95:                                      ; preds = %entry
+if.end:                                           ; preds = %entry
+  %dev2 = getelementptr inbounds %struct.usb_device, %struct.usb_device* %2, i32 0, i32 11
+  call void @device_lock.668(%struct.device* %dev2)
+  %call3 = call i32 @connected(%struct.dev_state* %1)
+  %tobool4 = icmp ne i32 %call3, 0
+  br i1 %tobool4, label %NodeBlock95, label %if.then5
+
+if.then5:                                         ; preds = %if.end
+  %dev6 = getelementptr inbounds %struct.usb_device, %struct.usb_device* %2, i32 0, i32 11
+  call void @device_unlock.670(%struct.device* %dev6)
+  br label %cleanup
+
+NodeBlock95:                                      ; preds = %if.end
   %Pivot96 = icmp slt i32 %cmd, -1072933614
   br i1 %Pivot96, label %NodeBlock43, label %NodeBlock93
 
@@ -35245,19 +35293,39 @@ NodeBlock89:                                      ; preds = %NodeBlock91
 
 NodeBlock87:                                      ; preds = %NodeBlock89
   %Pivot88 = icmp slt i32 %cmd, 1090802952
-  br i1 %Pivot88, label %do.body86, label %do.body76
+  br i1 %Pivot88, label %LeafBlock83, label %LeafBlock85
+
+LeafBlock85:                                      ; preds = %NodeBlock87
+  %SwitchLeaf86 = icmp eq i32 %cmd, 1090802952
+  br i1 %SwitchLeaf86, label %do.body76, label %sw.epilog
+
+LeafBlock83:                                      ; preds = %NodeBlock87
+  %SwitchLeaf84 = icmp eq i32 %cmd, 1074287889
+  br i1 %SwitchLeaf84, label %do.body86, label %sw.epilog
 
 NodeBlock81:                                      ; preds = %NodeBlock89
   %Pivot82 = icmp slt i32 %cmd, 1074287885
-  br i1 %Pivot82, label %do.body231, label %do.body241
+  br i1 %Pivot82, label %do.body231, label %LeafBlock79
+
+LeafBlock79:                                      ; preds = %NodeBlock81
+  %SwitchLeaf80 = icmp eq i32 %cmd, 1074287885
+  br i1 %SwitchLeaf80, label %do.body241, label %sw.epilog
 
 NodeBlock77:                                      ; preds = %NodeBlock91
   %Pivot78 = icmp slt i32 %cmd, 1074025740
-  br i1 %Pivot78, label %do.body50, label %NodeBlock75
+  br i1 %Pivot78, label %LeafBlock71, label %NodeBlock75
 
 NodeBlock75:                                      ; preds = %NodeBlock77
   %Pivot76 = icmp slt i32 %cmd, 1074025741
-  br i1 %Pivot76, label %do.body190, label %do.body200
+  br i1 %Pivot76, label %do.body190, label %LeafBlock73
+
+LeafBlock73:                                      ; preds = %NodeBlock75
+  %SwitchLeaf74 = icmp eq i32 %cmd, 1074025741
+  br i1 %SwitchLeaf74, label %do.body200, label %sw.epilog
+
+LeafBlock71:                                      ; preds = %NodeBlock77
+  %SwitchLeaf72 = icmp eq i32 %cmd, 21780
+  br i1 %SwitchLeaf72, label %do.body50, label %sw.epilog
 
 NodeBlock69:                                      ; preds = %NodeBlock93
   %Pivot70 = icmp slt i32 %cmd, -1072671470
@@ -35269,19 +35337,47 @@ NodeBlock67:                                      ; preds = %NodeBlock69
 
 NodeBlock65:                                      ; preds = %NodeBlock67
   %Pivot66 = icmp slt i32 %cmd, 21771
-  br i1 %Pivot66, label %do.body18, label %do.body221
+  br i1 %Pivot66, label %LeafBlock61, label %LeafBlock63
+
+LeafBlock63:                                      ; preds = %NodeBlock65
+  %SwitchLeaf64 = icmp eq i32 %cmd, 21771
+  br i1 %SwitchLeaf64, label %do.body221, label %sw.epilog
+
+LeafBlock61:                                      ; preds = %NodeBlock65
+  %SwitchLeaf62 = icmp eq i32 %cmd, -1072147198
+  br i1 %SwitchLeaf62, label %do.body18, label %sw.epilog
 
 NodeBlock59:                                      ; preds = %NodeBlock67
   %Pivot60 = icmp slt i32 %cmd, -1072147200
-  br i1 %Pivot60, label %do.body281, label %do.body
+  br i1 %Pivot60, label %LeafBlock55, label %LeafBlock57
+
+LeafBlock57:                                      ; preds = %NodeBlock59
+  %SwitchLeaf58 = icmp eq i32 %cmd, -1072147200
+  br i1 %SwitchLeaf58, label %do.body, label %sw.epilog
+
+LeafBlock55:                                      ; preds = %NodeBlock59
+  %SwitchLeaf56 = icmp eq i32 %cmd, -1072671470
+  br i1 %SwitchLeaf56, label %do.body281, label %sw.epilog
 
 NodeBlock53:                                      ; preds = %NodeBlock69
   %Pivot54 = icmp slt i32 %cmd, -1072671488
-  br i1 %Pivot54, label %do.body210, label %NodeBlock51
+  br i1 %Pivot54, label %LeafBlock45, label %NodeBlock51
 
 NodeBlock51:                                      ; preds = %NodeBlock53
   %Pivot52 = icmp slt i32 %cmd, -1072671486
-  br i1 %Pivot52, label %do.body132, label %do.body148
+  br i1 %Pivot52, label %LeafBlock47, label %LeafBlock49
+
+LeafBlock49:                                      ; preds = %NodeBlock51
+  %SwitchLeaf50 = icmp eq i32 %cmd, -1072671486
+  br i1 %SwitchLeaf50, label %do.body148, label %sw.epilog
+
+LeafBlock47:                                      ; preds = %NodeBlock51
+  %SwitchLeaf48 = icmp eq i32 %cmd, -1072671488
+  br i1 %SwitchLeaf48, label %do.body132, label %sw.epilog
+
+LeafBlock45:                                      ; preds = %NodeBlock53
+  %SwitchLeaf46 = icmp eq i32 %cmd, -1072933614
+  br i1 %SwitchLeaf46, label %do.body210, label %sw.epilog
 
 NodeBlock43:                                      ; preds = %NodeBlock95
   %Pivot44 = icmp slt i32 %cmd, -2147199718
@@ -35289,19 +35385,55 @@ NodeBlock43:                                      ; preds = %NodeBlock95
 
 NodeBlock41:                                      ; preds = %NodeBlock43
   %Pivot42 = icmp slt i32 %cmd, -2146413298
-  br i1 %Pivot42, label %NodeBlock23, label %NodeBlock39
+  br i1 %Pivot42, label %NodeBlock25, label %NodeBlock39
 
 NodeBlock39:                                      ; preds = %NodeBlock41
   %Pivot40 = icmp slt i32 %cmd, -2143791862
-  br i1 %Pivot40, label %NodeBlock31, label %do.body116
+  br i1 %Pivot40, label %NodeBlock31, label %NodeBlock37
+
+NodeBlock37:                                      ; preds = %NodeBlock39
+  %Pivot38 = icmp slt i32 %cmd, -2130160357
+  br i1 %Pivot38, label %LeafBlock33, label %LeafBlock35
+
+LeafBlock35:                                      ; preds = %NodeBlock37
+  %SwitchLeaf36 = icmp eq i32 %cmd, -2130160357
+  br i1 %SwitchLeaf36, label %sw.bb312, label %sw.epilog
+
+LeafBlock33:                                      ; preds = %NodeBlock37
+  %SwitchLeaf34 = icmp eq i32 %cmd, -2143791862
+  br i1 %SwitchLeaf34, label %do.body116, label %sw.epilog
 
 NodeBlock31:                                      ; preds = %NodeBlock39
   %Pivot32 = icmp slt i32 %cmd, -2144578294
-  br i1 %Pivot32, label %do.body251, label %do.body174
+  br i1 %Pivot32, label %LeafBlock27, label %LeafBlock29
 
-NodeBlock23:                                      ; preds = %NodeBlock41
+LeafBlock29:                                      ; preds = %NodeBlock31
+  %SwitchLeaf30 = icmp eq i32 %cmd, -2144578294
+  br i1 %SwitchLeaf30, label %do.body174, label %sw.epilog
+
+LeafBlock27:                                      ; preds = %NodeBlock31
+  %SwitchLeaf28 = icmp eq i32 %cmd, -2146413298
+  br i1 %SwitchLeaf28, label %do.body251, label %sw.epilog
+
+NodeBlock25:                                      ; preds = %NodeBlock41
+  %Pivot26 = icmp slt i32 %cmd, -2146937596
+  br i1 %Pivot26, label %LeafBlock17, label %NodeBlock23
+
+NodeBlock23:                                      ; preds = %NodeBlock25
   %Pivot24 = icmp slt i32 %cmd, -2146937586
-  br i1 %Pivot24, label %do.body96, label %do.body164
+  br i1 %Pivot24, label %LeafBlock19, label %LeafBlock21
+
+LeafBlock21:                                      ; preds = %NodeBlock23
+  %SwitchLeaf22 = icmp eq i32 %cmd, -2146937586
+  br i1 %SwitchLeaf22, label %do.body164, label %sw.epilog
+
+LeafBlock19:                                      ; preds = %NodeBlock23
+  %SwitchLeaf20 = icmp eq i32 %cmd, -2146937596
+  br i1 %SwitchLeaf20, label %do.body96, label %sw.epilog
+
+LeafBlock17:                                      ; preds = %NodeBlock25
+  %SwitchLeaf18 = icmp eq i32 %cmd, -2147199718
+  br i1 %SwitchLeaf18, label %sw.bb310, label %sw.epilog
 
 NodeBlock15:                                      ; preds = %NodeBlock43
   %Pivot16 = icmp slt i32 %cmd, -2147199728
@@ -35313,261 +35445,547 @@ NodeBlock13:                                      ; preds = %NodeBlock15
 
 NodeBlock11:                                      ; preds = %NodeBlock13
   %Pivot12 = icmp slt i32 %cmd, -2147199719
-  %0 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool292 = trunc i8 %0 to i1
+  %4 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool292 = trunc i8 %4 to i1
   br i1 %Pivot12, label %do.body291, label %do.body301
 
 NodeBlock9:                                       ; preds = %NodeBlock13
   %Pivot10 = icmp slt i32 %cmd, -2147199723
-  br i1 %Pivot10, label %do.body271, label %do.body60
+  br i1 %Pivot10, label %LeafBlock5, label %LeafBlock7
+
+LeafBlock7:                                       ; preds = %NodeBlock9
+  %SwitchLeaf8 = icmp eq i32 %cmd, -2147199723
+  br i1 %SwitchLeaf8, label %do.body60, label %sw.epilog
+
+LeafBlock5:                                       ; preds = %NodeBlock9
+  %SwitchLeaf6 = icmp eq i32 %cmd, -2147199728
+  br i1 %SwitchLeaf6, label %do.body271, label %sw.epilog
 
 NodeBlock3:                                       ; preds = %NodeBlock15
   %Pivot4 = icmp slt i32 %cmd, -2147199739
-  br i1 %Pivot4, label %do.body34, label %NodeBlock
+  br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
 NodeBlock:                                        ; preds = %NodeBlock3
   %Pivot = icmp slt i32 %cmd, -2147199729
-  br i1 %Pivot, label %do.body106, label %do.body261
+  br i1 %Pivot, label %LeafBlock1, label %do.body261
 
-do.body:                                          ; preds = %NodeBlock59
-  %1 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool8 = trunc i8 %1 to i1
-  br i1 %tobool8, label %if.then9, label %cleanup
+LeafBlock1:                                       ; preds = %NodeBlock
+  %SwitchLeaf2 = icmp eq i32 %cmd, -2147199739
+  br i1 %SwitchLeaf2, label %do.body106, label %sw.epilog
+
+LeafBlock:                                        ; preds = %NodeBlock3
+  %SwitchLeaf = icmp eq i32 %cmd, -2147199741
+  br i1 %SwitchLeaf, label %do.body34, label %sw.epilog
+
+do.body:                                          ; preds = %LeafBlock57
+  %5 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool8 = trunc i8 %5 to i1
+  br i1 %tobool8, label %if.then9, label %do.end
 
 if.then9:                                         ; preds = %do.body
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end
 
-do.body18:                                        ; preds = %NodeBlock65
-  %2 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool19 = trunc i8 %2 to i1
-  br i1 %tobool19, label %if.then20, label %cleanup
+do.end:                                           ; preds = %if.then9, %do.body
+  %call13 = call i32 @proc_control(i8* %p)
+  %cmp = icmp sge i32 %call13, 0
+  br i1 %cmp, label %if.then14, label %sw.epilog
+
+if.then14:                                        ; preds = %do.end
+  %i_mtime = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call15 = call { i64, i64 } @current_kernel_time()
+  %6 = bitcast %struct.load_weight* %coerce to { i64, i64 }*
+  %7 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %6, i32 0, i32 0
+  %8 = extractvalue { i64, i64 } %call15, 0
+  store i64 %8, i64* %7, align 8
+  %9 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %6, i32 0, i32 1
+  %10 = extractvalue { i64, i64 } %call15, 1
+  store i64 %10, i64* %9, align 8
+  %11 = bitcast %struct.load_weight* %i_mtime to i8*
+  %12 = bitcast %struct.load_weight* %coerce to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %11, i8* %12, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
+
+do.body18:                                        ; preds = %LeafBlock61
+  %13 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool19 = trunc i8 %13 to i1
+  br i1 %tobool19, label %if.then20, label %do.end25
 
 if.then20:                                        ; preds = %do.body18
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end25
 
-do.body34:                                        ; preds = %NodeBlock3
-  %3 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool35 = trunc i8 %3 to i1
-  br i1 %tobool35, label %if.then36, label %cleanup
+do.end25:                                         ; preds = %if.then20, %do.body18
+  %call26 = call i32 @proc_bulk(%struct.dev_state* %1, i8* %p)
+  %cmp27 = icmp sge i32 %call26, 0
+  br i1 %cmp27, label %if.then28, label %sw.epilog
+
+if.then28:                                        ; preds = %do.end25
+  %i_mtime29 = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call30 = call { i64, i64 } @current_kernel_time()
+  %14 = bitcast %struct.load_weight* %coerce31 to { i64, i64 }*
+  %15 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %14, i32 0, i32 0
+  %16 = extractvalue { i64, i64 } %call30, 0
+  store i64 %16, i64* %15, align 8
+  %17 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %14, i32 0, i32 1
+  %18 = extractvalue { i64, i64 } %call30, 1
+  store i64 %18, i64* %17, align 8
+  %19 = bitcast %struct.load_weight* %i_mtime29 to i8*
+  %20 = bitcast %struct.load_weight* %coerce31 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %19, i8* %20, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
+
+do.body34:                                        ; preds = %LeafBlock
+  %21 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool35 = trunc i8 %21 to i1
+  br i1 %tobool35, label %if.then36, label %do.end41
 
 if.then36:                                        ; preds = %do.body34
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end41
 
-do.body50:                                        ; preds = %NodeBlock77
-  %4 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool51 = trunc i8 %4 to i1
-  br i1 %tobool51, label %if.then52, label %cleanup
+do.end41:                                         ; preds = %if.then36, %do.body34
+  %call42 = call i32 @proc_resetep(%struct.dev_state* %1, i8* %p)
+  %cmp43 = icmp sge i32 %call42, 0
+  br i1 %cmp43, label %if.then44, label %sw.epilog
+
+if.then44:                                        ; preds = %do.end41
+  %i_mtime45 = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call46 = call { i64, i64 } @current_kernel_time()
+  %22 = bitcast %struct.load_weight* %coerce47 to { i64, i64 }*
+  %23 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %22, i32 0, i32 0
+  %24 = extractvalue { i64, i64 } %call46, 0
+  store i64 %24, i64* %23, align 8
+  %25 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %22, i32 0, i32 1
+  %26 = extractvalue { i64, i64 } %call46, 1
+  store i64 %26, i64* %25, align 8
+  %27 = bitcast %struct.load_weight* %i_mtime45 to i8*
+  %28 = bitcast %struct.load_weight* %coerce47 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %27, i8* %28, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
+
+do.body50:                                        ; preds = %LeafBlock71
+  %29 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool51 = trunc i8 %29 to i1
+  br i1 %tobool51, label %if.then52, label %do.end57
 
 if.then52:                                        ; preds = %do.body50
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end57
 
-do.body60:                                        ; preds = %NodeBlock9
-  %5 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool61 = trunc i8 %5 to i1
-  br i1 %tobool61, label %if.then62, label %cleanup
+do.end57:                                         ; preds = %if.then52, %do.body50
+  %call58 = call i32 @proc_resetdevice(%struct.dev_state* %1)
+  br label %sw.epilog
+
+do.body60:                                        ; preds = %LeafBlock7
+  %30 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool61 = trunc i8 %30 to i1
+  br i1 %tobool61, label %if.then62, label %do.end67
 
 if.then62:                                        ; preds = %do.body60
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end67
 
-do.body76:                                        ; preds = %NodeBlock87
-  %6 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool77 = trunc i8 %6 to i1
-  br i1 %tobool77, label %if.then78, label %cleanup
+do.end67:                                         ; preds = %if.then62, %do.body60
+  %call68 = call i32 @proc_clearhalt(%struct.dev_state* %1, i8* %p)
+  %cmp69 = icmp sge i32 %call68, 0
+  br i1 %cmp69, label %if.then70, label %sw.epilog
+
+if.then70:                                        ; preds = %do.end67
+  %i_mtime71 = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call72 = call { i64, i64 } @current_kernel_time()
+  %31 = bitcast %struct.load_weight* %coerce73 to { i64, i64 }*
+  %32 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %31, i32 0, i32 0
+  %33 = extractvalue { i64, i64 } %call72, 0
+  store i64 %33, i64* %32, align 8
+  %34 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %31, i32 0, i32 1
+  %35 = extractvalue { i64, i64 } %call72, 1
+  store i64 %35, i64* %34, align 8
+  %36 = bitcast %struct.load_weight* %i_mtime71 to i8*
+  %37 = bitcast %struct.load_weight* %coerce73 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %36, i8* %37, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
+
+do.body76:                                        ; preds = %LeafBlock85
+  %38 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool77 = trunc i8 %38 to i1
+  br i1 %tobool77, label %if.then78, label %do.end83
 
 if.then78:                                        ; preds = %do.body76
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end83
 
-do.body86:                                        ; preds = %NodeBlock87
-  %7 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool87 = trunc i8 %7 to i1
-  br i1 %tobool87, label %if.then88, label %cleanup
+do.end83:                                         ; preds = %if.then78, %do.body76
+  %call84 = call i32 @proc_getdriver(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body86:                                        ; preds = %LeafBlock83
+  %39 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool87 = trunc i8 %39 to i1
+  br i1 %tobool87, label %if.then88, label %do.end93
 
 if.then88:                                        ; preds = %do.body86
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end93
 
-do.body96:                                        ; preds = %NodeBlock23
-  %8 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool97 = trunc i8 %8 to i1
-  br i1 %tobool97, label %if.then98, label %cleanup
+do.end93:                                         ; preds = %if.then88, %do.body86
+  %call94 = call i32 @proc_connectinfo(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body96:                                        ; preds = %LeafBlock19
+  %40 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool97 = trunc i8 %40 to i1
+  br i1 %tobool97, label %if.then98, label %do.end103
 
 if.then98:                                        ; preds = %do.body96
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end103
 
-do.body106:                                       ; preds = %NodeBlock
-  %9 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool107 = trunc i8 %9 to i1
-  br i1 %tobool107, label %if.then108, label %cleanup
+do.end103:                                        ; preds = %if.then98, %do.body96
+  %call104 = call i32 @proc_setintf(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body106:                                       ; preds = %LeafBlock1
+  %41 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool107 = trunc i8 %41 to i1
+  br i1 %tobool107, label %if.then108, label %do.end113
 
 if.then108:                                       ; preds = %do.body106
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end113
 
-do.body116:                                       ; preds = %NodeBlock39
-  %10 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool117 = trunc i8 %10 to i1
-  br i1 %tobool117, label %if.then118, label %cleanup
+do.end113:                                        ; preds = %if.then108, %do.body106
+  %call114 = call i32 @proc_setconfig(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body116:                                       ; preds = %LeafBlock33
+  %42 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool117 = trunc i8 %42 to i1
+  br i1 %tobool117, label %if.then118, label %do.end123
 
 if.then118:                                       ; preds = %do.body116
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end123
 
-do.body132:                                       ; preds = %NodeBlock51
-  %11 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool133 = trunc i8 %11 to i1
-  br i1 %tobool133, label %if.then134, label %cleanup
+do.end123:                                        ; preds = %if.then118, %do.body116
+  %call124 = call i32 @proc_submiturb(%struct.dev_state* %1, i8* %p)
+  %cmp125 = icmp sge i32 %call124, 0
+  br i1 %cmp125, label %if.then126, label %sw.epilog
+
+if.then126:                                       ; preds = %do.end123
+  %i_mtime127 = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call128 = call { i64, i64 } @current_kernel_time()
+  %43 = bitcast %struct.load_weight* %coerce129 to { i64, i64 }*
+  %44 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %43, i32 0, i32 0
+  %45 = extractvalue { i64, i64 } %call128, 0
+  store i64 %45, i64* %44, align 8
+  %46 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %43, i32 0, i32 1
+  %47 = extractvalue { i64, i64 } %call128, 1
+  store i64 %47, i64* %46, align 8
+  %48 = bitcast %struct.load_weight* %i_mtime127 to i8*
+  %49 = bitcast %struct.load_weight* %coerce129 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %48, i8* %49, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
+
+do.body132:                                       ; preds = %LeafBlock47
+  %50 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool133 = trunc i8 %50 to i1
+  br i1 %tobool133, label %if.then134, label %do.end139
 
 if.then134:                                       ; preds = %do.body132
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end139
 
-do.body148:                                       ; preds = %NodeBlock51
-  %12 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool149 = trunc i8 %12 to i1
-  br i1 %tobool149, label %if.then150, label %cleanup
+do.end139:                                        ; preds = %if.then134, %do.body132
+  %51 = bitcast i8* %p to %struct.usbdevfs_ctrltransfer32*
+  %call140 = call i32 @proc_control_compat(%struct.usbdevfs_ctrltransfer32* %51)
+  %cmp141 = icmp sge i32 %call140, 0
+  br i1 %cmp141, label %if.then142, label %sw.epilog
+
+if.then142:                                       ; preds = %do.end139
+  %i_mtime143 = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call144 = call { i64, i64 } @current_kernel_time()
+  %52 = bitcast %struct.load_weight* %coerce145 to { i64, i64 }*
+  %53 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %52, i32 0, i32 0
+  %54 = extractvalue { i64, i64 } %call144, 0
+  store i64 %54, i64* %53, align 8
+  %55 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %52, i32 0, i32 1
+  %56 = extractvalue { i64, i64 } %call144, 1
+  store i64 %56, i64* %55, align 8
+  %57 = bitcast %struct.load_weight* %i_mtime143 to i8*
+  %58 = bitcast %struct.load_weight* %coerce145 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %57, i8* %58, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
+
+do.body148:                                       ; preds = %LeafBlock49
+  %59 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool149 = trunc i8 %59 to i1
+  br i1 %tobool149, label %if.then150, label %do.end155
 
 if.then150:                                       ; preds = %do.body148
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end155
 
-do.body164:                                       ; preds = %NodeBlock23
-  %13 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool165 = trunc i8 %13 to i1
-  br i1 %tobool165, label %if.then166, label %cleanup
+do.end155:                                        ; preds = %if.then150, %do.body148
+  %60 = bitcast i8* %p to %struct.usb3_lpm_parameters*
+  %call156 = call i32 @proc_bulk_compat(%struct.dev_state* %1, %struct.usb3_lpm_parameters* %60)
+  %cmp157 = icmp sge i32 %call156, 0
+  br i1 %cmp157, label %if.then158, label %sw.epilog
+
+if.then158:                                       ; preds = %do.end155
+  %i_mtime159 = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call160 = call { i64, i64 } @current_kernel_time()
+  %61 = bitcast %struct.load_weight* %coerce161 to { i64, i64 }*
+  %62 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %61, i32 0, i32 0
+  %63 = extractvalue { i64, i64 } %call160, 0
+  store i64 %63, i64* %62, align 8
+  %64 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %61, i32 0, i32 1
+  %65 = extractvalue { i64, i64 } %call160, 1
+  store i64 %65, i64* %64, align 8
+  %66 = bitcast %struct.load_weight* %i_mtime159 to i8*
+  %67 = bitcast %struct.load_weight* %coerce161 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %66, i8* %67, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
+
+do.body164:                                       ; preds = %LeafBlock21
+  %68 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool165 = trunc i8 %68 to i1
+  br i1 %tobool165, label %if.then166, label %do.end171
 
 if.then166:                                       ; preds = %do.body164
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end171
 
-do.body174:                                       ; preds = %NodeBlock31
-  %14 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool175 = trunc i8 %14 to i1
-  br i1 %tobool175, label %if.then176, label %cleanup
+do.end171:                                        ; preds = %if.then166, %do.body164
+  %call172 = call i32 @proc_disconnectsignal_compat(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body174:                                       ; preds = %LeafBlock29
+  %69 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool175 = trunc i8 %69 to i1
+  br i1 %tobool175, label %if.then176, label %do.end181
 
 if.then176:                                       ; preds = %do.body174
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end181
+
+do.end181:                                        ; preds = %if.then176, %do.body174
+  %call182 = call i32 @proc_submiturb_compat(%struct.dev_state* %1, i8* %p)
+  %cmp183 = icmp sge i32 %call182, 0
+  br i1 %cmp183, label %if.then184, label %sw.epilog
+
+if.then184:                                       ; preds = %do.end181
+  %i_mtime185 = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 16
+  %call186 = call { i64, i64 } @current_kernel_time()
+  %70 = bitcast %struct.load_weight* %coerce187 to { i64, i64 }*
+  %71 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %70, i32 0, i32 0
+  %72 = extractvalue { i64, i64 } %call186, 0
+  store i64 %72, i64* %71, align 8
+  %73 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %70, i32 0, i32 1
+  %74 = extractvalue { i64, i64 } %call186, 1
+  store i64 %74, i64* %73, align 8
+  %75 = bitcast %struct.load_weight* %i_mtime185 to i8*
+  %76 = bitcast %struct.load_weight* %coerce187 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %75, i8* %76, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %sw.epilog
 
 do.body190:                                       ; preds = %NodeBlock75
-  %15 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool191 = trunc i8 %15 to i1
-  br i1 %tobool191, label %if.then192, label %cleanup
+  %77 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool191 = trunc i8 %77 to i1
+  br i1 %tobool191, label %if.then192, label %do.end197
 
 if.then192:                                       ; preds = %do.body190
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end197
 
-do.body200:                                       ; preds = %NodeBlock75
-  %16 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool201 = trunc i8 %16 to i1
-  br i1 %tobool201, label %if.then202, label %cleanup
+do.end197:                                        ; preds = %if.then192, %do.body190
+  %call198 = call i32 @proc_reapurb_compat(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body200:                                       ; preds = %LeafBlock73
+  %78 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool201 = trunc i8 %78 to i1
+  br i1 %tobool201, label %if.then202, label %do.end207
 
 if.then202:                                       ; preds = %do.body200
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end207
 
-do.body210:                                       ; preds = %NodeBlock53
-  %17 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool211 = trunc i8 %17 to i1
-  br i1 %tobool211, label %if.then212, label %cleanup
+do.end207:                                        ; preds = %if.then202, %do.body200
+  %call208 = call i32 @proc_reapurbnonblock_compat(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body210:                                       ; preds = %LeafBlock45
+  %79 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool211 = trunc i8 %79 to i1
+  br i1 %tobool211, label %if.then212, label %do.end217
 
 if.then212:                                       ; preds = %do.body210
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end217
 
-do.body221:                                       ; preds = %NodeBlock65
-  %18 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool222 = trunc i8 %18 to i1
-  br i1 %tobool222, label %if.then223, label %cleanup
+do.end217:                                        ; preds = %if.then212, %do.body210
+  %call218 = call i32 @ptr_to_compat(i8* %p)
+  %call219 = call i32 @proc_ioctl_compat(%struct.dev_state* %1, i32 %call218)
+  br label %sw.epilog
+
+do.body221:                                       ; preds = %LeafBlock63
+  %80 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool222 = trunc i8 %80 to i1
+  br i1 %tobool222, label %if.then223, label %do.end228
 
 if.then223:                                       ; preds = %do.body221
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end228
+
+do.end228:                                        ; preds = %if.then223, %do.body221
+  %call229 = call i32 @proc_unlinkurb(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
 
 do.body231:                                       ; preds = %NodeBlock81
-  %19 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool232 = trunc i8 %19 to i1
-  br i1 %tobool232, label %if.then233, label %cleanup
+  %81 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool232 = trunc i8 %81 to i1
+  br i1 %tobool232, label %if.then233, label %do.end238
 
 if.then233:                                       ; preds = %do.body231
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end238
 
-do.body241:                                       ; preds = %NodeBlock81
-  %20 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool242 = trunc i8 %20 to i1
-  br i1 %tobool242, label %if.then243, label %cleanup
+do.end238:                                        ; preds = %if.then233, %do.body231
+  %call239 = call i32 @proc_reapurb(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body241:                                       ; preds = %LeafBlock79
+  %82 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool242 = trunc i8 %82 to i1
+  br i1 %tobool242, label %if.then243, label %do.end248
 
 if.then243:                                       ; preds = %do.body241
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end248
 
-do.body251:                                       ; preds = %NodeBlock31
-  %21 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool252 = trunc i8 %21 to i1
-  br i1 %tobool252, label %if.then253, label %cleanup
+do.end248:                                        ; preds = %if.then243, %do.body241
+  %call249 = call i32 @proc_reapurbnonblock(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body251:                                       ; preds = %LeafBlock27
+  %83 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool252 = trunc i8 %83 to i1
+  br i1 %tobool252, label %if.then253, label %do.end258
 
 if.then253:                                       ; preds = %do.body251
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end258
+
+do.end258:                                        ; preds = %if.then253, %do.body251
+  %call259 = call i32 @proc_disconnectsignal(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
 
 do.body261:                                       ; preds = %NodeBlock
-  %22 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool262 = trunc i8 %22 to i1
-  br i1 %tobool262, label %if.then263, label %cleanup
+  %84 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool262 = trunc i8 %84 to i1
+  br i1 %tobool262, label %if.then263, label %do.end268
 
 if.then263:                                       ; preds = %do.body261
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end268
 
-do.body271:                                       ; preds = %NodeBlock9
-  %23 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool272 = trunc i8 %23 to i1
-  br i1 %tobool272, label %if.then273, label %cleanup
+do.end268:                                        ; preds = %if.then263, %do.body261
+  %call269 = call i32 @proc_claiminterface(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body271:                                       ; preds = %LeafBlock5
+  %85 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool272 = trunc i8 %85 to i1
+  br i1 %tobool272, label %if.then273, label %do.end278
 
 if.then273:                                       ; preds = %do.body271
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end278
 
-do.body281:                                       ; preds = %NodeBlock59
-  %24 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
-  %tobool282 = trunc i8 %24 to i1
-  br i1 %tobool282, label %if.then283, label %cleanup
+do.end278:                                        ; preds = %if.then273, %do.body271
+  %call279 = call i32 @proc_releaseinterface(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+do.body281:                                       ; preds = %LeafBlock55
+  %86 = load i8, i8* @usbfs_snoop, align 1, !tbaa !43, !range !44
+  %tobool282 = trunc i8 %86 to i1
+  br i1 %tobool282, label %if.then283, label %do.end288
 
 if.then283:                                       ; preds = %do.body281
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end288
+
+do.end288:                                        ; preds = %if.then283, %do.body281
+  %call289 = call i32 @proc_ioctl_default(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
 
 do.body291:                                       ; preds = %NodeBlock11
-  br i1 %tobool292, label %if.then293, label %cleanup
+  br i1 %tobool292, label %if.then293, label %do.end298
 
 if.then293:                                       ; preds = %do.body291
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  br label %cleanup
+  br label %do.end298
+
+do.end298:                                        ; preds = %if.then293, %do.body291
+  %call299 = call i32 @proc_claim_port(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
 
 do.body301:                                       ; preds = %NodeBlock11
-  br i1 %tobool292, label %if.then303, label %cleanup
+  br i1 %tobool292, label %if.then303, label %do.end308
 
 if.then303:                                       ; preds = %do.body301
   call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
+  br label %do.end308
+
+do.end308:                                        ; preds = %if.then303, %do.body301
+  %call309 = call i32 @proc_release_port(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+sw.bb310:                                         ; preds = %LeafBlock17
+  %call311 = call i32 @proc_get_capabilities(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+sw.bb312:                                         ; preds = %LeafBlock35
+  %call313 = call i32 @proc_disconnect_claim(%struct.dev_state* %1, i8* %p)
+  br label %sw.epilog
+
+sw.epilog:                                        ; preds = %sw.bb312, %sw.bb310, %do.end308, %do.end298, %do.end288, %do.end278, %do.end268, %do.end258, %do.end248, %do.end238, %do.end228, %do.end217, %do.end207, %do.end197, %if.then184, %do.end181, %do.end171, %if.then158, %do.end155, %if.then142, %do.end139, %if.then126, %do.end123, %do.end113, %do.end103, %do.end93, %do.end83, %if.then70, %do.end67, %do.end57, %if.then44, %do.end41, %if.then28, %do.end25, %if.then14, %do.end, %LeafBlock, %LeafBlock1, %LeafBlock5, %LeafBlock7, %LeafBlock17, %LeafBlock19, %LeafBlock21, %LeafBlock27, %LeafBlock29, %LeafBlock33, %LeafBlock35, %LeafBlock45, %LeafBlock47, %LeafBlock49, %LeafBlock55, %LeafBlock57, %LeafBlock61, %LeafBlock63, %LeafBlock71, %LeafBlock73, %LeafBlock79, %LeafBlock83, %LeafBlock85
+  %ret.0 = phi i32 [ %call114, %do.end113 ], [ %call269, %do.end268 ], [ %call279, %do.end278 ], [ %call299, %do.end298 ], [ %call309, %do.end308 ], [ %call311, %sw.bb310 ], [ %call104, %do.end103 ], [ %call172, %do.end171 ], [ %call259, %do.end258 ], [ %call313, %sw.bb312 ], [ %call219, %do.end217 ], [ %call289, %do.end288 ], [ %call229, %do.end228 ], [ %call58, %do.end57 ], [ %call198, %do.end197 ], [ %call208, %do.end207 ], [ %call239, %do.end238 ], [ %call249, %do.end248 ], [ %call94, %do.end93 ], [ %call84, %do.end83 ], [ %call13, %if.then14 ], [ %call13, %do.end ], [ %call26, %if.then28 ], [ %call26, %do.end25 ], [ %call42, %if.then44 ], [ %call42, %do.end41 ], [ %call68, %if.then70 ], [ %call68, %do.end67 ], [ %call124, %if.then126 ], [ %call124, %do.end123 ], [ %call140, %if.then142 ], [ %call140, %do.end139 ], [ %call156, %if.then158 ], [ %call156, %do.end155 ], [ %call182, %if.then184 ], [ %call182, %do.end181 ], [ -25, %LeafBlock85 ], [ -25, %LeafBlock83 ], [ -25, %LeafBlock79 ], [ -25, %LeafBlock73 ], [ -25, %LeafBlock71 ], [ -25, %LeafBlock63 ], [ -25, %LeafBlock61 ], [ -25, %LeafBlock57 ], [ -25, %LeafBlock55 ], [ -25, %LeafBlock49 ], [ -25, %LeafBlock47 ], [ -25, %LeafBlock45 ], [ -25, %LeafBlock35 ], [ -25, %LeafBlock33 ], [ -25, %LeafBlock29 ], [ -25, %LeafBlock27 ], [ -25, %LeafBlock21 ], [ -25, %LeafBlock19 ], [ -25, %LeafBlock17 ], [ -25, %LeafBlock7 ], [ -25, %LeafBlock5 ], [ -25, %LeafBlock1 ], [ -25, %LeafBlock ]
+  %dev314 = getelementptr inbounds %struct.usb_device, %struct.usb_device* %2, i32 0, i32 11
+  call void @device_unlock.670(%struct.device* %dev314)
+  %cmp315 = icmp sge i32 %ret.0, 0
+  br i1 %cmp315, label %if.then316, label %if.end319
+
+if.then316:                                       ; preds = %sw.epilog
+  %i_atime = getelementptr inbounds %struct.inode, %struct.inode* %call, i32 0, i32 15
+  %call317 = call { i64, i64 } @current_kernel_time()
+  %87 = bitcast %struct.load_weight* %coerce318 to { i64, i64 }*
+  %88 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %87, i32 0, i32 0
+  %89 = extractvalue { i64, i64 } %call317, 0
+  store i64 %89, i64* %88, align 8
+  %90 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %87, i32 0, i32 1
+  %91 = extractvalue { i64, i64 } %call317, 1
+  store i64 %91, i64* %90, align 8
+  %92 = bitcast %struct.load_weight* %i_atime to i8*
+  %93 = bitcast %struct.load_weight* %coerce318 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %92, i8* %93, i64 16, i32 8, i1 false), !tbaa.struct !610
+  br label %if.end319
+
+if.end319:                                        ; preds = %if.then316, %sw.epilog
+  %conv = sext i32 %ret.0 to i64
   br label %cleanup
 
-cleanup:                                          ; preds = %if.then303, %do.body301, %if.then293, %do.body291, %if.then283, %do.body281, %if.then273, %do.body271, %if.then263, %do.body261, %if.then253, %do.body251, %if.then243, %do.body241, %if.then233, %do.body231, %if.then223, %do.body221, %if.then212, %do.body210, %if.then202, %do.body200, %if.then192, %do.body190, %if.then176, %do.body174, %if.then166, %do.body164, %if.then150, %do.body148, %if.then134, %do.body132, %if.then118, %do.body116, %if.then108, %do.body106, %if.then98, %do.body96, %if.then88, %do.body86, %if.then78, %do.body76, %if.then62, %do.body60, %if.then52, %do.body50, %if.then36, %do.body34, %if.then20, %do.body18, %if.then9, %do.body
-  ret i64 0
+cleanup:                                          ; preds = %if.end319, %if.then5, %entry
+  %retval.0 = phi i64 [ %conv, %if.end319 ], [ -19, %if.then5 ], [ -1, %entry ]
+  ret i64 %retval.0
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
 define internal %struct.inode* @file_inode(%struct.file* %f) #1 {
 entry:
   %f_inode = getelementptr inbounds %struct.file, %struct.file* %f, i32 0, i32 2
-  %0 = load %struct.inode*, %struct.inode** %f_inode, align 8, !tbaa !610
+  %0 = load %struct.inode*, %struct.inode** %f_inode, align 8, !tbaa !611
   ret %struct.inode* %0
 }
 
@@ -35594,7 +36012,7 @@ land.end:                                         ; preds = %land.rhs, %entry
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_control(i8* %arg) #0 {
+define internal i32 @proc_control(i8* %arg) #0 {
 entry:
   %ctrl = alloca %struct.usbdevfs_ctrltransfer, align 8
   %0 = bitcast %struct.usbdevfs_ctrltransfer* %ctrl to i8*
@@ -35640,13 +36058,13 @@ if.then23:                                        ; preds = %if.end21
   br label %cleanup
 
 cleanup:                                          ; preds = %if.then23, %if.end21
-  ret void
+  ret i32 0
 }
 
 declare { i64, i64 } @current_kernel_time() #2
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_bulk(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_bulk(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %bulk = alloca %struct.usbdevfs_bulktransfer, align 8
   %len2 = alloca i32, align 4
@@ -35691,7 +36109,7 @@ if.end:                                           ; preds = %copy_from_user.exit
   %dev2 = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
   %4 = load %struct.usb_device*, %struct.usb_device** %dev2, align 8, !tbaa !594
   %ep = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 0
-  %5 = load i32, i32* %ep, align 8, !tbaa !611
+  %5 = load i32, i32* %ep, align 8, !tbaa !612
   %call3 = call i32 @findintfep(%struct.usb_device* %4, i32 %5)
   %cmp = icmp slt i32 %call3, 0
   br i1 %cmp, label %cleanup, label %if.end5
@@ -35703,18 +36121,18 @@ if.end5:                                          ; preds = %if.end
 
 if.end9:                                          ; preds = %if.end5
   %ep10 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 0
-  %6 = load i32, i32* %ep10, align 8, !tbaa !611
+  %6 = load i32, i32* %ep10, align 8, !tbaa !612
   %and = and i32 %6, 128
   %tobool11 = icmp ne i32 %and, 0
   %ep13 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 0
-  %7 = load i32, i32* %ep13, align 8, !tbaa !611
+  %7 = load i32, i32* %ep13, align 8, !tbaa !612
   %and14 = and i32 %7, 127
   %call15 = call i32 @__create_pipe.724(%struct.usb_device* %0, i32 %and14)
   %or = or i32 -1073741824, %call15
   %or16 = or i32 %or, 128
   %pipe.0 = select i1 %tobool11, i32 %or16, i32 %or
   %ep22 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 0
-  %8 = load i32, i32* %ep22, align 8, !tbaa !611
+  %8 = load i32, i32* %ep22, align 8, !tbaa !612
   %and23 = and i32 %8, 128
   %tobool24 = icmp ne i32 %and23, 0
   %lnot = xor i1 %tobool24, true
@@ -35725,7 +36143,7 @@ if.end9:                                          ; preds = %if.end5
 
 if.end28:                                         ; preds = %if.end9
   %len = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 1
-  %9 = load i32, i32* %len, align 4, !tbaa !613
+  %9 = load i32, i32* %len, align 4, !tbaa !614
   %cmp29 = icmp uge i32 %9, 2146483647
   br i1 %cmp29, label %cleanup, label %if.end31
 
@@ -35745,9 +36163,9 @@ if.end36:                                         ; preds = %if.end31
 
 if.end41:                                         ; preds = %if.end36
   %timeout = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 2
-  %10 = load i32, i32* %timeout, align 8, !tbaa !614
+  %10 = load i32, i32* %timeout, align 8, !tbaa !615
   %ep42 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 0
-  %11 = load i32, i32* %ep42, align 8, !tbaa !611
+  %11 = load i32, i32* %ep42, align 8, !tbaa !612
   %and43 = and i32 %11, 128
   %tobool44 = icmp ne i32 %and43, 0
   %tobool46 = icmp ne i32 %9, 0
@@ -35758,13 +36176,13 @@ if.then45:                                        ; preds = %if.end41
 
 land.lhs.true:                                    ; preds = %if.then45
   %data = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 3
-  %12 = load i8*, i8** %data, align 8, !tbaa !615
+  %12 = load i8*, i8** %data, align 8, !tbaa !616
   %conv47 = zext i32 %9 to i64
   %call48 = call %struct.thread_info* @current_thread_info()
   %addr_limit = getelementptr inbounds %struct.thread_info, %struct.thread_info* %call48, i32 0, i32 6
   %seg = getelementptr inbounds %struct.pgprot, %struct.pgprot* %addr_limit, i32 0, i32 0
-  %13 = load i64, i64* %seg, align 8, !tbaa !616
-  %14 = call { i64, i64 } asm "add $3,$1 ; sbb $0,$0 ; cmp $1,$4 ; sbb $$0,$0", "=&r,=r,1,imr,rm,~{dirflag},~{fpsr},~{flags}"(i8* %12, i64 %conv47, i64 %13) #9, !srcloc !619
+  %13 = load i64, i64* %seg, align 8, !tbaa !617
+  %14 = call { i64, i64 } asm "add $3,$1 ; sbb $0,$0 ; cmp $1,$4 ; sbb $$0,$0", "=&r,=r,1,imr,rm,~{dirflag},~{fpsr},~{flags}"(i8* %12, i64 %conv47, i64 %13) #9, !srcloc !620
   %asmresult = extractvalue { i64, i64 } %14, 0
   %cmp50 = icmp eq i64 %asmresult, 0
   %lnot52 = xor i1 %cmp50, true
@@ -35792,7 +36210,7 @@ if.end59:                                         ; preds = %land.lhs.true, %if.
 
 if.then66:                                        ; preds = %if.end59
   %data67 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 3
-  %17 = load i8*, i8** %data67, align 8, !tbaa !615
+  %17 = load i8*, i8** %data67, align 8, !tbaa !616
   %18 = load i32, i32* %len2, align 4, !tbaa !90
   call void @might_fault() #8
   %call.i1 = call i64 @_copy_to_user(i8* %17, i8* %call.i, i32 %18) #8
@@ -35805,7 +36223,7 @@ if.else73:                                        ; preds = %if.end41
 
 if.then75:                                        ; preds = %if.else73
   %data76 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %bulk, i32 0, i32 3
-  %19 = load i8*, i8** %data76, align 8, !tbaa !615
+  %19 = load i8*, i8** %data76, align 8, !tbaa !616
   %conv77 = zext i32 %9 to i64
   %20 = call i64 @llvm.objectsize.i64.p0i8(i8* %call.i, i1 false, i1 true) #8
   %conv.i1 = trunc i64 %20 to i32
@@ -35852,9 +36270,14 @@ if.end82:                                         ; preds = %copy_from_user.exit
   br label %if.end86
 
 if.end86:                                         ; preds = %if.end82, %if.then66, %if.end59
+  %i.0 = phi i32 [ %call84, %if.end82 ], [ %call61, %if.then66 ], [ %call61, %if.end59 ]
+  %cmp87 = icmp slt i32 %i.0, 0
+  %22 = load i32, i32* %len2, align 4
+  %cond = select i1 %cmp87, i32 %i.0, i32 %22
   br label %done
 
 done:                                             ; preds = %if.end86, %copy_from_user.exit, %if.then66, %land.lhs.true, %if.end36
+  %ret.0 = phi i32 [ -12, %if.end36 ], [ -22, %land.lhs.true ], [ -14, %if.then66 ], [ -14, %copy_from_user.exit ], [ %cond, %if.end86 ]
   call void @kfree(i8* %call.i)
   %conv89 = zext i32 %9 to i64
   %add90 = add i64 %conv89, 192
@@ -35863,15 +36286,16 @@ done:                                             ; preds = %if.end86, %copy_fro
   br label %cleanup
 
 cleanup:                                          ; preds = %done, %if.end31, %if.end28, %if.end9, %if.end5, %if.end, %copy_from_user.exit20
-  ret void
+  %retval.0 = phi i32 [ %ret.0, %done ], [ -14, %copy_from_user.exit20 ], [ %call3, %if.end ], [ %call6, %if.end5 ], [ -22, %if.end9 ], [ -22, %if.end28 ], [ %call33, %if.end31 ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_resetep(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_resetep(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   call void @might_fault()
   %0 = bitcast i8* %arg to i32*
-  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %0, i64 4) #8, !srcloc !620
+  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %0, i64 4) #8, !srcloc !621
   %asmresult = extractvalue { i32*, i64 } %1, 0
   %asmresult1 = extractvalue { i32*, i64 } %1, 1
   %2 = ptrtoint i32* %asmresult to i64
@@ -35899,24 +36323,25 @@ if.end8:                                          ; preds = %if.end4
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end8, %if.end4, %if.end, %entry
-  ret void
+  %retval.0 = phi i32 [ 0, %if.end8 ], [ -14, %entry ], [ %call, %if.end ], [ %call5, %if.end4 ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_resetdevice(%struct.dev_state* %ps) #0 {
+define internal i32 @proc_resetdevice(%struct.dev_state* %ps) #0 {
 entry:
   %dev = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
   %0 = load %struct.usb_device*, %struct.usb_device** %dev, align 8, !tbaa !594
   %call = call i32 @usb_reset_device(%struct.usb_device* %0)
-  ret void
+  ret i32 %call
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_clearhalt(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_clearhalt(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   call void @might_fault()
   %0 = bitcast i8* %arg to i32*
-  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %0, i64 4) #8, !srcloc !621
+  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %0, i64 4) #8, !srcloc !622
   %asmresult = extractvalue { i32*, i64 } %1, 0
   %asmresult1 = extractvalue { i32*, i64 } %1, 1
   %2 = ptrtoint i32* %asmresult to i64
@@ -35953,19 +36378,20 @@ if.end8:                                          ; preds = %if.end4
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end8, %if.end4, %if.end, %entry
-  ret void
+  %retval.0 = phi i32 [ %call21, %if.end8 ], [ -14, %entry ], [ %call, %if.end ], [ %call5, %if.end4 ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_getdriver(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_getdriver(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %gd = alloca %struct.usbdevfs_getdriver, align 4
   %0 = bitcast %struct.usbdevfs_getdriver* %gd to i8*
   %1 = call i64 @llvm.objectsize.i64.p0i8(i8* %0, i1 false, i1 true) #8
-  %conv.i = trunc i64 %1 to i32
+  %conv.i1 = trunc i64 %1 to i32
   call void @might_fault() #8
-  %cmp.i = icmp eq i32 %conv.i, -1
-  %conv2.i = sext i32 %conv.i to i64
+  %cmp.i = icmp eq i32 %conv.i1, -1
+  %conv2.i = sext i32 %conv.i1 to i64
   %cmp3.i = icmp uge i64 %conv2.i, 260
   %2 = select i1 %cmp.i, i1 true, i1 %cmp3.i
   %lnot.ext.i = zext i1 %2 to i32
@@ -35975,7 +36401,7 @@ entry:
   br i1 %tobool.i, label %if.then.i, label %if.else.i
 
 if.then.i:                                        ; preds = %entry
-  %call.i1 = call i64 @_copy_from_user(i8* %0, i8* %arg, i32 260) #8
+  %call.i2 = call i64 @_copy_from_user(i8* %0, i8* %arg, i32 260) #8
   br label %copy_from_user.exit
 
 if.else.i:                                        ; preds = %entry
@@ -35991,7 +36417,7 @@ if.end.i:                                         ; preds = %if.then16.i, %if.el
   br label %copy_from_user.exit
 
 copy_from_user.exit:                              ; preds = %if.end.i, %if.then.i
-  %n.addr.0.i = phi i64 [ %call.i1, %if.then.i ], [ 260, %if.end.i ]
+  %n.addr.0.i = phi i64 [ %call.i2, %if.then.i ], [ 260, %if.end.i ]
   %tobool = icmp ne i64 %n.addr.0.i, 0
   br i1 %tobool, label %cleanup, label %if.end
 
@@ -35999,7 +36425,7 @@ if.end:                                           ; preds = %copy_from_user.exit
   %dev = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
   %3 = load %struct.usb_device*, %struct.usb_device** %dev, align 8, !tbaa !594
   %interface = getelementptr inbounds %struct.usbdevfs_getdriver, %struct.usbdevfs_getdriver* %gd, i32 0, i32 0
-  %4 = load i32, i32* %interface, align 4, !tbaa !622
+  %4 = load i32, i32* %interface, align 4, !tbaa !623
   %call1 = call %struct.usb_interface* @usb_ifnum_to_if(%struct.usb_device* %3, i32 %4)
   %tobool2 = icmp ne %struct.usb_interface* %call1, null
   br i1 %tobool2, label %lor.lhs.false, label %cleanup
@@ -36018,19 +36444,23 @@ if.else:                                          ; preds = %lor.lhs.false
   %driver8 = getelementptr inbounds %struct.device, %struct.device* %dev7, i32 0, i32 7
   %6 = load %struct.device_driver*, %struct.device_driver** %driver8, align 8, !tbaa !104
   %name = getelementptr inbounds %struct.device_driver, %struct.device_driver* %6, i32 0, i32 0
-  %7 = load i8*, i8** %name, align 8, !tbaa !624
+  %7 = load i8*, i8** %name, align 8, !tbaa !625
   %call9 = call i64 @strlcpy(i8* %arraydecay, i8* %7, i64 256)
   %8 = bitcast %struct.usbdevfs_getdriver* %gd to i8*
   call void @might_fault() #8
   %call.i = call i64 @_copy_to_user(i8* %arg, i8* %8, i32 260) #8
+  %conv.i = trunc i64 %call.i to i32
+  %tobool11 = icmp ne i32 %conv.i, 0
+  %cond = select i1 %tobool11, i32 -14, i32 0
   br label %cleanup
 
 cleanup:                                          ; preds = %if.else, %lor.lhs.false, %if.end, %copy_from_user.exit
-  ret void
+  %retval.0 = phi i32 [ -14, %copy_from_user.exit ], [ %cond, %if.else ], [ -61, %lor.lhs.false ], [ -61, %if.end ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_connectinfo(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_connectinfo(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %ci = alloca %struct.usbdevfs_connectinfo, align 4
   %devnum = getelementptr inbounds %struct.usbdevfs_connectinfo, %struct.usbdevfs_connectinfo* %ci, i32 0, i32 0
@@ -36038,7 +36468,7 @@ entry:
   %0 = load %struct.usb_device*, %struct.usb_device** %dev, align 8, !tbaa !594
   %devnum1 = getelementptr inbounds %struct.usb_device, %struct.usb_device* %0, i32 0, i32 0
   %1 = load i32, i32* %devnum1, align 8, !tbaa !38
-  store i32 %1, i32* %devnum, align 4, !tbaa !625
+  store i32 %1, i32* %devnum, align 4, !tbaa !626
   %slow = getelementptr inbounds %struct.usbdevfs_connectinfo, %struct.usbdevfs_connectinfo* %ci, i32 0, i32 1
   %dev2 = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
   %2 = load %struct.usb_device*, %struct.usb_device** %dev2, align 8, !tbaa !594
@@ -36047,15 +36477,18 @@ entry:
   %cmp = icmp eq i32 %3, 1
   %conv = zext i1 %cmp to i32
   %conv3 = trunc i32 %conv to i8
-  store i8 %conv3, i8* %slow, align 4, !tbaa !627
+  store i8 %conv3, i8* %slow, align 4, !tbaa !628
   %4 = bitcast %struct.usbdevfs_connectinfo* %ci to i8*
   call void @might_fault() #8
   %call.i = call i64 @_copy_to_user(i8* %arg, i8* %4, i32 8) #8
-  ret void
+  %conv.i = trunc i64 %call.i to i32
+  %tobool = icmp ne i32 %conv.i, 0
+  %. = select i1 %tobool, i32 -14, i32 0
+  ret i32 %.
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_setintf(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_setintf(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %setintf = alloca %struct.exception_table_entry, align 4
   %0 = bitcast %struct.exception_table_entry* %setintf to i8*
@@ -36095,7 +36528,7 @@ copy_from_user.exit:                              ; preds = %if.end.i, %if.then.
 
 if.end:                                           ; preds = %copy_from_user.exit
   %interface = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %setintf, i32 0, i32 0
-  %3 = load i32, i32* %interface, align 4, !tbaa !628
+  %3 = load i32, i32* %interface, align 4, !tbaa !629
   %call1 = call i32 @checkintf(%struct.dev_state* %ps, i32 %3)
   %tobool2 = icmp ne i32 %call1, 0
   br i1 %tobool2, label %cleanup, label %if.end4
@@ -36104,22 +36537,23 @@ if.end4:                                          ; preds = %if.end
   %dev = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
   %4 = load %struct.usb_device*, %struct.usb_device** %dev, align 8, !tbaa !594
   %interface5 = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %setintf, i32 0, i32 0
-  %5 = load i32, i32* %interface5, align 4, !tbaa !628
+  %5 = load i32, i32* %interface5, align 4, !tbaa !629
   %altsetting = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %setintf, i32 0, i32 1
-  %6 = load i32, i32* %altsetting, align 4, !tbaa !630
+  %6 = load i32, i32* %altsetting, align 4, !tbaa !631
   %call6 = call i32 @usb_set_interface(%struct.usb_device* %4, i32 %5, i32 %6)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end4, %if.end, %copy_from_user.exit
-  ret void
+  %retval.0 = phi i32 [ %call6, %if.end4 ], [ -14, %copy_from_user.exit ], [ %call1, %if.end ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_setconfig(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_setconfig(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   call void @might_fault()
   %0 = bitcast i8* %arg to i32*
-  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %0, i64 4) #8, !srcloc !631
+  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %0, i64 4) #8, !srcloc !632
   %asmresult = extractvalue { i32*, i64 } %1, 0
   %asmresult1 = extractvalue { i32*, i64 } %1, 1
   %2 = ptrtoint i32* %asmresult to i64
@@ -36158,7 +36592,8 @@ for.body:                                         ; preds = %for.cond
   br i1 %tobool7, label %if.then8, label %for.inc
 
 if.then8:                                         ; preds = %for.body
-  %8 = call i32 (%struct.device*, i8*, ...) @dev_warn(%struct.device* null, i8* null)
+  %8 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
+  %9 = call i32 (%struct.device*, i8*, ...) @dev_warn(%struct.device* null, i8* null)
   br label %if.end23
 
 for.inc:                                          ; preds = %for.body
@@ -36177,29 +36612,30 @@ if.then26:                                        ; preds = %if.end23
 land.lhs.true:                                    ; preds = %if.then26
   %desc28 = getelementptr inbounds %struct.usb_host_config, %struct.usb_host_config* %5, i32 0, i32 0
   %bConfigurationValue = getelementptr inbounds %struct.usb_config_descriptor, %struct.usb_config_descriptor* %desc28, i32 0, i32 4
-  %9 = load i8, i8* %bConfigurationValue, align 1, !tbaa !147
-  %conv29 = zext i8 %9 to i32
+  %10 = load i8, i8* %bConfigurationValue, align 1, !tbaa !147
+  %conv29 = zext i8 %10 to i32
   %cmp30 = icmp eq i32 %conv29, %conv
   br i1 %cmp30, label %if.then32, label %if.else
 
 if.then32:                                        ; preds = %land.lhs.true
   %dev33 = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
-  %10 = load %struct.usb_device*, %struct.usb_device** %dev33, align 8, !tbaa !594
-  %call34 = call i32 @usb_reset_configuration(%struct.usb_device* %10)
+  %11 = load %struct.usb_device*, %struct.usb_device** %dev33, align 8, !tbaa !594
+  %call34 = call i32 @usb_reset_configuration(%struct.usb_device* %11)
   br label %cleanup
 
 if.else:                                          ; preds = %land.lhs.true, %if.then26
   %dev35 = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
-  %11 = load %struct.usb_device*, %struct.usb_device** %dev35, align 8, !tbaa !594
-  %call36 = call i32 @usb_set_configuration(%struct.usb_device* %11, i32 %conv)
+  %12 = load %struct.usb_device*, %struct.usb_device** %dev35, align 8, !tbaa !594
+  %call36 = call i32 @usb_set_configuration(%struct.usb_device* %12, i32 %conv)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.else, %if.then32, %if.end23, %entry
-  ret void
+  %retval.0 = phi i32 [ -14, %entry ], [ %status.1, %if.end23 ], [ %call34, %if.then32 ], [ %call36, %if.else ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_submiturb(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_submiturb(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %uurb = alloca %struct.usbdevfs_urb, align 8
   %0 = bitcast %struct.usbdevfs_urb* %uurb to i8*
@@ -36241,15 +36677,16 @@ if.end:                                           ; preds = %copy_from_user.exit
   %3 = bitcast i8* %arg to %struct.usbdevfs_urb*
   %iso_frame_desc = getelementptr inbounds %struct.usbdevfs_urb, %struct.usbdevfs_urb* %3, i32 0, i32 12
   %arraydecay = getelementptr inbounds [0 x %struct.uid_gid_extent], [0 x %struct.uid_gid_extent]* %iso_frame_desc, i32 0, i32 0
-  call void @proc_do_submiturb(%struct.dev_state* %ps, %struct.usbdevfs_urb* %uurb, %struct.uid_gid_extent* %arraydecay, i8* %arg)
+  %call1 = call i32 @proc_do_submiturb(%struct.dev_state* %ps, %struct.usbdevfs_urb* %uurb, %struct.uid_gid_extent* %arraydecay, i8* %arg)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %copy_from_user.exit
-  ret void
+  %retval.0 = phi i32 [ %call1, %if.end ], [ -14, %copy_from_user.exit ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_control_compat(%struct.usbdevfs_ctrltransfer32* %p32) #0 {
+define internal i32 @proc_control_compat(%struct.usbdevfs_ctrltransfer32* %p32) #0 {
 entry:
   %call = call i8* @compat_alloc_user_space(i64 24)
   %0 = bitcast i8* %call to %struct.usbdevfs_ctrltransfer*
@@ -36262,7 +36699,7 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   call void @might_fault()
   %data = getelementptr inbounds %struct.usbdevfs_ctrltransfer32, %struct.usbdevfs_ctrltransfer32* %p32, i32 0, i32 6
-  %3 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %data, i64 4) #8, !srcloc !632
+  %3 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %data, i64 4) #8, !srcloc !633
   %asmresult = extractvalue { i32*, i64 } %3, 0
   %asmresult2 = extractvalue { i32*, i64 } %3, 1
   %4 = ptrtoint i32* %asmresult to i64
@@ -36275,7 +36712,7 @@ lor.lhs.false4:                                   ; preds = %lor.lhs.false
   call void @might_fault()
   %call5 = call i8* @compat_ptr(i32 %conv)
   %data6 = getelementptr inbounds %struct.usbdevfs_ctrltransfer, %struct.usbdevfs_ctrltransfer* %0, i32 0, i32 6
-  %6 = call i8* asm sideeffect "call __put_user_8", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i8* %call5, i8** %data6) #8, !srcloc !633
+  %6 = call i8* asm sideeffect "call __put_user_8", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i8* %call5, i8** %data6) #8, !srcloc !634
   %7 = ptrtoint i8* %6 to i64
   %8 = trunc i64 %7 to i32
   %tobool8 = icmp ne i32 %8, 0
@@ -36283,21 +36720,22 @@ lor.lhs.false4:                                   ; preds = %lor.lhs.false
 
 if.end:                                           ; preds = %lor.lhs.false4
   %9 = bitcast %struct.usbdevfs_ctrltransfer* %0 to i8*
-  call void @proc_control(i8* %9)
+  %call9 = call i32 @proc_control(i8* %9)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %lor.lhs.false4, %lor.lhs.false, %entry
-  ret void
+  %retval.0 = phi i32 [ %call9, %if.end ], [ -14, %lor.lhs.false4 ], [ -14, %lor.lhs.false ], [ -14, %entry ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_bulk_compat(%struct.dev_state* %ps, %struct.usb3_lpm_parameters* %p32) #0 {
+define internal i32 @proc_bulk_compat(%struct.dev_state* %ps, %struct.usb3_lpm_parameters* %p32) #0 {
 entry:
   %call = call i8* @compat_alloc_user_space(i64 24)
   %0 = bitcast i8* %call to %struct.usbdevfs_bulktransfer*
   call void @might_fault()
   %ep = getelementptr inbounds %struct.usb3_lpm_parameters, %struct.usb3_lpm_parameters* %p32, i32 0, i32 0
-  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %ep, i64 4) #8, !srcloc !634
+  %1 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %ep, i64 4) #8, !srcloc !635
   %asmresult = extractvalue { i32*, i64 } %1, 0
   %asmresult1 = extractvalue { i32*, i64 } %1, 1
   %2 = ptrtoint i32* %asmresult to i64
@@ -36309,14 +36747,14 @@ entry:
 lor.lhs.false:                                    ; preds = %entry
   call void @might_fault()
   %ep2 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %0, i32 0, i32 0
-  %4 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %conv, i32* %ep2) #8, !srcloc !635
+  %4 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %conv, i32* %ep2) #8, !srcloc !636
   %tobool4 = icmp ne i32 %4, 0
   br i1 %tobool4, label %cleanup, label %lor.lhs.false5
 
 lor.lhs.false5:                                   ; preds = %lor.lhs.false
   call void @might_fault()
   %len = getelementptr inbounds %struct.usb3_lpm_parameters, %struct.usb3_lpm_parameters* %p32, i32 0, i32 1
-  %5 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %len, i64 4) #8, !srcloc !636
+  %5 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %len, i64 4) #8, !srcloc !637
   %asmresult8 = extractvalue { i32*, i64 } %5, 0
   %asmresult9 = extractvalue { i32*, i64 } %5, 1
   %6 = ptrtoint i32* %asmresult8 to i64
@@ -36328,14 +36766,14 @@ lor.lhs.false5:                                   ; preds = %lor.lhs.false
 lor.lhs.false13:                                  ; preds = %lor.lhs.false5
   call void @might_fault()
   %len16 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %0, i32 0, i32 1
-  %8 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %conv10, i32* %len16) #8, !srcloc !637
+  %8 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %conv10, i32* %len16) #8, !srcloc !638
   %tobool18 = icmp ne i32 %8, 0
   br i1 %tobool18, label %cleanup, label %lor.lhs.false19
 
 lor.lhs.false19:                                  ; preds = %lor.lhs.false13
   call void @might_fault()
   %timeout = getelementptr inbounds %struct.usb3_lpm_parameters, %struct.usb3_lpm_parameters* %p32, i32 0, i32 2
-  %9 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %timeout, i64 4) #8, !srcloc !638
+  %9 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %timeout, i64 4) #8, !srcloc !639
   %asmresult22 = extractvalue { i32*, i64 } %9, 0
   %asmresult23 = extractvalue { i32*, i64 } %9, 1
   %10 = ptrtoint i32* %asmresult22 to i64
@@ -36347,14 +36785,14 @@ lor.lhs.false19:                                  ; preds = %lor.lhs.false13
 lor.lhs.false27:                                  ; preds = %lor.lhs.false19
   call void @might_fault()
   %timeout30 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %0, i32 0, i32 2
-  %12 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %conv24, i32* %timeout30) #8, !srcloc !639
+  %12 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %conv24, i32* %timeout30) #8, !srcloc !640
   %tobool32 = icmp ne i32 %12, 0
   br i1 %tobool32, label %cleanup, label %lor.lhs.false33
 
 lor.lhs.false33:                                  ; preds = %lor.lhs.false27
   call void @might_fault()
   %data = getelementptr inbounds %struct.usb3_lpm_parameters, %struct.usb3_lpm_parameters* %p32, i32 0, i32 3
-  %13 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %data, i64 4) #8, !srcloc !640
+  %13 = call { i32*, i64 } asm sideeffect "call __get_user_${3:P}", "={ax},={edx},0,i,~{dirflag},~{fpsr},~{flags}"(i32* %data, i64 4) #8, !srcloc !641
   %asmresult36 = extractvalue { i32*, i64 } %13, 0
   %asmresult37 = extractvalue { i32*, i64 } %13, 1
   %14 = ptrtoint i32* %asmresult36 to i64
@@ -36367,7 +36805,7 @@ lor.lhs.false41:                                  ; preds = %lor.lhs.false33
   call void @might_fault()
   %call44 = call i8* @compat_ptr(i32 %conv38)
   %data45 = getelementptr inbounds %struct.usbdevfs_bulktransfer, %struct.usbdevfs_bulktransfer* %0, i32 0, i32 3
-  %16 = call i8* asm sideeffect "call __put_user_8", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i8* %call44, i8** %data45) #8, !srcloc !641
+  %16 = call i8* asm sideeffect "call __put_user_8", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i8* %call44, i8** %data45) #8, !srcloc !642
   %17 = ptrtoint i8* %16 to i64
   %18 = trunc i64 %17 to i32
   %tobool47 = icmp ne i32 %18, 0
@@ -36375,15 +36813,16 @@ lor.lhs.false41:                                  ; preds = %lor.lhs.false33
 
 if.end:                                           ; preds = %lor.lhs.false41
   %19 = bitcast %struct.usbdevfs_bulktransfer* %0 to i8*
-  call void @proc_bulk(%struct.dev_state* %ps, i8* %19)
+  %call48 = call i32 @proc_bulk(%struct.dev_state* %ps, i8* %19)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %lor.lhs.false41, %lor.lhs.false33, %lor.lhs.false27, %lor.lhs.false19, %lor.lhs.false13, %lor.lhs.false5, %lor.lhs.false, %entry
-  ret void
+  %retval.0 = phi i32 [ %call48, %if.end ], [ -14, %lor.lhs.false41 ], [ -14, %lor.lhs.false33 ], [ -14, %lor.lhs.false27 ], [ -14, %lor.lhs.false19 ], [ -14, %lor.lhs.false13 ], [ -14, %lor.lhs.false5 ], [ -14, %lor.lhs.false ], [ -14, %entry ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_disconnectsignal_compat(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_disconnectsignal_compat(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %ds = alloca %struct.exception_table_entry, align 4
   %0 = bitcast %struct.exception_table_entry* %ds to i8*
@@ -36423,22 +36862,23 @@ copy_from_user.exit:                              ; preds = %if.end.i, %if.then.
 
 if.end:                                           ; preds = %copy_from_user.exit
   %signr = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %ds, i32 0, i32 0
-  %3 = load i32, i32* %signr, align 4, !tbaa !642
+  %3 = load i32, i32* %signr, align 4, !tbaa !643
   %discsignr = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 7
-  store i32 %3, i32* %discsignr, align 8, !tbaa !644
+  store i32 %3, i32* %discsignr, align 8, !tbaa !645
   %context = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %ds, i32 0, i32 1
-  %4 = load i32, i32* %context, align 4, !tbaa !645
+  %4 = load i32, i32* %context, align 4, !tbaa !646
   %call1 = call i8* @compat_ptr(i32 %4)
   %disccontext = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 10
-  store i8* %call1, i8** %disccontext, align 8, !tbaa !646
+  store i8* %call1, i8** %disccontext, align 8, !tbaa !647
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %copy_from_user.exit
-  ret void
+  %retval.0 = phi i32 [ 0, %if.end ], [ -14, %copy_from_user.exit ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_submiturb_compat(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_submiturb_compat(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %uurb = alloca %struct.usbdevfs_urb, align 8
   %0 = bitcast i8* %arg to %struct.usbdevfs_urb32*
@@ -36450,15 +36890,16 @@ if.end:                                           ; preds = %entry
   %1 = bitcast i8* %arg to %struct.usbdevfs_urb32*
   %iso_frame_desc = getelementptr inbounds %struct.usbdevfs_urb32, %struct.usbdevfs_urb32* %1, i32 0, i32 12
   %arraydecay = getelementptr inbounds [0 x %struct.uid_gid_extent], [0 x %struct.uid_gid_extent]* %iso_frame_desc, i32 0, i32 0
-  call void @proc_do_submiturb(%struct.dev_state* %ps, %struct.usbdevfs_urb* %uurb, %struct.uid_gid_extent* %arraydecay, i8* %arg)
+  %call1 = call i32 @proc_do_submiturb(%struct.dev_state* %ps, %struct.usbdevfs_urb* %uurb, %struct.uid_gid_extent* %arraydecay, i8* %arg)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %entry
-  ret void
+  %retval.0 = phi i32 [ %call1, %if.end ], [ -14, %entry ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_reapurb_compat(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_reapurb_compat(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %call = call %struct.async* @reap_as(%struct.dev_state* %ps)
   %tobool = icmp ne %struct.async* %call, null
@@ -36466,21 +36907,24 @@ entry:
 
 if.then:                                          ; preds = %entry
   %0 = bitcast i8* %arg to i8**
-  call void @processcompl_compat(%struct.async* %call, i8** %0)
+  %call2 = call i32 @processcompl_compat(%struct.async* %call, i8** %0)
   call void @free_async(%struct.async* %call)
   br label %cleanup
 
 if.end:                                           ; preds = %entry
-  %1 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #4, !srcloc !647
+  %1 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
   %call4 = call i32 @signal_pending.717(%struct.task_struct* %1)
+  %tobool5 = icmp ne i32 %call4, 0
+  %. = select i1 %tobool5, i32 -4, i32 -5
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
-  ret void
+  %retval.0 = phi i32 [ %call2, %if.then ], [ %., %if.end ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_reapurbnonblock_compat(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_reapurbnonblock_compat(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %call = call %struct.async* @async_getcompleted(%struct.dev_state* %ps)
   %tobool = icmp ne %struct.async* %call, null
@@ -36488,12 +36932,13 @@ entry:
 
 if.then:                                          ; preds = %entry
   %0 = bitcast i8* %arg to i8**
-  call void @processcompl_compat(%struct.async* %call, i8** %0)
+  %call2 = call i32 @processcompl_compat(%struct.async* %call, i8** %0)
   call void @free_async(%struct.async* %call)
   br label %if.end
 
 if.end:                                           ; preds = %if.then, %entry
-  ret void
+  %retval1.0 = phi i32 [ %call2, %if.then ], [ -11, %entry ]
+  ret i32 %retval1.0
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
@@ -36505,7 +36950,7 @@ entry:
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_ioctl_compat(%struct.dev_state* %ps, i32 %arg) #0 {
+define internal i32 @proc_ioctl_compat(%struct.dev_state* %ps, i32 %arg) #0 {
 entry:
   %ctrl = alloca %struct.usbdevfs_ioctl, align 8
   %conv = zext i32 %arg to i64
@@ -36515,7 +36960,7 @@ entry:
   %call2 = call %struct.thread_info* @current_thread_info()
   %addr_limit = getelementptr inbounds %struct.thread_info, %struct.thread_info* %call2, i32 0, i32 6
   %seg = getelementptr inbounds %struct.pgprot, %struct.pgprot* %addr_limit, i32 0, i32 0
-  %1 = load i64, i64* %seg, align 8, !tbaa !616
+  %1 = load i64, i64* %seg, align 8, !tbaa !617
   %2 = call { i64, i64 } asm "add $3,$1 ; sbb $0,$0 ; cmp $1,$4 ; sbb $$0,$0", "=&r,=r,1,imr,rm,~{dirflag},~{fpsr},~{flags}"(%struct.uid_gid_extent* %0, i64 12, i64 %1) #9, !srcloc !648
   %asmresult = extractvalue { i64, i64 } %2, 0
   %cmp = icmp eq i64 %asmresult, 0
@@ -36565,15 +37010,16 @@ if.end:                                           ; preds = %do.body28
   %call36 = call i8* @compat_ptr(i32 %conv33)
   %data37 = getelementptr inbounds %struct.usbdevfs_ioctl, %struct.usbdevfs_ioctl* %ctrl, i32 0, i32 2
   store i8* %call36, i8** %data37, align 8, !tbaa !655
-  call void @proc_ioctl(%struct.dev_state* %ps, %struct.usbdevfs_ioctl* %ctrl)
+  %call38 = call i32 @proc_ioctl(%struct.dev_state* %ps, %struct.usbdevfs_ioctl* %ctrl)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %do.body28, %do.body16, %do.body, %entry
-  ret void
+  %retval.0 = phi i32 [ %call38, %if.end ], [ -14, %do.body28 ], [ -14, %do.body16 ], [ -14, %do.body ], [ -14, %entry ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_unlinkurb(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_unlinkurb(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %lock = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 3
   %call = call %struct.raw_spinlock* @spinlock_check.663(%struct.spinlock* %lock)
@@ -36598,11 +37044,12 @@ if.end:                                           ; preds = %entry
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
-  ret void
+  %retval.0 = phi i32 [ 0, %if.end ], [ -22, %if.then ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_reapurb(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_reapurb(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %call = call %struct.async* @reap_as(%struct.dev_state* %ps)
   %tobool = icmp ne %struct.async* %call, null
@@ -36610,21 +37057,24 @@ entry:
 
 if.then:                                          ; preds = %entry
   %0 = bitcast i8* %arg to i8**
-  call void @processcompl(%struct.async* %call, i8** %0)
+  %call2 = call i32 @processcompl(%struct.async* %call, i8** %0)
   call void @free_async(%struct.async* %call)
   br label %cleanup
 
 if.end:                                           ; preds = %entry
-  %1 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #4, !srcloc !647
+  %1 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
   %call4 = call i32 @signal_pending.717(%struct.task_struct* %1)
+  %tobool5 = icmp ne i32 %call4, 0
+  %. = select i1 %tobool5, i32 -4, i32 -5
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
-  ret void
+  %retval.0 = phi i32 [ %call2, %if.then ], [ %., %if.end ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_reapurbnonblock(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_reapurbnonblock(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %call = call %struct.async* @async_getcompleted(%struct.dev_state* %ps)
   %tobool = icmp ne %struct.async* %call, null
@@ -36632,16 +37082,17 @@ entry:
 
 if.then:                                          ; preds = %entry
   %0 = bitcast i8* %arg to i8**
-  call void @processcompl(%struct.async* %call, i8** %0)
+  %call2 = call i32 @processcompl(%struct.async* %call, i8** %0)
   call void @free_async(%struct.async* %call)
   br label %if.end
 
 if.end:                                           ; preds = %if.then, %entry
-  ret void
+  %retval1.0 = phi i32 [ %call2, %if.then ], [ -11, %entry ]
+  ret i32 %retval1.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_disconnectsignal(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_disconnectsignal(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %ds = alloca %struct.usbdevfs_disconnectsignal, align 8
   %0 = bitcast %struct.usbdevfs_disconnectsignal* %ds to i8*
@@ -36683,19 +37134,20 @@ if.end:                                           ; preds = %copy_from_user.exit
   %signr = getelementptr inbounds %struct.usbdevfs_disconnectsignal, %struct.usbdevfs_disconnectsignal* %ds, i32 0, i32 0
   %3 = load i32, i32* %signr, align 8, !tbaa !656
   %discsignr = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 7
-  store i32 %3, i32* %discsignr, align 8, !tbaa !644
+  store i32 %3, i32* %discsignr, align 8, !tbaa !645
   %context = getelementptr inbounds %struct.usbdevfs_disconnectsignal, %struct.usbdevfs_disconnectsignal* %ds, i32 0, i32 1
   %4 = load i8*, i8** %context, align 8, !tbaa !658
   %disccontext = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 10
-  store i8* %4, i8** %disccontext, align 8, !tbaa !646
+  store i8* %4, i8** %disccontext, align 8, !tbaa !647
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %copy_from_user.exit
-  ret void
+  %retval.0 = phi i32 [ 0, %if.end ], [ -14, %copy_from_user.exit ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_claiminterface(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_claiminterface(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   call void @might_fault()
   %0 = bitcast i8* %arg to i32*
@@ -36713,11 +37165,12 @@ if.end:                                           ; preds = %entry
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %entry
-  ret void
+  %retval.0 = phi i32 [ %call, %if.end ], [ -14, %entry ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_releaseinterface(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_releaseinterface(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   call void @might_fault()
   %0 = bitcast i8* %arg to i32*
@@ -36740,11 +37193,12 @@ if.end4:                                          ; preds = %if.end
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end4, %if.end, %entry
-  ret void
+  %retval.0 = phi i32 [ 0, %if.end4 ], [ -14, %entry ], [ %call, %if.end ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_ioctl_default(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_ioctl_default(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %ctrl = alloca %struct.usbdevfs_ioctl, align 8
   %0 = bitcast %struct.usbdevfs_ioctl* %ctrl to i8*
@@ -36783,18 +37237,19 @@ copy_from_user.exit:                              ; preds = %if.end.i, %if.then.
   br i1 %tobool, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %copy_from_user.exit
-  call void @proc_ioctl(%struct.dev_state* %ps, %struct.usbdevfs_ioctl* %ctrl)
+  %call1 = call i32 @proc_ioctl(%struct.dev_state* %ps, %struct.usbdevfs_ioctl* %ctrl)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %copy_from_user.exit
-  ret void
+  %retval.0 = phi i32 [ %call1, %if.end ], [ -14, %copy_from_user.exit ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-declare void @proc_claim_port(%struct.dev_state*, i8*) #0
+declare i32 @proc_claim_port(%struct.dev_state*, i8*) #0
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_release_port(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_release_port(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   call void @might_fault()
   %0 = bitcast i8* %arg to i32*
@@ -36814,11 +37269,12 @@ if.end:                                           ; preds = %entry
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %entry
-  ret void
+  %retval.0 = phi i32 [ %call, %if.end ], [ -14, %entry ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_get_capabilities(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_get_capabilities(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %dev = getelementptr inbounds %struct.dev_state, %struct.dev_state* %ps, i32 0, i32 1
   %0 = load %struct.usb_device*, %struct.usb_device** %dev, align 8, !tbaa !594
@@ -36844,11 +37300,13 @@ entry:
   call void @might_fault()
   %5 = bitcast i8* %arg to i32*
   %6 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %caps.1, i32* %5) #8, !srcloc !662
-  ret void
+  %tobool7 = icmp ne i32 %6, 0
+  %. = select i1 %tobool7, i32 -14, i32 0
+  ret i32 %.
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_disconnect_claim(%struct.dev_state* %ps, i8* %arg) #0 {
+define internal i32 @proc_disconnect_claim(%struct.dev_state* %ps, i8* %arg) #0 {
 entry:
   %dc = alloca %struct.usbdevfs_disconnect_claim, align 4
   %0 = bitcast %struct.usbdevfs_disconnect_claim* %dc to i8*
@@ -36922,7 +37380,7 @@ land.lhs.true:                                    ; preds = %if.then7
   %driver14 = getelementptr inbounds %struct.device, %struct.device* %dev13, i32 0, i32 7
   %10 = load %struct.device_driver*, %struct.device_driver** %driver14, align 8, !tbaa !104
   %name = getelementptr inbounds %struct.device_driver, %struct.device_driver* %10, i32 0, i32 0
-  %11 = load i8*, i8** %name, align 8, !tbaa !624
+  %11 = load i8*, i8** %name, align 8, !tbaa !625
   %call15 = call i32 @strncmp(i8* %arraydecay, i8* %11, i64 256)
   %cmp = icmp ne i32 %call15, 0
   br i1 %cmp, label %LeafBlock, label %if.end17
@@ -36941,7 +37399,7 @@ land.lhs.true21:                                  ; preds = %if.end17
   %driver25 = getelementptr inbounds %struct.device, %struct.device* %dev24, i32 0, i32 7
   %13 = load %struct.device_driver*, %struct.device_driver** %driver25, align 8, !tbaa !104
   %name26 = getelementptr inbounds %struct.device_driver, %struct.device_driver* %13, i32 0, i32 0
-  %14 = load i8*, i8** %name26, align 8, !tbaa !624
+  %14 = load i8*, i8** %name26, align 8, !tbaa !625
   %call27 = call i32 @strncmp(i8* %arraydecay23, i8* %14, i64 256)
   %cmp28 = icmp eq i32 %call27, 0
   br i1 %cmp28, label %LeafBlock, label %do.body31
@@ -36981,7 +37439,8 @@ if.end42:                                         ; preds = %LeafBlock, %if.end4
   br label %cleanup45
 
 cleanup45:                                        ; preds = %if.end42, %LeafBlock, %if.end, %copy_from_user.exit
-  ret void
+  %retval.1 = phi i32 [ %call44, %if.end42 ], [ -14, %copy_from_user.exit ], [ -22, %if.end ], [ -16, %LeafBlock ]
+  ret i32 %retval.1
 }
 
 ; Function Attrs: nounwind uwtable
@@ -37032,7 +37491,7 @@ declare void @might_fault() #2
 declare i64 @_copy_from_user(i8*, i8*, i32) #2
 
 ; Function Attrs: nounwind uwtable
-define internal void @proc_ioctl(%struct.dev_state* %ps, %struct.usbdevfs_ioctl* %ctl) #0 {
+define internal i32 @proc_ioctl(%struct.dev_state* %ps, %struct.usbdevfs_ioctl* %ctl) #0 {
 entry:
   %ioctl_code = getelementptr inbounds %struct.usbdevfs_ioctl, %struct.usbdevfs_ioctl* %ctl, i32 0, i32 1
   %0 = load i32, i32* %ioctl_code, align 4, !tbaa !653
@@ -37061,10 +37520,10 @@ if.then9:                                         ; preds = %if.end
   %2 = load i8*, i8** %data, align 8, !tbaa !655
   %conv10 = sext i32 %and to i64
   %3 = call i64 @llvm.objectsize.i64.p0i8(i8* %call.i, i1 false, i1 true) #8
-  %conv.i = trunc i64 %3 to i32
+  %conv.i1 = trunc i64 %3 to i32
   call void @might_fault() #8
-  %cmp.i = icmp eq i32 %conv.i, -1
-  %conv2.i = sext i32 %conv.i to i64
+  %cmp.i = icmp eq i32 %conv.i1, -1
+  %conv2.i = sext i32 %conv.i1 to i64
   %cmp3.i = icmp uge i64 %conv2.i, %conv10
   %4 = select i1 %cmp.i, i1 true, i1 %cmp3.i
   %lnot.ext.i = zext i1 %4 to i32
@@ -37250,20 +37709,25 @@ land.lhs.true98:                                  ; preds = %land.lhs.true
   %23 = load i8*, i8** %data99, align 8, !tbaa !655
   call void @might_fault() #8
   %call.i1 = call i64 @_copy_to_user(i8* %23, i8* %buf.0, i32 %and) #8
+  %conv.i = trunc i64 %call.i1 to i32
+  %cmp101 = icmp ne i32 %conv.i, 0
+  %.retval1.6 = select i1 %cmp101, i32 -14, i32 %retval1.6
   br label %if.end104
 
 if.end104:                                        ; preds = %land.lhs.true98, %land.lhs.true, %if.end86
+  %retval1.7 = phi i32 [ %retval1.6, %land.lhs.true ], [ %retval1.6, %if.end86 ], [ %.retval1.6, %land.lhs.true98 ]
   call void @kfree(i8* %buf.0)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end104, %if.then20, %if.then13, %if.then
-  ret void
+  %retval.0 = phi i32 [ -14, %if.then13 ], [ %retval1.7, %if.end104 ], [ -19, %if.then20 ], [ -12, %if.then ]
+  ret i32 %retval.0
 }
 
 declare i64 @_copy_to_user(i8*, i8*, i32) #2
 
 ; Function Attrs: nounwind uwtable
-define internal void @processcompl(%struct.async* %as, i8** %arg) #0 {
+define internal i32 @processcompl(%struct.async* %as, i8** %arg) #0 {
 entry:
   %urb1 = getelementptr inbounds %struct.async, %struct.async* %as, i32 0, i32 8
   %0 = load %struct.urb*, %struct.urb** %urb1, align 8, !tbaa !591
@@ -37372,10 +37836,15 @@ for.inc:                                          ; preds = %if.end41
 if.end56:                                         ; preds = %for.cond, %if.end27
   call void @might_fault()
   %19 = call i8* asm sideeffect "call __put_user_8", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i8* %3, i8** %arg) #8, !srcloc !677
+  %20 = ptrtoint i8* %19 to i64
+  %21 = trunc i64 %20 to i32
+  %tobool60 = icmp ne i32 %21, 0
+  %. = select i1 %tobool60, i32 -14, i32 0
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end56, %if.end41, %for.body, %if.end20, %if.end12, %if.end8, %if.then
-  ret void
+  %retval.0 = phi i32 [ %., %if.end56 ], [ -14, %if.end41 ], [ -14, %for.body ], [ -14, %if.end20 ], [ -14, %if.end12 ], [ -14, %if.end8 ], [ -14, %if.then ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
@@ -37519,7 +37988,7 @@ entry:
   %flags = getelementptr inbounds %struct.__wait_queue, %struct.__wait_queue* %wait, i32 0, i32 0
   store i32 0, i32* %flags, align 8, !tbaa !246
   %private = getelementptr inbounds %struct.__wait_queue, %struct.__wait_queue* %wait, i32 0, i32 1
-  %0 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #4, !srcloc !647
+  %0 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
   %1 = bitcast %struct.task_struct* %0 to i8*
   store i8* %1, i8** %private, align 8, !tbaa !248
   %func = getelementptr inbounds %struct.__wait_queue, %struct.__wait_queue* %wait, i32 0, i32 2
@@ -37536,7 +38005,7 @@ entry:
   br label %for.cond
 
 for.cond:                                         ; preds = %if.end9, %entry
-  %3 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #4, !srcloc !647
+  %3 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
   %state = getelementptr inbounds %struct.task_struct, %struct.task_struct* %3, i32 0, i32 0
   store volatile i64 1, i64* %state, align 8, !tbaa !678
   %call4 = call %struct.async* @async_getcompleted(%struct.dev_state* %ps)
@@ -37544,7 +38013,7 @@ for.cond:                                         ; preds = %if.end9, %entry
   br i1 %tobool, label %for.end, label %if.end
 
 if.end:                                           ; preds = %for.cond
-  %4 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #4, !srcloc !647
+  %4 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
   %call6 = call i32 @signal_pending.717(%struct.task_struct* %4)
   %tobool7 = icmp ne i32 %call6, 0
   br i1 %tobool7, label %for.end, label %if.end9
@@ -37562,7 +38031,7 @@ for.end:                                          ; preds = %if.end, %for.cond
   call void @remove_wait_queue(%struct.__wait_queue_head* %wait12, %struct.__wait_queue* %wait)
   store volatile i64 0, i64* %__ret, align 8, !tbaa !49
   %5 = load volatile i64, i64* %__ret, align 8, !tbaa !49
-  %6 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #4, !srcloc !647
+  %6 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
   %state15 = getelementptr inbounds %struct.task_struct, %struct.task_struct* %6, i32 0, i32 0
   %7 = call i64 asm sideeffect "xchgq ${0:q}, $1\0A", "=r,=*m,0,*m,~{memory},~{cc},~{dirflag},~{fpsr},~{flags}"(i64* %state15, i64 %5, i64* %state15) #8, !srcloc !679
   store volatile i64 %7, i64* %__ret, align 8, !tbaa !49
@@ -37658,7 +38127,7 @@ entry:
 }
 
 ; Function Attrs: nounwind uwtable
-define internal void @processcompl_compat(%struct.async* %as, i8** %arg) #0 {
+define internal i32 @processcompl_compat(%struct.async* %as, i8** %arg) #0 {
 entry:
   %urb1 = getelementptr inbounds %struct.async, %struct.async* %as, i32 0, i32 8
   %0 = load %struct.urb*, %struct.urb** %urb1, align 8, !tbaa !591
@@ -37769,10 +38238,13 @@ if.end56:                                         ; preds = %for.cond, %if.end27
   %call59 = call i32 @ptr_to_compat(i8* %3)
   %19 = bitcast i8** %arg to i32*
   %20 = call i32 asm sideeffect "call __put_user_4", "={ax},0,{cx},~{ebx},~{dirflag},~{fpsr},~{flags}"(i32 %call59, i32* %19) #8, !srcloc !686
+  %tobool61 = icmp ne i32 %20, 0
+  %. = select i1 %tobool61, i32 -14, i32 0
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end56, %if.end41, %for.body, %if.end20, %if.end12, %if.end8, %if.then
-  ret void
+  %retval.0 = phi i32 [ -14, %if.then ], [ -14, %if.end8 ], [ -14, %if.end12 ], [ -14, %if.end20 ], [ -14, %for.body ], [ -14, %if.end41 ], [ %., %if.end56 ]
+  ret i32 %retval.0
 }
 
 ; Function Attrs: nounwind uwtable
@@ -37781,7 +38253,7 @@ entry:
   %call = call %struct.thread_info* @current_thread_info()
   %addr_limit = getelementptr inbounds %struct.thread_info, %struct.thread_info* %call, i32 0, i32 6
   %seg = getelementptr inbounds %struct.pgprot, %struct.pgprot* %addr_limit, i32 0, i32 0
-  %0 = load i64, i64* %seg, align 8, !tbaa !616
+  %0 = load i64, i64* %seg, align 8, !tbaa !617
   %1 = call { i64, i64 } asm "add $3,$1 ; sbb $0,$0 ; cmp $1,$4 ; sbb $$0,$0", "=&r,=r,1,imr,rm,~{dirflag},~{fpsr},~{flags}"(%struct.usbdevfs_urb32* %uurb, i64 44, i64 %0) #9, !srcloc !687
   %asmresult = extractvalue { i64, i64 } %1, 0
   %cmp = icmp eq i64 %asmresult, 0
@@ -37948,7 +38420,7 @@ cleanup:                                          ; preds = %if.end142, %if.end1
 }
 
 ; Function Attrs: nounwind uwtable
-declare void @proc_do_submiturb(%struct.dev_state*, %struct.usbdevfs_urb*, %struct.uid_gid_extent*, i8*) #0
+declare i32 @proc_do_submiturb(%struct.dev_state*, %struct.usbdevfs_urb*, %struct.uid_gid_extent*, i8*) #0
 
 ; Function Attrs: nounwind uwtable
 define internal i32 @findintfep(%struct.usb_device* %dev, i32 %ep) #0 {
@@ -38067,8 +38539,9 @@ cond.false:                                       ; preds = %if.end
   br i1 %tobool7, label %return, label %if.end9
 
 if.end9:                                          ; preds = %cond.false
-  call void @task_pid_nr()
-  %2 = call i32 (%struct.device*, i8*, ...) @dev_warn(%struct.device* null, i8* null)
+  %2 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
+  %3 = call %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct** @current_task) #8
+  %4 = call i32 (%struct.device*, i8*, ...) @dev_warn(%struct.device* null, i8* null)
   %call16 = call i32 @claimintf(%struct.dev_state* %ps, i32 %ifnum)
   br label %return
 
@@ -38937,13 +39410,13 @@ while.body:                                       ; preds = %while.cond
   %list = getelementptr inbounds %struct.dev_state, %struct.dev_state* %2, i32 0, i32 0
   call void @list_del_init.666(%struct.list_head* %list)
   %discsignr = getelementptr inbounds %struct.dev_state, %struct.dev_state* %2, i32 0, i32 7
-  %3 = load i32, i32* %discsignr, align 8, !tbaa !644
+  %3 = load i32, i32* %discsignr, align 8, !tbaa !645
   %tobool2 = icmp ne i32 %3, 0
   br i1 %tobool2, label %if.then, label %if.end
 
 if.then:                                          ; preds = %while.body
   %discsignr3 = getelementptr inbounds %struct.dev_state, %struct.dev_state* %2, i32 0, i32 7
-  %4 = load i32, i32* %discsignr3, align 8, !tbaa !644
+  %4 = load i32, i32* %discsignr3, align 8, !tbaa !645
   %si_signo = getelementptr inbounds %struct.siginfo, %struct.siginfo* %sinfo, i32 0, i32 0
   store i32 %4, i32* %si_signo, align 8, !tbaa !725
   %si_errno = getelementptr inbounds %struct.siginfo, %struct.siginfo* %sinfo, i32 0, i32 1
@@ -38951,13 +39424,13 @@ if.then:                                          ; preds = %while.body
   %si_code = getelementptr inbounds %struct.siginfo, %struct.siginfo* %sinfo, i32 0, i32 2
   store i32 -4, i32* %si_code, align 8, !tbaa !728
   %disccontext = getelementptr inbounds %struct.dev_state, %struct.dev_state* %2, i32 0, i32 10
-  %5 = load i8*, i8** %disccontext, align 8, !tbaa !646
+  %5 = load i8*, i8** %disccontext, align 8, !tbaa !647
   %_sifields = getelementptr inbounds %struct.siginfo, %struct.siginfo* %sinfo, i32 0, i32 3
   %_sigfault = bitcast %union.anon.39* %_sifields to %struct.anon.41*
   %_addr = getelementptr inbounds %struct.anon.41, %struct.anon.41* %_sigfault, i32 0, i32 0
   store i8* %5, i8** %_addr, align 8, !tbaa !84
   %discsignr4 = getelementptr inbounds %struct.dev_state, %struct.dev_state* %2, i32 0, i32 7
-  %6 = load i32, i32* %discsignr4, align 8, !tbaa !644
+  %6 = load i32, i32* %discsignr4, align 8, !tbaa !645
   %disc_pid = getelementptr inbounds %struct.dev_state, %struct.dev_state* %2, i32 0, i32 8
   %7 = load %struct.pid*, %struct.pid** %disc_pid, align 8, !tbaa !598
   %cred = getelementptr inbounds %struct.dev_state, %struct.dev_state* %2, i32 0, i32 9
@@ -39677,7 +40150,7 @@ if.end3:                                          ; preds = %if.end
   %call = call %struct.thread_info* @current_thread_info.801()
   %addr_limit = getelementptr inbounds %struct.thread_info, %struct.thread_info* %call, i32 0, i32 6
   %seg = getelementptr inbounds %struct.pgprot, %struct.pgprot* %addr_limit, i32 0, i32 0
-  %5 = load i64, i64* %seg, align 8, !tbaa !616
+  %5 = load i64, i64* %seg, align 8, !tbaa !617
   %6 = call { i64, i64 } asm "add $3,$1 ; sbb $0,$0 ; cmp $1,$4 ; sbb $$0,$0", "=&r,=r,1,imr,rm,~{dirflag},~{fpsr},~{flags}"(i8* %3, i64 %4, i64 %5) #9, !srcloc !733
   %asmresult = extractvalue { i64, i64 } %6, 0
   %cmp5 = icmp eq i64 %asmresult, 0
@@ -40554,7 +41027,7 @@ for.end:                                          ; preds = %for.body, %for.cond
 define internal %struct.inode* @file_inode.840(%struct.file* %f) #1 {
 entry:
   %f_inode = getelementptr inbounds %struct.file, %struct.file* %f, i32 0, i32 2
-  %0 = load %struct.inode*, %struct.inode** %f_inode, align 8, !tbaa !610
+  %0 = load %struct.inode*, %struct.inode** %f_inode, align 8, !tbaa !611
   ret %struct.inode* %0
 }
 
@@ -43416,44 +43889,44 @@ attributes #9 = { nounwind readonly }
 !607 = !{i32 -2146882709, i32 -2146882670, i32 -2146882649, i32 -2146882612, i32 -2146882589, i32 -2146882719, i32 552793}
 !608 = !{i32 -2146084553, i32 -2146084514, i32 -2146084493, i32 -2146084456, i32 -2146084433, i32 -2146084563}
 !609 = !{!13, !4, i64 976}
-!610 = !{!559, !7, i64 32}
-!611 = !{!612, !4, i64 0}
-!612 = !{!"usbdevfs_bulktransfer", !4, i64 0, !4, i64 4, !4, i64 8, !7, i64 16}
-!613 = !{!612, !4, i64 4}
-!614 = !{!612, !4, i64 8}
-!615 = !{!612, !7, i64 16}
-!616 = !{!617, !20, i64 32}
-!617 = !{!"thread_info", !7, i64 0, !7, i64 8, !4, i64 16, !4, i64 20, !4, i64 24, !4, i64 28, !28, i64 32, !618, i64 40, !7, i64 88, !4, i64 96, !4, i64 96}
-!618 = !{!"restart_block", !7, i64 0, !5, i64 8}
-!619 = !{i32 -2143223984}
-!620 = !{i32 -2143223396}
-!621 = !{i32 -2143222801}
-!622 = !{!623, !4, i64 0}
-!623 = !{!"usbdevfs_getdriver", !4, i64 0, !5, i64 4}
-!624 = !{!109, !7, i64 0}
-!625 = !{!626, !4, i64 0}
-!626 = !{!"usbdevfs_connectinfo", !4, i64 0, !5, i64 4}
-!627 = !{!626, !5, i64 4}
-!628 = !{!629, !4, i64 0}
-!629 = !{!"usbdevfs_setinterface", !4, i64 0, !4, i64 4}
-!630 = !{!629, !4, i64 4}
-!631 = !{i32 -2143222026}
-!632 = !{i32 -2143204316}
-!633 = !{i32 -2143202742}
-!634 = !{i32 -2143202288}
-!635 = !{i32 -2143200984}
-!636 = !{i32 -2143200333}
-!637 = !{i32 -2143199011}
-!638 = !{i32 -2143198353}
-!639 = !{i32 -2143196959}
-!640 = !{i32 -2143196273}
-!641 = !{i32 -2143194701}
-!642 = !{!643, !4, i64 0}
-!643 = !{!"usbdevfs_disconnectsignal32", !4, i64 0, !4, i64 4}
-!644 = !{!595, !4, i64 224}
-!645 = !{!643, !4, i64 4}
-!646 = !{!595, !7, i64 248}
-!647 = !{i32 -2146626176}
+!610 = !{i64 0, i64 8, !49, i64 8, i64 8, !49}
+!611 = !{!559, !7, i64 32}
+!612 = !{!613, !4, i64 0}
+!613 = !{!"usbdevfs_bulktransfer", !4, i64 0, !4, i64 4, !4, i64 8, !7, i64 16}
+!614 = !{!613, !4, i64 4}
+!615 = !{!613, !4, i64 8}
+!616 = !{!613, !7, i64 16}
+!617 = !{!618, !20, i64 32}
+!618 = !{!"thread_info", !7, i64 0, !7, i64 8, !4, i64 16, !4, i64 20, !4, i64 24, !4, i64 28, !28, i64 32, !619, i64 40, !7, i64 88, !4, i64 96, !4, i64 96}
+!619 = !{!"restart_block", !7, i64 0, !5, i64 8}
+!620 = !{i32 -2143223984}
+!621 = !{i32 -2143223396}
+!622 = !{i32 -2143222801}
+!623 = !{!624, !4, i64 0}
+!624 = !{!"usbdevfs_getdriver", !4, i64 0, !5, i64 4}
+!625 = !{!109, !7, i64 0}
+!626 = !{!627, !4, i64 0}
+!627 = !{!"usbdevfs_connectinfo", !4, i64 0, !5, i64 4}
+!628 = !{!627, !5, i64 4}
+!629 = !{!630, !4, i64 0}
+!630 = !{!"usbdevfs_setinterface", !4, i64 0, !4, i64 4}
+!631 = !{!630, !4, i64 4}
+!632 = !{i32 -2143222026}
+!633 = !{i32 -2143204316}
+!634 = !{i32 -2143202742}
+!635 = !{i32 -2143202288}
+!636 = !{i32 -2143200984}
+!637 = !{i32 -2143200333}
+!638 = !{i32 -2143199011}
+!639 = !{i32 -2143198353}
+!640 = !{i32 -2143196959}
+!641 = !{i32 -2143196273}
+!642 = !{i32 -2143194701}
+!643 = !{!644, !4, i64 0}
+!644 = !{!"usbdevfs_disconnectsignal32", !4, i64 0, !4, i64 4}
+!645 = !{!595, !4, i64 224}
+!646 = !{!644, !4, i64 4}
+!647 = !{!595, !7, i64 248}
 !648 = !{i32 -2142969102}
 !649 = !{i32 -2142959022, i32 -2142959015, i32 -2142959001, i32 -2142958999, i32 -2142959672, i32 -2142958959, i32 -2142958911, i32 -2142958845, i32 -2142958783, i32 -2142958731, i32 -2142959592, i32 -2142959567, i32 -2142958526, i32 -2142959494, i32 -2142959469, i32 -2142958266, i32 -2142958342, i32 -2142958249, i32 -2142958298, i32 -2142960192, i32 -2142960151, i32 -2142957483, i32 -2142957469, i32 -2142957467, i32 -2142958140, i32 -2142957427, i32 -2142957379, i32 -2142957313, i32 -2142957251, i32 -2142957199, i32 -2142958060, i32 -2142958035, i32 -2142956994, i32 -2142957962, i32 -2142957937, i32 -2142956734, i32 -2142956810, i32 -2142956717, i32 -2142956766, i32 -2142960119, i32 -2142960080, i32 -2142960051, i32 -2142960005, i32 -2142959980, i32 -2142956700, i32 -2142956656, i32 -2142956633, i32 -2142956600, i32 -2142956569}
 !650 = !{!651, !4, i64 0}
