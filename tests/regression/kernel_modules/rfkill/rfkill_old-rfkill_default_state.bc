@@ -612,6 +612,8 @@ entry:
 ; Function Attrs: nounwind uwtable
 define internal void @rfkill_fill_event(%struct.rfkill_event* %ev, %struct.rfkill* %rfkill, i32 %op) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %idx = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 4
   %0 = load i32, i32* %idx, align 8, !tbaa !39
   %idx1 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 0
@@ -624,12 +626,16 @@ entry:
   %conv3 = trunc i32 %op to i8
   %op4 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 2
   store i8 %conv3, i8* %op4, align 1, !tbaa !44
+  %2 = bitcast i64* %__dummy to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy2 to i8*
+  %5 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call7 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %state = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %2 = load i64, i64* %state, align 8, !tbaa !45
-  %and = and i64 %2, 1
+  %6 = load i64, i64* %state, align 8, !tbaa !45
+  %and = and i64 %6, 1
   %tobool = icmp ne i64 %and, 0
   %lnot = xor i1 %tobool, true
   %lnot10 = xor i1 %lnot, true
@@ -638,8 +644,8 @@ entry:
   %hard = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 4
   store i8 %conv11, i8* %hard, align 1, !tbaa !46
   %state12 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %3 = load i64, i64* %state12, align 8, !tbaa !45
-  %and13 = and i64 %3, 6
+  %7 = load i64, i64* %state12, align 8, !tbaa !45
+  %and13 = and i64 %7, 6
   %tobool14 = icmp ne i64 %and13, 0
   %lnot15 = xor i1 %tobool14, true
   %lnot17 = xor i1 %lnot15, true
@@ -684,8 +690,14 @@ declare i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock*) #1 section ".spinlock
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @spin_unlock_irqrestore(%struct.spinlock* %lock, i64 %flags) #3 {
 entry:
-  %0 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
-  %rlock = bitcast %union.anon.0* %0 to %struct.raw_spinlock*
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
+  %4 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
+  %rlock = bitcast %union.anon.0* %4 to %struct.raw_spinlock*
   call void @_raw_spin_unlock_irqrestore(%struct.raw_spinlock* %rlock, i64 %flags)
   ret void
 }
@@ -1061,6 +1073,10 @@ for.end:                                          ; preds = %for.cond
 ; Function Attrs: nounwind uwtable
 define internal void @rfkill_set_block(%struct.rfkill* %rfkill, i1 zeroext %blocked) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy41 = alloca i64, align 8
+  %__dummy242 = alloca i64, align 8
   %frombool = zext i1 %blocked to i8
   %dev = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 11
   %power = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 9
@@ -1096,45 +1112,53 @@ if.then4:                                         ; preds = %if.end
   br label %do.body8
 
 do.body8:                                         ; preds = %if.then4, %if.end
+  %6 = bitcast i64* %__dummy to i8*
+  %7 = bitcast i64* %__dummy2 to i8*
+  %8 = bitcast i64* %__dummy2 to i8*
+  %9 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call10 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %state = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %6 = load i64, i64* %state, align 8, !tbaa !45
-  %and13 = and i64 %6, 2
+  %10 = load i64, i64* %state, align 8, !tbaa !45
+  %and13 = and i64 %10, 2
   %tobool14 = icmp ne i64 %and13, 0
   %frombool15 = zext i1 %tobool14 to i8
   %state16 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %7 = load i64, i64* %state16, align 8, !tbaa !45
-  %and17 = and i64 %7, 2
+  %11 = load i64, i64* %state16, align 8, !tbaa !45
+  %and17 = and i64 %11, 2
   %tobool18 = icmp ne i64 %and17, 0
   %state20 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %8 = load i64, i64* %state20, align 8, !tbaa !45
-  %and22 = and i64 %8, -5
-  %or = or i64 %8, 4
+  %12 = load i64, i64* %state20, align 8, !tbaa !45
+  %and22 = and i64 %12, -5
+  %or = or i64 %12, 4
   %and22.sink = select i1 %tobool18, i64 %or, i64 %and22
   store i64 %and22.sink, i64* %state20, align 8, !tbaa !45
   %tobool24 = trunc i8 %frombool to i1
   %state26 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %9 = load i64, i64* %state26, align 8, !tbaa !45
-  %and30 = and i64 %9, -3
-  %or27 = or i64 %9, 2
+  %13 = load i64, i64* %state26, align 8, !tbaa !45
+  %and30 = and i64 %13, -3
+  %or27 = or i64 %13, 2
   %and30.sink = select i1 %tobool24, i64 %or27, i64 %and30
   store i64 %and30.sink, i64* %state26, align 8, !tbaa !45
   %state32 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %10 = load i64, i64* %state32, align 8, !tbaa !45
-  %or33 = or i64 %10, 2147483648
+  %14 = load i64, i64* %state32, align 8, !tbaa !45
+  %or33 = or i64 %14, 2147483648
   store i64 %or33, i64* %state32, align 8, !tbaa !45
   %lock34 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock34, i64 %call10)
   %ops35 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 7
-  %11 = load %struct.rfkill_ops*, %struct.rfkill_ops** %ops35, align 8, !tbaa !3
-  %set_block = getelementptr inbounds %struct.rfkill_ops, %struct.rfkill_ops* %11, i32 0, i32 2
-  %12 = load i32 (i8*, i1)*, i32 (i8*, i1)** %set_block, align 8, !tbaa !67
+  %15 = load %struct.rfkill_ops*, %struct.rfkill_ops** %ops35, align 8, !tbaa !3
+  %set_block = getelementptr inbounds %struct.rfkill_ops, %struct.rfkill_ops* %15, i32 0, i32 2
+  %16 = load i32 (i8*, i1)*, i32 (i8*, i1)** %set_block, align 8, !tbaa !67
   %data36 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 8
-  %13 = load i8*, i8** %data36, align 8, !tbaa !61
+  %17 = load i8*, i8** %data36, align 8, !tbaa !61
   %tobool37 = trunc i8 %frombool to i1
-  %call38 = call i32 %12(i8* %13, i1 zeroext %tobool37)
+  %call38 = call i32 %16(i8* %17, i1 zeroext %tobool37)
+  %18 = bitcast i64* %__dummy41 to i8*
+  %19 = bitcast i64* %__dummy242 to i8*
+  %20 = bitcast i64* %__dummy242 to i8*
+  %21 = bitcast i64* %__dummy41 to i8*
   %lock46 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call47 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock46)
   %call48 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call47)
@@ -1143,29 +1167,29 @@ do.body8:                                         ; preds = %if.then4, %if.end
 
 if.then54:                                        ; preds = %do.body8
   %state55 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %14 = load i64, i64* %state55, align 8, !tbaa !45
-  %and56 = and i64 %14, 4
+  %22 = load i64, i64* %state55, align 8, !tbaa !45
+  %and56 = and i64 %22, 4
   %tobool57 = icmp ne i64 %and56, 0
   %state59 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %15 = load i64, i64* %state59, align 8, !tbaa !45
-  %and63 = and i64 %15, -3
-  %or60 = or i64 %15, 2
+  %23 = load i64, i64* %state59, align 8, !tbaa !45
+  %and63 = and i64 %23, -3
+  %or60 = or i64 %23, 2
   %and63.sink = select i1 %tobool57, i64 %or60, i64 %and63
   store i64 %and63.sink, i64* %state59, align 8, !tbaa !45
   br label %if.end65
 
 if.end65:                                         ; preds = %if.then54, %do.body8
   %state66 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %16 = load i64, i64* %state66, align 8, !tbaa !45
-  %and67 = and i64 %16, -2147483649
+  %24 = load i64, i64* %state66, align 8, !tbaa !45
+  %and67 = and i64 %24, -2147483649
   store i64 %and67, i64* %state66, align 8, !tbaa !45
   %state68 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %17 = load i64, i64* %state68, align 8, !tbaa !45
-  %and69 = and i64 %17, -5
+  %25 = load i64, i64* %state68, align 8, !tbaa !45
+  %and69 = and i64 %25, -5
   store i64 %and69, i64* %state68, align 8, !tbaa !45
   %state70 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %18 = load i64, i64* %state70, align 8, !tbaa !45
-  %and71 = and i64 %18, 2
+  %26 = load i64, i64* %state70, align 8, !tbaa !45
+  %and71 = and i64 %26, 2
   %tobool72 = icmp ne i64 %and71, 0
   %frombool73 = zext i1 %tobool72 to i8
   %lock74 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
@@ -1466,6 +1490,8 @@ declare void @device_initialize(%struct.device*) #1
 ; Function Attrs: nounwind uwtable
 define internal i32 @rfkill_dev_uevent(%struct.device* %dev, %struct.kobj_uevent_env* %env) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %0 = bitcast %struct.device* %dev to i8*
   %add.ptr = getelementptr inbounds i8, i8* %0, i64 -256
   %1 = bitcast i8* %add.ptr to %struct.rfkill*
@@ -1484,12 +1510,16 @@ if.end:                                           ; preds = %entry
   br i1 %tobool3, label %cleanup, label %do.body6
 
 do.body6:                                         ; preds = %if.end
+  %4 = bitcast i64* %__dummy to i8*
+  %5 = bitcast i64* %__dummy2 to i8*
+  %6 = bitcast i64* %__dummy2 to i8*
+  %7 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %1, i32 0, i32 0
   %call8 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call9 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call8)
   %state12 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %1, i32 0, i32 3
-  %4 = load i64, i64* %state12, align 8, !tbaa !45
-  %conv13 = trunc i64 %4 to i32
+  %8 = load i64, i64* %state12, align 8, !tbaa !45
+  %conv13 = trunc i64 %8 to i32
   %lock14 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %1, i32 0, i32 0
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock14, i64 %call9)
   %conv15 = zext i32 %conv13 to i64
@@ -1773,6 +1803,7 @@ entry:
   %0 = bitcast %struct.device* %dev to i8*
   %add.ptr = getelementptr inbounds i8, i8* %0, i64 -256
   %1 = bitcast i8* %add.ptr to %struct.rfkill*
+  %2 = bitcast i64* %state to i8*
   %call = call zeroext i1 @capable(i32 12)
   br i1 %call, label %if.end, label %cleanup
 
@@ -1786,23 +1817,24 @@ if.then2:                                         ; preds = %if.end
   br label %cleanup
 
 if.end3:                                          ; preds = %if.end
-  %2 = load i64, i64* %state, align 8, !tbaa !50
-  %cmp = icmp ne i64 %2, 0
-  %3 = load i64, i64* %state, align 8
-  %cmp5 = icmp ne i64 %3, 1
+  %3 = load i64, i64* %state, align 8, !tbaa !50
+  %cmp = icmp ne i64 %3, 0
+  %4 = load i64, i64* %state, align 8
+  %cmp5 = icmp ne i64 %4, 1
   %or.cond = and i1 %cmp, %cmp5
   br i1 %or.cond, label %cleanup, label %if.end8
 
 if.end8:                                          ; preds = %if.end3
   call void @mutex_lock_nested(%struct.mutex* @rfkill_global_mutex, i32 0)
-  %4 = load i64, i64* %state, align 8, !tbaa !50
-  %cmp9 = icmp eq i64 %4, 0
+  %5 = load i64, i64* %state, align 8, !tbaa !50
+  %cmp9 = icmp eq i64 %5, 0
   call void @rfkill_set_block(%struct.rfkill* %1, i1 zeroext %cmp9)
   call void @mutex_unlock(%struct.mutex* @rfkill_global_mutex)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end8, %if.end3, %if.then2, %entry
   %retval.0 = phi i64 [ %conv, %if.then2 ], [ %count, %if.end8 ], [ -1, %entry ], [ -22, %if.end3 ]
+  %6 = bitcast i64* %state to i8*
   ret i64 %retval.0
 }
 
@@ -1835,6 +1867,7 @@ entry:
   %0 = bitcast %struct.device* %dev to i8*
   %add.ptr = getelementptr inbounds i8, i8* %0, i64 -256
   %1 = bitcast i8* %add.ptr to %struct.rfkill*
+  %2 = bitcast i64* %state to i8*
   %call = call zeroext i1 @capable(i32 12)
   br i1 %call, label %if.end, label %cleanup
 
@@ -1848,20 +1881,21 @@ if.then2:                                         ; preds = %if.end
   br label %cleanup
 
 if.end3:                                          ; preds = %if.end
-  %2 = load i64, i64* %state, align 8, !tbaa !50
-  %cmp = icmp ugt i64 %2, 1
+  %3 = load i64, i64* %state, align 8, !tbaa !50
+  %cmp = icmp ugt i64 %3, 1
   br i1 %cmp, label %cleanup, label %if.end6
 
 if.end6:                                          ; preds = %if.end3
   call void @mutex_lock_nested(%struct.mutex* @rfkill_global_mutex, i32 0)
-  %3 = load i64, i64* %state, align 8, !tbaa !50
-  %tobool7 = icmp ne i64 %3, 0
+  %4 = load i64, i64* %state, align 8, !tbaa !50
+  %tobool7 = icmp ne i64 %4, 0
   call void @rfkill_set_block(%struct.rfkill* %1, i1 zeroext %tobool7)
   call void @mutex_unlock(%struct.mutex* @rfkill_global_mutex)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end6, %if.end3, %if.then2, %entry
   %retval.0 = phi i64 [ %conv, %if.then2 ], [ %count, %if.end6 ], [ -1, %entry ], [ -22, %if.end3 ]
+  %5 = bitcast i64* %state to i8*
   ret i64 %retval.0
 }
 
@@ -1889,12 +1923,18 @@ declare i32 @kstrtoull(i8*, i32, i64*) #1
 ; Function Attrs: nounwind uwtable
 define zeroext i1 @rfkill_blocked(%struct.rfkill* %rfkill) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call2 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %state5 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %0 = load i64, i64* %state5, align 8, !tbaa !45
-  %conv6 = trunc i64 %0 to i32
+  %4 = load i64, i64* %state5, align 8, !tbaa !45
+  %conv6 = trunc i64 %4 to i32
   %lock7 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock7, i64 %call2)
   %conv8 = zext i32 %conv6 to i64
@@ -1908,6 +1948,8 @@ entry:
 ; Function Attrs: nounwind uwtable
 define void @rfkill_set_states(%struct.rfkill* %rfkill, i1 zeroext %sw, i1 zeroext %hw) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %frombool = zext i1 %sw to i8
   %frombool1 = zext i1 %hw to i8
   %tobool = icmp ne %struct.rfkill* %rfkill, null
@@ -1928,19 +1970,23 @@ do.body6:                                         ; preds = %do.body6, %do.body5
   br label %do.body6
 
 do.body12:                                        ; preds = %entry
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call14 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %state = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %0 = load i64, i64* %state, align 8, !tbaa !45
-  %and = and i64 %0, 2
+  %4 = load i64, i64* %state, align 8, !tbaa !45
+  %and = and i64 %4, 2
   %tobool19 = icmp ne i64 %and, 0
   %lnot20 = xor i1 %tobool19, true
   %lnot22 = xor i1 %lnot20, true
   %frombool24 = zext i1 %lnot22 to i8
   %state25 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %1 = load i64, i64* %state25, align 8, !tbaa !45
-  %and26 = and i64 %1, 1
+  %5 = load i64, i64* %state25, align 8, !tbaa !45
+  %and26 = and i64 %5, 1
   %tobool27 = icmp ne i64 %and26, 0
   %lnot28 = xor i1 %tobool27, true
   %lnot30 = xor i1 %lnot28, true
@@ -1949,16 +1995,16 @@ do.body12:                                        ; preds = %entry
   call void @__rfkill_set_sw_state(%struct.rfkill* %rfkill, i1 zeroext %tobool33)
   %tobool34 = trunc i8 %frombool1 to i1
   %state36 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %2 = load i64, i64* %state36, align 8, !tbaa !45
-  %and38 = and i64 %2, -2
-  %or = or i64 %2, 1
+  %6 = load i64, i64* %state36, align 8, !tbaa !45
+  %and38 = and i64 %6, -2
+  %or = or i64 %6, 1
   %and38.sink = select i1 %tobool34, i64 %or, i64 %and38
   store i64 %and38.sink, i64* %state36, align 8, !tbaa !45
   %lock40 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock40, i64 %call14)
   %registered = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 5
-  %3 = load i8, i8* %registered, align 4, !tbaa !35, !range !49
-  %tobool41 = trunc i8 %3 to i1
+  %7 = load i8, i8* %registered, align 4, !tbaa !35, !range !49
+  %tobool41 = trunc i8 %7 to i1
   br i1 %tobool41, label %if.else43, label %if.then42
 
 if.then42:                                        ; preds = %do.body12
@@ -2031,6 +2077,8 @@ if.end7:                                          ; preds = %if.else, %if.then2
 ; Function Attrs: nounwind uwtable
 define void @rfkill_init_sw_state(%struct.rfkill* %rfkill, i1 zeroext %blocked) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %frombool = zext i1 %blocked to i8
   %tobool = icmp ne %struct.rfkill* %rfkill, null
   %lnot = xor i1 %tobool, true
@@ -2069,6 +2117,10 @@ do.body21:                                        ; preds = %do.body21, %do.body
   br label %do.body21
 
 do.body30:                                        ; preds = %do.body10
+  %1 = bitcast i64* %__dummy to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call32 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
@@ -2084,6 +2136,8 @@ do.body30:                                        ; preds = %do.body10
 ; Function Attrs: nounwind uwtable
 define zeroext i1 @rfkill_set_sw_state(%struct.rfkill* %rfkill, i1 zeroext %blocked) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %frombool = zext i1 %blocked to i8
   %tobool = icmp ne %struct.rfkill* %rfkill, null
   %lnot = xor i1 %tobool, true
@@ -2103,12 +2157,16 @@ do.body5:                                         ; preds = %do.body5, %do.body4
   br label %do.body5
 
 do.body11:                                        ; preds = %entry
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call13 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %state = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %0 = load i64, i64* %state, align 8, !tbaa !45
-  %and = and i64 %0, 2
+  %4 = load i64, i64* %state, align 8, !tbaa !45
+  %and = and i64 %4, 2
   %tobool18 = icmp ne i64 %and, 0
   %lnot19 = xor i1 %tobool18, true
   %lnot21 = xor i1 %lnot19, true
@@ -2116,21 +2174,21 @@ do.body11:                                        ; preds = %entry
   %tobool24 = trunc i8 %frombool to i1
   call void @__rfkill_set_sw_state(%struct.rfkill* %rfkill, i1 zeroext %tobool24)
   %state25 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %1 = load i64, i64* %state25, align 8, !tbaa !45
-  %and26 = and i64 %1, 1
+  %5 = load i64, i64* %state25, align 8, !tbaa !45
+  %and26 = and i64 %5, 1
   %tobool27 = icmp ne i64 %and26, 0
   %lnot28 = xor i1 %tobool27, true
   %lnot30 = xor i1 %lnot28, true
   %frombool32 = zext i1 %lnot30 to i8
   %tobool33 = trunc i8 %frombool to i1
   %tobool35 = trunc i8 %frombool32 to i1
-  %2 = select i1 %tobool33, i1 true, i1 %tobool35
-  %frombool37 = zext i1 %2 to i8
+  %6 = select i1 %tobool33, i1 true, i1 %tobool35
+  %frombool37 = zext i1 %6 to i8
   %lock38 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock38, i64 %call13)
   %registered = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 5
-  %3 = load i8, i8* %registered, align 4, !tbaa !35, !range !49
-  %tobool39 = trunc i8 %3 to i1
+  %7 = load i8, i8* %registered, align 4, !tbaa !35, !range !49
+  %tobool39 = trunc i8 %7 to i1
   br i1 %tobool39, label %if.end42, label %cleanup
 
 if.end42:                                         ; preds = %do.body11
@@ -2190,6 +2248,8 @@ cleanup:                                          ; preds = %if.then5, %if.end, 
 ; Function Attrs: nounwind uwtable
 define internal zeroext i1 @__rfkill_set_hw_state(%struct.rfkill* %rfkill, i1 zeroext %blocked, i8* %change) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %frombool = zext i1 %blocked to i8
   %tobool = icmp ne %struct.rfkill* %rfkill, null
   %lnot = xor i1 %tobool, true
@@ -2209,21 +2269,25 @@ do.body5:                                         ; preds = %do.body5, %do.body4
   br label %do.body5
 
 do.body11:                                        ; preds = %entry
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 0
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call13 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %state = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %0 = load i64, i64* %state, align 8, !tbaa !45
-  %and = and i64 %0, 1
+  %4 = load i64, i64* %state, align 8, !tbaa !45
+  %and = and i64 %4, 1
   %tobool18 = icmp ne i64 %and, 0
   %lnot19 = xor i1 %tobool18, true
   %lnot21 = xor i1 %lnot19, true
   %frombool23 = zext i1 %lnot21 to i8
   %tobool24 = trunc i8 %frombool to i1
   %state26 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %1 = load i64, i64* %state26, align 8, !tbaa !45
-  %and28 = and i64 %1, -2
-  %or = or i64 %1, 1
+  %5 = load i64, i64* %state26, align 8, !tbaa !45
+  %and28 = and i64 %5, -2
+  %or = or i64 %5, 1
   %and28.sink = select i1 %tobool24, i64 %or, i64 %and28
   store i64 %and28.sink, i64* %state26, align 8, !tbaa !45
   %tobool30 = trunc i8 %frombool23 to i1
@@ -2234,8 +2298,8 @@ do.body11:                                        ; preds = %entry
   %frombool36 = zext i1 %cmp34 to i8
   store i8 %frombool36, i8* %change, align 1, !tbaa !57
   %state37 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %rfkill, i32 0, i32 3
-  %2 = load i64, i64* %state37, align 8, !tbaa !45
-  %and38 = and i64 %2, 7
+  %6 = load i64, i64* %state37, align 8, !tbaa !45
+  %and38 = and i64 %6, 7
   %tobool39 = icmp ne i64 %and38, 0
   %lnot40 = xor i1 %tobool39, true
   %lnot42 = xor i1 %lnot40, true
@@ -2505,12 +2569,13 @@ if.end:                                           ; preds = %while.body
   br i1 %call3, label %if.end17, label %do.body
 
 do.body:                                          ; preds = %if.end
+  %3 = bitcast %struct.__wait_queue* %__wait to i8*
   %flags = getelementptr inbounds %struct.__wait_queue, %struct.__wait_queue* %__wait, i32 0, i32 0
   store i32 0, i32* %flags, align 8, !tbaa !94
   %private = getelementptr inbounds %struct.__wait_queue, %struct.__wait_queue* %__wait, i32 0, i32 1
-  %3 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #2, !srcloc !96
-  %4 = bitcast %struct.task_struct* %3 to i8*
-  store i8* %4, i8** %private, align 8, !tbaa !97
+  %4 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #2, !srcloc !96
+  %5 = bitcast %struct.task_struct* %4 to i8*
+  store i8* %5, i8** %private, align 8, !tbaa !97
   %func = getelementptr inbounds %struct.__wait_queue, %struct.__wait_queue* %__wait, i32 0, i32 2
   store i32 (%struct.__wait_queue*, i32, i32, i8*)* @autoremove_wake_function, i32 (%struct.__wait_queue*, i32, i32, i8*)** %func, align 8, !tbaa !98
   %task_list = getelementptr inbounds %struct.__wait_queue, %struct.__wait_queue* %__wait, i32 0, i32 3
@@ -2529,8 +2594,8 @@ for.cond:                                         ; preds = %if.then14, %do.body
   br i1 %call8, label %for.end, label %if.end10
 
 if.end10:                                         ; preds = %for.cond
-  %5 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #2, !srcloc !96
-  %call12 = call i32 @signal_pending(%struct.task_struct* %5)
+  %6 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #2, !srcloc !96
+  %call12 = call i32 @signal_pending(%struct.task_struct* %6)
   %tobool13 = icmp ne i32 %call12, 0
   br i1 %tobool13, label %for.end, label %if.then14
 
@@ -2542,6 +2607,7 @@ for.end:                                          ; preds = %if.end10, %for.cond
   %__ret.0 = phi i32 [ 0, %for.cond ], [ -512, %if.end10 ]
   %read_wait16 = getelementptr inbounds %struct.rfkill_data, %struct.rfkill_data* %1, i32 0, i32 3
   call void @finish_wait(%struct.__wait_queue_head* %read_wait16, %struct.__wait_queue* %__wait)
+  %7 = bitcast %struct.__wait_queue* %__wait to i8*
   br label %if.end17
 
 if.end17:                                         ; preds = %for.end, %if.end
@@ -2557,25 +2623,25 @@ if.end21:                                         ; preds = %if.end17
 while.end:                                        ; preds = %while.cond
   %events22 = getelementptr inbounds %struct.rfkill_data, %struct.rfkill_data* %1, i32 0, i32 1
   %next23 = getelementptr inbounds %struct.list_head, %struct.list_head* %events22, i32 0, i32 0
-  %6 = load %struct.list_head*, %struct.list_head** %next23, align 8, !tbaa !37
-  %7 = bitcast %struct.list_head* %6 to i8*
-  %add.ptr = getelementptr inbounds i8, i8* %7, i64 0
-  %8 = bitcast i8* %add.ptr to %struct.rfkill_int_event*
+  %8 = load %struct.list_head*, %struct.list_head** %next23, align 8, !tbaa !37
+  %9 = bitcast %struct.list_head* %8 to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %9, i64 0
+  %10 = bitcast i8* %add.ptr to %struct.rfkill_int_event*
   %cmp = icmp ult i64 8, %count
   %.count = select i1 %cmp, i64 8, i64 %count
   %conv = trunc i64 %.count to i32
-  %ev26 = getelementptr inbounds %struct.rfkill_int_event, %struct.rfkill_int_event* %8, i32 0, i32 1
-  %9 = bitcast %struct.rfkill_event* %ev26 to i8*
+  %ev26 = getelementptr inbounds %struct.rfkill_int_event, %struct.rfkill_int_event* %10, i32 0, i32 1
+  %11 = bitcast %struct.rfkill_event* %ev26 to i8*
   %conv27 = trunc i64 %.count to i32
   call void @might_fault() #7
-  %call.i = call i64 @_copy_to_user(i8* %buf, i8* %9, i32 %conv27) #7
+  %call.i = call i64 @_copy_to_user(i8* %buf, i8* %11, i32 %conv27) #7
   %conv.i = trunc i64 %call.i to i32
   %tobool29 = icmp ne i32 %conv.i, 0
   %ret.0 = select i1 %tobool29, i32 -14, i32 %conv
-  %list = getelementptr inbounds %struct.rfkill_int_event, %struct.rfkill_int_event* %8, i32 0, i32 0
+  %list = getelementptr inbounds %struct.rfkill_int_event, %struct.rfkill_int_event* %10, i32 0, i32 0
   call void @list_del(%struct.list_head* %list)
-  %10 = bitcast %struct.rfkill_int_event* %8 to i8*
-  call void @kfree(i8* %10)
+  %12 = bitcast %struct.rfkill_int_event* %10 to i8*
+  call void @kfree(i8* %12)
   br label %out
 
 out:                                              ; preds = %while.end, %if.end17, %while.body
@@ -2592,56 +2658,61 @@ entry:
   %ev = alloca %struct.rfkill_event, align 1
   %_min1 = alloca i64, align 8
   %_min2 = alloca i64, align 8
+  %0 = bitcast %struct.rfkill_event* %ev to i8*
   %cmp = icmp ult i64 %count, 7
   br i1 %cmp, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %entry
+  %1 = bitcast i64* %_min1 to i8*
   store i64 %count, i64* %_min1, align 8, !tbaa !50
+  %2 = bitcast i64* %_min2 to i8*
   store i64 8, i64* %_min2, align 8, !tbaa !50
-  %0 = load i64, i64* %_min1, align 8, !tbaa !50
-  %1 = load i64, i64* %_min2, align 8, !tbaa !50
-  %cmp2 = icmp ult i64 %0, %1
-  %2 = load i64, i64* %_min1, align 8
-  %3 = load i64, i64* %_min2, align 8
-  %cond = select i1 %cmp2, i64 %2, i64 %3
-  %4 = bitcast %struct.rfkill_event* %ev to i8*
-  %call = call i64 @copy_from_user(i8* %4, i8* %buf, i64 %cond)
+  %3 = load i64, i64* %_min1, align 8, !tbaa !50
+  %4 = load i64, i64* %_min2, align 8, !tbaa !50
+  %cmp2 = icmp ult i64 %3, %4
+  %5 = load i64, i64* %_min1, align 8
+  %6 = load i64, i64* %_min2, align 8
+  %cond = select i1 %cmp2, i64 %5, i64 %6
+  %7 = bitcast i64* %_min2 to i8*
+  %8 = bitcast i64* %_min1 to i8*
+  %9 = bitcast %struct.rfkill_event* %ev to i8*
+  %call = call i64 @copy_from_user(i8* %9, i8* %buf, i64 %cond)
   %tobool = icmp ne i64 %call, 0
   br i1 %tobool, label %cleanup, label %if.end5
 
 if.end5:                                          ; preds = %if.end
   %op = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 2
-  %5 = load i8, i8* %op, align 1, !tbaa !44
-  %conv6 = zext i8 %5 to i32
+  %10 = load i8, i8* %op, align 1, !tbaa !44
+  %conv6 = zext i8 %10 to i32
   %cmp7 = icmp ne i32 %conv6, 2
   br i1 %cmp7, label %land.lhs.true, label %if.end14
 
 land.lhs.true:                                    ; preds = %if.end5
   %op9 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 2
-  %6 = load i8, i8* %op9, align 1, !tbaa !44
-  %conv10 = zext i8 %6 to i32
+  %11 = load i8, i8* %op9, align 1, !tbaa !44
+  %conv10 = zext i8 %11 to i32
   %cmp11 = icmp ne i32 %conv10, 3
   br i1 %cmp11, label %cleanup, label %if.end14
 
 if.end14:                                         ; preds = %land.lhs.true, %if.end5
   %type = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 1
-  %7 = load i8, i8* %type, align 1, !tbaa !43
-  %conv15 = zext i8 %7 to i32
+  %12 = load i8, i8* %type, align 1, !tbaa !43
+  %conv15 = zext i8 %12 to i32
   %cmp16 = icmp sge i32 %conv15, 9
   br i1 %cmp16, label %cleanup, label %if.end19
 
 if.end19:                                         ; preds = %if.end14
   call void @mutex_lock_nested(%struct.mutex* @rfkill_global_mutex, i32 0)
   %op20 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 2
-  %8 = load i8, i8* %op20, align 1, !tbaa !44
-  %conv21 = zext i8 %8 to i32
+  %13 = load i8, i8* %op20, align 1, !tbaa !44
+  %conv21 = zext i8 %13 to i32
   %cmp22 = icmp eq i32 %conv21, 3
   br i1 %cmp22, label %if.then24, label %if.end41
 
 if.then24:                                        ; preds = %if.end19
   %type25 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 1
-  %9 = load i8, i8* %type25, align 1, !tbaa !43
-  %conv26 = zext i8 %9 to i32
+  %14 = load i8, i8* %type25, align 1, !tbaa !43
+  %conv26 = zext i8 %14 to i32
   %cmp27 = icmp eq i32 %conv26, 0
   br i1 %cmp27, label %if.then29, label %if.else
 
@@ -2655,8 +2726,8 @@ for.cond:                                         ; preds = %for.body, %if.then2
 
 for.body:                                         ; preds = %for.cond
   %soft = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 3
-  %10 = load i8, i8* %soft, align 1, !tbaa !47
-  %tobool32 = icmp ne i8 %10, 0
+  %15 = load i8, i8* %soft, align 1, !tbaa !47
+  %tobool32 = icmp ne i8 %15, 0
   %idxprom = zext i32 %i.0 to i64
   %arrayidx = getelementptr inbounds [9 x %struct.anon.47], [9 x %struct.anon.47]* @rfkill_global_states, i64 0, i64 %idxprom
   %cur = getelementptr inbounds %struct.anon.47, %struct.anon.47* %arrayidx, i32 0, i32 0
@@ -2667,11 +2738,11 @@ for.body:                                         ; preds = %for.cond
 
 if.else:                                          ; preds = %if.then24
   %soft33 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 3
-  %11 = load i8, i8* %soft33, align 1, !tbaa !47
-  %tobool34 = icmp ne i8 %11, 0
+  %16 = load i8, i8* %soft33, align 1, !tbaa !47
+  %tobool34 = icmp ne i8 %16, 0
   %type35 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 1
-  %12 = load i8, i8* %type35, align 1, !tbaa !43
-  %idxprom36 = zext i8 %12 to i64
+  %17 = load i8, i8* %type35, align 1, !tbaa !43
+  %idxprom36 = zext i8 %17 to i64
   %arrayidx37 = getelementptr inbounds [9 x %struct.anon.47], [9 x %struct.anon.47]* @rfkill_global_states, i64 0, i64 %idxprom36
   %cur38 = getelementptr inbounds %struct.anon.47, %struct.anon.47* %arrayidx37, i32 0, i32 0
   %frombool39 = zext i1 %tobool34 to i8
@@ -2683,54 +2754,54 @@ if.end41:                                         ; preds = %if.else, %for.cond,
 
 for.cond43:                                       ; preds = %for.inc71, %if.end41
   %next.sink = phi %struct.list_head** [ %next, %for.inc71 ], [ getelementptr inbounds (%struct.list_head, %struct.list_head* @rfkill_list, i32 0, i32 0), %if.end41 ]
-  %13 = load %struct.list_head*, %struct.list_head** %next.sink, align 8, !tbaa !36
-  %14 = bitcast %struct.list_head* %13 to i8*
-  %add.ptr75 = getelementptr inbounds i8, i8* %14, i64 -1392
-  %15 = bitcast i8* %add.ptr75 to %struct.rfkill*
-  %node = getelementptr inbounds %struct.rfkill, %struct.rfkill* %15, i32 0, i32 12
+  %18 = load %struct.list_head*, %struct.list_head** %next.sink, align 8, !tbaa !36
+  %19 = bitcast %struct.list_head* %18 to i8*
+  %add.ptr75 = getelementptr inbounds i8, i8* %19, i64 -1392
+  %20 = bitcast i8* %add.ptr75 to %struct.rfkill*
+  %node = getelementptr inbounds %struct.rfkill, %struct.rfkill* %20, i32 0, i32 12
   %cmp44 = icmp ne %struct.list_head* %node, @rfkill_list
   br i1 %cmp44, label %for.body46, label %for.end76
 
 for.body46:                                       ; preds = %for.cond43
-  %idx = getelementptr inbounds %struct.rfkill, %struct.rfkill* %15, i32 0, i32 4
-  %16 = load i32, i32* %idx, align 8, !tbaa !39
+  %idx = getelementptr inbounds %struct.rfkill, %struct.rfkill* %20, i32 0, i32 4
+  %21 = load i32, i32* %idx, align 8, !tbaa !39
   %idx47 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 0
-  %17 = load i32, i32* %idx47, align 1, !tbaa !40
-  %cmp48 = icmp ne i32 %16, %17
+  %22 = load i32, i32* %idx47, align 1, !tbaa !40
+  %cmp48 = icmp ne i32 %21, %22
   br i1 %cmp48, label %land.lhs.true50, label %if.end56
 
 land.lhs.true50:                                  ; preds = %for.body46
   %op51 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 2
-  %18 = load i8, i8* %op51, align 1, !tbaa !44
-  %conv52 = zext i8 %18 to i32
+  %23 = load i8, i8* %op51, align 1, !tbaa !44
+  %conv52 = zext i8 %23 to i32
   %cmp53 = icmp ne i32 %conv52, 3
   br i1 %cmp53, label %for.inc71, label %if.end56
 
 if.end56:                                         ; preds = %land.lhs.true50, %for.body46
-  %type57 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %15, i32 0, i32 2
-  %19 = load i32, i32* %type57, align 8, !tbaa !42
+  %type57 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %20, i32 0, i32 2
+  %24 = load i32, i32* %type57, align 8, !tbaa !42
   %type58 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 1
-  %20 = load i8, i8* %type58, align 1, !tbaa !43
-  %conv59 = zext i8 %20 to i32
-  %cmp60 = icmp ne i32 %19, %conv59
+  %25 = load i8, i8* %type58, align 1, !tbaa !43
+  %conv59 = zext i8 %25 to i32
+  %cmp60 = icmp ne i32 %24, %conv59
   br i1 %cmp60, label %land.lhs.true62, label %if.end68
 
 land.lhs.true62:                                  ; preds = %if.end56
   %type63 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 1
-  %21 = load i8, i8* %type63, align 1, !tbaa !43
-  %conv64 = zext i8 %21 to i32
+  %26 = load i8, i8* %type63, align 1, !tbaa !43
+  %conv64 = zext i8 %26 to i32
   %cmp65 = icmp ne i32 %conv64, 0
   br i1 %cmp65, label %for.inc71, label %if.end68
 
 if.end68:                                         ; preds = %land.lhs.true62, %if.end56
   %soft69 = getelementptr inbounds %struct.rfkill_event, %struct.rfkill_event* %ev, i32 0, i32 3
-  %22 = load i8, i8* %soft69, align 1, !tbaa !47
-  %tobool70 = icmp ne i8 %22, 0
-  call void @rfkill_set_block(%struct.rfkill* %15, i1 zeroext %tobool70)
+  %27 = load i8, i8* %soft69, align 1, !tbaa !47
+  %tobool70 = icmp ne i8 %27, 0
+  call void @rfkill_set_block(%struct.rfkill* %20, i1 zeroext %tobool70)
   br label %for.inc71
 
 for.inc71:                                        ; preds = %if.end68, %land.lhs.true62, %land.lhs.true50
-  %node73 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %15, i32 0, i32 12
+  %node73 = getelementptr inbounds %struct.rfkill, %struct.rfkill* %20, i32 0, i32 12
   %next = getelementptr inbounds %struct.list_head, %struct.list_head* %node73, i32 0, i32 0
   br label %for.cond43
 
@@ -2740,6 +2811,7 @@ for.end76:                                        ; preds = %for.cond43
 
 cleanup:                                          ; preds = %for.end76, %if.end14, %land.lhs.true, %if.end, %entry
   %retval.0 = phi i64 [ %cond, %for.end76 ], [ -22, %entry ], [ -14, %if.end ], [ -22, %land.lhs.true ], [ -22, %if.end14 ]
+  %28 = bitcast %struct.rfkill_event* %ev to i8*
   ret i64 %retval.0
 }
 
@@ -3433,6 +3505,12 @@ declare void @_raw_spin_unlock_irq(%struct.raw_spinlock*) #1 section ".spinlock.
 ; Function Attrs: nounwind uwtable
 define internal void @rfkill_schedule_global_op(i32 %op) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %call = call %struct.raw_spinlock* @spinlock_check.4(%struct.spinlock* @rfkill_op_lock)
   %call2 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   store i32 %op, i32* @rfkill_op, align 4, !tbaa !136
@@ -3445,10 +3523,10 @@ land.lhs.true:                                    ; preds = %entry
   br i1 %call7, label %if.else, label %if.then
 
 if.then:                                          ; preds = %land.lhs.true
-  %0 = load %struct.workqueue_struct*, %struct.workqueue_struct** @system_wq, align 8, !tbaa !36
-  call void @mod_delayed_work(%struct.workqueue_struct* %0, %struct.delayed_work* @rfkill_op_work, i64 0)
-  %1 = load volatile i64, i64* @jiffies, align 8, !tbaa !50
-  store i64 %1, i64* @rfkill_last_scheduled, align 8, !tbaa !50
+  %4 = load %struct.workqueue_struct*, %struct.workqueue_struct** @system_wq, align 8, !tbaa !36
+  call void @mod_delayed_work(%struct.workqueue_struct* %4, %struct.delayed_work* @rfkill_op_work, i64 0)
+  %5 = load volatile i64, i64* @jiffies, align 8, !tbaa !50
+  store i64 %5, i64* @rfkill_last_scheduled, align 8, !tbaa !50
   br label %if.end
 
 if.else:                                          ; preds = %land.lhs.true, %entry
@@ -3487,8 +3565,14 @@ if.end:                                           ; preds = %if.then, %entry
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @spin_unlock_irqrestore.9(%struct.spinlock* %lock, i64 %flags) #3 {
 entry:
-  %0 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
-  %rlock = bitcast %union.anon.0* %0 to %struct.raw_spinlock*
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
+  %4 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
+  %rlock = bitcast %union.anon.0* %4 to %struct.raw_spinlock*
   call void @_raw_spin_unlock_irqrestore(%struct.raw_spinlock* %rlock, i64 %flags)
   ret void
 }
@@ -3496,14 +3580,26 @@ entry:
 ; Function Attrs: nounwind uwtable
 define internal i64 @rfkill_ratelimit(i64 %last) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy1 = alloca i64, align 8
+  %__dummy22 = alloca i64, align 8
   %call = call i64 @msecs_to_jiffies(i32 200)
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %tobool = icmp ne i32 1, 0
   br i1 %tobool, label %land.lhs.true, label %cond.false
 
 land.lhs.true:                                    ; preds = %entry
+  %4 = bitcast i64* %__dummy1 to i8*
+  %5 = bitcast i64* %__dummy22 to i8*
+  %6 = bitcast i64* %__dummy22 to i8*
+  %7 = bitcast i64* %__dummy1 to i8*
   %add = add i64 %last, %call
-  %0 = load volatile i64, i64* @jiffies, align 8, !tbaa !50
-  %sub = sub nsw i64 %add, %0
+  %8 = load volatile i64, i64* @jiffies, align 8, !tbaa !50
+  %sub = sub nsw i64 %add, %8
   %cmp8 = icmp slt i64 %sub, 0
   br i1 %cmp8, label %cond.end, label %cond.false
 
@@ -3714,14 +3810,20 @@ declare i32 @input_open_device(%struct.input_handle*) #1
 ; Function Attrs: nounwind uwtable
 define internal void @rfkill_schedule_toggle(i32 %type) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %call = call zeroext i1 @rfkill_is_epo_lock_active()
   br i1 %call, label %cleanup.cont, label %do.body1
 
 do.body1:                                         ; preds = %entry
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %call2 = call %struct.raw_spinlock* @spinlock_check.4(%struct.spinlock* @rfkill_op_lock)
   %call3 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call2)
-  %0 = load i8, i8* @rfkill_op_pending, align 1, !tbaa !57, !range !49
-  %tobool = trunc i8 %0 to i1
+  %4 = load i8, i8* @rfkill_op_pending, align 1, !tbaa !57, !range !49
+  %tobool = trunc i8 %4 to i1
   br i1 %tobool, label %if.end7, label %if.then6
 
 if.then6:                                         ; preds = %do.body1

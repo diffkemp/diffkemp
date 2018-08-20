@@ -2172,9 +2172,12 @@ if.then24:                                        ; preds = %do.body11
   br label %if.end32
 
 if.end32:                                         ; preds = %if.then24, %do.body11, %if.then7, %do.body3
+  %value33 = getelementptr inbounds %struct.snd_pci_quirk, %struct.snd_pci_quirk* %call, i32 0, i32 3
+  %3 = load i32, i32* %value33, align 8, !tbaa !101
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end32, %entry
+  %retval.0 = phi i32 [ %3, %if.end32 ], [ 0, %entry ]
   ret void
 }
 
@@ -2835,6 +2838,7 @@ if.end337:                                        ; preds = %if.then330, %if.end
   br label %cleanup348
 
 __err:                                            ; preds = %if.end143, %if.end124, %if.end82
+  %err.0 = phi i32 [ %call83, %if.end82 ], [ %call116, %if.end124 ], [ %call155, %if.end143 ]
   %device_type341 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
   %67 = load i32, i32* %device_type341, align 8, !tbaa !47
   %cmp342 = icmp ne i32 %67, 3
@@ -2847,6 +2851,7 @@ if.then344:                                       ; preds = %__err
   br label %cleanup348
 
 cleanup348:                                       ; preds = %if.then344, %__err, %if.end337
+  %retval.0 = phi i32 [ 0, %if.end337 ], [ %err.0, %if.then344 ], [ %err.0, %__err ]
   ret void
 }
 
@@ -2938,6 +2943,7 @@ for.end:                                          ; preds = %for.cond
   br label %cleanup
 
 cleanup:                                          ; preds = %for.end, %if.end14
+  %retval.0 = phi i32 [ 0, %for.end ], [ %call, %if.end14 ]
   ret void
 }
 
@@ -2985,6 +2991,7 @@ if.end:                                           ; preds = %entry
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %entry
+  %retval.0 = phi i32 [ 1, %if.end ], [ 0, %entry ]
   ret void
 }
 

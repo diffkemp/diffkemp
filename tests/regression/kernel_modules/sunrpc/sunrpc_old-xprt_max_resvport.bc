@@ -8014,6 +8014,7 @@ if.end33:                                         ; preds = %cond.end
   store %struct.rpc_program* %0, %struct.rpc_program** %cl_program, align 8, !tbaa !236
   %cl_tasks = getelementptr inbounds %struct.rpc_clnt, %struct.rpc_clnt* %8, i32 0, i32 2
   call void @INIT_LIST_HEAD(%struct.list_head* %cl_tasks)
+  %cl_lock = getelementptr inbounds %struct.rpc_clnt, %struct.rpc_clnt* %8, i32 0, i32 3
   call void @spinlock_check()
   %cl_lock37 = getelementptr inbounds %struct.rpc_clnt, %struct.rpc_clnt* %8, i32 0, i32 3
   %17 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %cl_lock37, i32 0, i32 0
@@ -9626,11 +9627,13 @@ define internal void @xprt_init(%struct.rpc_xprt* %xprt, %struct.net* %net) #0 {
 entry:
   %count = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 0
   call void @atomic_set.7(%struct.atomic_t* %count, i32 1)
+  %transport_lock = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 29
   call void @spinlock_check.8()
   %transport_lock2 = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 29
   %0 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %transport_lock2, i32 0, i32 0
   %rlock = bitcast %union.anon.11* %0 to %struct.raw_spinlock*
   call void @__raw_spin_lock_init(%struct.raw_spinlock* %rlock, i8* getelementptr inbounds ([32 x i8], [32 x i8]* @.str.40.9, i32 0, i32 0), %struct.lock_class_key* @xprt_init.__key)
+  %reserve_lock = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 30
   call void @spinlock_check.8()
   %reserve_lock7 = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 30
   %1 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %reserve_lock7, i32 0, i32 0
@@ -9640,6 +9643,7 @@ entry:
   call void @INIT_LIST_HEAD.11(%struct.list_head* %free)
   %recv = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 38
   call void @INIT_LIST_HEAD.11(%struct.list_head* %recv)
+  %bc_pa_lock = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 36
   call void @spinlock_check.8()
   %bc_pa_lock14 = getelementptr inbounds %struct.rpc_xprt, %struct.rpc_xprt* %xprt, i32 0, i32 36
   %2 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %bc_pa_lock14, i32 0, i32 0
@@ -17322,6 +17326,8 @@ entry:
   %sk_lock3 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %wq = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock3, i32 0, i32 2
   call void @__init_waitqueue_head(%struct.__wait_queue_head* %wq, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.8.661, i32 0, i32 0), %struct.lock_class_key* @xs_reclassify_socketu.__key)
+  %sk_lock5 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
+  %slock = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock5, i32 0, i32 0
   call void @spinlock_check.201()
   %sk_lock7 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %slock8 = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock7, i32 0, i32 0
@@ -17354,6 +17360,8 @@ entry:
   %sk_lock3 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %wq = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock3, i32 0, i32 2
   call void @__init_waitqueue_head(%struct.__wait_queue_head* %wq, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.8.661, i32 0, i32 0), %struct.lock_class_key* @xs_reclassify_socket4.__key)
+  %sk_lock5 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
+  %slock = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock5, i32 0, i32 0
   call void @spinlock_check.201()
   %sk_lock7 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %slock8 = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock7, i32 0, i32 0
@@ -17386,6 +17394,8 @@ entry:
   %sk_lock3 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %wq = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock3, i32 0, i32 2
   call void @__init_waitqueue_head(%struct.__wait_queue_head* %wq, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.8.661, i32 0, i32 0), %struct.lock_class_key* @xs_reclassify_socket6.__key)
+  %sk_lock5 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
+  %slock = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock5, i32 0, i32 0
   call void @spinlock_check.201()
   %sk_lock7 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %slock8 = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock7, i32 0, i32 0
@@ -24306,8 +24316,9 @@ if.end:                                           ; preds = %if.then, %entry
   br i1 %tobool6, label %if.then7, label %do.end
 
 if.then7:                                         ; preds = %if.end
+  %11 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #3, !srcloc !484
   call void @task_pid_nr()
-  %11 = call i32 (i8*, ...) @printk(i8* null)
+  %12 = call i32 (i8*, ...) @printk(i8* null)
   br label %do.end
 
 do.end:                                           ; preds = %if.then7, %if.end
@@ -25442,6 +25453,7 @@ if.end:                                           ; preds = %entry
   br i1 %tobool4, label %do.body, label %out_nohashtbl
 
 do.body:                                          ; preds = %if.end
+  %lock = getelementptr inbounds %struct.rpc_cred_cache, %struct.rpc_cred_cache* %0, i32 0, i32 2
   call void @spinlock_check.435()
   %lock9 = getelementptr inbounds %struct.rpc_cred_cache, %struct.rpc_cred_cache* %0, i32 0, i32 2
   %5 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock9, i32 0, i32 0
@@ -34235,6 +34247,8 @@ do.body:                                          ; preds = %LeafBlock
   %sk_lock53 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %wq = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock53, i32 0, i32 2
   call void @__init_waitqueue_head(%struct.__wait_queue_head* %wq, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.8.661, i32 0, i32 0), %struct.lock_class_key* @svc_reclassify_socket.__key)
+  %sk_lock55 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
+  %slock = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock55, i32 0, i32 0
   call void @spinlock_check.662()
   %sk_lock57 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %slock58 = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock57, i32 0, i32 0
@@ -34262,6 +34276,8 @@ do.body71:                                        ; preds = %LeafBlock1
   %sk_lock75 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %wq76 = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock75, i32 0, i32 2
   call void @__init_waitqueue_head(%struct.__wait_queue_head* %wq76, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.8.661, i32 0, i32 0), %struct.lock_class_key* @svc_reclassify_socket.__key.13)
+  %sk_lock80 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
+  %slock81 = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock80, i32 0, i32 0
   call void @spinlock_check.662()
   %sk_lock84 = getelementptr inbounds %struct.sock, %struct.sock* %0, i32 0, i32 1
   %slock85 = getelementptr inbounds %struct.socket_lock_t, %struct.socket_lock_t* %sk_lock84, i32 0, i32 0
@@ -44569,11 +44585,13 @@ if.end9:                                          ; preds = %if.end5
   call void @rpc_pipefs_init_net(%struct.net* %net)
   %all_clients = getelementptr inbounds %struct.sunrpc_net, %struct.sunrpc_net* %1, i32 0, i32 7
   call void @INIT_LIST_HEAD.915(%struct.list_head* %all_clients)
+  %rpc_client_lock = getelementptr inbounds %struct.sunrpc_net, %struct.sunrpc_net* %1, i32 0, i32 8
   call void @spinlock_check.916()
   %rpc_client_lock12 = getelementptr inbounds %struct.sunrpc_net, %struct.sunrpc_net* %1, i32 0, i32 8
   %2 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %rpc_client_lock12, i32 0, i32 0
   %rlock = bitcast %union.anon.11* %2 to %struct.raw_spinlock*
   call void @__raw_spin_lock_init(%struct.raw_spinlock* %rlock, i8* getelementptr inbounds ([31 x i8], [31 x i8]* @.str.917, i32 0, i32 0), %struct.lock_class_key* @sunrpc_init_net.__key)
+  %rpcb_clnt_lock = getelementptr inbounds %struct.sunrpc_net, %struct.sunrpc_net* %1, i32 0, i32 11
   call void @spinlock_check.916()
   %rpcb_clnt_lock18 = getelementptr inbounds %struct.sunrpc_net, %struct.sunrpc_net* %1, i32 0, i32 11
   %3 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %rpcb_clnt_lock18, i32 0, i32 0
@@ -50987,6 +51005,7 @@ entry:
   store i64 %2, i64* %data25, align 8, !tbaa !343
   %ops = getelementptr inbounds %struct.rpc_pipe, %struct.rpc_pipe* %pipe, i32 0, i32 8
   store %struct.rpc_pipe_ops* null, %struct.rpc_pipe_ops** %ops, align 8, !tbaa !1041
+  %lock = getelementptr inbounds %struct.rpc_pipe, %struct.rpc_pipe* %pipe, i32 0, i32 9
   call void @spinlock_check.1087()
   %lock30 = getelementptr inbounds %struct.rpc_pipe, %struct.rpc_pipe* %pipe, i32 0, i32 9
   %3 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock30, i32 0, i32 0
@@ -55382,6 +55401,7 @@ entry:
   call void @INIT_LIST_HEAD.1178(%struct.list_head* %xpt_users)
   %xpt_mutex = getelementptr inbounds %struct.svc_xprt, %struct.svc_xprt* %xprt, i32 0, i32 8
   call void @__mutex_init(%struct.mutex* %xpt_mutex, i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.3.1248, i32 0, i32 0), %struct.lock_class_key* @svc_xprt_init.__key)
+  %xpt_lock = getelementptr inbounds %struct.svc_xprt, %struct.svc_xprt* %xprt, i32 0, i32 9
   call void @spinlock_check.1249()
   %xpt_lock3 = getelementptr inbounds %struct.svc_xprt, %struct.svc_xprt* %xprt, i32 0, i32 9
   %2 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %xpt_lock3, i32 0, i32 0

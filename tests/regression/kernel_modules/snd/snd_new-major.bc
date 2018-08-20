@@ -1141,27 +1141,56 @@ declare void @mutex_unlock(%struct.mutex*) #1
 ; Function Attrs: nounwind uwtable
 define i32 @snd_register_device(i32 %type, %struct.snd_card* %card, i32 %dev, %struct.file_operations* %f_ops, i8* %private_data, %struct.device* %device) #0 {
 entry:
+  br label %cond.end
+
+cond.end:                                         ; preds = %entry
+  switch i32 %type, label %if.end3.i [
+    i32 1, label %snd_find_free_minor.exit
+    i32 2, label %if.then2.i
+  ]
+
+if.then2.i:                                       ; preds = %cond.end
+  br label %snd_find_free_minor.exit
+
+if.end3.i:                                        ; preds = %cond.end
   br label %for.cond.i
 
-for.cond.i:                                       ; preds = %for.inc.i, %entry
-  %minor.0.i = phi i32 [ %inc.i, %for.inc.i ], [ 0, %entry ]
-  br label %if.end15.i
+for.cond.i:                                       ; preds = %for.inc.i, %if.end3.i
+  %minor.0.i = phi i32 [ 0, %if.end3.i ], [ %inc.i, %for.inc.i ]
+  %conv.i = sext i32 %minor.0.i to i64
+  %cmp4.i = icmp ult i64 %conv.i, 256
+  br i1 %cmp4.i, label %for.body.i, label %snd_find_free_minor.exit
 
-if.end15.i:                                       ; preds = %for.cond.i
+for.body.i:                                       ; preds = %for.cond.i
+  %and.i = and i32 %minor.0.i, 31
+  %cmp6.i = icmp eq i32 %and.i, 0
+  br i1 %cmp6.i, label %for.inc.i, label %if.end9.i
+
+if.end9.i:                                        ; preds = %for.body.i
+  switch i32 %minor.0.i, label %if.end15.i [
+    i32 1, label %for.inc.i
+    i32 33, label %for.inc.i
+  ]
+
+if.end15.i:                                       ; preds = %if.end9.i
   %idxprom.i = sext i32 %minor.0.i to i64
   %arrayidx.i = getelementptr inbounds [256 x %struct.snd_minor*], [256 x %struct.snd_minor*]* @snd_minors, i64 0, i64 %idxprom.i
   %0 = load %struct.snd_minor*, %struct.snd_minor** %arrayidx.i, align 8, !tbaa !2
   %tobool.i = icmp ne %struct.snd_minor* %0, null
-  br i1 %tobool.i, label %for.inc.i, label %if.end32
+  br i1 %tobool.i, label %for.inc.i, label %snd_find_free_minor.exit
 
-for.inc.i:                                        ; preds = %if.end15.i
+for.inc.i:                                        ; preds = %if.end15.i, %if.end9.i, %if.end9.i, %for.body.i
   %inc.i = add nsw i32 %minor.0.i, 1
   br label %for.cond.i
 
-if.end32:                                         ; preds = %if.end15.i
+snd_find_free_minor.exit:                         ; preds = %if.end15.i, %for.cond.i, %if.then2.i, %cond.end
+  %retval.0.i = phi i32 [ 33, %if.then2.i ], [ 1, %cond.end ], [ %minor.0.i, %if.end15.i ], [ -16, %for.cond.i ]
+  br label %if.end32
+
+if.end32:                                         ; preds = %snd_find_free_minor.exit
   %1 = load i32, i32* @major, align 4, !tbaa !9
   %shl = shl i32 %1, 20
-  %or = or i32 %shl, %minor.0.i
+  %or = or i32 %shl, %retval.0.i
   %devt = getelementptr inbounds %struct.device, %struct.device* %device, i32 0, i32 28
   store i32 %or, i32* %devt, align 8, !tbaa !10
   br label %cleanup
@@ -5798,7 +5827,7 @@ entry:
   %0 = load i8*, i8** %device_data, align 8, !tbaa !199
   %1 = bitcast i8* %0 to %struct.snd_card*
   %ctl_dev = getelementptr inbounds %struct.snd_card, %struct.snd_card* %1, i32 0, i32 12
-  %call = call i32 @snd_register_device(i32 undef, %struct.snd_card* undef, i32 undef, %struct.file_operations* undef, i8* undef, %struct.device* %ctl_dev)
+  %call = call i32 @snd_register_device(i32 0, %struct.snd_card* undef, i32 undef, %struct.file_operations* undef, i8* undef, %struct.device* %ctl_dev)
   ret i32 %call
 }
 

@@ -747,9 +747,11 @@ entry:
 
 if.then:                                          ; preds = %entry
   %call1 = call i64 @PTR_ERR(i8* %ptr)
+  %conv = trunc i64 %call1 to i32
   br label %return
 
 return:                                           ; preds = %if.then, %entry
+  %retval.0 = phi i32 [ %conv, %if.then ], [ 0, %entry ]
   ret void
 }
 

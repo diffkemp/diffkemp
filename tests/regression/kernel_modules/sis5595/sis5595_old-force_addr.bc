@@ -515,7 +515,19 @@ entry:
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @acpi_os_allocate(i64 %size) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy3 = alloca i64, align 8
+  %__dummy24 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %call = call i64 @arch_local_save_flags()
+  %4 = bitcast i64* %__dummy3 to i8*
+  %5 = bitcast i64* %__dummy24 to i8*
+  %6 = bitcast i64* %__dummy24 to i8*
+  %7 = bitcast i64* %__dummy3 to i8*
   %call9 = call i32 @arch_irqs_disabled_flags(i64 %call)
   %tobool = icmp ne i32 %call9, 0
   %cond = select i1 %tobool, i32 32, i32 208
@@ -526,7 +538,19 @@ entry:
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @acpi_os_acquire_object(%struct.kmem_cache* %cache) #0 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy3 = alloca i64, align 8
+  %__dummy24 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
   %call = call i64 @arch_local_save_flags()
+  %4 = bitcast i64* %__dummy3 to i8*
+  %5 = bitcast i64* %__dummy24 to i8*
+  %6 = bitcast i64* %__dummy24 to i8*
+  %7 = bitcast i64* %__dummy3 to i8*
   %call9 = call i32 @arch_irqs_disabled_flags(i64 %call)
   %tobool = icmp ne i32 %call9, 0
   %cond = select i1 %tobool, i32 32, i32 208
@@ -537,6 +561,8 @@ entry:
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @acpi_os_get_thread_id() #0 {
 entry:
+  %0 = call %struct.task_struct* asm "movq %gs:${1:P},$0", "=r,im,~{dirflag},~{fpsr},~{flags}"(%struct.task_struct** @current_task) #4, !srcloc !12
+  %1 = ptrtoint %struct.task_struct* %0 to i64
   ret void
 }
 
@@ -551,17 +577,17 @@ entry:
 define internal void @sm_sis5595_exit() #1 section ".exit.text" {
 entry:
   call void @pci_unregister_driver(%struct.pci_driver* @sis5595_pci_driver)
-  %0 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !12
+  %0 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !13
   %cmp = icmp ne %struct.pci_dev* %0, null
   br i1 %cmp, label %if.then, label %if.end
 
 if.then:                                          ; preds = %entry
-  %1 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !12
+  %1 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !13
   call void @platform_device_unregister(%struct.platform_device* %1)
   call void @platform_driver_unregister(%struct.platform_driver* @sis5595_driver)
-  %2 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !12
+  %2 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !13
   call void @pci_dev_put(%struct.pci_dev* %2)
-  store %struct.pci_dev* null, %struct.pci_dev** @s_bridge, align 8, !tbaa !12
+  store %struct.pci_dev* null, %struct.pci_dev** @s_bridge, align 8, !tbaa !13
   br label %if.end
 
 if.end:                                           ; preds = %if.then, %entry
@@ -577,7 +603,7 @@ declare void @llvm.lifetime.end.p0i8(i64, i8* nocapture) #2
 ; Function Attrs: inlinehint nounwind uwtable
 define internal i64 @arch_local_save_flags() #0 {
 entry:
-  %0 = load i8*, i8** getelementptr inbounds (%struct.pv_irq_ops, %struct.pv_irq_ops* @pv_irq_ops, i32 0, i32 0, i32 0), align 8, !tbaa !13
+  %0 = load i8*, i8** getelementptr inbounds (%struct.pv_irq_ops, %struct.pv_irq_ops* @pv_irq_ops, i32 0, i32 0, i32 0), align 8, !tbaa !14
   %cmp = icmp eq i8* %0, null
   %lnot = xor i1 %cmp, true
   %lnot1 = xor i1 %lnot, true
@@ -588,14 +614,14 @@ entry:
   br i1 %tobool, label %do.body2, label %do.end7
 
 do.body2:                                         ; preds = %entry
-  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str, i32 0, i32 0), i32 824, i64 12) #6, !srcloc !16
+  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str, i32 0, i32 0), i32 824, i64 12) #6, !srcloc !17
   br label %do.body3
 
 do.body3:                                         ; preds = %do.body3, %do.body2
   br label %do.body3
 
 do.end7:                                          ; preds = %entry
-  %1 = call i64 asm sideeffect "771:\0A\09call *${2:c};\0A772:\0A.pushsection .parainstructions,\22a\22\0A .balign 8 \0A .quad  771b\0A  .byte ${1:c}\0A  .byte 772b-771b\0A  .short ${3:c}\0A.popsection\0A", "={ax},i,i,i,~{memory},~{cc},~{dirflag},~{fpsr},~{flags}"(i64 44, i8** getelementptr inbounds (%struct.pv_irq_ops, %struct.pv_irq_ops* @pv_irq_ops, i32 0, i32 0, i32 0), i32 1) #6, !srcloc !17
+  %1 = call i64 asm sideeffect "771:\0A\09call *${2:c};\0A772:\0A.pushsection .parainstructions,\22a\22\0A .balign 8 \0A .quad  771b\0A  .byte ${1:c}\0A  .byte 772b-771b\0A  .short ${3:c}\0A.popsection\0A", "={ax},i,i,i,~{memory},~{cc},~{dirflag},~{fpsr},~{flags}"(i64 44, i8** getelementptr inbounds (%struct.pv_irq_ops, %struct.pv_irq_ops* @pv_irq_ops, i32 0, i32 0, i32 0), i32 1) #6, !srcloc !18
   ret i64 %1
 }
 
@@ -637,9 +663,9 @@ declare void @pci_dev_put(%struct.pci_dev*) #3
 define internal void @pci_write_config_word(%struct.pci_dev* %dev, i32 %where, i16 zeroext %val) #0 {
 entry:
   %bus = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 1
-  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !18
+  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !19
   %devfn = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 6
-  %1 = load i32, i32* %devfn, align 8, !tbaa !45
+  %1 = load i32, i32* %devfn, align 8, !tbaa !46
   %call = call i32 @pci_bus_write_config_word(%struct.pci_bus* %0, i32 %1, i32 %where, i16 zeroext %val)
   ret void
 }
@@ -648,9 +674,9 @@ entry:
 define internal void @pci_read_config_word(%struct.pci_dev* %dev, i32 %where, i16* %val) #0 {
 entry:
   %bus = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 1
-  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !18
+  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !19
   %devfn = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 6
-  %1 = load i32, i32* %devfn, align 8, !tbaa !45
+  %1 = load i32, i32* %devfn, align 8, !tbaa !46
   %call = call i32 @pci_bus_read_config_word(%struct.pci_bus* %0, i32 %1, i32 %where, i16* %val)
   ret void
 }
@@ -659,9 +685,9 @@ entry:
 define internal void @pci_read_config_byte(%struct.pci_dev* %dev, i32 %where, i8* %val) #0 {
 entry:
   %bus = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 1
-  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !18
+  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !19
   %devfn = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 6
-  %1 = load i32, i32* %devfn, align 8, !tbaa !45
+  %1 = load i32, i32* %devfn, align 8, !tbaa !46
   %call = call i32 @pci_bus_read_config_byte(%struct.pci_bus* %0, i32 %1, i32 %where, i8* %val)
   ret void
 }
@@ -670,9 +696,9 @@ entry:
 define internal void @pci_write_config_byte(%struct.pci_dev* %dev, i32 %where, i8 zeroext %val) #0 {
 entry:
   %bus = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 1
-  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !18
+  %0 = load %struct.pci_bus*, %struct.pci_bus** %bus, align 8, !tbaa !19
   %devfn = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %dev, i32 0, i32 6
-  %1 = load i32, i32* %devfn, align 8, !tbaa !45
+  %1 = load i32, i32* %devfn, align 8, !tbaa !46
   %call = call i32 @pci_bus_write_config_byte(%struct.pci_bus* %0, i32 %1, i32 %where, i8 zeroext %val)
   ret void
 }
@@ -687,25 +713,26 @@ declare %struct.pci_dev* @pci_dev_get(%struct.pci_dev*) #3
 define internal void @sis5595_device_add(i16 zeroext %address) #5 {
 entry:
   %res = alloca %struct.resource, align 8
+  %0 = bitcast %struct.resource* %res to i8*
   %start = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 0
   %conv = zext i16 %address to i64
-  store i64 %conv, i64* %start, align 8, !tbaa !46
+  store i64 %conv, i64* %start, align 8, !tbaa !47
   %end = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 1
   %conv1 = zext i16 %address to i32
   %add = add nsw i32 %conv1, 8
   %sub = sub nsw i32 %add, 1
   %conv2 = sext i32 %sub to i64
-  store i64 %conv2, i64* %end, align 8, !tbaa !48
+  store i64 %conv2, i64* %end, align 8, !tbaa !49
   %name = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 2
-  store i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.2, i32 0, i32 0), i8** %name, align 8, !tbaa !49
+  store i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.2, i32 0, i32 0), i8** %name, align 8, !tbaa !50
   %flags = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 3
-  store i64 256, i64* %flags, align 8, !tbaa !50
+  store i64 256, i64* %flags, align 8, !tbaa !51
   %parent = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 4
-  store %struct.resource* null, %struct.resource** %parent, align 8, !tbaa !51
+  store %struct.resource* null, %struct.resource** %parent, align 8, !tbaa !52
   %sibling = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 5
-  store %struct.resource* null, %struct.resource** %sibling, align 8, !tbaa !52
+  store %struct.resource* null, %struct.resource** %sibling, align 8, !tbaa !53
   %child = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 6
-  store %struct.resource* null, %struct.resource** %child, align 8, !tbaa !53
+  store %struct.resource* null, %struct.resource** %child, align 8, !tbaa !54
   %call = call i32 @acpi_check_resource_conflict(%struct.resource* %res)
   %tobool = icmp ne i32 %call, 0
   br i1 %tobool, label %cleanup, label %if.end
@@ -713,41 +740,44 @@ entry:
 if.end:                                           ; preds = %entry
   %conv3 = zext i16 %address to i32
   %call4 = call %struct.platform_device* @platform_device_alloc(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.2, i32 0, i32 0), i32 %conv3)
-  store %struct.platform_device* %call4, %struct.platform_device** @pdev, align 8, !tbaa !12
-  %0 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !12
-  %tobool5 = icmp ne %struct.platform_device* %0, null
+  store %struct.platform_device* %call4, %struct.platform_device** @pdev, align 8, !tbaa !13
+  %1 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !13
+  %tobool5 = icmp ne %struct.platform_device* %1, null
   br i1 %tobool5, label %if.end8, label %if.then6
 
 if.then6:                                         ; preds = %if.end
-  %1 = call i32 (i8*, ...) @printk(i8* null)
+  %2 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end8:                                          ; preds = %if.end
-  %2 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !12
-  %call9 = call i32 @platform_device_add_resources(%struct.platform_device* %2, %struct.resource* %res, i32 1)
+  %3 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !13
+  %call9 = call i32 @platform_device_add_resources(%struct.platform_device* %3, %struct.resource* %res, i32 1)
   %tobool10 = icmp ne i32 %call9, 0
   br i1 %tobool10, label %if.then11, label %if.end13
 
 if.then11:                                        ; preds = %if.end8
-  %3 = call i32 (i8*, ...) @printk(i8* null)
+  %4 = call i32 (i8*, ...) @printk(i8* null)
   br label %exit_device_put
 
 if.end13:                                         ; preds = %if.end8
-  %4 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !12
-  %call14 = call i32 @platform_device_add(%struct.platform_device* %4)
+  %5 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !13
+  %call14 = call i32 @platform_device_add(%struct.platform_device* %5)
   %tobool15 = icmp ne i32 %call14, 0
   br i1 %tobool15, label %if.then16, label %cleanup
 
 if.then16:                                        ; preds = %if.end13
-  %5 = call i32 (i8*, ...) @printk(i8* null)
+  %6 = call i32 (i8*, ...) @printk(i8* null)
   br label %exit_device_put
 
 exit_device_put:                                  ; preds = %if.then16, %if.then11
-  %6 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !12
-  call void @platform_device_put(%struct.platform_device* %6)
+  %err.0 = phi i32 [ %call9, %if.then11 ], [ %call14, %if.then16 ]
+  %7 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !13
+  call void @platform_device_put(%struct.platform_device* %7)
   br label %cleanup
 
 cleanup:                                          ; preds = %exit_device_put, %if.end13, %if.then6, %entry
+  %retval.0 = phi i32 [ 0, %if.end13 ], [ %err.0, %exit_device_put ], [ -12, %if.then6 ], [ %call, %entry ]
+  %8 = bitcast %struct.resource* %res to i8*
   ret void
 }
 
@@ -768,8 +798,8 @@ entry:
   %call = call %struct.resource* @platform_get_resource(%struct.platform_device* %pdev, i32 256, i32 0)
   %dev = getelementptr inbounds %struct.platform_device, %struct.platform_device* %pdev, i32 0, i32 3
   %start = getelementptr inbounds %struct.resource, %struct.resource* %call, i32 0, i32 0
-  %0 = load i64, i64* %start, align 8, !tbaa !46
-  %1 = load i8*, i8** getelementptr inbounds (%struct.platform_driver, %struct.platform_driver* @sis5595_driver, i32 0, i32 5, i32 0), align 8, !tbaa !54
+  %0 = load i64, i64* %start, align 8, !tbaa !47
+  %1 = load i8*, i8** getelementptr inbounds (%struct.platform_driver, %struct.platform_driver* @sis5595_driver, i32 0, i32 5, i32 0), align 8, !tbaa !55
   %call1 = call %struct.resource* @__devm_request_region(%struct.device* %dev, %struct.resource* @ioport_resource, i64 %0, i64 8, i8* %1)
   %tobool = icmp ne %struct.resource* %call1, null
   br i1 %tobool, label %if.end, label %cleanup
@@ -787,31 +817,31 @@ do.body:                                          ; preds = %if.end
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 4
   call void @__mutex_init(%struct.mutex* %update_lock, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.14, i32 0, i32 0), %struct.lock_class_key* @sis5595_probe.__key.13)
   %start10 = getelementptr inbounds %struct.resource, %struct.resource* %call, i32 0, i32 0
-  %3 = load i64, i64* %start10, align 8, !tbaa !46
+  %3 = load i64, i64* %start10, align 8, !tbaa !47
   %conv = trunc i64 %3 to i16
   %addr = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 0
-  store i16 %conv, i16* %addr, align 8, !tbaa !57
+  store i16 %conv, i16* %addr, align 8, !tbaa !58
   %name = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 1
-  store i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.2, i32 0, i32 0), i8** %name, align 8, !tbaa !59
+  store i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.2, i32 0, i32 0), i8** %name, align 8, !tbaa !60
   %4 = bitcast %struct.sis5595_data* %2 to i8*
   call void @platform_set_drvdata(%struct.platform_device* %pdev, i8* %4)
-  %5 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !12
+  %5 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !13
   %revision = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %5, i32 0, i32 12
-  %6 = load i8, i8* %revision, align 8, !tbaa !60
+  %6 = load i8, i8* %revision, align 8, !tbaa !61
   %revision11 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 8
-  store i8 %6, i8* %revision11, align 1, !tbaa !61
+  store i8 %6, i8* %revision11, align 1, !tbaa !62
   %maxins = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 7
-  store i8 3, i8* %maxins, align 8, !tbaa !62
+  store i8 3, i8* %maxins, align 8, !tbaa !63
   %revision12 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 8
-  %7 = load i8, i8* %revision12, align 1, !tbaa !61
+  %7 = load i8, i8* %revision12, align 1, !tbaa !62
   %conv13 = zext i8 %7 to i32
   %cmp = icmp sge i32 %conv13, 176
   br i1 %cmp, label %if.then15, label %if.end22
 
 if.then15:                                        ; preds = %do.body
-  %8 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !12
+  %8 = load %struct.pci_dev*, %struct.pci_dev** @s_bridge, align 8, !tbaa !13
   call void @pci_read_config_byte(%struct.pci_dev* %8, i32 122, i8* %val)
-  %9 = load i8, i8* %val, align 1, !tbaa !63
+  %9 = load i8, i8* %val, align 1, !tbaa !64
   %conv17 = sext i8 %9 to i32
   %and = and i32 %conv17, 128
   %tobool18 = icmp ne i32 %and, 0
@@ -819,7 +849,7 @@ if.then15:                                        ; preds = %do.body
 
 if.then19:                                        ; preds = %if.then15
   %maxins20 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 7
-  store i8 4, i8* %maxins20, align 8, !tbaa !62
+  store i8 4, i8* %maxins20, align 8, !tbaa !63
   br label %if.end22
 
 if.end22:                                         ; preds = %if.then19, %if.then15, %do.body
@@ -839,7 +869,7 @@ for.body:                                         ; preds = %for.cond
   %fan_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 13
   %idxprom = sext i32 %i.0 to i64
   %arrayidx = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min, i64 0, i64 %idxprom
-  store i8 %conv27, i8* %arrayidx, align 1, !tbaa !63
+  store i8 %conv27, i8* %arrayidx, align 1, !tbaa !64
   %inc = add nsw i32 %i.0, 1
   br label %for.cond
 
@@ -852,7 +882,7 @@ for.end:                                          ; preds = %for.cond
 
 if.end32:                                         ; preds = %for.end
   %maxins33 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 7
-  %10 = load i8, i8* %maxins33, align 8, !tbaa !62
+  %10 = load i8, i8* %maxins33, align 8, !tbaa !63
   %conv34 = sext i8 %10 to i32
   %cmp35 = icmp eq i32 %conv34, 4
   %dev38 = getelementptr inbounds %struct.platform_device, %struct.platform_device* %pdev, i32 0, i32 3
@@ -873,9 +903,9 @@ if.end50:                                         ; preds = %if.else, %if.then37
   %dev51 = getelementptr inbounds %struct.platform_device, %struct.platform_device* %pdev, i32 0, i32 3
   %call52 = call %struct.device* @hwmon_device_register(%struct.device* %dev51)
   %hwmon_dev = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 2
-  store %struct.device* %call52, %struct.device** %hwmon_dev, align 8, !tbaa !64
+  store %struct.device* %call52, %struct.device** %hwmon_dev, align 8, !tbaa !65
   %hwmon_dev53 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 2
-  %11 = load %struct.device*, %struct.device** %hwmon_dev53, align 8, !tbaa !64
+  %11 = load %struct.device*, %struct.device** %hwmon_dev53, align 8, !tbaa !65
   %12 = bitcast %struct.device* %11 to i8*
   %call54 = call i64 @IS_ERR(i8* %12)
   %tobool55 = icmp ne i64 %call54, 0
@@ -883,7 +913,7 @@ if.end50:                                         ; preds = %if.else, %if.then37
 
 if.then56:                                        ; preds = %if.end50
   %hwmon_dev57 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %2, i32 0, i32 2
-  %13 = load %struct.device*, %struct.device** %hwmon_dev57, align 8, !tbaa !64
+  %13 = load %struct.device*, %struct.device** %hwmon_dev57, align 8, !tbaa !65
   %14 = bitcast %struct.device* %13 to i8*
   %call58 = call i64 @PTR_ERR(i8* %14)
   %conv59 = trunc i64 %call58 to i32
@@ -913,7 +943,7 @@ entry:
   %call = call i8* @platform_get_drvdata(%struct.platform_device* %pdev)
   %0 = bitcast i8* %call to %struct.sis5595_data*
   %hwmon_dev = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 2
-  %1 = load %struct.device*, %struct.device** %hwmon_dev, align 8, !tbaa !64
+  %1 = load %struct.device*, %struct.device** %hwmon_dev, align 8, !tbaa !65
   call void @hwmon_device_unregister(%struct.device* %1)
   %dev = getelementptr inbounds %struct.platform_device, %struct.platform_device* %pdev, i32 0, i32 3
   %kobj = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 2
@@ -971,12 +1001,12 @@ entry:
   %lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %data, i32 0, i32 3
   call void @mutex_lock_nested(%struct.mutex* %lock, i32 0)
   %addr = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %data, i32 0, i32 0
-  %0 = load i16, i16* %addr, align 8, !tbaa !57
+  %0 = load i16, i16* %addr, align 8, !tbaa !58
   %conv = zext i16 %0 to i32
   %add = add nsw i32 %conv, 5
   call void @outb_p(i8 zeroext %reg, i32 %add)
   %addr1 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %data, i32 0, i32 0
-  %1 = load i16, i16* %addr1, align 8, !tbaa !57
+  %1 = load i16, i16* %addr1, align 8, !tbaa !58
   %conv2 = zext i16 %1 to i32
   %add3 = add nsw i32 %conv2, 6
   %call = call zeroext i8 @inb_p(i32 %add3)
@@ -1020,12 +1050,12 @@ entry:
   %lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %data, i32 0, i32 3
   call void @mutex_lock_nested(%struct.mutex* %lock, i32 0)
   %addr = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %data, i32 0, i32 0
-  %0 = load i16, i16* %addr, align 8, !tbaa !57
+  %0 = load i16, i16* %addr, align 8, !tbaa !58
   %conv = zext i16 %0 to i32
   %add = add nsw i32 %conv, 5
   call void @outb_p(i8 zeroext %reg, i32 %add)
   %addr1 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %data, i32 0, i32 0
-  %1 = load i16, i16* %addr1, align 8, !tbaa !57
+  %1 = load i16, i16* %addr1, align 8, !tbaa !58
   %conv2 = zext i16 %1 to i32
   %add3 = add nsw i32 %conv2, 6
   call void @outb_p(i8 zeroext %value, i32 %add3)
@@ -1049,14 +1079,14 @@ declare void @mutex_unlock(%struct.mutex*) #3
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @outb(i8 zeroext %value, i32 %port) #0 {
 entry:
-  call void asm sideeffect "outb ${0:b}, ${1:w}", "{ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i8 %value, i32 %port) #6, !srcloc !65
+  call void asm sideeffect "outb ${0:b}, ${1:w}", "{ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i8 %value, i32 %port) #6, !srcloc !66
   ret void
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @slow_down_io() #0 {
 entry:
-  %0 = load void ()*, void ()** getelementptr inbounds (%struct.pv_cpu_ops, %struct.pv_cpu_ops* @pv_cpu_ops, i32 0, i32 26), align 8, !tbaa !66
+  %0 = load void ()*, void ()** getelementptr inbounds (%struct.pv_cpu_ops, %struct.pv_cpu_ops* @pv_cpu_ops, i32 0, i32 26), align 8, !tbaa !67
   call void %0()
   ret void
 }
@@ -1072,7 +1102,7 @@ entry:
 ; Function Attrs: inlinehint nounwind uwtable
 define internal zeroext i8 @inb(i32 %port) #0 {
 entry:
-  %0 = call i8 asm sideeffect "inb ${1:w}, ${0:b}", "={ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i32 %port) #6, !srcloc !68
+  %0 = call i8 asm sideeffect "inb ${1:w}, ${0:b}", "={ax},N{dx},~{dirflag},~{fpsr},~{flags}"(i32 %port) #6, !srcloc !69
   ret i8 %0
 }
 
@@ -1088,27 +1118,39 @@ entry:
 ; Function Attrs: nounwind uwtable
 define internal %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev) #5 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy1 = alloca i64, align 8
+  %__dummy22 = alloca i64, align 8
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.sis5595_data*
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
+  %1 = bitcast i64* %__dummy to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy to i8*
   %tobool = icmp ne i32 1, 0
   br i1 %tobool, label %land.lhs.true, label %lor.lhs.false
 
 land.lhs.true:                                    ; preds = %entry
+  %5 = bitcast i64* %__dummy1 to i8*
+  %6 = bitcast i64* %__dummy22 to i8*
+  %7 = bitcast i64* %__dummy22 to i8*
+  %8 = bitcast i64* %__dummy1 to i8*
   %last_updated = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 6
-  %1 = load i64, i64* %last_updated, align 8, !tbaa !69
-  %add = add i64 %1, 250
+  %9 = load i64, i64* %last_updated, align 8, !tbaa !70
+  %add = add i64 %9, 250
   %add8 = add i64 %add, 125
-  %2 = load volatile i64, i64* @jiffies, align 8, !tbaa !70
-  %sub = sub nsw i64 %add8, %2
+  %10 = load volatile i64, i64* @jiffies, align 8, !tbaa !71
+  %sub = sub nsw i64 %add8, %10
   %cmp9 = icmp slt i64 %sub, 0
   br i1 %cmp9, label %if.then, label %lor.lhs.false
 
 lor.lhs.false:                                    ; preds = %land.lhs.true, %entry
   %valid = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 5
-  %3 = load i8, i8* %valid, align 8, !tbaa !71
-  %tobool11 = icmp ne i8 %3, 0
+  %11 = load i8, i8* %valid, align 8, !tbaa !72
+  %tobool11 = icmp ne i8 %11, 0
   br i1 %tobool11, label %if.end90, label %if.then
 
 if.then:                                          ; preds = %lor.lhs.false, %land.lhs.true
@@ -1117,8 +1159,8 @@ if.then:                                          ; preds = %lor.lhs.false, %lan
 for.cond:                                         ; preds = %for.body, %if.then
   %i.0 = phi i32 [ 0, %if.then ], [ %inc, %for.body ]
   %maxins = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 7
-  %4 = load i8, i8* %maxins, align 8, !tbaa !62
-  %conv12 = sext i8 %4 to i32
+  %12 = load i8, i8* %maxins, align 8, !tbaa !63
+  %conv12 = sext i8 %12 to i32
   %cmp13 = icmp sle i32 %i.0, %conv12
   br i1 %cmp13, label %for.body, label %for.end
 
@@ -1130,7 +1172,7 @@ for.body:                                         ; preds = %for.cond
   %in = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 9
   %idxprom = sext i32 %i.0 to i64
   %arrayidx = getelementptr inbounds [5 x i8], [5 x i8]* %in, i64 0, i64 %idxprom
-  store i8 %conv18, i8* %arrayidx, align 1, !tbaa !63
+  store i8 %conv18, i8* %arrayidx, align 1, !tbaa !64
   %mul = mul nsw i32 %i.0, 2
   %add19 = add nsw i32 44, %mul
   %conv20 = trunc i32 %add19 to i8
@@ -1139,7 +1181,7 @@ for.body:                                         ; preds = %for.cond
   %in_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 11
   %idxprom23 = sext i32 %i.0 to i64
   %arrayidx24 = getelementptr inbounds [5 x i8], [5 x i8]* %in_min, i64 0, i64 %idxprom23
-  store i8 %conv22, i8* %arrayidx24, align 1, !tbaa !63
+  store i8 %conv22, i8* %arrayidx24, align 1, !tbaa !64
   %mul25 = mul nsw i32 %i.0, 2
   %add26 = add nsw i32 43, %mul25
   %conv27 = trunc i32 %add26 to i8
@@ -1148,7 +1190,7 @@ for.body:                                         ; preds = %for.cond
   %in_max = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 10
   %idxprom30 = sext i32 %i.0 to i64
   %arrayidx31 = getelementptr inbounds [5 x i8], [5 x i8]* %in_max, i64 0, i64 %idxprom30
-  store i8 %conv29, i8* %arrayidx31, align 1, !tbaa !63
+  store i8 %conv29, i8* %arrayidx31, align 1, !tbaa !64
   %inc = add nsw i32 %i.0, 1
   br label %for.cond
 
@@ -1168,7 +1210,7 @@ for.body35:                                       ; preds = %for.cond32
   %fan = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 12
   %idxprom40 = sext i32 %i.1 to i64
   %arrayidx41 = getelementptr inbounds [2 x i8], [2 x i8]* %fan, i64 0, i64 %idxprom40
-  store i8 %conv39, i8* %arrayidx41, align 1, !tbaa !63
+  store i8 %conv39, i8* %arrayidx41, align 1, !tbaa !64
   %add42 = add nsw i32 59, %i.1
   %conv43 = trunc i32 %add42 to i8
   %call44 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext %conv43)
@@ -1176,48 +1218,48 @@ for.body35:                                       ; preds = %for.cond32
   %fan_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom46 = sext i32 %i.1 to i64
   %arrayidx47 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min, i64 0, i64 %idxprom46
-  store i8 %conv45, i8* %arrayidx47, align 1, !tbaa !63
+  store i8 %conv45, i8* %arrayidx47, align 1, !tbaa !64
   %inc49 = add nsw i32 %i.1, 1
   br label %for.cond32
 
 for.end50:                                        ; preds = %for.cond32
   %maxins51 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 7
-  %5 = load i8, i8* %maxins51, align 8, !tbaa !62
-  %conv52 = sext i8 %5 to i32
+  %13 = load i8, i8* %maxins51, align 8, !tbaa !63
+  %conv52 = sext i8 %13 to i32
   %cmp53 = icmp eq i32 %conv52, 3
   br i1 %cmp53, label %if.then55, label %if.end
 
 if.then55:                                        ; preds = %for.end50
   %revision = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %6 = load i8, i8* %revision, align 1, !tbaa !61
-  %conv56 = zext i8 %6 to i32
+  %14 = load i8, i8* %revision, align 1, !tbaa !62
+  %conv56 = zext i8 %14 to i32
   %cmp57 = icmp sge i32 %conv56, 176
   %cond = select i1 %cmp57, i32 36, i32 39
   %conv59 = trunc i32 %cond to i8
   %call60 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext %conv59)
   %conv61 = trunc i32 %call60 to i8
   %temp = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 14
-  store i8 %conv61, i8* %temp, align 1, !tbaa !72
+  store i8 %conv61, i8* %temp, align 1, !tbaa !73
   %revision62 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %7 = load i8, i8* %revision62, align 1, !tbaa !61
-  %conv63 = zext i8 %7 to i32
+  %15 = load i8, i8* %revision62, align 1, !tbaa !62
+  %conv63 = zext i8 %15 to i32
   %cmp64 = icmp sge i32 %conv63, 176
   %cond66 = select i1 %cmp64, i32 51, i32 57
   %conv67 = trunc i32 %cond66 to i8
   %call68 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext %conv67)
   %conv69 = trunc i32 %call68 to i8
   %temp_over = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 15
-  store i8 %conv69, i8* %temp_over, align 2, !tbaa !73
+  store i8 %conv69, i8* %temp_over, align 2, !tbaa !74
   %revision70 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %8 = load i8, i8* %revision70, align 1, !tbaa !61
-  %conv71 = zext i8 %8 to i32
+  %16 = load i8, i8* %revision70, align 1, !tbaa !62
+  %conv71 = zext i8 %16 to i32
   %cmp72 = icmp sge i32 %conv71, 176
   %cond74 = select i1 %cmp72, i32 52, i32 58
   %conv75 = trunc i32 %cond74 to i8
   %call76 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext %conv75)
   %conv77 = trunc i32 %call76 to i8
   %temp_hyst = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 16
-  store i8 %conv77, i8* %temp_hyst, align 1, !tbaa !74
+  store i8 %conv77, i8* %temp_hyst, align 1, !tbaa !75
   br label %if.end
 
 if.end:                                           ; preds = %if.then55, %for.end50
@@ -1227,24 +1269,24 @@ if.end:                                           ; preds = %if.then55, %for.end
   %conv79 = trunc i32 %and to i8
   %fan_div = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %arrayidx80 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div, i64 0, i64 0
-  store i8 %conv79, i8* %arrayidx80, align 8, !tbaa !63
+  store i8 %conv79, i8* %arrayidx80, align 8, !tbaa !64
   %shr81 = ashr i32 %call78, 6
   %conv82 = trunc i32 %shr81 to i8
   %fan_div83 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %arrayidx84 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div83, i64 0, i64 1
-  store i8 %conv82, i8* %arrayidx84, align 1, !tbaa !63
+  store i8 %conv82, i8* %arrayidx84, align 1, !tbaa !64
   %call85 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext 65)
   %call86 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext 66)
   %shl = shl i32 %call86, 8
   %or = or i32 %call85, %shl
   %conv87 = trunc i32 %or to i16
   %alarms = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 18
-  store i16 %conv87, i16* %alarms, align 2, !tbaa !75
-  %9 = load volatile i64, i64* @jiffies, align 8, !tbaa !70
+  store i16 %conv87, i16* %alarms, align 2, !tbaa !76
+  %17 = load volatile i64, i64* @jiffies, align 8, !tbaa !71
   %last_updated88 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 6
-  store i64 %9, i64* %last_updated88, align 8, !tbaa !69
+  store i64 %17, i64* %last_updated88, align 8, !tbaa !70
   %valid89 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 5
-  store i8 1, i8* %valid89, align 8, !tbaa !71
+  store i8 1, i8* %valid89, align 8, !tbaa !72
   br label %if.end90
 
 if.end90:                                         ; preds = %if.end, %lor.lhs.false
@@ -1276,7 +1318,8 @@ entry:
   %add.ptr = getelementptr inbounds i8, i8* %1, i64 0
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
-  %3 = load i32, i32* %index, align 8, !tbaa !76
+  %3 = load i32, i32* %index, align 8, !tbaa !77
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1288,26 +1331,27 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %4 = load i64, i64* %val, align 8, !tbaa !70
-  %call2 = call zeroext i8 @IN_TO_REG(i64 %4)
+  %5 = load i64, i64* %val, align 8, !tbaa !71
+  %call2 = call zeroext i8 @IN_TO_REG(i64 %5)
   %in_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 11
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [5 x i8], [5 x i8]* %in_min, i64 0, i64 %idxprom
-  store i8 %call2, i8* %arrayidx, align 1, !tbaa !63
+  store i8 %call2, i8* %arrayidx, align 1, !tbaa !64
   %mul = mul nsw i32 %3, 2
   %add = add nsw i32 44, %mul
   %conv3 = trunc i32 %add to i8
   %in_min4 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 11
   %idxprom5 = sext i32 %3 to i64
   %arrayidx6 = getelementptr inbounds [5 x i8], [5 x i8]* %in_min4, i64 0, i64 %idxprom5
-  %5 = load i8, i8* %arrayidx6, align 1, !tbaa !63
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %5)
+  %6 = load i8, i8* %arrayidx6, align 1, !tbaa !64
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %6)
   %update_lock7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock7)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %7 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1352,7 +1396,8 @@ entry:
   %add.ptr = getelementptr inbounds i8, i8* %1, i64 0
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
-  %3 = load i32, i32* %index, align 8, !tbaa !76
+  %3 = load i32, i32* %index, align 8, !tbaa !77
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1364,26 +1409,27 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %4 = load i64, i64* %val, align 8, !tbaa !70
-  %call2 = call zeroext i8 @IN_TO_REG(i64 %4)
+  %5 = load i64, i64* %val, align 8, !tbaa !71
+  %call2 = call zeroext i8 @IN_TO_REG(i64 %5)
   %in_max = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 10
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [5 x i8], [5 x i8]* %in_max, i64 0, i64 %idxprom
-  store i8 %call2, i8* %arrayidx, align 1, !tbaa !63
+  store i8 %call2, i8* %arrayidx, align 1, !tbaa !64
   %mul = mul nsw i32 %3, 2
   %add = add nsw i32 43, %mul
   %conv3 = trunc i32 %add to i8
   %in_max4 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 10
   %idxprom5 = sext i32 %3 to i64
   %arrayidx6 = getelementptr inbounds [5 x i8], [5 x i8]* %in_max4, i64 0, i64 %idxprom5
-  %5 = load i8, i8* %arrayidx6, align 1, !tbaa !63
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %5)
+  %6 = load i8, i8* %arrayidx6, align 1, !tbaa !64
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %6)
   %update_lock7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock7)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %7 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1404,15 +1450,15 @@ entry:
   %add.ptr = getelementptr inbounds i8, i8* %0, i64 0
   %1 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %1, i32 0, i32 1
-  %2 = load i32, i32* %index, align 8, !tbaa !76
+  %2 = load i32, i32* %index, align 8, !tbaa !77
   %fan = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 12
   %idxprom = sext i32 %2 to i64
   %arrayidx = getelementptr inbounds [2 x i8], [2 x i8]* %fan, i64 0, i64 %idxprom
-  %3 = load i8, i8* %arrayidx, align 1, !tbaa !63
+  %3 = load i8, i8* %arrayidx, align 1, !tbaa !64
   %fan_div = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 17
   %idxprom1 = sext i32 %2 to i64
   %arrayidx2 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div, i64 0, i64 %idxprom1
-  %4 = load i8, i8* %arrayidx2, align 1, !tbaa !63
+  %4 = load i8, i8* %arrayidx2, align 1, !tbaa !64
   %conv = zext i8 %4 to i32
   %shl = shl i32 1, %conv
   %call3 = call i32 @FAN_FROM_REG(i8 zeroext %3, i32 %shl)
@@ -1452,15 +1498,15 @@ entry:
   %add.ptr = getelementptr inbounds i8, i8* %0, i64 0
   %1 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %1, i32 0, i32 1
-  %2 = load i32, i32* %index, align 8, !tbaa !76
+  %2 = load i32, i32* %index, align 8, !tbaa !77
   %fan_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 13
   %idxprom = sext i32 %2 to i64
   %arrayidx = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min, i64 0, i64 %idxprom
-  %3 = load i8, i8* %arrayidx, align 1, !tbaa !63
+  %3 = load i8, i8* %arrayidx, align 1, !tbaa !64
   %fan_div = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 17
   %idxprom1 = sext i32 %2 to i64
   %arrayidx2 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div, i64 0, i64 %idxprom1
-  %4 = load i8, i8* %arrayidx2, align 1, !tbaa !63
+  %4 = load i8, i8* %arrayidx2, align 1, !tbaa !64
   %conv = zext i8 %4 to i32
   %shl = shl i32 1, %conv
   %call3 = call i32 @FAN_FROM_REG(i8 zeroext %3, i32 %shl)
@@ -1479,7 +1525,8 @@ entry:
   %add.ptr = getelementptr inbounds i8, i8* %1, i64 0
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
-  %3 = load i32, i32* %index, align 8, !tbaa !76
+  %3 = load i32, i32* %index, align 8, !tbaa !77
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1491,31 +1538,32 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %4 = load i64, i64* %val, align 8, !tbaa !70
+  %5 = load i64, i64* %val, align 8, !tbaa !71
   %fan_div = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div, i64 0, i64 %idxprom
-  %5 = load i8, i8* %arrayidx, align 1, !tbaa !63
-  %conv2 = zext i8 %5 to i32
+  %6 = load i8, i8* %arrayidx, align 1, !tbaa !64
+  %conv2 = zext i8 %6 to i32
   %shl = shl i32 1, %conv2
-  %call3 = call zeroext i8 @FAN_TO_REG(i64 %4, i32 %shl)
+  %call3 = call zeroext i8 @FAN_TO_REG(i64 %5, i32 %shl)
   %fan_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom4 = sext i32 %3 to i64
   %arrayidx5 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min, i64 0, i64 %idxprom4
-  store i8 %call3, i8* %arrayidx5, align 1, !tbaa !63
+  store i8 %call3, i8* %arrayidx5, align 1, !tbaa !64
   %add = add nsw i32 59, %3
   %conv6 = trunc i32 %add to i8
   %fan_min7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom8 = sext i32 %3 to i64
   %arrayidx9 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min7, i64 0, i64 %idxprom8
-  %6 = load i8, i8* %arrayidx9, align 1, !tbaa !63
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %6)
+  %7 = load i8, i8* %arrayidx9, align 1, !tbaa !64
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %7)
   %update_lock10 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock10)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %8 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1564,7 +1612,8 @@ entry:
   %add.ptr = getelementptr inbounds i8, i8* %1, i64 0
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
-  %3 = load i32, i32* %index, align 8, !tbaa !76
+  %3 = load i32, i32* %index, align 8, !tbaa !77
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1579,42 +1628,42 @@ if.end:                                           ; preds = %entry
   %fan_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min, i64 0, i64 %idxprom
-  %4 = load i8, i8* %arrayidx, align 1, !tbaa !63
+  %5 = load i8, i8* %arrayidx, align 1, !tbaa !64
   %fan_div = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom2 = sext i32 %3 to i64
   %arrayidx3 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div, i64 0, i64 %idxprom2
-  %5 = load i8, i8* %arrayidx3, align 1, !tbaa !63
-  %conv4 = zext i8 %5 to i32
+  %6 = load i8, i8* %arrayidx3, align 1, !tbaa !64
+  %conv4 = zext i8 %6 to i32
   %shl = shl i32 1, %conv4
-  %call5 = call i32 @FAN_FROM_REG(i8 zeroext %4, i32 %shl)
+  %call5 = call i32 @FAN_FROM_REG(i8 zeroext %5, i32 %shl)
   %conv6 = sext i32 %call5 to i64
   %call7 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext 71)
-  %6 = load i64, i64* %val, align 8, !tbaa !70
-  %Pivot10 = icmp slt i64 %6, 4
+  %7 = load i64, i64* %val, align 8, !tbaa !71
+  %Pivot10 = icmp slt i64 %7, 4
   br i1 %Pivot10, label %NodeBlock, label %NodeBlock7
 
 NodeBlock7:                                       ; preds = %if.end
-  %Pivot8 = icmp slt i64 %6, 8
+  %Pivot8 = icmp slt i64 %7, 8
   br i1 %Pivot8, label %LeafBlock3, label %LeafBlock5
 
 LeafBlock5:                                       ; preds = %NodeBlock7
-  %SwitchLeaf6 = icmp eq i64 %6, 8
+  %SwitchLeaf6 = icmp eq i64 %7, 8
   br i1 %SwitchLeaf6, label %sw.epilog, label %sw.default
 
 LeafBlock3:                                       ; preds = %NodeBlock7
-  %SwitchLeaf4 = icmp eq i64 %6, 4
+  %SwitchLeaf4 = icmp eq i64 %7, 4
   br i1 %SwitchLeaf4, label %sw.epilog, label %sw.default
 
 NodeBlock:                                        ; preds = %if.end
-  %Pivot = icmp slt i64 %6, 2
+  %Pivot = icmp slt i64 %7, 2
   br i1 %Pivot, label %LeafBlock, label %LeafBlock1
 
 LeafBlock1:                                       ; preds = %NodeBlock
-  %SwitchLeaf2 = icmp eq i64 %6, 2
+  %SwitchLeaf2 = icmp eq i64 %7, 2
   br i1 %SwitchLeaf2, label %sw.epilog, label %sw.default
 
 LeafBlock:                                        ; preds = %NodeBlock
-  %SwitchLeaf = icmp eq i64 %6, 1
+  %SwitchLeaf = icmp eq i64 %7, 1
   br i1 %SwitchLeaf, label %sw.epilog, label %sw.default
 
 sw.default:                                       ; preds = %LeafBlock, %LeafBlock1, %LeafBlock3, %LeafBlock5
@@ -1628,7 +1677,7 @@ sw.epilog:                                        ; preds = %LeafBlock, %LeafBlo
   %fan_div20 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom21 = sext i32 %3 to i64
   %arrayidx22 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div20, i64 0, i64 %idxprom21
-  store i8 %.sink, i8* %arrayidx22, align 1, !tbaa !63
+  store i8 %.sink, i8* %arrayidx22, align 1, !tbaa !64
   %Pivot17 = icmp slt i32 %3, 1
   br i1 %Pivot17, label %LeafBlock12, label %LeafBlock14
 
@@ -1645,8 +1694,8 @@ sw.bb25:                                          ; preds = %LeafBlock12
   %fan_div26 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom27 = sext i32 %3 to i64
   %arrayidx28 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div26, i64 0, i64 %idxprom27
-  %7 = load i8, i8* %arrayidx28, align 1, !tbaa !63
-  %conv29 = zext i8 %7 to i32
+  %8 = load i8, i8* %arrayidx28, align 1, !tbaa !64
+  %conv29 = zext i8 %8 to i32
   %shl30 = shl i32 %conv29, 4
   %or = or i32 %and, %shl30
   br label %sw.epilog39
@@ -1656,8 +1705,8 @@ sw.bb31:                                          ; preds = %LeafBlock14
   %fan_div33 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom34 = sext i32 %3 to i64
   %arrayidx35 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div33, i64 0, i64 %idxprom34
-  %8 = load i8, i8* %arrayidx35, align 1, !tbaa !63
-  %conv36 = zext i8 %8 to i32
+  %9 = load i8, i8* %arrayidx35, align 1, !tbaa !64
+  %conv36 = zext i8 %9 to i32
   %shl37 = shl i32 %conv36, 6
   %or38 = or i32 %and32, %shl37
   br label %sw.epilog39
@@ -1669,27 +1718,28 @@ sw.epilog39:                                      ; preds = %sw.bb31, %sw.bb25, 
   %fan_div41 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom42 = sext i32 %3 to i64
   %arrayidx43 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div41, i64 0, i64 %idxprom42
-  %9 = load i8, i8* %arrayidx43, align 1, !tbaa !63
-  %conv44 = zext i8 %9 to i32
+  %10 = load i8, i8* %arrayidx43, align 1, !tbaa !64
+  %conv44 = zext i8 %10 to i32
   %shl45 = shl i32 1, %conv44
   %call46 = call zeroext i8 @FAN_TO_REG(i64 %conv6, i32 %shl45)
   %fan_min47 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom48 = sext i32 %3 to i64
   %arrayidx49 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min47, i64 0, i64 %idxprom48
-  store i8 %call46, i8* %arrayidx49, align 1, !tbaa !63
+  store i8 %call46, i8* %arrayidx49, align 1, !tbaa !64
   %add = add nsw i32 59, %3
   %conv50 = trunc i32 %add to i8
   %fan_min51 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom52 = sext i32 %3 to i64
   %arrayidx53 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min51, i64 0, i64 %idxprom52
-  %10 = load i8, i8* %arrayidx53, align 1, !tbaa !63
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv50, i8 zeroext %10)
+  %11 = load i8, i8* %arrayidx53, align 1, !tbaa !64
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv50, i8 zeroext %11)
   %update_lock54 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock54)
   br label %cleanup
 
 cleanup:                                          ; preds = %sw.epilog39, %sw.default, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %sw.epilog39 ], [ -22, %sw.default ]
+  %12 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1715,15 +1765,20 @@ entry:
 define internal i64 @show_temp(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #5 {
 entry:
   %call = call %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev)
-  call void @TEMP_FROM_REG()
-  %0 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
-  %conv = sext i32 %0 to i64
+  %temp = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 14
+  %0 = load i8, i8* %temp, align 1, !tbaa !73
+  call void @TEMP_FROM_REG(i8 signext %0)
+  %1 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %conv = sext i32 %1 to i64
   ret i64 %conv
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal void @TEMP_FROM_REG() #0 {
+define internal void @TEMP_FROM_REG(i8 signext %val) #0 {
 entry:
+  %conv = sext i8 %val to i32
+  %mul = mul nsw i32 %conv, 830
+  %add = add nsw i32 %mul, 52120
   ret void
 }
 
@@ -1731,9 +1786,11 @@ entry:
 define internal i64 @show_temp_over(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #5 {
 entry:
   %call = call %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev)
-  call void @TEMP_FROM_REG()
-  %0 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
-  %conv = sext i32 %0 to i64
+  %temp_over = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 15
+  %0 = load i8, i8* %temp_over, align 2, !tbaa !74
+  call void @TEMP_FROM_REG(i8 signext %0)
+  %1 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %conv = sext i32 %1 to i64
   ret i64 %conv
 }
 
@@ -1743,6 +1800,7 @@ entry:
   %val = alloca i64, align 8
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.sis5595_data*
+  %1 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtol(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1754,26 +1812,27 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %1 = load i64, i64* %val, align 8, !tbaa !70
-  %conv2 = trunc i64 %1 to i32
+  %2 = load i64, i64* %val, align 8, !tbaa !71
+  %conv2 = trunc i64 %2 to i32
   %call3 = call signext i8 @TEMP_TO_REG(i32 %conv2)
   %temp_over = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 15
-  store i8 %call3, i8* %temp_over, align 2, !tbaa !73
+  store i8 %call3, i8* %temp_over, align 2, !tbaa !74
   %revision = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %2 = load i8, i8* %revision, align 1, !tbaa !61
-  %conv4 = zext i8 %2 to i32
+  %3 = load i8, i8* %revision, align 1, !tbaa !62
+  %conv4 = zext i8 %3 to i32
   %cmp = icmp sge i32 %conv4, 176
   %cond = select i1 %cmp, i32 51, i32 57
   %conv6 = trunc i32 %cond to i8
   %temp_over7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 15
-  %3 = load i8, i8* %temp_over7, align 2, !tbaa !73
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %3)
+  %4 = load i8, i8* %temp_over7, align 2, !tbaa !74
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %4)
   %update_lock8 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock8)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %5 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1807,9 +1866,11 @@ declare i32 @kstrtoll(i8*, i32, i64*) #3
 define internal i64 @show_temp_hyst(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #5 {
 entry:
   %call = call %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev)
-  call void @TEMP_FROM_REG()
-  %0 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
-  %conv = sext i32 %0 to i64
+  %temp_hyst = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 16
+  %0 = load i8, i8* %temp_hyst, align 1, !tbaa !75
+  call void @TEMP_FROM_REG(i8 signext %0)
+  %1 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %conv = sext i32 %1 to i64
   ret i64 %conv
 }
 
@@ -1819,6 +1880,7 @@ entry:
   %val = alloca i64, align 8
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.sis5595_data*
+  %1 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtol(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1830,26 +1892,27 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %1 = load i64, i64* %val, align 8, !tbaa !70
-  %conv2 = trunc i64 %1 to i32
+  %2 = load i64, i64* %val, align 8, !tbaa !71
+  %conv2 = trunc i64 %2 to i32
   %call3 = call signext i8 @TEMP_TO_REG(i32 %conv2)
   %temp_hyst = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 16
-  store i8 %call3, i8* %temp_hyst, align 1, !tbaa !74
+  store i8 %call3, i8* %temp_hyst, align 1, !tbaa !75
   %revision = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %2 = load i8, i8* %revision, align 1, !tbaa !61
-  %conv4 = zext i8 %2 to i32
+  %3 = load i8, i8* %revision, align 1, !tbaa !62
+  %conv4 = zext i8 %3 to i32
   %cmp = icmp sge i32 %conv4, 176
   %cond = select i1 %cmp, i32 52, i32 58
   %conv6 = trunc i32 %cond to i8
   %temp_hyst7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 16
-  %3 = load i8, i8* %temp_hyst7, align 1, !tbaa !74
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %3)
+  %4 = load i8, i8* %temp_hyst7, align 1, !tbaa !75
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %4)
   %update_lock8 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock8)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %5 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1906,72 +1969,73 @@ attributes #6 = { nounwind }
 !9 = !{!3, !4, i64 40}
 !10 = !{!3, !4, i64 16}
 !11 = !{!3, !4, i64 0}
-!12 = !{!4, !4, i64 0}
-!13 = !{!14, !4, i64 0}
-!14 = !{!"pv_irq_ops", !15, i64 0, !15, i64 8, !15, i64 16, !15, i64 24, !4, i64 32, !4, i64 40, !4, i64 48}
-!15 = !{!"paravirt_callee_save", !4, i64 0}
-!16 = !{i32 -2146268287, i32 -2146268262, i32 -2146267992, i32 -2146268195, i32 -2146268164, i32 -2146268134}
-!17 = !{i32 -2146268707, i32 -2146266729, i32 -2146266707, i32 -2146266694, i32 -2146266371, i32 -2146266304, i32 -2146266602, i32 -2146266575, i32 -2146266547, i32 -2146266517}
-!18 = !{!19, !4, i64 16}
-!19 = !{!"pci_dev", !20, i64 0, !4, i64 16, !4, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !21, i64 56, !22, i64 60, !22, i64 62, !22, i64 64, !22, i64 66, !21, i64 68, !5, i64 72, !5, i64 73, !5, i64 74, !5, i64 75, !5, i64 76, !5, i64 77, !5, i64 78, !5, i64 79, !22, i64 80, !4, i64 88, !23, i64 96, !24, i64 104, !21, i64 120, !5, i64 124, !21, i64 125, !21, i64 125, !21, i64 125, !21, i64 125, !21, i64 126, !21, i64 126, !21, i64 126, !21, i64 126, !21, i64 126, !21, i64 126, !21, i64 126, !21, i64 128, !21, i64 132, !4, i64 136, !21, i64 144, !26, i64 152, !21, i64 1288, !21, i64 1292, !5, i64 1296, !35, i64 2248, !21, i64 2249, !21, i64 2249, !21, i64 2249, !21, i64 2249, !21, i64 2249, !21, i64 2249, !21, i64 2249, !21, i64 2249, !21, i64 2250, !21, i64 2250, !21, i64 2250, !21, i64 2250, !21, i64 2250, !21, i64 2250, !21, i64 2250, !21, i64 2251, !21, i64 2251, !21, i64 2251, !21, i64 2251, !21, i64 2251, !21, i64 2251, !21, i64 2251, !21, i64 2251, !22, i64 2252, !29, i64 2256, !5, i64 2260, !44, i64 2328, !4, i64 2336, !21, i64 2344, !5, i64 2352, !5, i64 2488, !20, i64 2624, !4, i64 2640, !4, i64 2648, !5, i64 2656, !4, i64 2664, !23, i64 2672, !25, i64 2680}
-!20 = !{!"list_head", !4, i64 0, !4, i64 8}
-!21 = !{!"int", !5, i64 0}
-!22 = !{!"short", !5, i64 0}
-!23 = !{!"long long", !5, i64 0}
-!24 = !{!"device_dma_parameters", !21, i64 0, !25, i64 8}
-!25 = !{!"long", !5, i64 0}
-!26 = !{!"device", !4, i64 0, !4, i64 8, !27, i64 16, !4, i64 80, !4, i64 88, !30, i64 96, !4, i64 264, !4, i64 272, !4, i64 280, !33, i64 288, !4, i64 880, !21, i64 888, !4, i64 896, !23, i64 904, !4, i64 912, !20, i64 920, !4, i64 936, !41, i64 944, !4, i64 960, !42, i64 968, !21, i64 976, !21, i64 980, !31, i64 984, !20, i64 1056, !43, i64 1072, !4, i64 1104, !4, i64 1112, !4, i64 1120, !4, i64 1128}
-!27 = !{!"kobject", !4, i64 0, !20, i64 8, !4, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !28, i64 56, !21, i64 60, !21, i64 60, !21, i64 60, !21, i64 60, !21, i64 60}
-!28 = !{!"kref", !29, i64 0}
-!29 = !{!"", !21, i64 0}
-!30 = !{!"mutex", !29, i64 0, !31, i64 8, !20, i64 80, !4, i64 96, !4, i64 104, !4, i64 112, !32, i64 120}
-!31 = !{!"spinlock", !5, i64 0}
-!32 = !{!"lockdep_map", !4, i64 0, !5, i64 8, !4, i64 24, !21, i64 32, !25, i64 40}
-!33 = !{!"dev_pm_info", !34, i64 0, !21, i64 4, !21, i64 4, !35, i64 4, !35, i64 4, !35, i64 4, !35, i64 4, !31, i64 8, !20, i64 80, !36, i64 96, !4, i64 192, !35, i64 200, !35, i64 200, !38, i64 208, !25, i64 336, !39, i64 344, !37, i64 424, !29, i64 512, !29, i64 516, !21, i64 520, !21, i64 520, !21, i64 520, !21, i64 520, !21, i64 520, !21, i64 520, !21, i64 521, !21, i64 521, !21, i64 521, !21, i64 521, !21, i64 521, !5, i64 524, !5, i64 528, !21, i64 532, !21, i64 536, !25, i64 544, !25, i64 552, !25, i64 560, !25, i64 568, !4, i64 576, !4, i64 584}
-!34 = !{!"pm_message", !21, i64 0}
-!35 = !{!"_Bool", !5, i64 0}
-!36 = !{!"completion", !21, i64 0, !37, i64 8}
-!37 = !{!"__wait_queue_head", !31, i64 0, !20, i64 72}
-!38 = !{!"timer_list", !20, i64 0, !25, i64 16, !4, i64 24, !4, i64 32, !25, i64 40, !21, i64 48, !21, i64 52, !4, i64 56, !5, i64 64, !32, i64 80}
-!39 = !{!"work_struct", !40, i64 0, !20, i64 8, !4, i64 24, !32, i64 32}
-!40 = !{!"", !25, i64 0}
-!41 = !{!"dev_archdata", !4, i64 0, !4, i64 8}
-!42 = !{!"acpi_dev_node", !4, i64 0}
-!43 = !{!"klist_node", !4, i64 0, !20, i64 8, !28, i64 24}
-!44 = !{!"hlist_head", !4, i64 0}
-!45 = !{!19, !21, i64 56}
-!46 = !{!47, !23, i64 0}
-!47 = !{!"resource", !23, i64 0, !23, i64 8, !4, i64 16, !25, i64 24, !4, i64 32, !4, i64 40, !4, i64 48}
-!48 = !{!47, !23, i64 8}
-!49 = !{!47, !4, i64 16}
-!50 = !{!47, !25, i64 24}
-!51 = !{!47, !4, i64 32}
-!52 = !{!47, !4, i64 40}
-!53 = !{!47, !4, i64 48}
-!54 = !{!55, !4, i64 40}
-!55 = !{!"platform_driver", !4, i64 0, !4, i64 8, !4, i64 16, !4, i64 24, !4, i64 32, !56, i64 40, !4, i64 160}
-!56 = !{!"device_driver", !4, i64 0, !4, i64 8, !4, i64 16, !4, i64 24, !35, i64 32, !4, i64 40, !4, i64 48, !4, i64 56, !4, i64 64, !4, i64 72, !4, i64 80, !4, i64 88, !4, i64 96, !4, i64 104, !4, i64 112}
-!57 = !{!58, !22, i64 0}
-!58 = !{!"sis5595_data", !22, i64 0, !4, i64 8, !4, i64 16, !30, i64 24, !30, i64 192, !5, i64 360, !25, i64 368, !5, i64 376, !5, i64 377, !5, i64 378, !5, i64 383, !5, i64 388, !5, i64 393, !5, i64 395, !5, i64 397, !5, i64 398, !5, i64 399, !5, i64 400, !22, i64 402}
-!59 = !{!58, !4, i64 8}
-!60 = !{!19, !5, i64 72}
-!61 = !{!58, !5, i64 377}
-!62 = !{!58, !5, i64 376}
-!63 = !{!5, !5, i64 0}
-!64 = !{!58, !4, i64 16}
-!65 = !{i32 -2145550954}
-!66 = !{!67, !4, i64 208}
-!67 = !{!"pv_cpu_ops", !4, i64 0, !4, i64 8, !4, i64 16, !4, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !4, i64 56, !4, i64 64, !4, i64 72, !4, i64 80, !4, i64 88, !4, i64 96, !4, i64 104, !4, i64 112, !4, i64 120, !4, i64 128, !4, i64 136, !4, i64 144, !4, i64 152, !4, i64 160, !4, i64 168, !4, i64 176, !4, i64 184, !4, i64 192, !4, i64 200, !4, i64 208, !4, i64 216, !4, i64 224, !4, i64 232, !4, i64 240, !4, i64 248, !4, i64 256, !4, i64 264, !4, i64 272, !4, i64 280, !4, i64 288, !4, i64 296, !4, i64 304, !4, i64 312}
-!68 = !{i32 -2145550752}
-!69 = !{!58, !25, i64 368}
-!70 = !{!25, !25, i64 0}
-!71 = !{!58, !5, i64 360}
-!72 = !{!58, !5, i64 397}
-!73 = !{!58, !5, i64 398}
-!74 = !{!58, !5, i64 399}
-!75 = !{!58, !22, i64 402}
-!76 = !{!77, !21, i64 48}
-!77 = !{!"sensor_device_attribute", !78, i64 0, !21, i64 48}
-!78 = !{!"device_attribute", !79, i64 0, !4, i64 32, !4, i64 40}
-!79 = !{!"attribute", !4, i64 0, !22, i64 8, !35, i64 10, !4, i64 16, !80, i64 24}
-!80 = !{!"lock_class_key", !5, i64 0}
+!12 = !{i32 -2146737350}
+!13 = !{!4, !4, i64 0}
+!14 = !{!15, !4, i64 0}
+!15 = !{!"pv_irq_ops", !16, i64 0, !16, i64 8, !16, i64 16, !16, i64 24, !4, i64 32, !4, i64 40, !4, i64 48}
+!16 = !{!"paravirt_callee_save", !4, i64 0}
+!17 = !{i32 -2146268287, i32 -2146268262, i32 -2146267992, i32 -2146268195, i32 -2146268164, i32 -2146268134}
+!18 = !{i32 -2146268707, i32 -2146266729, i32 -2146266707, i32 -2146266694, i32 -2146266371, i32 -2146266304, i32 -2146266602, i32 -2146266575, i32 -2146266547, i32 -2146266517}
+!19 = !{!20, !4, i64 16}
+!20 = !{!"pci_dev", !21, i64 0, !4, i64 16, !4, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !22, i64 56, !23, i64 60, !23, i64 62, !23, i64 64, !23, i64 66, !22, i64 68, !5, i64 72, !5, i64 73, !5, i64 74, !5, i64 75, !5, i64 76, !5, i64 77, !5, i64 78, !5, i64 79, !23, i64 80, !4, i64 88, !24, i64 96, !25, i64 104, !22, i64 120, !5, i64 124, !22, i64 125, !22, i64 125, !22, i64 125, !22, i64 125, !22, i64 126, !22, i64 126, !22, i64 126, !22, i64 126, !22, i64 126, !22, i64 126, !22, i64 126, !22, i64 128, !22, i64 132, !4, i64 136, !22, i64 144, !27, i64 152, !22, i64 1288, !22, i64 1292, !5, i64 1296, !36, i64 2248, !22, i64 2249, !22, i64 2249, !22, i64 2249, !22, i64 2249, !22, i64 2249, !22, i64 2249, !22, i64 2249, !22, i64 2249, !22, i64 2250, !22, i64 2250, !22, i64 2250, !22, i64 2250, !22, i64 2250, !22, i64 2250, !22, i64 2250, !22, i64 2251, !22, i64 2251, !22, i64 2251, !22, i64 2251, !22, i64 2251, !22, i64 2251, !22, i64 2251, !22, i64 2251, !23, i64 2252, !30, i64 2256, !5, i64 2260, !45, i64 2328, !4, i64 2336, !22, i64 2344, !5, i64 2352, !5, i64 2488, !21, i64 2624, !4, i64 2640, !4, i64 2648, !5, i64 2656, !4, i64 2664, !24, i64 2672, !26, i64 2680}
+!21 = !{!"list_head", !4, i64 0, !4, i64 8}
+!22 = !{!"int", !5, i64 0}
+!23 = !{!"short", !5, i64 0}
+!24 = !{!"long long", !5, i64 0}
+!25 = !{!"device_dma_parameters", !22, i64 0, !26, i64 8}
+!26 = !{!"long", !5, i64 0}
+!27 = !{!"device", !4, i64 0, !4, i64 8, !28, i64 16, !4, i64 80, !4, i64 88, !31, i64 96, !4, i64 264, !4, i64 272, !4, i64 280, !34, i64 288, !4, i64 880, !22, i64 888, !4, i64 896, !24, i64 904, !4, i64 912, !21, i64 920, !4, i64 936, !42, i64 944, !4, i64 960, !43, i64 968, !22, i64 976, !22, i64 980, !32, i64 984, !21, i64 1056, !44, i64 1072, !4, i64 1104, !4, i64 1112, !4, i64 1120, !4, i64 1128}
+!28 = !{!"kobject", !4, i64 0, !21, i64 8, !4, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !29, i64 56, !22, i64 60, !22, i64 60, !22, i64 60, !22, i64 60, !22, i64 60}
+!29 = !{!"kref", !30, i64 0}
+!30 = !{!"", !22, i64 0}
+!31 = !{!"mutex", !30, i64 0, !32, i64 8, !21, i64 80, !4, i64 96, !4, i64 104, !4, i64 112, !33, i64 120}
+!32 = !{!"spinlock", !5, i64 0}
+!33 = !{!"lockdep_map", !4, i64 0, !5, i64 8, !4, i64 24, !22, i64 32, !26, i64 40}
+!34 = !{!"dev_pm_info", !35, i64 0, !22, i64 4, !22, i64 4, !36, i64 4, !36, i64 4, !36, i64 4, !36, i64 4, !32, i64 8, !21, i64 80, !37, i64 96, !4, i64 192, !36, i64 200, !36, i64 200, !39, i64 208, !26, i64 336, !40, i64 344, !38, i64 424, !30, i64 512, !30, i64 516, !22, i64 520, !22, i64 520, !22, i64 520, !22, i64 520, !22, i64 520, !22, i64 520, !22, i64 521, !22, i64 521, !22, i64 521, !22, i64 521, !22, i64 521, !5, i64 524, !5, i64 528, !22, i64 532, !22, i64 536, !26, i64 544, !26, i64 552, !26, i64 560, !26, i64 568, !4, i64 576, !4, i64 584}
+!35 = !{!"pm_message", !22, i64 0}
+!36 = !{!"_Bool", !5, i64 0}
+!37 = !{!"completion", !22, i64 0, !38, i64 8}
+!38 = !{!"__wait_queue_head", !32, i64 0, !21, i64 72}
+!39 = !{!"timer_list", !21, i64 0, !26, i64 16, !4, i64 24, !4, i64 32, !26, i64 40, !22, i64 48, !22, i64 52, !4, i64 56, !5, i64 64, !33, i64 80}
+!40 = !{!"work_struct", !41, i64 0, !21, i64 8, !4, i64 24, !33, i64 32}
+!41 = !{!"", !26, i64 0}
+!42 = !{!"dev_archdata", !4, i64 0, !4, i64 8}
+!43 = !{!"acpi_dev_node", !4, i64 0}
+!44 = !{!"klist_node", !4, i64 0, !21, i64 8, !29, i64 24}
+!45 = !{!"hlist_head", !4, i64 0}
+!46 = !{!20, !22, i64 56}
+!47 = !{!48, !24, i64 0}
+!48 = !{!"resource", !24, i64 0, !24, i64 8, !4, i64 16, !26, i64 24, !4, i64 32, !4, i64 40, !4, i64 48}
+!49 = !{!48, !24, i64 8}
+!50 = !{!48, !4, i64 16}
+!51 = !{!48, !26, i64 24}
+!52 = !{!48, !4, i64 32}
+!53 = !{!48, !4, i64 40}
+!54 = !{!48, !4, i64 48}
+!55 = !{!56, !4, i64 40}
+!56 = !{!"platform_driver", !4, i64 0, !4, i64 8, !4, i64 16, !4, i64 24, !4, i64 32, !57, i64 40, !4, i64 160}
+!57 = !{!"device_driver", !4, i64 0, !4, i64 8, !4, i64 16, !4, i64 24, !36, i64 32, !4, i64 40, !4, i64 48, !4, i64 56, !4, i64 64, !4, i64 72, !4, i64 80, !4, i64 88, !4, i64 96, !4, i64 104, !4, i64 112}
+!58 = !{!59, !23, i64 0}
+!59 = !{!"sis5595_data", !23, i64 0, !4, i64 8, !4, i64 16, !31, i64 24, !31, i64 192, !5, i64 360, !26, i64 368, !5, i64 376, !5, i64 377, !5, i64 378, !5, i64 383, !5, i64 388, !5, i64 393, !5, i64 395, !5, i64 397, !5, i64 398, !5, i64 399, !5, i64 400, !23, i64 402}
+!60 = !{!59, !4, i64 8}
+!61 = !{!20, !5, i64 72}
+!62 = !{!59, !5, i64 377}
+!63 = !{!59, !5, i64 376}
+!64 = !{!5, !5, i64 0}
+!65 = !{!59, !4, i64 16}
+!66 = !{i32 -2145550954}
+!67 = !{!68, !4, i64 208}
+!68 = !{!"pv_cpu_ops", !4, i64 0, !4, i64 8, !4, i64 16, !4, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !4, i64 56, !4, i64 64, !4, i64 72, !4, i64 80, !4, i64 88, !4, i64 96, !4, i64 104, !4, i64 112, !4, i64 120, !4, i64 128, !4, i64 136, !4, i64 144, !4, i64 152, !4, i64 160, !4, i64 168, !4, i64 176, !4, i64 184, !4, i64 192, !4, i64 200, !4, i64 208, !4, i64 216, !4, i64 224, !4, i64 232, !4, i64 240, !4, i64 248, !4, i64 256, !4, i64 264, !4, i64 272, !4, i64 280, !4, i64 288, !4, i64 296, !4, i64 304, !4, i64 312}
+!69 = !{i32 -2145550752}
+!70 = !{!59, !26, i64 368}
+!71 = !{!26, !26, i64 0}
+!72 = !{!59, !5, i64 360}
+!73 = !{!59, !5, i64 397}
+!74 = !{!59, !5, i64 398}
+!75 = !{!59, !5, i64 399}
+!76 = !{!59, !23, i64 402}
+!77 = !{!78, !22, i64 48}
+!78 = !{!"sensor_device_attribute", !79, i64 0, !22, i64 48}
+!79 = !{!"device_attribute", !80, i64 0, !4, i64 32, !4, i64 40}
+!80 = !{!"attribute", !4, i64 0, !23, i64 8, !36, i64 10, !4, i64 16, !81, i64 24}
+!81 = !{!"lock_class_key", !5, i64 0}

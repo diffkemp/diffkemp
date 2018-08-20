@@ -39156,7 +39156,7 @@ for.body:                                         ; preds = %for.cond
   br i1 %tobool.i, label %do.body2.i, label %do.body8.i
 
 do.body2.i:                                       ; preds = %for.body
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
   br label %do.body3.i
 
 do.body3.i:                                       ; preds = %do.body3.i, %do.body2.i
@@ -39174,7 +39174,7 @@ do.body8.i:                                       ; preds = %for.body
   br i1 %tobool16.i, label %do.body18.i, label %sg_page.733.exit
 
 do.body18.i:                                      ; preds = %do.body8.i
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
   br label %do.body19.i
 
 do.body19.i:                                      ; preds = %do.body19.i, %do.body18.i
@@ -39205,7 +39205,7 @@ if.then4:                                         ; preds = %sg_page.733.exit
   br i1 %tobool.i.i, label %do.body2.i.i, label %do.body8.i.i
 
 do.body2.i.i:                                     ; preds = %if.then4
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
   br label %do.body3.i.i
 
 do.body3.i.i:                                     ; preds = %do.body3.i.i, %do.body2.i.i
@@ -39223,7 +39223,7 @@ do.body8.i.i:                                     ; preds = %if.then4
   br i1 %tobool16.i.i, label %do.body18.i.i, label %sg_virt.734.exit
 
 do.body18.i.i:                                    ; preds = %do.body8.i.i
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
   br label %do.body19.i.i
 
 do.body19.i.i:                                    ; preds = %do.body19.i.i, %do.body18.i.i
@@ -40083,7 +40083,22 @@ land.end:                                         ; preds = %land.rhs, %entry
 }
 
 ; Function Attrs: nounwind uwtable
-declare void @proc_control() #0
+define internal void @proc_control() #0 {
+entry:
+  br label %if.end21
+
+if.end21:                                         ; preds = %entry
+  %0 = load i8, i8* @usbfs_snoop, align 1, !tbaa !109, !range !110
+  %tobool22 = trunc i8 %0 to i1
+  br i1 %tobool22, label %if.then23, label %cleanup
+
+if.then23:                                        ; preds = %if.end21
+  call void (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
+  br label %cleanup
+
+cleanup:                                          ; preds = %if.then23, %if.end21
+  ret void
+}
 
 declare { i64, i64 } @current_time(%struct.inode*) #2
 
@@ -42930,7 +42945,7 @@ if.then:                                          ; preds = %land.lhs.true
   br i1 %cmp20, label %if.then22, label %if.else
 
 if.then22:                                        ; preds = %if.then
-  call void @ERR_PTR()
+  call void @ERR_PTR(i64 -22)
   br label %for.end
 
 if.else:                                          ; preds = %if.then
@@ -43127,7 +43142,7 @@ for.body:                                         ; preds = %for.cond
   br i1 %tobool.i.i, label %do.body2.i.i, label %do.body8.i.i
 
 do.body2.i.i:                                     ; preds = %for.body
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
   br label %do.body3.i.i
 
 do.body3.i.i:                                     ; preds = %do.body3.i.i, %do.body2.i.i
@@ -43145,7 +43160,7 @@ do.body8.i.i:                                     ; preds = %for.body
   br i1 %tobool16.i.i, label %do.body18.i.i, label %sg_virt.734.exit
 
 do.body18.i.i:                                    ; preds = %do.body8.i.i
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
   br label %do.body19.i.i
 
 do.body19.i.i:                                    ; preds = %do.body19.i.i, %do.body18.i.i
@@ -43419,8 +43434,9 @@ do.end50:                                         ; preds = %do.body30
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal void @ERR_PTR() #1 {
+define internal void @ERR_PTR(i64 %error) #1 {
 entry:
+  %0 = inttoptr i64 %error to i8*
   ret void
 }
 
@@ -43773,7 +43789,7 @@ for.body:                                         ; preds = %for.cond
   br i1 %tobool.i.i, label %do.body2.i.i, label %do.body8.i.i
 
 do.body2.i.i:                                     ; preds = %for.body
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 123, i64 12) #8
   br label %do.body3.i.i
 
 do.body3.i.i:                                     ; preds = %do.body3.i.i, %do.body2.i.i
@@ -43791,7 +43807,7 @@ do.body8.i.i:                                     ; preds = %for.body
   br i1 %tobool16.i.i, label %do.body18.i.i, label %sg_virt.734.exit
 
 do.body18.i.i:                                    ; preds = %do.body8.i.i
-  call void @"simpll__inlineasm$0.1"(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
+  call void @simpll__inlineasm_0.1(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.37.737, i32 0, i32 0), i32 124, i64 12) #8
   br label %do.body19.i.i
 
 do.body19.i.i:                                    ; preds = %do.body19.i.i, %do.body18.i.i
@@ -49279,9 +49295,9 @@ entry:
 
 declare i32 @unregister_acpi_bus_type(%struct.acpi_bus_type*) #2
 
-declare %struct.task_struct* @"simpll__inlineasm$0"(%struct.task_struct**)
+declare %struct.task_struct* @simpll__inlineasm_0(%struct.task_struct**)
 
-declare void @"simpll__inlineasm$0.1"(i8*, i32, i64)
+declare void @simpll__inlineasm_0.1(i8*, i32, i64)
 
 attributes #0 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }

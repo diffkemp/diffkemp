@@ -605,6 +605,7 @@ declare %struct.pci_dev* @pci_dev_get(%struct.pci_dev*) #1
 define internal void @sis5595_device_add(i16 zeroext %address) #2 {
 entry:
   %res = alloca %struct.resource, align 8
+  %0 = bitcast %struct.resource* %res to i8*
   %start = getelementptr inbounds %struct.resource, %struct.resource* %res, i32 0, i32 0
   %conv = zext i16 %address to i64
   store i64 %conv, i64* %start, align 8, !tbaa !38
@@ -634,40 +635,43 @@ if.end:                                           ; preds = %entry
   %conv3 = zext i16 %address to i32
   %call4 = call %struct.platform_device* @platform_device_alloc(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i32 0, i32 0), i32 %conv3)
   store %struct.platform_device* %call4, %struct.platform_device** @pdev, align 8, !tbaa !2
-  %0 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
-  %tobool5 = icmp ne %struct.platform_device* %0, null
+  %1 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
+  %tobool5 = icmp ne %struct.platform_device* %1, null
   br i1 %tobool5, label %if.end8, label %if.then6
 
 if.then6:                                         ; preds = %if.end
-  %1 = call i32 (i8*, ...) @printk(i8* null)
+  %2 = call i32 (i8*, ...) @printk(i8* null)
   br label %cleanup
 
 if.end8:                                          ; preds = %if.end
-  %2 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
-  %call9 = call i32 @platform_device_add_resources(%struct.platform_device* %2, %struct.resource* %res, i32 1)
+  %3 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
+  %call9 = call i32 @platform_device_add_resources(%struct.platform_device* %3, %struct.resource* %res, i32 1)
   %tobool10 = icmp ne i32 %call9, 0
   br i1 %tobool10, label %if.then11, label %if.end13
 
 if.then11:                                        ; preds = %if.end8
-  %3 = call i32 (i8*, ...) @printk(i8* null)
+  %4 = call i32 (i8*, ...) @printk(i8* null)
   br label %exit_device_put
 
 if.end13:                                         ; preds = %if.end8
-  %4 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
-  %call14 = call i32 @platform_device_add(%struct.platform_device* %4)
+  %5 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
+  %call14 = call i32 @platform_device_add(%struct.platform_device* %5)
   %tobool15 = icmp ne i32 %call14, 0
   br i1 %tobool15, label %if.then16, label %cleanup
 
 if.then16:                                        ; preds = %if.end13
-  %5 = call i32 (i8*, ...) @printk(i8* null)
+  %6 = call i32 (i8*, ...) @printk(i8* null)
   br label %exit_device_put
 
 exit_device_put:                                  ; preds = %if.then16, %if.then11
-  %6 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
-  call void @platform_device_put(%struct.platform_device* %6)
+  %err.0 = phi i32 [ %call9, %if.then11 ], [ %call14, %if.then16 ]
+  %7 = load %struct.platform_device*, %struct.platform_device** @pdev, align 8, !tbaa !2
+  call void @platform_device_put(%struct.platform_device* %7)
   br label %cleanup
 
 cleanup:                                          ; preds = %exit_device_put, %if.end13, %if.then6, %entry
+  %retval.0 = phi i32 [ 0, %if.end13 ], [ %err.0, %exit_device_put ], [ -12, %if.then6 ], [ %call, %entry ]
+  %8 = bitcast %struct.resource* %res to i8*
   ret void
 }
 
@@ -1024,27 +1028,39 @@ entry:
 ; Function Attrs: nounwind uwtable
 define internal %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev) #2 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy1 = alloca i64, align 8
+  %__dummy22 = alloca i64, align 8
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.sis5595_data*
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
+  %1 = bitcast i64* %__dummy to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy to i8*
   %tobool = icmp ne i32 1, 0
   br i1 %tobool, label %land.lhs.true, label %lor.lhs.false
 
 land.lhs.true:                                    ; preds = %entry
+  %5 = bitcast i64* %__dummy1 to i8*
+  %6 = bitcast i64* %__dummy22 to i8*
+  %7 = bitcast i64* %__dummy22 to i8*
+  %8 = bitcast i64* %__dummy1 to i8*
   %last_updated = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 6
-  %1 = load i64, i64* %last_updated, align 8, !tbaa !63
-  %add = add i64 %1, 250
+  %9 = load i64, i64* %last_updated, align 8, !tbaa !63
+  %add = add i64 %9, 250
   %add8 = add i64 %add, 125
-  %2 = load volatile i64, i64* @jiffies, align 8, !tbaa !64
-  %sub = sub i64 %add8, %2
+  %10 = load volatile i64, i64* @jiffies, align 8, !tbaa !64
+  %sub = sub i64 %add8, %10
   %cmp9 = icmp slt i64 %sub, 0
   br i1 %cmp9, label %if.then, label %lor.lhs.false
 
 lor.lhs.false:                                    ; preds = %land.lhs.true, %entry
   %valid = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 5
-  %3 = load i8, i8* %valid, align 8, !tbaa !65
-  %tobool11 = icmp ne i8 %3, 0
+  %11 = load i8, i8* %valid, align 8, !tbaa !65
+  %tobool11 = icmp ne i8 %11, 0
   br i1 %tobool11, label %if.end90, label %if.then
 
 if.then:                                          ; preds = %lor.lhs.false, %land.lhs.true
@@ -1053,8 +1069,8 @@ if.then:                                          ; preds = %lor.lhs.false, %lan
 for.cond:                                         ; preds = %for.body, %if.then
   %i.0 = phi i32 [ 0, %if.then ], [ %inc, %for.body ]
   %maxins = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 7
-  %4 = load i8, i8* %maxins, align 8, !tbaa !55
-  %conv12 = sext i8 %4 to i32
+  %12 = load i8, i8* %maxins, align 8, !tbaa !55
+  %conv12 = sext i8 %12 to i32
   %cmp13 = icmp sle i32 %i.0, %conv12
   br i1 %cmp13, label %for.body, label %for.end
 
@@ -1118,15 +1134,15 @@ for.body35:                                       ; preds = %for.cond32
 
 for.end50:                                        ; preds = %for.cond32
   %maxins51 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 7
-  %5 = load i8, i8* %maxins51, align 8, !tbaa !55
-  %conv52 = sext i8 %5 to i32
+  %13 = load i8, i8* %maxins51, align 8, !tbaa !55
+  %conv52 = sext i8 %13 to i32
   %cmp53 = icmp eq i32 %conv52, 3
   br i1 %cmp53, label %if.then55, label %if.end
 
 if.then55:                                        ; preds = %for.end50
   %revision = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %6 = load i8, i8* %revision, align 1, !tbaa !54
-  %conv56 = zext i8 %6 to i32
+  %14 = load i8, i8* %revision, align 1, !tbaa !54
+  %conv56 = zext i8 %14 to i32
   %cmp57 = icmp sge i32 %conv56, 176
   %cond = select i1 %cmp57, i32 36, i32 39
   %conv59 = trunc i32 %cond to i8
@@ -1135,8 +1151,8 @@ if.then55:                                        ; preds = %for.end50
   %temp = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 14
   store i8 %conv61, i8* %temp, align 1, !tbaa !66
   %revision62 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %7 = load i8, i8* %revision62, align 1, !tbaa !54
-  %conv63 = zext i8 %7 to i32
+  %15 = load i8, i8* %revision62, align 1, !tbaa !54
+  %conv63 = zext i8 %15 to i32
   %cmp64 = icmp sge i32 %conv63, 176
   %cond66 = select i1 %cmp64, i32 51, i32 57
   %conv67 = trunc i32 %cond66 to i8
@@ -1145,8 +1161,8 @@ if.then55:                                        ; preds = %for.end50
   %temp_over = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 15
   store i8 %conv69, i8* %temp_over, align 2, !tbaa !67
   %revision70 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %8 = load i8, i8* %revision70, align 1, !tbaa !54
-  %conv71 = zext i8 %8 to i32
+  %16 = load i8, i8* %revision70, align 1, !tbaa !54
+  %conv71 = zext i8 %16 to i32
   %cmp72 = icmp sge i32 %conv71, 176
   %cond74 = select i1 %cmp72, i32 52, i32 58
   %conv75 = trunc i32 %cond74 to i8
@@ -1176,9 +1192,9 @@ if.end:                                           ; preds = %if.then55, %for.end
   %conv87 = trunc i32 %or to i16
   %alarms = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 18
   store i16 %conv87, i16* %alarms, align 2, !tbaa !69
-  %9 = load volatile i64, i64* @jiffies, align 8, !tbaa !64
+  %17 = load volatile i64, i64* @jiffies, align 8, !tbaa !64
   %last_updated88 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 6
-  store i64 %9, i64* %last_updated88, align 8, !tbaa !63
+  store i64 %17, i64* %last_updated88, align 8, !tbaa !63
   %valid89 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 5
   store i8 1, i8* %valid89, align 8, !tbaa !65
   br label %if.end90
@@ -1219,6 +1235,7 @@ entry:
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
   %3 = load i32, i32* %index, align 8, !tbaa !70
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1230,8 +1247,8 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %4 = load i64, i64* %val, align 8, !tbaa !64
-  %call2 = call zeroext i8 @IN_TO_REG(i64 %4)
+  %5 = load i64, i64* %val, align 8, !tbaa !64
+  %call2 = call zeroext i8 @IN_TO_REG(i64 %5)
   %in_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 11
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [5 x i8], [5 x i8]* %in_min, i64 0, i64 %idxprom
@@ -1242,14 +1259,15 @@ if.end:                                           ; preds = %entry
   %in_min4 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 11
   %idxprom5 = sext i32 %3 to i64
   %arrayidx6 = getelementptr inbounds [5 x i8], [5 x i8]* %in_min4, i64 0, i64 %idxprom5
-  %5 = load i8, i8* %arrayidx6, align 1, !tbaa !56
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %5)
+  %6 = load i8, i8* %arrayidx6, align 1, !tbaa !56
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %6)
   %update_lock7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock7)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %7 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1267,22 +1285,30 @@ entry:
   %__UNIQUE_ID_min1_14 = alloca i64, align 8
   %__UNIQUE_ID_min2_15 = alloca i64, align 8
   %__UNIQUE_ID_min2_17 = alloca i64, align 8
+  %0 = bitcast i64* %__UNIQUE_ID_min1_16 to i8*
+  %1 = bitcast i64* %__UNIQUE_ID_min1_14 to i8*
   store i64 %val, i64* %__UNIQUE_ID_min1_14, align 8, !tbaa !64
+  %2 = bitcast i64* %__UNIQUE_ID_min2_15 to i8*
   store i64 0, i64* %__UNIQUE_ID_min2_15, align 8, !tbaa !64
-  %0 = load i64, i64* %__UNIQUE_ID_min1_14, align 8, !tbaa !64
-  %1 = load i64, i64* %__UNIQUE_ID_min2_15, align 8, !tbaa !64
-  %cmp1 = icmp ugt i64 %0, %1
-  %2 = load i64, i64* %__UNIQUE_ID_min1_14, align 8
-  %3 = load i64, i64* %__UNIQUE_ID_min2_15, align 8
-  %cond = select i1 %cmp1, i64 %2, i64 %3
+  %3 = load i64, i64* %__UNIQUE_ID_min1_14, align 8, !tbaa !64
+  %4 = load i64, i64* %__UNIQUE_ID_min2_15, align 8, !tbaa !64
+  %cmp1 = icmp ugt i64 %3, %4
+  %5 = load i64, i64* %__UNIQUE_ID_min1_14, align 8
+  %6 = load i64, i64* %__UNIQUE_ID_min2_15, align 8
+  %cond = select i1 %cmp1, i64 %5, i64 %6
+  %7 = bitcast i64* %__UNIQUE_ID_min2_15 to i8*
+  %8 = bitcast i64* %__UNIQUE_ID_min1_14 to i8*
   store i64 %cond, i64* %__UNIQUE_ID_min1_16, align 8, !tbaa !64
+  %9 = bitcast i64* %__UNIQUE_ID_min2_17 to i8*
   store i64 4080, i64* %__UNIQUE_ID_min2_17, align 8, !tbaa !64
-  %4 = load i64, i64* %__UNIQUE_ID_min1_16, align 8, !tbaa !64
-  %5 = load i64, i64* %__UNIQUE_ID_min2_17, align 8, !tbaa !64
-  %cmp6 = icmp ult i64 %4, %5
-  %6 = load i64, i64* %__UNIQUE_ID_min1_16, align 8
-  %7 = load i64, i64* %__UNIQUE_ID_min2_17, align 8
-  %cond11 = select i1 %cmp6, i64 %6, i64 %7
+  %10 = load i64, i64* %__UNIQUE_ID_min1_16, align 8, !tbaa !64
+  %11 = load i64, i64* %__UNIQUE_ID_min2_17, align 8, !tbaa !64
+  %cmp6 = icmp ult i64 %10, %11
+  %12 = load i64, i64* %__UNIQUE_ID_min1_16, align 8
+  %13 = load i64, i64* %__UNIQUE_ID_min2_17, align 8
+  %cond11 = select i1 %cmp6, i64 %12, i64 %13
+  %14 = bitcast i64* %__UNIQUE_ID_min2_17 to i8*
+  %15 = bitcast i64* %__UNIQUE_ID_min1_16 to i8*
   %add = add i64 %cond11, 8
   %div = udiv i64 %add, 16
   %conv12 = trunc i64 %div to i8
@@ -1311,6 +1337,7 @@ entry:
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
   %3 = load i32, i32* %index, align 8, !tbaa !70
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1322,8 +1349,8 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %4 = load i64, i64* %val, align 8, !tbaa !64
-  %call2 = call zeroext i8 @IN_TO_REG(i64 %4)
+  %5 = load i64, i64* %val, align 8, !tbaa !64
+  %call2 = call zeroext i8 @IN_TO_REG(i64 %5)
   %in_max = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 10
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [5 x i8], [5 x i8]* %in_max, i64 0, i64 %idxprom
@@ -1334,14 +1361,15 @@ if.end:                                           ; preds = %entry
   %in_max4 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 10
   %idxprom5 = sext i32 %3 to i64
   %arrayidx6 = getelementptr inbounds [5 x i8], [5 x i8]* %in_max4, i64 0, i64 %idxprom5
-  %5 = load i8, i8* %arrayidx6, align 1, !tbaa !56
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %5)
+  %6 = load i8, i8* %arrayidx6, align 1, !tbaa !56
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv3, i8 zeroext %6)
   %update_lock7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock7)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %7 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1438,6 +1466,7 @@ entry:
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
   %3 = load i32, i32* %index, align 8, !tbaa !70
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1449,14 +1478,14 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %4 = load i64, i64* %val, align 8, !tbaa !64
+  %5 = load i64, i64* %val, align 8, !tbaa !64
   %fan_div = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div, i64 0, i64 %idxprom
-  %5 = load i8, i8* %arrayidx, align 1, !tbaa !56
-  %conv2 = zext i8 %5 to i32
+  %6 = load i8, i8* %arrayidx, align 1, !tbaa !56
+  %conv2 = zext i8 %6 to i32
   %shl = shl i32 1, %conv2
-  %call3 = call zeroext i8 @FAN_TO_REG(i64 %4, i32 %shl)
+  %call3 = call zeroext i8 @FAN_TO_REG(i64 %5, i32 %shl)
   %fan_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom4 = sext i32 %3 to i64
   %arrayidx5 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min, i64 0, i64 %idxprom4
@@ -1466,14 +1495,15 @@ if.end:                                           ; preds = %entry
   %fan_min7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom8 = sext i32 %3 to i64
   %arrayidx9 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min7, i64 0, i64 %idxprom8
-  %6 = load i8, i8* %arrayidx9, align 1, !tbaa !56
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %6)
+  %7 = load i8, i8* %arrayidx9, align 1, !tbaa !56
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv6, i8 zeroext %7)
   %update_lock10 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock10)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %8 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1492,6 +1522,8 @@ if.end:                                           ; preds = %entry
   br i1 %cmp1, label %return, label %if.end3
 
 if.end3:                                          ; preds = %if.end
+  %0 = bitcast i64* %__UNIQUE_ID_min1_20 to i8*
+  %1 = bitcast i64* %__UNIQUE_ID_min1_18 to i8*
   %conv = sext i32 %div to i64
   %mul = mul nsw i64 %rpm, %conv
   %div4 = sdiv i64 %mul, 2
@@ -1500,21 +1532,27 @@ if.end3:                                          ; preds = %if.end
   %mul6 = mul nsw i64 %rpm, %conv5
   %div7 = sdiv i64 %add, %mul6
   store i64 %div7, i64* %__UNIQUE_ID_min1_18, align 8, !tbaa !64
+  %2 = bitcast i64* %__UNIQUE_ID_min2_19 to i8*
   store i64 1, i64* %__UNIQUE_ID_min2_19, align 8, !tbaa !64
-  %0 = load i64, i64* %__UNIQUE_ID_min1_18, align 8, !tbaa !64
-  %1 = load i64, i64* %__UNIQUE_ID_min2_19, align 8, !tbaa !64
-  %cmp10 = icmp sgt i64 %0, %1
-  %2 = load i64, i64* %__UNIQUE_ID_min1_18, align 8
-  %3 = load i64, i64* %__UNIQUE_ID_min2_19, align 8
-  %cond = select i1 %cmp10, i64 %2, i64 %3
+  %3 = load i64, i64* %__UNIQUE_ID_min1_18, align 8, !tbaa !64
+  %4 = load i64, i64* %__UNIQUE_ID_min2_19, align 8, !tbaa !64
+  %cmp10 = icmp sgt i64 %3, %4
+  %5 = load i64, i64* %__UNIQUE_ID_min1_18, align 8
+  %6 = load i64, i64* %__UNIQUE_ID_min2_19, align 8
+  %cond = select i1 %cmp10, i64 %5, i64 %6
+  %7 = bitcast i64* %__UNIQUE_ID_min2_19 to i8*
+  %8 = bitcast i64* %__UNIQUE_ID_min1_18 to i8*
   store i64 %cond, i64* %__UNIQUE_ID_min1_20, align 8, !tbaa !64
+  %9 = bitcast i64* %__UNIQUE_ID_min2_21 to i8*
   store i64 254, i64* %__UNIQUE_ID_min2_21, align 8, !tbaa !64
-  %4 = load i64, i64* %__UNIQUE_ID_min1_20, align 8, !tbaa !64
-  %5 = load i64, i64* %__UNIQUE_ID_min2_21, align 8, !tbaa !64
-  %cmp15 = icmp slt i64 %4, %5
-  %6 = load i64, i64* %__UNIQUE_ID_min1_20, align 8
-  %7 = load i64, i64* %__UNIQUE_ID_min2_21, align 8
-  %cond20 = select i1 %cmp15, i64 %6, i64 %7
+  %10 = load i64, i64* %__UNIQUE_ID_min1_20, align 8, !tbaa !64
+  %11 = load i64, i64* %__UNIQUE_ID_min2_21, align 8, !tbaa !64
+  %cmp15 = icmp slt i64 %10, %11
+  %12 = load i64, i64* %__UNIQUE_ID_min1_20, align 8
+  %13 = load i64, i64* %__UNIQUE_ID_min2_21, align 8
+  %cond20 = select i1 %cmp15, i64 %12, i64 %13
+  %14 = bitcast i64* %__UNIQUE_ID_min2_21 to i8*
+  %15 = bitcast i64* %__UNIQUE_ID_min1_20 to i8*
   %conv21 = trunc i64 %cond20 to i8
   br label %return
 
@@ -1543,6 +1581,7 @@ entry:
   %2 = bitcast i8* %add.ptr to %struct.sensor_device_attribute*
   %index = getelementptr inbounds %struct.sensor_device_attribute, %struct.sensor_device_attribute* %2, i32 0, i32 1
   %3 = load i32, i32* %index, align 8, !tbaa !70
+  %4 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtoul(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1557,42 +1596,42 @@ if.end:                                           ; preds = %entry
   %fan_min = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom = sext i32 %3 to i64
   %arrayidx = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min, i64 0, i64 %idxprom
-  %4 = load i8, i8* %arrayidx, align 1, !tbaa !56
+  %5 = load i8, i8* %arrayidx, align 1, !tbaa !56
   %fan_div = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom2 = sext i32 %3 to i64
   %arrayidx3 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div, i64 0, i64 %idxprom2
-  %5 = load i8, i8* %arrayidx3, align 1, !tbaa !56
-  %conv4 = zext i8 %5 to i32
+  %6 = load i8, i8* %arrayidx3, align 1, !tbaa !56
+  %conv4 = zext i8 %6 to i32
   %shl = shl i32 1, %conv4
-  %call5 = call i32 @FAN_FROM_REG(i8 zeroext %4, i32 %shl)
+  %call5 = call i32 @FAN_FROM_REG(i8 zeroext %5, i32 %shl)
   %conv6 = sext i32 %call5 to i64
   %call7 = call i32 @sis5595_read_value(%struct.sis5595_data* %0, i8 zeroext 71)
-  %6 = load i64, i64* %val, align 8, !tbaa !64
-  %Pivot10 = icmp slt i64 %6, 4
+  %7 = load i64, i64* %val, align 8, !tbaa !64
+  %Pivot10 = icmp slt i64 %7, 4
   br i1 %Pivot10, label %NodeBlock, label %NodeBlock7
 
 NodeBlock7:                                       ; preds = %if.end
-  %Pivot8 = icmp slt i64 %6, 8
+  %Pivot8 = icmp slt i64 %7, 8
   br i1 %Pivot8, label %LeafBlock3, label %LeafBlock5
 
 LeafBlock5:                                       ; preds = %NodeBlock7
-  %SwitchLeaf6 = icmp eq i64 %6, 8
+  %SwitchLeaf6 = icmp eq i64 %7, 8
   br i1 %SwitchLeaf6, label %sw.epilog, label %sw.default
 
 LeafBlock3:                                       ; preds = %NodeBlock7
-  %SwitchLeaf4 = icmp eq i64 %6, 4
+  %SwitchLeaf4 = icmp eq i64 %7, 4
   br i1 %SwitchLeaf4, label %sw.epilog, label %sw.default
 
 NodeBlock:                                        ; preds = %if.end
-  %Pivot = icmp slt i64 %6, 2
+  %Pivot = icmp slt i64 %7, 2
   br i1 %Pivot, label %LeafBlock, label %LeafBlock1
 
 LeafBlock1:                                       ; preds = %NodeBlock
-  %SwitchLeaf2 = icmp eq i64 %6, 2
+  %SwitchLeaf2 = icmp eq i64 %7, 2
   br i1 %SwitchLeaf2, label %sw.epilog, label %sw.default
 
 LeafBlock:                                        ; preds = %NodeBlock
-  %SwitchLeaf = icmp eq i64 %6, 1
+  %SwitchLeaf = icmp eq i64 %7, 1
   br i1 %SwitchLeaf, label %sw.epilog, label %sw.default
 
 sw.default:                                       ; preds = %LeafBlock, %LeafBlock1, %LeafBlock3, %LeafBlock5
@@ -1623,8 +1662,8 @@ sw.bb24:                                          ; preds = %LeafBlock12
   %fan_div25 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom26 = sext i32 %3 to i64
   %arrayidx27 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div25, i64 0, i64 %idxprom26
-  %7 = load i8, i8* %arrayidx27, align 1, !tbaa !56
-  %conv28 = zext i8 %7 to i32
+  %8 = load i8, i8* %arrayidx27, align 1, !tbaa !56
+  %conv28 = zext i8 %8 to i32
   %shl29 = shl i32 %conv28, 4
   %or = or i32 %and, %shl29
   br label %sw.epilog38
@@ -1634,8 +1673,8 @@ sw.bb30:                                          ; preds = %LeafBlock14
   %fan_div32 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom33 = sext i32 %3 to i64
   %arrayidx34 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div32, i64 0, i64 %idxprom33
-  %8 = load i8, i8* %arrayidx34, align 1, !tbaa !56
-  %conv35 = zext i8 %8 to i32
+  %9 = load i8, i8* %arrayidx34, align 1, !tbaa !56
+  %conv35 = zext i8 %9 to i32
   %shl36 = shl i32 %conv35, 6
   %or37 = or i32 %and31, %shl36
   br label %sw.epilog38
@@ -1647,8 +1686,8 @@ sw.epilog38:                                      ; preds = %sw.bb30, %sw.bb24, 
   %fan_div40 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 17
   %idxprom41 = sext i32 %3 to i64
   %arrayidx42 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_div40, i64 0, i64 %idxprom41
-  %9 = load i8, i8* %arrayidx42, align 1, !tbaa !56
-  %conv43 = zext i8 %9 to i32
+  %10 = load i8, i8* %arrayidx42, align 1, !tbaa !56
+  %conv43 = zext i8 %10 to i32
   %shl44 = shl i32 1, %conv43
   %call45 = call zeroext i8 @FAN_TO_REG(i64 %conv6, i32 %shl44)
   %fan_min46 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
@@ -1660,14 +1699,15 @@ sw.epilog38:                                      ; preds = %sw.bb30, %sw.bb24, 
   %fan_min50 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 13
   %idxprom51 = sext i32 %3 to i64
   %arrayidx52 = getelementptr inbounds [2 x i8], [2 x i8]* %fan_min50, i64 0, i64 %idxprom51
-  %10 = load i8, i8* %arrayidx52, align 1, !tbaa !56
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv49, i8 zeroext %10)
+  %11 = load i8, i8* %arrayidx52, align 1, !tbaa !56
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv49, i8 zeroext %11)
   %update_lock53 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock53)
   br label %cleanup
 
 cleanup:                                          ; preds = %sw.epilog38, %sw.default, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %sw.epilog38 ], [ -22, %sw.default ]
+  %12 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1693,15 +1733,20 @@ entry:
 define internal i64 @temp1_input_show(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #2 {
 entry:
   %call = call %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev)
-  call void @TEMP_FROM_REG()
-  %0 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
-  %conv = sext i32 %0 to i64
+  %temp = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 14
+  %0 = load i8, i8* %temp, align 1, !tbaa !66
+  call void @TEMP_FROM_REG(i8 signext %0)
+  %1 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %conv = sext i32 %1 to i64
   ret i64 %conv
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal void @TEMP_FROM_REG() #4 {
+define internal void @TEMP_FROM_REG(i8 signext %val) #4 {
 entry:
+  %conv = sext i8 %val to i32
+  %mul = mul nsw i32 %conv, 830
+  %add = add nsw i32 %mul, 52120
   ret void
 }
 
@@ -1709,9 +1754,11 @@ entry:
 define internal i64 @temp1_max_show(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #2 {
 entry:
   %call = call %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev)
-  call void @TEMP_FROM_REG()
-  %0 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
-  %conv = sext i32 %0 to i64
+  %temp_over = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 15
+  %0 = load i8, i8* %temp_over, align 2, !tbaa !67
+  call void @TEMP_FROM_REG(i8 signext %0)
+  %1 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %conv = sext i32 %1 to i64
   ret i64 %conv
 }
 
@@ -1721,6 +1768,7 @@ entry:
   %val = alloca i64, align 8
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.sis5595_data*
+  %1 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtol(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1732,25 +1780,26 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %1 = load i64, i64* %val, align 8, !tbaa !64
-  %call2 = call signext i8 @TEMP_TO_REG(i64 %1)
+  %2 = load i64, i64* %val, align 8, !tbaa !64
+  %call2 = call signext i8 @TEMP_TO_REG(i64 %2)
   %temp_over = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 15
   store i8 %call2, i8* %temp_over, align 2, !tbaa !67
   %revision = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %2 = load i8, i8* %revision, align 1, !tbaa !54
-  %conv3 = zext i8 %2 to i32
+  %3 = load i8, i8* %revision, align 1, !tbaa !54
+  %conv3 = zext i8 %3 to i32
   %cmp = icmp sge i32 %conv3, 176
   %cond = select i1 %cmp, i32 51, i32 57
   %conv5 = trunc i32 %cond to i8
   %temp_over6 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 15
-  %3 = load i8, i8* %temp_over6, align 2, !tbaa !67
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv5, i8 zeroext %3)
+  %4 = load i8, i8* %temp_over6, align 2, !tbaa !67
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv5, i8 zeroext %4)
   %update_lock7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock7)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %5 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 
@@ -1768,22 +1817,30 @@ entry:
   %__UNIQUE_ID_min1_22 = alloca i64, align 8
   %__UNIQUE_ID_min2_23 = alloca i64, align 8
   %__UNIQUE_ID_min2_25 = alloca i64, align 8
+  %0 = bitcast i64* %__UNIQUE_ID_min1_24 to i8*
+  %1 = bitcast i64* %__UNIQUE_ID_min1_22 to i8*
   store i64 %val, i64* %__UNIQUE_ID_min1_22, align 8, !tbaa !64
+  %2 = bitcast i64* %__UNIQUE_ID_min2_23 to i8*
   store i64 -54120, i64* %__UNIQUE_ID_min2_23, align 8, !tbaa !64
-  %0 = load i64, i64* %__UNIQUE_ID_min1_22, align 8, !tbaa !64
-  %1 = load i64, i64* %__UNIQUE_ID_min2_23, align 8, !tbaa !64
-  %cmp1 = icmp sgt i64 %0, %1
-  %2 = load i64, i64* %__UNIQUE_ID_min1_22, align 8
-  %3 = load i64, i64* %__UNIQUE_ID_min2_23, align 8
-  %cond = select i1 %cmp1, i64 %2, i64 %3
+  %3 = load i64, i64* %__UNIQUE_ID_min1_22, align 8, !tbaa !64
+  %4 = load i64, i64* %__UNIQUE_ID_min2_23, align 8, !tbaa !64
+  %cmp1 = icmp sgt i64 %3, %4
+  %5 = load i64, i64* %__UNIQUE_ID_min1_22, align 8
+  %6 = load i64, i64* %__UNIQUE_ID_min2_23, align 8
+  %cond = select i1 %cmp1, i64 %5, i64 %6
+  %7 = bitcast i64* %__UNIQUE_ID_min2_23 to i8*
+  %8 = bitcast i64* %__UNIQUE_ID_min1_22 to i8*
   store i64 %cond, i64* %__UNIQUE_ID_min1_24, align 8, !tbaa !64
+  %9 = bitcast i64* %__UNIQUE_ID_min2_25 to i8*
   store i64 157530, i64* %__UNIQUE_ID_min2_25, align 8, !tbaa !64
-  %4 = load i64, i64* %__UNIQUE_ID_min1_24, align 8, !tbaa !64
-  %5 = load i64, i64* %__UNIQUE_ID_min2_25, align 8, !tbaa !64
-  %cmp6 = icmp slt i64 %4, %5
-  %6 = load i64, i64* %__UNIQUE_ID_min1_24, align 8
-  %7 = load i64, i64* %__UNIQUE_ID_min2_25, align 8
-  %cond11 = select i1 %cmp6, i64 %6, i64 %7
+  %10 = load i64, i64* %__UNIQUE_ID_min1_24, align 8, !tbaa !64
+  %11 = load i64, i64* %__UNIQUE_ID_min2_25, align 8, !tbaa !64
+  %cmp6 = icmp slt i64 %10, %11
+  %12 = load i64, i64* %__UNIQUE_ID_min1_24, align 8
+  %13 = load i64, i64* %__UNIQUE_ID_min2_25, align 8
+  %cond11 = select i1 %cmp6, i64 %12, i64 %13
+  %14 = bitcast i64* %__UNIQUE_ID_min2_25 to i8*
+  %15 = bitcast i64* %__UNIQUE_ID_min1_24 to i8*
   %conv12 = trunc i64 %cond11 to i32
   %cmp13 = icmp slt i32 %conv12, 0
   %sub = sub nsw i32 %conv12, 5212
@@ -1801,9 +1858,11 @@ declare i32 @kstrtoll(i8*, i32, i64*) #1
 define internal i64 @temp1_max_hyst_show(%struct.device* %dev, %struct.device_attribute* %attr, i8* %buf) #2 {
 entry:
   %call = call %struct.sis5595_data* @sis5595_update_device(%struct.device* %dev)
-  call void @TEMP_FROM_REG()
-  %0 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
-  %conv = sext i32 %0 to i64
+  %temp_hyst = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %call, i32 0, i32 16
+  %0 = load i8, i8* %temp_hyst, align 1, !tbaa !68
+  call void @TEMP_FROM_REG(i8 signext %0)
+  %1 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %conv = sext i32 %1 to i64
   ret i64 %conv
 }
 
@@ -1813,6 +1872,7 @@ entry:
   %val = alloca i64, align 8
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.sis5595_data*
+  %1 = bitcast i64* %val to i8*
   %call1 = call i32 @kstrtol(i8* %buf, i32 10, i64* %val)
   %tobool = icmp ne i32 %call1, 0
   br i1 %tobool, label %if.then, label %if.end
@@ -1824,25 +1884,26 @@ if.then:                                          ; preds = %entry
 if.end:                                           ; preds = %entry
   %update_lock = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_lock_nested(%struct.mutex* %update_lock, i32 0)
-  %1 = load i64, i64* %val, align 8, !tbaa !64
-  %call2 = call signext i8 @TEMP_TO_REG(i64 %1)
+  %2 = load i64, i64* %val, align 8, !tbaa !64
+  %call2 = call signext i8 @TEMP_TO_REG(i64 %2)
   %temp_hyst = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 16
   store i8 %call2, i8* %temp_hyst, align 1, !tbaa !68
   %revision = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 8
-  %2 = load i8, i8* %revision, align 1, !tbaa !54
-  %conv3 = zext i8 %2 to i32
+  %3 = load i8, i8* %revision, align 1, !tbaa !54
+  %conv3 = zext i8 %3 to i32
   %cmp = icmp sge i32 %conv3, 176
   %cond = select i1 %cmp, i32 52, i32 58
   %conv5 = trunc i32 %cond to i8
   %temp_hyst6 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 16
-  %3 = load i8, i8* %temp_hyst6, align 1, !tbaa !68
-  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv5, i8 zeroext %3)
+  %4 = load i8, i8* %temp_hyst6, align 1, !tbaa !68
+  call void @sis5595_write_value(%struct.sis5595_data* %0, i8 zeroext %conv5, i8 zeroext %4)
   %update_lock7 = getelementptr inbounds %struct.sis5595_data, %struct.sis5595_data* %0, i32 0, i32 4
   call void @mutex_unlock(%struct.mutex* %update_lock7)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i64 [ %conv, %if.then ], [ %count, %if.end ]
+  %5 = bitcast i64* %val to i8*
   ret i64 %retval.0
 }
 

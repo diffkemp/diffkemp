@@ -785,32 +785,7 @@ if.end47:                                         ; preds = %if.else42, %if.then
 }
 
 ; Function Attrs: nounwind uwtable
-define i32 @wm97xx_reg_read(%struct.wm97xx* %wm, i16 zeroext %reg) #0 {
-entry:
-  %ac97 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 7
-  %0 = load %struct.snd_ac97*, %struct.snd_ac97** %ac97, align 8, !tbaa !21
-  %tobool = icmp ne %struct.snd_ac97* %0, null
-  br i1 %tobool, label %if.then, label %return
-
-if.then:                                          ; preds = %entry
-  %ac971 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 7
-  %1 = load %struct.snd_ac97*, %struct.snd_ac97** %ac971, align 8, !tbaa !21
-  %bus = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %1, i32 0, i32 3
-  %2 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %bus, align 8, !tbaa !22
-  %ops = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %2, i32 0, i32 0
-  %3 = load %struct.snd_ac97_bus_ops*, %struct.snd_ac97_bus_ops** %ops, align 8, !tbaa !36
-  %read = getelementptr inbounds %struct.snd_ac97_bus_ops, %struct.snd_ac97_bus_ops* %3, i32 0, i32 3
-  %4 = load i16 (%struct.snd_ac97*, i16)*, i16 (%struct.snd_ac97*, i16)** %read, align 8, !tbaa !38
-  %ac972 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 7
-  %5 = load %struct.snd_ac97*, %struct.snd_ac97** %ac972, align 8, !tbaa !21
-  %call = call zeroext i16 %4(%struct.snd_ac97* %5, i16 zeroext %reg)
-  %conv = zext i16 %call to i32
-  br label %return
-
-return:                                           ; preds = %if.then, %entry
-  %retval.0 = phi i32 [ %conv, %if.then ], [ -1, %entry ]
-  ret i32 %retval.0
-}
+declare i32 @wm97xx_reg_read(%struct.wm97xx*, i16 zeroext) #0
 
 ; Function Attrs: nounwind uwtable
 declare void @wm97xx_reg_write(%struct.wm97xx*, i16 zeroext, i16 zeroext) #0
@@ -840,14 +815,14 @@ if.end:                                           ; preds = %if.else, %if.then
   %and.sink = phi i32 [ %and, %if.else ], [ %or, %if.then ]
   %conv5 = trunc i32 %and.sink to i16
   %id = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 1
-  %0 = load i16, i16* %id, align 2, !tbaa !40
+  %0 = load i16, i16* %id, align 2, !tbaa !21
   %conv6 = zext i16 %0 to i32
   %cmp7 = icmp eq i32 %conv6, 19474
   br i1 %cmp7, label %land.lhs.true, label %if.else15
 
 land.lhs.true:                                    ; preds = %if.end
   %variant = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 22
-  %1 = load i16, i16* %variant, align 2, !tbaa !41
+  %1 = load i16, i16* %variant, align 2, !tbaa !22
   %conv9 = zext i16 %1 to i32
   %cmp10 = icmp ne i32 %conv9, 5651
   br i1 %cmp10, label %if.then12, label %if.else15
@@ -892,7 +867,7 @@ entry:
   %codec_mutex = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 12
   call void @mutex_lock_nested(%struct.mutex* %codec_mutex, i32 0)
   %id = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 1
-  %0 = load i16, i16* %id, align 2, !tbaa !40
+  %0 = load i16, i16* %id, align 2, !tbaa !21
   %conv = zext i16 %0 to i32
   %cmp = icmp eq i32 %conv, 19475
   br i1 %cmp, label %land.lhs.true, label %if.end
@@ -916,9 +891,9 @@ if.end:                                           ; preds = %if.then, %land.lhs.
   %power.0 = phi i16 [ %conv2, %if.then ], [ %conv2, %land.lhs.true ], [ 0, %entry ]
   %power_adc.0 = phi i32 [ 1, %if.then ], [ 0, %land.lhs.true ], [ 0, %entry ]
   %codec = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 5
-  %1 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !42
+  %1 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !23
   %aux_prepare = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %1, i32 0, i32 8
-  %2 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %aux_prepare, align 8, !tbaa !43
+  %2 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %aux_prepare, align 8, !tbaa !24
   call void %2(%struct.wm97xx* %wm)
   %pen_probably_down = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 21
   %bf.load = load i8, i8* %pen_probably_down, align 4
@@ -939,9 +914,9 @@ while.cond:                                       ; preds = %while.body, %if.end
 
 while.body:                                       ; preds = %while.cond
   %codec11 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 5
-  %4 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec11, align 8, !tbaa !42
+  %4 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec11, align 8, !tbaa !23
   %poll_sample = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %4, i32 0, i32 2
-  %5 = load i32 (%struct.wm97xx*, i32, i32*)*, i32 (%struct.wm97xx*, i32, i32*)** %poll_sample, align 8, !tbaa !45
+  %5 = load i32 (%struct.wm97xx*, i32, i32*)*, i32 (%struct.wm97xx*, i32, i32*)** %poll_sample, align 8, !tbaa !26
   %conv12 = zext i16 %adcsel to i32
   %call13 = call i32 %5(%struct.wm97xx* %wm, i32 %conv12, i32* %auxval)
   br label %while.cond
@@ -959,9 +934,9 @@ if.then15:                                        ; preds = %while.end
 
 if.end18:                                         ; preds = %if.then15, %while.end
   %codec19 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 5
-  %6 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec19, align 8, !tbaa !42
+  %6 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec19, align 8, !tbaa !23
   %dig_restore = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %6, i32 0, i32 7
-  %7 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %dig_restore, align 8, !tbaa !46
+  %7 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %dig_restore, align 8, !tbaa !27
   call void %7(%struct.wm97xx* %wm)
   %pen_probably_down20 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 21
   %bf.load21 = load i8, i8* %pen_probably_down20, align 4
@@ -973,9 +948,9 @@ if.end18:                                         ; preds = %if.then15, %while.e
 if.then25:                                        ; preds = %if.end18
   %8 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   %codec28 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 5
-  %9 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec28, align 8, !tbaa !42
+  %9 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec28, align 8, !tbaa !23
   %dig_enable = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %9, i32 0, i32 6
-  %10 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %dig_enable, align 8, !tbaa !47
+  %10 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %dig_enable, align 8, !tbaa !28
   call void %10(%struct.wm97xx* %wm, i32 0)
   br label %if.end29
 
@@ -1010,7 +985,7 @@ declare i32 @driver_register(%struct.device_driver*) #1
 define internal i32 @wm97xx_probe(%struct.device* %dev) #0 {
 entry:
   %platform_data = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 8
-  %0 = load i8*, i8** %platform_data, align 8, !tbaa !48
+  %0 = load i8*, i8** %platform_data, align 8, !tbaa !29
   %1 = bitcast i8* %0 to %struct.wm97xx_pdata*
   %call = call i8* @kzalloc(i64 608, i32 208)
   %2 = bitcast i8* %call to %struct.wm97xx*
@@ -1021,14 +996,14 @@ do.body:                                          ; preds = %entry
   %codec_mutex = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 12
   call void @__mutex_init(%struct.mutex* %codec_mutex, i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.2, i32 0, i32 0), %struct.lock_class_key* @wm97xx_probe.__key)
   %dev1 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 8
-  store %struct.device* %dev, %struct.device** %dev1, align 8, !tbaa !49
+  store %struct.device* %dev, %struct.device** %dev1, align 8, !tbaa !42
   %3 = bitcast %struct.wm97xx* %2 to i8*
   %call2 = call i32 @dev_set_drvdata(%struct.device* %dev, i8* %3)
   %4 = bitcast %struct.device* %dev to i8*
   %add.ptr = getelementptr inbounds i8, i8* %4, i64 -1000
   %5 = bitcast i8* %add.ptr to %struct.snd_ac97*
   %ac97 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 7
-  store %struct.snd_ac97* %5, %struct.snd_ac97** %ac97, align 8, !tbaa !21
+  store %struct.snd_ac97* %5, %struct.snd_ac97** %ac97, align 8, !tbaa !43
   %call3 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 124)
   %cmp = icmp ne i32 %call3, 22349
   br i1 %cmp, label %if.then4, label %if.end6
@@ -1041,12 +1016,12 @@ if.end6:                                          ; preds = %do.body
   %call7 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 126)
   %conv = trunc i32 %call7 to i16
   %id8 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 1
-  store i16 %conv, i16* %id8, align 2, !tbaa !40
+  store i16 %conv, i16* %id8, align 2, !tbaa !21
   %variant = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 22
-  store i16 0, i16* %variant, align 2, !tbaa !41
+  store i16 0, i16* %variant, align 2, !tbaa !22
   %7 = call i32 (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
   %id13 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 1
-  %8 = load i16, i16* %id13, align 2, !tbaa !40
+  %8 = load i16, i16* %id13, align 2, !tbaa !21
   %conv14 = zext i16 %8 to i32
   %and15 = and i32 %conv14, 255
   %Pivot4 = icmp slt i32 %and15, 18
@@ -1071,42 +1046,42 @@ sw.default:                                       ; preds = %LeafBlock, %LeafBlo
 sw.epilog:                                        ; preds = %LeafBlock, %LeafBlock1, %NodeBlock
   %wm9713_codec.sink = phi %struct.wm97xx_codec_drv* [ bitcast ({ i16, i8*, i32 (%struct.wm97xx.343*, i32, i32*)*, i32 (%struct.wm97xx.343*, %struct.wm97xx_data*)*, i32 (%struct.wm97xx.343*, i32)*, void (%struct.wm97xx.343*)*, void (%struct.wm97xx.343*, i32)*, void (%struct.wm97xx.343*)*, void (%struct.wm97xx.343*)* }* @wm9712_codec to %struct.wm97xx_codec_drv*), %NodeBlock ], [ bitcast ({ i16, i8*, i32 (%struct.wm97xx.683*, i32, i32*)*, i32 (%struct.wm97xx.683*, %struct.wm97xx_data*)*, i32 (%struct.wm97xx.683*, i32)*, void (%struct.wm97xx.683*)*, void (%struct.wm97xx.683*, i32)*, void (%struct.wm97xx.683*)*, void (%struct.wm97xx.683*)* }* @wm9713_codec to %struct.wm97xx_codec_drv*), %LeafBlock1 ], [ bitcast ({ i16, i8*, i32 (%struct.wm97xx.3*, i32, i32*)*, i32 (%struct.wm97xx.3*, %struct.wm97xx_data*)*, i32 (%struct.wm97xx.3*, i32)*, void (%struct.wm97xx.3*)*, void (%struct.wm97xx.3*, i32)*, void (%struct.wm97xx.3*)*, void (%struct.wm97xx.3*)* }* @wm9705_codec to %struct.wm97xx_codec_drv*), %LeafBlock ]
   %codec19 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 5
-  store %struct.wm97xx_codec_drv* %wm9713_codec.sink, %struct.wm97xx_codec_drv** %codec19, align 8, !tbaa !42
+  store %struct.wm97xx_codec_drv* %wm9713_codec.sink, %struct.wm97xx_codec_drv** %codec19, align 8, !tbaa !23
   %codec25 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 5
-  %10 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec25, align 8, !tbaa !42
+  %10 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec25, align 8, !tbaa !23
   %phy_init = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %10, i32 0, i32 5
-  %11 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %phy_init, align 8, !tbaa !50
+  %11 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %phy_init, align 8, !tbaa !44
   call void %11(%struct.wm97xx* %2)
   %call26 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 76)
   %conv27 = trunc i32 %call26 to i16
   %gpio = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 2
   %arrayidx = getelementptr inbounds [6 x i16], [6 x i16]* %gpio, i64 0, i64 0
-  store i16 %conv27, i16* %arrayidx, align 8, !tbaa !51
+  store i16 %conv27, i16* %arrayidx, align 8, !tbaa !45
   %call28 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 78)
   %conv29 = trunc i32 %call28 to i16
   %gpio30 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 2
   %arrayidx31 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio30, i64 0, i64 1
-  store i16 %conv29, i16* %arrayidx31, align 2, !tbaa !51
+  store i16 %conv29, i16* %arrayidx31, align 2, !tbaa !45
   %call32 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 80)
   %conv33 = trunc i32 %call32 to i16
   %gpio34 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 2
   %arrayidx35 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio34, i64 0, i64 2
-  store i16 %conv33, i16* %arrayidx35, align 4, !tbaa !51
+  store i16 %conv33, i16* %arrayidx35, align 4, !tbaa !45
   %call36 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 82)
   %conv37 = trunc i32 %call36 to i16
   %gpio38 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 2
   %arrayidx39 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio38, i64 0, i64 3
-  store i16 %conv37, i16* %arrayidx39, align 2, !tbaa !51
+  store i16 %conv37, i16* %arrayidx39, align 2, !tbaa !45
   %call40 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 84)
   %conv41 = trunc i32 %call40 to i16
   %gpio42 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 2
   %arrayidx43 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio42, i64 0, i64 4
-  store i16 %conv41, i16* %arrayidx43, align 8, !tbaa !51
+  store i16 %conv41, i16* %arrayidx43, align 8, !tbaa !45
   %call44 = call i32 @wm97xx_reg_read(%struct.wm97xx* %2, i16 zeroext 86)
   %conv45 = trunc i32 %call44 to i16
   %gpio46 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 2
   %arrayidx47 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio46, i64 0, i64 5
-  store i16 %conv45, i16* %arrayidx47, align 2, !tbaa !51
+  store i16 %conv45, i16* %arrayidx47, align 2, !tbaa !45
   %call48 = call %struct.input_dev* @input_allocate_device()
   %input_dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   store %struct.input_dev* %call48, %struct.input_dev** %input_dev, align 8, !tbaa !20
@@ -1119,19 +1094,19 @@ if.end53:                                         ; preds = %sw.epilog
   %input_dev54 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %13 = load %struct.input_dev*, %struct.input_dev** %input_dev54, align 8, !tbaa !20
   %name = getelementptr inbounds %struct.input_dev, %struct.input_dev* %13, i32 0, i32 0
-  store i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.6, i32 0, i32 0), i8** %name, align 8, !tbaa !52
+  store i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.6, i32 0, i32 0), i8** %name, align 8, !tbaa !46
   %input_dev55 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %14 = load %struct.input_dev*, %struct.input_dev** %input_dev55, align 8, !tbaa !20
   %phys = getelementptr inbounds %struct.input_dev, %struct.input_dev* %14, i32 0, i32 1
-  store i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.7, i32 0, i32 0), i8** %phys, align 8, !tbaa !55
+  store i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.7, i32 0, i32 0), i8** %phys, align 8, !tbaa !49
   %input_dev56 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %15 = load %struct.input_dev*, %struct.input_dev** %input_dev56, align 8, !tbaa !20
   %open = getelementptr inbounds %struct.input_dev, %struct.input_dev* %15, i32 0, i32 30
-  store i32 (%struct.input_dev*)* @wm97xx_ts_input_open, i32 (%struct.input_dev*)** %open, align 8, !tbaa !56
+  store i32 (%struct.input_dev*)* @wm97xx_ts_input_open, i32 (%struct.input_dev*)** %open, align 8, !tbaa !50
   %input_dev57 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %16 = load %struct.input_dev*, %struct.input_dev** %input_dev57, align 8, !tbaa !20
   %close = getelementptr inbounds %struct.input_dev, %struct.input_dev* %16, i32 0, i32 31
-  store void (%struct.input_dev*)* @wm97xx_ts_input_close, void (%struct.input_dev*)** %close, align 8, !tbaa !57
+  store void (%struct.input_dev*)* @wm97xx_ts_input_close, void (%struct.input_dev*)** %close, align 8, !tbaa !51
   %input_dev58 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %17 = load %struct.input_dev*, %struct.input_dev** %input_dev58, align 8, !tbaa !20
   %evbit = getelementptr inbounds %struct.input_dev, %struct.input_dev* %17, i32 0, i32 5
@@ -1149,21 +1124,21 @@ if.end53:                                         ; preds = %sw.epilog
   call void @__set_bit(i32 330, i64* %arraydecay63)
   %input_dev64 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %20 = load %struct.input_dev*, %struct.input_dev** %input_dev64, align 8, !tbaa !20
-  %21 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 0), align 4, !tbaa !58
-  %22 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 1), align 4, !tbaa !58
-  %23 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 2), align 4, !tbaa !58
+  %21 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 0), align 4, !tbaa !52
+  %22 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 1), align 4, !tbaa !52
+  %23 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 2), align 4, !tbaa !52
   call void @input_set_abs_params(%struct.input_dev* %20, i32 0, i32 %21, i32 %22, i32 %23, i32 0)
   %input_dev65 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %24 = load %struct.input_dev*, %struct.input_dev** %input_dev65, align 8, !tbaa !20
-  %25 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 0), align 4, !tbaa !58
-  %26 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 1), align 4, !tbaa !58
-  %27 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 2), align 4, !tbaa !58
+  %25 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 0), align 4, !tbaa !52
+  %26 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 1), align 4, !tbaa !52
+  %27 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 2), align 4, !tbaa !52
   call void @input_set_abs_params(%struct.input_dev* %24, i32 1, i32 %25, i32 %26, i32 %27, i32 0)
   %input_dev66 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %28 = load %struct.input_dev*, %struct.input_dev** %input_dev66, align 8, !tbaa !20
-  %29 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_p, i64 0, i64 0), align 4, !tbaa !58
-  %30 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_p, i64 0, i64 1), align 4, !tbaa !58
-  %31 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_p, i64 0, i64 2), align 4, !tbaa !58
+  %29 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_p, i64 0, i64 0), align 4, !tbaa !52
+  %30 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_p, i64 0, i64 1), align 4, !tbaa !52
+  %31 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_p, i64 0, i64 2), align 4, !tbaa !52
   call void @input_set_abs_params(%struct.input_dev* %28, i32 24, i32 %29, i32 %30, i32 %31, i32 0)
   %input_dev67 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %32 = load %struct.input_dev*, %struct.input_dev** %input_dev67, align 8, !tbaa !20
@@ -1173,7 +1148,7 @@ if.end53:                                         ; preds = %sw.epilog
   %34 = load %struct.input_dev*, %struct.input_dev** %input_dev68, align 8, !tbaa !20
   %dev69 = getelementptr inbounds %struct.input_dev, %struct.input_dev* %34, i32 0, i32 39
   %parent = getelementptr inbounds %struct.device, %struct.device* %dev69, i32 0, i32 0
-  store %struct.device* %dev, %struct.device** %parent, align 8, !tbaa !59
+  store %struct.device* %dev, %struct.device** %parent, align 8, !tbaa !53
   %input_dev70 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 6
   %35 = load %struct.input_dev*, %struct.input_dev** %input_dev70, align 8, !tbaa !20
   %call71 = call i32 @input_register_device(%struct.input_dev* %35)
@@ -1183,30 +1158,30 @@ if.end53:                                         ; preds = %sw.epilog
 if.end75:                                         ; preds = %if.end53
   %call76 = call %struct.platform_device* @platform_device_alloc(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.8, i32 0, i32 0), i32 -1)
   %battery_dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  store %struct.platform_device* %call76, %struct.platform_device** %battery_dev, align 8, !tbaa !60
+  store %struct.platform_device* %call76, %struct.platform_device** %battery_dev, align 8, !tbaa !54
   %battery_dev77 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  %36 = load %struct.platform_device*, %struct.platform_device** %battery_dev77, align 8, !tbaa !60
+  %36 = load %struct.platform_device*, %struct.platform_device** %battery_dev77, align 8, !tbaa !54
   %tobool78 = icmp ne %struct.platform_device* %36, null
   br i1 %tobool78, label %if.end80, label %batt_err
 
 if.end80:                                         ; preds = %if.end75
   %battery_dev81 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  %37 = load %struct.platform_device*, %struct.platform_device** %battery_dev81, align 8, !tbaa !60
+  %37 = load %struct.platform_device*, %struct.platform_device** %battery_dev81, align 8, !tbaa !54
   %38 = bitcast %struct.wm97xx* %2 to i8*
   call void @platform_set_drvdata(%struct.platform_device* %37, i8* %38)
   %battery_dev82 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  %39 = load %struct.platform_device*, %struct.platform_device** %battery_dev82, align 8, !tbaa !60
+  %39 = load %struct.platform_device*, %struct.platform_device** %battery_dev82, align 8, !tbaa !54
   %dev83 = getelementptr inbounds %struct.platform_device, %struct.platform_device* %39, i32 0, i32 3
   %parent84 = getelementptr inbounds %struct.device, %struct.device* %dev83, i32 0, i32 0
-  store %struct.device* %dev, %struct.device** %parent84, align 8, !tbaa !61
+  store %struct.device* %dev, %struct.device** %parent84, align 8, !tbaa !55
   %40 = bitcast %struct.wm97xx_pdata* %1 to i8*
   %battery_dev85 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  %41 = load %struct.platform_device*, %struct.platform_device** %battery_dev85, align 8, !tbaa !60
+  %41 = load %struct.platform_device*, %struct.platform_device** %battery_dev85, align 8, !tbaa !54
   %dev86 = getelementptr inbounds %struct.platform_device, %struct.platform_device* %41, i32 0, i32 3
   %platform_data87 = getelementptr inbounds %struct.device, %struct.device* %dev86, i32 0, i32 8
-  store i8* %40, i8** %platform_data87, align 8, !tbaa !64
+  store i8* %40, i8** %platform_data87, align 8, !tbaa !58
   %battery_dev88 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  %42 = load %struct.platform_device*, %struct.platform_device** %battery_dev88, align 8, !tbaa !60
+  %42 = load %struct.platform_device*, %struct.platform_device** %battery_dev88, align 8, !tbaa !54
   %call89 = call i32 @platform_device_add(%struct.platform_device* %42)
   %cmp90 = icmp slt i32 %call89, 0
   br i1 %cmp90, label %batt_reg_err, label %if.end93
@@ -1214,51 +1189,51 @@ if.end80:                                         ; preds = %if.end75
 if.end93:                                         ; preds = %if.end80
   %call94 = call %struct.platform_device* @platform_device_alloc(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.9, i32 0, i32 0), i32 -1)
   %touch_dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 10
-  store %struct.platform_device* %call94, %struct.platform_device** %touch_dev, align 8, !tbaa !65
+  store %struct.platform_device* %call94, %struct.platform_device** %touch_dev, align 8, !tbaa !59
   %touch_dev95 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 10
-  %43 = load %struct.platform_device*, %struct.platform_device** %touch_dev95, align 8, !tbaa !65
+  %43 = load %struct.platform_device*, %struct.platform_device** %touch_dev95, align 8, !tbaa !59
   %tobool96 = icmp ne %struct.platform_device* %43, null
   br i1 %tobool96, label %if.end98, label %touch_err
 
 if.end98:                                         ; preds = %if.end93
   %touch_dev99 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 10
-  %44 = load %struct.platform_device*, %struct.platform_device** %touch_dev99, align 8, !tbaa !65
+  %44 = load %struct.platform_device*, %struct.platform_device** %touch_dev99, align 8, !tbaa !59
   %45 = bitcast %struct.wm97xx* %2 to i8*
   call void @platform_set_drvdata(%struct.platform_device* %44, i8* %45)
   %touch_dev100 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 10
-  %46 = load %struct.platform_device*, %struct.platform_device** %touch_dev100, align 8, !tbaa !65
+  %46 = load %struct.platform_device*, %struct.platform_device** %touch_dev100, align 8, !tbaa !59
   %dev101 = getelementptr inbounds %struct.platform_device, %struct.platform_device* %46, i32 0, i32 3
   %parent102 = getelementptr inbounds %struct.device, %struct.device* %dev101, i32 0, i32 0
-  store %struct.device* %dev, %struct.device** %parent102, align 8, !tbaa !61
+  store %struct.device* %dev, %struct.device** %parent102, align 8, !tbaa !55
   %47 = bitcast %struct.wm97xx_pdata* %1 to i8*
   %touch_dev103 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 10
-  %48 = load %struct.platform_device*, %struct.platform_device** %touch_dev103, align 8, !tbaa !65
+  %48 = load %struct.platform_device*, %struct.platform_device** %touch_dev103, align 8, !tbaa !59
   %dev104 = getelementptr inbounds %struct.platform_device, %struct.platform_device* %48, i32 0, i32 3
   %platform_data105 = getelementptr inbounds %struct.device, %struct.device* %dev104, i32 0, i32 8
-  store i8* %47, i8** %platform_data105, align 8, !tbaa !64
+  store i8* %47, i8** %platform_data105, align 8, !tbaa !58
   %touch_dev106 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 10
-  %49 = load %struct.platform_device*, %struct.platform_device** %touch_dev106, align 8, !tbaa !65
+  %49 = load %struct.platform_device*, %struct.platform_device** %touch_dev106, align 8, !tbaa !59
   %call107 = call i32 @platform_device_add(%struct.platform_device* %49)
   %cmp108 = icmp slt i32 %call107, 0
   br i1 %cmp108, label %touch_reg_err, label %cleanup
 
 touch_reg_err:                                    ; preds = %if.end98
   %touch_dev112 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 10
-  %50 = load %struct.platform_device*, %struct.platform_device** %touch_dev112, align 8, !tbaa !65
+  %50 = load %struct.platform_device*, %struct.platform_device** %touch_dev112, align 8, !tbaa !59
   call void @platform_device_put(%struct.platform_device* %50)
   br label %touch_err
 
 touch_err:                                        ; preds = %touch_reg_err, %if.end93
   %ret.0 = phi i32 [ %call107, %touch_reg_err ], [ -12, %if.end93 ]
   %battery_dev113 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  %51 = load %struct.platform_device*, %struct.platform_device** %battery_dev113, align 8, !tbaa !60
+  %51 = load %struct.platform_device*, %struct.platform_device** %battery_dev113, align 8, !tbaa !54
   call void @platform_device_del(%struct.platform_device* %51)
   br label %batt_reg_err
 
 batt_reg_err:                                     ; preds = %touch_err, %if.end80
   %ret.1 = phi i32 [ %ret.0, %touch_err ], [ %call89, %if.end80 ]
   %battery_dev114 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %2, i32 0, i32 9
-  %52 = load %struct.platform_device*, %struct.platform_device** %battery_dev114, align 8, !tbaa !60
+  %52 = load %struct.platform_device*, %struct.platform_device** %battery_dev114, align 8, !tbaa !54
   call void @platform_device_put(%struct.platform_device* %52)
   br label %batt_err
 
@@ -1295,10 +1270,10 @@ entry:
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.wm97xx*
   %battery_dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 9
-  %1 = load %struct.platform_device*, %struct.platform_device** %battery_dev, align 8, !tbaa !60
+  %1 = load %struct.platform_device*, %struct.platform_device** %battery_dev, align 8, !tbaa !54
   call void @platform_device_unregister(%struct.platform_device* %1)
   %touch_dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 10
-  %2 = load %struct.platform_device*, %struct.platform_device** %touch_dev, align 8, !tbaa !65
+  %2 = load %struct.platform_device*, %struct.platform_device** %touch_dev, align 8, !tbaa !59
   call void @platform_device_unregister(%struct.platform_device* %2)
   %input_dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 6
   %3 = load %struct.input_dev*, %struct.input_dev** %input_dev, align 8, !tbaa !20
@@ -1333,7 +1308,7 @@ if.end:                                           ; preds = %if.then, %entry
   %input_dev4 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 6
   %3 = load %struct.input_dev*, %struct.input_dev** %input_dev4, align 8, !tbaa !20
   %users = getelementptr inbounds %struct.input_dev, %struct.input_dev* %3, i32 0, i32 37
-  %4 = load i32, i32* %users, align 8, !tbaa !66
+  %4 = load i32, i32* %users, align 8, !tbaa !60
   %tobool = icmp ne i32 %4, 0
   br i1 %tobool, label %if.then5, label %if.end7
 
@@ -1351,25 +1326,25 @@ if.end7:                                          ; preds = %if.then5, %if.end
   %input_dev12 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 6
   %5 = load %struct.input_dev*, %struct.input_dev** %input_dev12, align 8, !tbaa !20
   %users13 = getelementptr inbounds %struct.input_dev, %struct.input_dev* %5, i32 0, i32 37
-  %6 = load i32, i32* %users13, align 8, !tbaa !66
+  %6 = load i32, i32* %users13, align 8, !tbaa !60
   %tobool14 = icmp ne i32 %6, 0
   %conv16 = zext i16 %conv11 to i32
   %or = or i32 %conv16, %suspend_mode.0
   %conv17 = trunc i32 %or to i16
   %reg.0 = select i1 %tobool14, i16 %conv17, i16 %conv11
   %ac97 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 7
-  %7 = load %struct.snd_ac97*, %struct.snd_ac97** %ac97, align 8, !tbaa !21
+  %7 = load %struct.snd_ac97*, %struct.snd_ac97** %ac97, align 8, !tbaa !43
   %bus = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %7, i32 0, i32 3
-  %8 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %bus, align 8, !tbaa !22
+  %8 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %bus, align 8, !tbaa !61
   %ops = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %8, i32 0, i32 0
-  %9 = load %struct.snd_ac97_bus_ops*, %struct.snd_ac97_bus_ops** %ops, align 8, !tbaa !36
+  %9 = load %struct.snd_ac97_bus_ops*, %struct.snd_ac97_bus_ops** %ops, align 8, !tbaa !63
   %write = getelementptr inbounds %struct.snd_ac97_bus_ops, %struct.snd_ac97_bus_ops* %9, i32 0, i32 2
-  %10 = load void (%struct.snd_ac97*, i16, i16)*, void (%struct.snd_ac97*, i16, i16)** %write, align 8, !tbaa !67
+  %10 = load void (%struct.snd_ac97*, i16, i16)*, void (%struct.snd_ac97*, i16, i16)** %write, align 8, !tbaa !65
   %ac9719 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 7
-  %11 = load %struct.snd_ac97*, %struct.snd_ac97** %ac9719, align 8, !tbaa !21
+  %11 = load %struct.snd_ac97*, %struct.snd_ac97** %ac9719, align 8, !tbaa !43
   call void %10(%struct.snd_ac97* %11, i16 zeroext 120, i16 zeroext %reg.0)
   %id = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 1
-  %12 = load i16, i16* %id, align 2, !tbaa !40
+  %12 = load i16, i16* %id, align 2, !tbaa !21
   %conv20 = zext i16 %12 to i32
   %cmp = icmp eq i32 %conv20, 19475
   br i1 %cmp, label %land.lhs.true, label %if.end30
@@ -1378,7 +1353,7 @@ land.lhs.true:                                    ; preds = %if.end7
   %input_dev22 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 6
   %13 = load %struct.input_dev*, %struct.input_dev** %input_dev22, align 8, !tbaa !20
   %users23 = getelementptr inbounds %struct.input_dev, %struct.input_dev* %13, i32 0, i32 37
-  %14 = load i32, i32* %users23, align 8, !tbaa !66
+  %14 = load i32, i32* %users23, align 8, !tbaa !60
   %tobool24 = icmp ne i32 %14, 0
   %tobool25 = icmp ne i32 %suspend_mode.0, 0
   %or.cond = and i1 %tobool24, %tobool25
@@ -1401,7 +1376,7 @@ entry:
   %call = call i8* @dev_get_drvdata(%struct.device* %dev)
   %0 = bitcast i8* %call to %struct.wm97xx*
   %id = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 1
-  %1 = load i16, i16* %id, align 2, !tbaa !40
+  %1 = load i16, i16* %id, align 2, !tbaa !21
   %conv = zext i16 %1 to i32
   %cmp = icmp eq i32 %conv, 19475
   br i1 %cmp, label %if.then, label %if.end5
@@ -1409,15 +1384,15 @@ entry:
 if.then:                                          ; preds = %entry
   %dig = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 0
-  %2 = load i16, i16* %arrayidx, align 8, !tbaa !51
+  %2 = load i16, i16* %arrayidx, align 8, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 116, i16 zeroext %2)
   %misc = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 3
-  %3 = load i16, i16* %misc, align 4, !tbaa !68
+  %3 = load i16, i16* %misc, align 4, !tbaa !67
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 90, i16 zeroext %3)
   %input_dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 6
   %4 = load %struct.input_dev*, %struct.input_dev** %input_dev, align 8, !tbaa !20
   %users = getelementptr inbounds %struct.input_dev, %struct.input_dev* %4, i32 0, i32 37
-  %5 = load i32, i32* %users, align 8, !tbaa !66
+  %5 = load i32, i32* %users, align 8, !tbaa !60
   %tobool = icmp ne i32 %5, 0
   br i1 %tobool, label %if.then2, label %if.end5
 
@@ -1431,59 +1406,59 @@ if.then2:                                         ; preds = %if.then
 if.end5:                                          ; preds = %if.then2, %if.then, %entry
   %dig6 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 0
   %arrayidx7 = getelementptr inbounds [3 x i16], [3 x i16]* %dig6, i64 0, i64 1
-  %6 = load i16, i16* %arrayidx7, align 2, !tbaa !51
+  %6 = load i16, i16* %arrayidx7, align 2, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 118, i16 zeroext %6)
   %dig8 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 0
   %arrayidx9 = getelementptr inbounds [3 x i16], [3 x i16]* %dig8, i64 0, i64 2
-  %7 = load i16, i16* %arrayidx9, align 4, !tbaa !51
+  %7 = load i16, i16* %arrayidx9, align 4, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 120, i16 zeroext %7)
   %gpio = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 2
   %arrayidx10 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio, i64 0, i64 0
-  %8 = load i16, i16* %arrayidx10, align 8, !tbaa !51
+  %8 = load i16, i16* %arrayidx10, align 8, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 76, i16 zeroext %8)
   %gpio11 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 2
   %arrayidx12 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio11, i64 0, i64 1
-  %9 = load i16, i16* %arrayidx12, align 2, !tbaa !51
+  %9 = load i16, i16* %arrayidx12, align 2, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 78, i16 zeroext %9)
   %gpio13 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 2
   %arrayidx14 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio13, i64 0, i64 2
-  %10 = load i16, i16* %arrayidx14, align 4, !tbaa !51
+  %10 = load i16, i16* %arrayidx14, align 4, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 80, i16 zeroext %10)
   %gpio15 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 2
   %arrayidx16 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio15, i64 0, i64 3
-  %11 = load i16, i16* %arrayidx16, align 2, !tbaa !51
+  %11 = load i16, i16* %arrayidx16, align 2, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 82, i16 zeroext %11)
   %gpio17 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 2
   %arrayidx18 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio17, i64 0, i64 4
-  %12 = load i16, i16* %arrayidx18, align 8, !tbaa !51
+  %12 = load i16, i16* %arrayidx18, align 8, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 84, i16 zeroext %12)
   %gpio19 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 2
   %arrayidx20 = getelementptr inbounds [6 x i16], [6 x i16]* %gpio19, i64 0, i64 5
-  %13 = load i16, i16* %arrayidx20, align 2, !tbaa !51
+  %13 = load i16, i16* %arrayidx20, align 2, !tbaa !45
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 86, i16 zeroext %13)
   %input_dev21 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 6
   %14 = load %struct.input_dev*, %struct.input_dev** %input_dev21, align 8, !tbaa !20
   %users22 = getelementptr inbounds %struct.input_dev, %struct.input_dev* %14, i32 0, i32 37
-  %15 = load i32, i32* %users22, align 8, !tbaa !66
+  %15 = load i32, i32* %users22, align 8, !tbaa !60
   %tobool23 = icmp ne i32 %15, 0
   br i1 %tobool23, label %land.lhs.true, label %if.end28
 
 land.lhs.true:                                    ; preds = %if.end5
   %pen_irq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 16
-  %16 = load i32, i32* %pen_irq, align 8, !tbaa !69
+  %16 = load i32, i32* %pen_irq, align 8, !tbaa !68
   %tobool24 = icmp ne i32 %16, 0
   br i1 %tobool24, label %if.end28, label %if.then25
 
 if.then25:                                        ; preds = %land.lhs.true
   %ts_reader_min_interval = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 15
-  %17 = load i64, i64* %ts_reader_min_interval, align 8, !tbaa !70
+  %17 = load i64, i64* %ts_reader_min_interval, align 8, !tbaa !69
   %ts_reader_interval = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 14
-  store i64 %17, i64* %ts_reader_interval, align 8, !tbaa !71
+  store i64 %17, i64* %ts_reader_interval, align 8, !tbaa !70
   %ts_workq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 17
-  %18 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !72
+  %18 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !71
   %ts_reader = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %ts_reader_interval26 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 14
-  %19 = load i64, i64* %ts_reader_interval26, align 8, !tbaa !71
+  %19 = load i64, i64* %ts_reader_interval26, align 8, !tbaa !70
   call void @queue_delayed_work(%struct.workqueue_struct* %18, %struct.delayed_work* %ts_reader, i64 %19)
   br label %if.end28
 
@@ -1516,7 +1491,7 @@ entry:
 land.rhs:                                         ; preds = %entry
   %power1 = getelementptr inbounds %struct.device, %struct.device* %dev, i32 0, i32 9
   %wakeup = getelementptr inbounds %struct.dev_pm_info, %struct.dev_pm_info* %power1, i32 0, i32 5
-  %0 = load %struct.wakeup_source*, %struct.wakeup_source** %wakeup, align 8, !tbaa !73
+  %0 = load %struct.wakeup_source*, %struct.wakeup_source** %wakeup, align 8, !tbaa !72
   %tobool2 = icmp ne %struct.wakeup_source* %0, null
   %lnot = xor i1 %tobool2, true
   %lnot3 = xor i1 %lnot, true
@@ -1560,9 +1535,9 @@ entry:
   %0 = bitcast i8* %call to %struct.wm97xx*
   %call1 = call %struct.workqueue_struct* (i8*, i32, i32, %struct.lock_class_key*, i8*, ...) @__alloc_workqueue_key(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.10, i32 0, i32 0), i32 10, i32 1, %struct.lock_class_key* @wm97xx_ts_input_open.__key, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.10, i32 0, i32 0))
   %ts_workq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 17
-  store %struct.workqueue_struct* %call1, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !72
+  store %struct.workqueue_struct* %call1, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !71
   %ts_workq2 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 17
-  %1 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq2, align 8, !tbaa !72
+  %1 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq2, align 8, !tbaa !71
   %cmp = icmp eq %struct.workqueue_struct* %1, null
   br i1 %cmp, label %if.then, label %if.end
 
@@ -1580,23 +1555,23 @@ land.lhs.true:                                    ; preds = %if.end
   %mach_ops4 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 11
   %4 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops4, align 8, !tbaa !2
   %acc_enabled = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %4, i32 0, i32 0
-  %5 = load i32, i32* %acc_enabled, align 8, !tbaa !74
+  %5 = load i32, i32* %acc_enabled, align 8, !tbaa !73
   %tobool5 = icmp ne i32 %5, 0
   br i1 %tobool5, label %if.then6, label %if.end8
 
 if.then6:                                         ; preds = %land.lhs.true
   %codec = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 5
-  %6 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !42
+  %6 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !23
   %acc_enable = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %6, i32 0, i32 4
-  %7 = load i32 (%struct.wm97xx*, i32)*, i32 (%struct.wm97xx*, i32)** %acc_enable, align 8, !tbaa !76
+  %7 = load i32 (%struct.wm97xx*, i32)*, i32 (%struct.wm97xx*, i32)** %acc_enable, align 8, !tbaa !75
   %call7 = call i32 %7(%struct.wm97xx* %0, i32 1)
   br label %if.end8
 
 if.end8:                                          ; preds = %if.then6, %land.lhs.true, %if.end
   %codec9 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 5
-  %8 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec9, align 8, !tbaa !42
+  %8 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec9, align 8, !tbaa !23
   %dig_enable = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %8, i32 0, i32 6
-  %9 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %dig_enable, align 8, !tbaa !47
+  %9 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %dig_enable, align 8, !tbaa !28
   call void %9(%struct.wm97xx* %0, i32 1)
   %ts_reader = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %work = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %ts_reader, i32 0, i32 0
@@ -1605,10 +1580,10 @@ if.end8:                                          ; preds = %if.then6, %land.lhs
   %work13 = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %ts_reader12, i32 0, i32 0
   %data = getelementptr inbounds %struct.work_struct, %struct.work_struct* %work13, i32 0, i32 0
   %counter = getelementptr inbounds %struct.pgprot, %struct.pgprot* %.compoundliteral, i32 0, i32 0
-  store i64 137438953408, i64* %counter, align 8, !tbaa !77
+  store i64 137438953408, i64* %counter, align 8, !tbaa !76
   %10 = bitcast %struct.pgprot* %data to i8*
   %11 = bitcast %struct.pgprot* %.compoundliteral to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %10, i8* %11, i64 8, i32 8, i1 false), !tbaa.struct !78
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %10, i8* %11, i64 8, i32 8, i1 false), !tbaa.struct !77
   %ts_reader14 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %work15 = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %ts_reader14, i32 0, i32 0
   %lockdep_map = getelementptr inbounds %struct.work_struct, %struct.work_struct* %work15, i32 0, i32 3
@@ -1620,29 +1595,29 @@ if.end8:                                          ; preds = %if.then6, %land.lhs
   %ts_reader20 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %work21 = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %ts_reader20, i32 0, i32 0
   %func = getelementptr inbounds %struct.work_struct, %struct.work_struct* %work21, i32 0, i32 2
-  store void (%struct.work_struct*)* @wm97xx_ts_reader, void (%struct.work_struct*)** %func, align 8, !tbaa !80
+  store void (%struct.work_struct*)* @wm97xx_ts_reader, void (%struct.work_struct*)** %func, align 8, !tbaa !79
   %ts_reader28 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %timer = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %ts_reader28, i32 0, i32 1
   call void @init_timer_key(%struct.timer_list* %timer, i32 2, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.15, i32 0, i32 0), %struct.lock_class_key* @wm97xx_ts_input_open.__key.14)
   %ts_reader31 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %timer32 = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %ts_reader31, i32 0, i32 1
   %function = getelementptr inbounds %struct.timer_list, %struct.timer_list* %timer32, i32 0, i32 3
-  store void (i64)* @delayed_work_timer_fn, void (i64)** %function, align 8, !tbaa !81
+  store void (i64)* @delayed_work_timer_fn, void (i64)** %function, align 8, !tbaa !80
   %ts_reader33 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %12 = ptrtoint %struct.delayed_work* %ts_reader33 to i64
   %ts_reader34 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %timer35 = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %ts_reader34, i32 0, i32 1
   %data36 = getelementptr inbounds %struct.timer_list, %struct.timer_list* %timer35, i32 0, i32 4
-  store i64 %12, i64* %data36, align 8, !tbaa !82
+  store i64 %12, i64* %data36, align 8, !tbaa !81
   %pen_event_work = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 18
   call void @__init_work(%struct.work_struct* %pen_event_work, i32 0)
   %pen_event_work43 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 18
   %data44 = getelementptr inbounds %struct.work_struct, %struct.work_struct* %pen_event_work43, i32 0, i32 0
   %counter46 = getelementptr inbounds %struct.pgprot, %struct.pgprot* %.compoundliteral45, i32 0, i32 0
-  store i64 137438953408, i64* %counter46, align 8, !tbaa !77
+  store i64 137438953408, i64* %counter46, align 8, !tbaa !76
   %13 = bitcast %struct.pgprot* %data44 to i8*
   %14 = bitcast %struct.pgprot* %.compoundliteral45 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %13, i8* %14, i64 8, i32 8, i1 false), !tbaa.struct !78
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %13, i8* %14, i64 8, i32 8, i1 false), !tbaa.struct !77
   %pen_event_work47 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 18
   %lockdep_map48 = getelementptr inbounds %struct.work_struct, %struct.work_struct* %pen_event_work47, i32 0, i32 3
   call void @lockdep_init_map(%struct.lockdep_map* %lockdep_map48, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str.17, i32 0, i32 0), %struct.lock_class_key* @wm97xx_ts_input_open.__key.16, i32 0)
@@ -1651,30 +1626,30 @@ if.end8:                                          ; preds = %if.then6, %land.lhs
   call void @INIT_LIST_HEAD(%struct.list_head* %entry50)
   %pen_event_work52 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 18
   %func53 = getelementptr inbounds %struct.work_struct, %struct.work_struct* %pen_event_work52, i32 0, i32 2
-  store void (%struct.work_struct*)* @wm97xx_pen_irq_worker, void (%struct.work_struct*)** %func53, align 8, !tbaa !80
+  store void (%struct.work_struct*)* @wm97xx_pen_irq_worker, void (%struct.work_struct*)** %func53, align 8, !tbaa !79
   %ts_reader_min_interval = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 15
-  store i64 2, i64* %ts_reader_min_interval, align 8, !tbaa !70
+  store i64 2, i64* %ts_reader_min_interval, align 8, !tbaa !69
   %ts_reader_min_interval60 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 15
-  %15 = load i64, i64* %ts_reader_min_interval60, align 8, !tbaa !70
+  %15 = load i64, i64* %ts_reader_min_interval60, align 8, !tbaa !69
   %cmp61 = icmp ult i64 %15, 1
   br i1 %cmp61, label %if.then62, label %if.end64
 
 if.then62:                                        ; preds = %if.end8
   %ts_reader_min_interval63 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 15
-  store i64 1, i64* %ts_reader_min_interval63, align 8, !tbaa !70
+  store i64 1, i64* %ts_reader_min_interval63, align 8, !tbaa !69
   br label %if.end64
 
 if.end64:                                         ; preds = %if.then62, %if.end8
   %ts_reader_min_interval65 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 15
-  %16 = load i64, i64* %ts_reader_min_interval65, align 8, !tbaa !70
+  %16 = load i64, i64* %ts_reader_min_interval65, align 8, !tbaa !69
   %ts_reader_interval = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 14
-  store i64 %16, i64* %ts_reader_interval, align 8, !tbaa !71
+  store i64 %16, i64* %ts_reader_interval, align 8, !tbaa !70
   %pen_is_down = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 21
   %bf.load = load i8, i8* %pen_is_down, align 4
   %bf.clear = and i8 %bf.load, -2
   store i8 %bf.clear, i8* %pen_is_down, align 4
   %pen_irq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 16
-  %17 = load i32, i32* %pen_irq, align 8, !tbaa !69
+  %17 = load i32, i32* %pen_irq, align 8, !tbaa !68
   %tobool66 = icmp ne i32 %17, 0
   br i1 %tobool66, label %if.then67, label %if.else
 
@@ -1688,16 +1663,16 @@ if.else:                                          ; preds = %if.end64
 
 if.end71:                                         ; preds = %if.else, %if.then67
   %pen_irq72 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 16
-  %19 = load i32, i32* %pen_irq72, align 8, !tbaa !69
+  %19 = load i32, i32* %pen_irq72, align 8, !tbaa !68
   %cmp73 = icmp eq i32 %19, 0
   br i1 %cmp73, label %if.then74, label %cleanup
 
 if.then74:                                        ; preds = %if.end71
   %ts_workq75 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 17
-  %20 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq75, align 8, !tbaa !72
+  %20 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq75, align 8, !tbaa !71
   %ts_reader76 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %ts_reader_interval77 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 14
-  %21 = load i64, i64* %ts_reader_interval77, align 8, !tbaa !71
+  %21 = load i64, i64* %ts_reader_interval77, align 8, !tbaa !70
   call void @queue_delayed_work(%struct.workqueue_struct* %20, %struct.delayed_work* %ts_reader76, i64 %21)
   br label %cleanup
 
@@ -1712,13 +1687,13 @@ entry:
   %call = call i8* @input_get_drvdata(%struct.input_dev* %idev)
   %0 = bitcast i8* %call to %struct.wm97xx*
   %pen_irq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 16
-  %1 = load i32, i32* %pen_irq, align 8, !tbaa !69
+  %1 = load i32, i32* %pen_irq, align 8, !tbaa !68
   %tobool = icmp ne i32 %1, 0
   br i1 %tobool, label %if.then, label %if.end23
 
 if.then:                                          ; preds = %entry
   %id = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 1
-  %2 = load i16, i16* %id, align 2, !tbaa !40
+  %2 = load i16, i16* %id, align 2, !tbaa !21
   %conv = zext i16 %2 to i32
   %cmp = icmp ne i32 %conv, 19461
   br i1 %cmp, label %do.body, label %if.end21
@@ -1727,7 +1702,7 @@ do.body:                                          ; preds = %if.then
   %mach_ops = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 11
   %3 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops, align 8, !tbaa !2
   %irq_gpio = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %3, i32 0, i32 6
-  %4 = load i32, i32* %irq_gpio, align 8, !tbaa !83
+  %4 = load i32, i32* %irq_gpio, align 8, !tbaa !82
   %tobool3 = icmp ne i32 %4, 0
   %lnot = xor i1 %tobool3, true
   %lnot4 = xor i1 %lnot, true
@@ -1739,7 +1714,7 @@ do.body:                                          ; preds = %if.then
   br i1 %tobool7, label %do.body9, label %do.end14
 
 do.body9:                                         ; preds = %do.body
-  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 556, i64 12) #6, !srcloc !84
+  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 556, i64 12) #6, !srcloc !83
   br label %do.body10
 
 do.body10:                                        ; preds = %do.body10, %do.body9
@@ -1752,7 +1727,7 @@ do.end14:                                         ; preds = %do.body
   %mach_ops18 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 11
   %5 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops18, align 8, !tbaa !2
   %irq_gpio19 = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %5, i32 0, i32 6
-  %6 = load i32, i32* %irq_gpio19, align 8, !tbaa !83
+  %6 = load i32, i32* %irq_gpio19, align 8, !tbaa !82
   %or = or i32 %conv17, %6
   %conv20 = trunc i32 %or to i16
   call void @wm97xx_reg_write(%struct.wm97xx* %0, i16 zeroext 86, i16 zeroext %conv20)
@@ -1760,7 +1735,7 @@ do.end14:                                         ; preds = %do.body
 
 if.end21:                                         ; preds = %do.end14, %if.then
   %pen_irq22 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 16
-  %7 = load i32, i32* %pen_irq22, align 8, !tbaa !69
+  %7 = load i32, i32* %pen_irq22, align 8, !tbaa !68
   %8 = bitcast %struct.wm97xx* %0 to i8*
   call void @free_irq(i32 %7, i8* %8)
   br label %if.end23
@@ -1778,7 +1753,7 @@ if.then25:                                        ; preds = %if.end23
   %mach_ops26 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 11
   %9 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops26, align 8, !tbaa !2
   %irq_enable = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %9, i32 0, i32 5
-  %10 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !85
+  %10 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !84
   call void %10(%struct.wm97xx* %0, i32 1)
   br label %if.end27
 
@@ -1786,12 +1761,12 @@ if.end27:                                         ; preds = %if.then25, %if.end2
   %ts_reader = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 13
   %call28 = call zeroext i1 @cancel_delayed_work_sync(%struct.delayed_work* %ts_reader)
   %ts_workq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 17
-  %11 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !72
+  %11 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !71
   call void @destroy_workqueue(%struct.workqueue_struct* %11)
   %codec = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 5
-  %12 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !42
+  %12 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !23
   %dig_enable = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %12, i32 0, i32 6
-  %13 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %dig_enable, align 8, !tbaa !47
+  %13 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %dig_enable, align 8, !tbaa !28
   call void %13(%struct.wm97xx* %0, i32 0)
   %mach_ops29 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 11
   %14 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops29, align 8, !tbaa !2
@@ -1802,15 +1777,15 @@ land.lhs.true:                                    ; preds = %if.end27
   %mach_ops31 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 11
   %15 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops31, align 8, !tbaa !2
   %acc_enabled = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %15, i32 0, i32 0
-  %16 = load i32, i32* %acc_enabled, align 8, !tbaa !74
+  %16 = load i32, i32* %acc_enabled, align 8, !tbaa !73
   %tobool32 = icmp ne i32 %16, 0
   br i1 %tobool32, label %if.then33, label %if.end36
 
 if.then33:                                        ; preds = %land.lhs.true
   %codec34 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 5
-  %17 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec34, align 8, !tbaa !42
+  %17 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec34, align 8, !tbaa !23
   %acc_enable = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %17, i32 0, i32 4
-  %18 = load i32 (%struct.wm97xx*, i32)*, i32 (%struct.wm97xx*, i32)** %acc_enable, align 8, !tbaa !76
+  %18 = load i32 (%struct.wm97xx*, i32)*, i32 (%struct.wm97xx*, i32)** %acc_enable, align 8, !tbaa !75
   %call35 = call i32 %18(%struct.wm97xx* %0, i32 0)
   br label %if.end36
 
@@ -1821,7 +1796,7 @@ if.end36:                                         ; preds = %if.then33, %land.lh
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @__set_bit(i32 %nr, i64* %addr) #4 {
 entry:
-  call void asm sideeffect "bts $1,$0", "=*m,Ir,*m,~{memory},~{dirflag},~{fpsr},~{flags}"(i64* %addr, i32 %nr, i64* %addr) #6, !srcloc !86
+  call void asm sideeffect "bts $1,$0", "=*m,Ir,*m,~{memory},~{dirflag},~{fpsr},~{flags}"(i64* %addr, i32 %nr, i64* %addr) #6, !srcloc !85
   ret void
 }
 
@@ -1885,9 +1860,9 @@ declare void @lockdep_init_map(%struct.lockdep_map*, i8*, %struct.lock_class_key
 define internal void @INIT_LIST_HEAD(%struct.list_head* %list) #4 {
 entry:
   %next = getelementptr inbounds %struct.list_head, %struct.list_head* %list, i32 0, i32 0
-  store %struct.list_head* %list, %struct.list_head** %next, align 8, !tbaa !87
+  store %struct.list_head* %list, %struct.list_head** %next, align 8, !tbaa !86
   %prev = getelementptr inbounds %struct.list_head, %struct.list_head* %list, i32 0, i32 1
-  store %struct.list_head* %list, %struct.list_head** %prev, align 8, !tbaa !88
+  store %struct.list_head* %list, %struct.list_head** %prev, align 8, !tbaa !87
   ret void
 }
 
@@ -1898,7 +1873,7 @@ entry:
   %add.ptr = getelementptr inbounds i8, i8* %0, i64 -256
   %1 = bitcast i8* %add.ptr to %struct.wm97xx*
   %codec = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 5
-  %2 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !42
+  %2 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !23
   %tobool = icmp ne %struct.wm97xx_codec_drv* %2, null
   %lnot = xor i1 %tobool, true
   %lnot1 = xor i1 %lnot, true
@@ -1910,7 +1885,7 @@ entry:
   br i1 %tobool3, label %do.body4, label %do.end9
 
 do.body4:                                         ; preds = %entry
-  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 481, i64 12) #6, !srcloc !89
+  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 481, i64 12) #6, !srcloc !88
   br label %do.body5
 
 do.body5:                                         ; preds = %do.body5, %do.body4
@@ -1935,16 +1910,16 @@ do.end13:                                         ; preds = %do.body10
 
 lor.lhs.false:                                    ; preds = %do.end13
   %pen_irq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 16
-  %3 = load i32, i32* %pen_irq, align 8, !tbaa !69
+  %3 = load i32, i32* %pen_irq, align 8, !tbaa !68
   %tobool15 = icmp ne i32 %3, 0
   br i1 %tobool15, label %if.end18, label %if.then16
 
 if.then16:                                        ; preds = %lor.lhs.false, %do.end13
   %ts_workq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 17
-  %4 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !72
+  %4 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !71
   %ts_reader = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 13
   %ts_reader_interval = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 14
-  %5 = load i64, i64* %ts_reader_interval, align 8, !tbaa !71
+  %5 = load i64, i64* %ts_reader_interval, align 8, !tbaa !70
   call void @queue_delayed_work(%struct.workqueue_struct* %4, %struct.delayed_work* %ts_reader, i64 %5)
   br label %if.end18
 
@@ -1967,7 +1942,7 @@ entry:
   %bf.clear = and i8 %bf.load, 1
   %bf.cast = zext i8 %bf.clear to i32
   %id = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 1
-  %2 = load i16, i16* %id, align 2, !tbaa !40
+  %2 = load i16, i16* %id, align 2, !tbaa !21
   %conv = zext i16 %2 to i32
   %cmp = icmp eq i32 %conv, 19461
   br i1 %cmp, label %if.then, label %if.else9
@@ -2020,14 +1995,14 @@ if.else27:                                        ; preds = %if.else9
 
 if.end33:                                         ; preds = %if.else27, %if.then19
   %id34 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 1
-  %3 = load i16, i16* %id34, align 2, !tbaa !40
+  %3 = load i16, i16* %id34, align 2, !tbaa !21
   %conv35 = zext i16 %3 to i32
   %cmp36 = icmp eq i32 %conv35, 19474
   br i1 %cmp36, label %land.lhs.true, label %if.else45
 
 land.lhs.true:                                    ; preds = %if.end33
   %variant = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 22
-  %4 = load i16, i16* %variant, align 2, !tbaa !41
+  %4 = load i16, i16* %variant, align 2, !tbaa !22
   %conv38 = zext i16 %4 to i32
   %cmp39 = icmp ne i32 %conv38, 5651
   br i1 %cmp39, label %if.then41, label %if.else45
@@ -2056,7 +2031,7 @@ if.end51:                                         ; preds = %if.end49, %if.then
   %mach_ops = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 11
   %5 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops, align 8, !tbaa !2
   %acc_enabled = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %5, i32 0, i32 0
-  %6 = load i32, i32* %acc_enabled, align 8, !tbaa !74
+  %6 = load i32, i32* %acc_enabled, align 8, !tbaa !73
   %tobool52 = icmp ne i32 %6, 0
   br i1 %tobool52, label %lor.lhs.false, label %if.then55
 
@@ -2064,7 +2039,7 @@ lor.lhs.false:                                    ; preds = %if.end51
   %mach_ops53 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 11
   %7 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops53, align 8, !tbaa !2
   %acc_pen_down = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %7, i32 0, i32 2
-  %8 = load i32 (%struct.wm97xx*)*, i32 (%struct.wm97xx*)** %acc_pen_down, align 8, !tbaa !90
+  %8 = load i32 (%struct.wm97xx*)*, i32 (%struct.wm97xx*)** %acc_pen_down, align 8, !tbaa !89
   %tobool54 = icmp ne i32 (%struct.wm97xx*)* %8, null
   br i1 %tobool54, label %if.then55, label %if.end79
 
@@ -2080,7 +2055,7 @@ if.then55:                                        ; preds = %lor.lhs.false, %if.
 
 if.then63:                                        ; preds = %if.then55
   %ts_workq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 17
-  %9 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !72
+  %9 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !71
   %ts_reader = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 13
   call void @queue_delayed_work(%struct.workqueue_struct* %9, %struct.delayed_work* %ts_reader, i64 1)
   br label %if.end65
@@ -2115,7 +2090,7 @@ land.lhs.true85:                                  ; preds = %if.end79
   %mach_ops86 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 11
   %10 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops86, align 8, !tbaa !2
   %acc_enabled87 = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %10, i32 0, i32 0
-  %11 = load i32, i32* %acc_enabled87, align 8, !tbaa !74
+  %11 = load i32, i32* %acc_enabled87, align 8, !tbaa !73
   %tobool88 = icmp ne i32 %11, 0
   br i1 %tobool88, label %if.then89, label %if.end91
 
@@ -2123,7 +2098,7 @@ if.then89:                                        ; preds = %land.lhs.true85
   %mach_ops90 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 11
   %12 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops90, align 8, !tbaa !2
   %acc_pen_up = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %12, i32 0, i32 1
-  %13 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %acc_pen_up, align 8, !tbaa !91
+  %13 = load void (%struct.wm97xx*)*, void (%struct.wm97xx*)** %acc_pen_up, align 8, !tbaa !90
   call void %13(%struct.wm97xx* %1)
   br label %if.end91
 
@@ -2131,7 +2106,7 @@ if.end91:                                         ; preds = %if.then89, %land.lh
   %mach_ops92 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %1, i32 0, i32 11
   %14 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops92, align 8, !tbaa !2
   %irq_enable = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %14, i32 0, i32 5
-  %15 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !85
+  %15 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !84
   call void %15(%struct.wm97xx* %1, i32 1)
   ret void
 }
@@ -2142,7 +2117,7 @@ entry:
   %mach_ops = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 11
   %0 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops, align 8, !tbaa !2
   %irq_enable = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %0, i32 0, i32 5
-  %1 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !85
+  %1 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !84
   %tobool = icmp ne void (%struct.wm97xx*, i32)* %1, null
   %lnot = xor i1 %tobool, true
   %lnot1 = xor i1 %lnot, true
@@ -2154,7 +2129,7 @@ entry:
   br i1 %tobool3, label %do.body4, label %do.end9
 
 do.body4:                                         ; preds = %entry
-  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 383, i64 12) #6, !srcloc !92
+  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 383, i64 12) #6, !srcloc !91
   br label %do.body5
 
 do.body5:                                         ; preds = %do.body5, %do.body4
@@ -2162,7 +2137,7 @@ do.body5:                                         ; preds = %do.body5, %do.body4
 
 do.end9:                                          ; preds = %entry
   %pen_irq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 16
-  %2 = load i32, i32* %pen_irq, align 8, !tbaa !69
+  %2 = load i32, i32* %pen_irq, align 8, !tbaa !68
   %3 = bitcast %struct.wm97xx* %wm to i8*
   %call = call i32 @request_irq(i32 %2, i32 (i32, i8*)* @wm97xx_pen_interrupt, i64 128, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.28, i32 0, i32 0), i8* %3)
   %tobool10 = icmp ne i32 %call, 0
@@ -2171,12 +2146,12 @@ do.end9:                                          ; preds = %entry
 if.then11:                                        ; preds = %do.end9
   %4 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   %pen_irq13 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 16
-  store i32 0, i32* %pen_irq13, align 8, !tbaa !69
+  store i32 0, i32* %pen_irq13, align 8, !tbaa !68
   br label %cleanup
 
 if.end14:                                         ; preds = %do.end9
   %id = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 1
-  %5 = load i16, i16* %id, align 2, !tbaa !40
+  %5 = load i16, i16* %id, align 2, !tbaa !21
   %conv15 = zext i16 %5 to i32
   %cmp = icmp ne i32 %conv15, 19461
   br i1 %cmp, label %do.body18, label %cleanup
@@ -2185,7 +2160,7 @@ do.body18:                                        ; preds = %if.end14
   %mach_ops19 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 11
   %6 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops19, align 8, !tbaa !2
   %irq_gpio = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %6, i32 0, i32 6
-  %7 = load i32, i32* %irq_gpio, align 8, !tbaa !83
+  %7 = load i32, i32* %irq_gpio, align 8, !tbaa !82
   %tobool20 = icmp ne i32 %7, 0
   %lnot21 = xor i1 %tobool20, true
   %lnot23 = xor i1 %lnot21, true
@@ -2197,7 +2172,7 @@ do.body18:                                        ; preds = %if.end14
   br i1 %tobool29, label %do.body31, label %do.end39
 
 do.body31:                                        ; preds = %do.body18
-  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 395, i64 12) #6, !srcloc !93
+  call void asm sideeffect "1:\09ud2\0A.pushsection __bug_table,\22a\22\0A2:\09.long 1b - 2b, ${0:c} - 2b\0A\09.word ${1:c}, 0\0A\09.org 2b+${2:c}\0A.popsection", "i,i,i,~{dirflag},~{fpsr},~{flags}"(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.19, i32 0, i32 0), i32 395, i64 12) #6, !srcloc !92
   br label %do.body32
 
 do.body32:                                        ; preds = %do.body32, %do.body31
@@ -2210,7 +2185,7 @@ do.end39:                                         ; preds = %do.body18
   %mach_ops43 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 11
   %8 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops43, align 8, !tbaa !2
   %irq_gpio44 = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %8, i32 0, i32 6
-  %9 = load i32, i32* %irq_gpio44, align 8, !tbaa !83
+  %9 = load i32, i32* %irq_gpio44, align 8, !tbaa !82
   %neg = xor i32 %9, -1
   %and = and i32 %conv42, %neg
   %conv45 = trunc i32 %and to i16
@@ -2234,7 +2209,7 @@ entry:
   %pen_event_work = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 18
   %data = getelementptr inbounds %struct.work_struct, %struct.work_struct* %pen_event_work, i32 0, i32 0
   %1 = bitcast %struct.pgprot* %data to i64*
-  %2 = load volatile i64, i64* %1, align 8, !tbaa !79
+  %2 = load volatile i64, i64* %1, align 8, !tbaa !78
   %and.i = and i64 1, %2
   %cmp.i = icmp ne i64 %and.i, 0
   %conv.i = zext i1 %cmp.i to i32
@@ -2245,10 +2220,10 @@ if.then:                                          ; preds = %entry
   %mach_ops = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 11
   %3 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops, align 8, !tbaa !2
   %irq_enable = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %3, i32 0, i32 5
-  %4 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !85
+  %4 = load void (%struct.wm97xx*, i32)*, void (%struct.wm97xx*, i32)** %irq_enable, align 8, !tbaa !84
   call void %4(%struct.wm97xx* %0, i32 0)
   %ts_workq = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 17
-  %5 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !72
+  %5 = load %struct.workqueue_struct*, %struct.workqueue_struct** %ts_workq, align 8, !tbaa !71
   %pen_event_work5 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %0, i32 0, i32 18
   call void @queue_work(%struct.workqueue_struct* %5, %struct.work_struct* %pen_event_work5)
   br label %if.end
@@ -2290,7 +2265,7 @@ land.lhs.true:                                    ; preds = %entry
   %mach_ops1 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 11
   %1 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops1, align 8, !tbaa !2
   %acc_enabled = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %1, i32 0, i32 0
-  %2 = load i32, i32* %acc_enabled, align 8, !tbaa !74
+  %2 = load i32, i32* %acc_enabled, align 8, !tbaa !73
   %tobool2 = icmp ne i32 %2, 0
   br i1 %tobool2, label %if.then, label %if.else
 
@@ -2298,15 +2273,15 @@ if.then:                                          ; preds = %land.lhs.true
   %mach_ops3 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 11
   %3 = load %struct.wm97xx_mach_ops*, %struct.wm97xx_mach_ops** %mach_ops3, align 8, !tbaa !2
   %acc_pen_down = getelementptr inbounds %struct.wm97xx_mach_ops, %struct.wm97xx_mach_ops* %3, i32 0, i32 2
-  %4 = load i32 (%struct.wm97xx*)*, i32 (%struct.wm97xx*)** %acc_pen_down, align 8, !tbaa !90
+  %4 = load i32 (%struct.wm97xx*)*, i32 (%struct.wm97xx*)** %acc_pen_down, align 8, !tbaa !89
   %call = call i32 %4(%struct.wm97xx* %wm)
   br label %if.end
 
 if.else:                                          ; preds = %land.lhs.true, %entry
   %codec = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 5
-  %5 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !42
+  %5 = load %struct.wm97xx_codec_drv*, %struct.wm97xx_codec_drv** %codec, align 8, !tbaa !23
   %poll_touch = getelementptr inbounds %struct.wm97xx_codec_drv, %struct.wm97xx_codec_drv* %5, i32 0, i32 3
-  %6 = load i32 (%struct.wm97xx*, %struct.wm97xx_data*)*, i32 (%struct.wm97xx*, %struct.wm97xx_data*)** %poll_touch, align 8, !tbaa !94
+  %6 = load i32 (%struct.wm97xx*, %struct.wm97xx_data*)*, i32 (%struct.wm97xx*, %struct.wm97xx_data*)** %poll_touch, align 8, !tbaa !93
   %call4 = call i32 %6(%struct.wm97xx* %wm, %struct.wm97xx_data* %data)
   br label %if.end
 
@@ -2344,7 +2319,7 @@ if.then8:                                         ; preds = %if.then6
 
 if.then19:                                        ; preds = %if.then8
   %dev = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 8
-  %7 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !49
+  %7 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm97xx_read_samples.descriptor to %struct._ddebug*), %struct.device* %7, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str.21, i32 0, i32 0))
   br label %do.end23
 
@@ -2367,15 +2342,15 @@ if.else26:                                        ; preds = %if.then6
 
 if.then29:                                        ; preds = %if.else26
   %ts_reader_interval = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 14
-  %11 = load i64, i64* %ts_reader_interval, align 8, !tbaa !71
+  %11 = load i64, i64* %ts_reader_interval, align 8, !tbaa !70
   %cmp = icmp ult i64 %11, 25
   br i1 %cmp, label %if.then31, label %out
 
 if.then31:                                        ; preds = %if.then29
   %ts_reader_interval32 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 14
-  %12 = load i64, i64* %ts_reader_interval32, align 8, !tbaa !71
+  %12 = load i64, i64* %ts_reader_interval32, align 8, !tbaa !70
   %inc = add i64 %12, 1
-  store i64 %inc, i64* %ts_reader_interval32, align 8, !tbaa !71
+  store i64 %inc, i64* %ts_reader_interval32, align 8, !tbaa !70
   br label %out
 
 if.else36:                                        ; preds = %if.end
@@ -2399,56 +2374,56 @@ do.body41:                                        ; preds = %if.else36
 
 if.then54:                                        ; preds = %do.body41
   %dev55 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 8
-  %13 = load %struct.device*, %struct.device** %dev55, align 8, !tbaa !49
+  %13 = load %struct.device*, %struct.device** %dev55, align 8, !tbaa !42
   %x = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %14 = load i32, i32* %x, align 4, !tbaa !95
+  %14 = load i32, i32* %x, align 4, !tbaa !94
   %shr = ashr i32 %14, 12
   %x56 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %15 = load i32, i32* %x56, align 4, !tbaa !95
+  %15 = load i32, i32* %x56, align 4, !tbaa !94
   %and57 = and i32 %15, 4095
   %y = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %16 = load i32, i32* %y, align 4, !tbaa !97
+  %16 = load i32, i32* %y, align 4, !tbaa !96
   %shr58 = ashr i32 %16, 12
   %y59 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %17 = load i32, i32* %y59, align 4, !tbaa !97
+  %17 = load i32, i32* %y59, align 4, !tbaa !96
   %and60 = and i32 %17, 4095
   %p = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
-  %18 = load i32, i32* %p, align 4, !tbaa !98
+  %18 = load i32, i32* %p, align 4, !tbaa !97
   %shr61 = ashr i32 %18, 12
   %p62 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
-  %19 = load i32, i32* %p62, align 4, !tbaa !98
+  %19 = load i32, i32* %p62, align 4, !tbaa !97
   %and63 = and i32 %19, 4095
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm97xx_read_samples.descriptor.22 to %struct._ddebug*), %struct.device* %13, i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str.23, i32 0, i32 0), i32 %shr, i32 %and57, i32 %shr58, i32 %and60, i32 %shr61, i32 %and63)
   br label %do.end69
 
 do.end69:                                         ; preds = %if.then54, %do.body41
-  %20 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 0), align 4, !tbaa !58
+  %20 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 0), align 4, !tbaa !52
   %x70 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %21 = load i32, i32* %x70, align 4, !tbaa !95
+  %21 = load i32, i32* %x70, align 4, !tbaa !94
   %and71 = and i32 %21, 4095
   %cmp72 = icmp sgt i32 %20, %and71
   br i1 %cmp72, label %do.body90, label %lor.lhs.false
 
 lor.lhs.false:                                    ; preds = %do.end69
-  %22 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 1), align 4, !tbaa !58
+  %22 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_x, i64 0, i64 1), align 4, !tbaa !52
   %x74 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %23 = load i32, i32* %x74, align 4, !tbaa !95
+  %23 = load i32, i32* %x74, align 4, !tbaa !94
   %and75 = and i32 %23, 4095
   %cmp76 = icmp slt i32 %22, %and75
   br i1 %cmp76, label %do.body90, label %lor.lhs.false78
 
 lor.lhs.false78:                                  ; preds = %lor.lhs.false
-  %24 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 0), align 4, !tbaa !58
+  %24 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 0), align 4, !tbaa !52
   %y79 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %25 = load i32, i32* %y79, align 4, !tbaa !97
+  %25 = load i32, i32* %y79, align 4, !tbaa !96
   %and80 = and i32 %25, 4095
   %cmp81 = icmp sgt i32 %24, %and80
   br i1 %cmp81, label %do.body90, label %lor.lhs.false83
 
 lor.lhs.false83:                                  ; preds = %lor.lhs.false78
-  %26 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 1), align 4, !tbaa !58
+  %26 = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @abs_y, i64 0, i64 1), align 4, !tbaa !52
   %y84 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %27 = load i32, i32* %y84, align 4, !tbaa !97
+  %27 = load i32, i32* %y84, align 4, !tbaa !96
   %and85 = and i32 %27, 4095
   %cmp86 = icmp slt i32 %26, %and85
   br i1 %cmp86, label %do.body90, label %if.end111
@@ -2469,7 +2444,7 @@ do.body90:                                        ; preds = %lor.lhs.false83, %l
 
 if.then103:                                       ; preds = %do.body90
   %dev104 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 8
-  %28 = load %struct.device*, %struct.device** %dev104, align 8, !tbaa !49
+  %28 = load %struct.device*, %struct.device** %dev104, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm97xx_read_samples.descriptor.24 to %struct._ddebug*), %struct.device* %28, i8* getelementptr inbounds ([39 x i8], [39 x i8]* @.str.25, i32 0, i32 0))
   br label %out
 
@@ -2477,19 +2452,19 @@ if.end111:                                        ; preds = %lor.lhs.false83
   %input_dev112 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 6
   %29 = load %struct.input_dev*, %struct.input_dev** %input_dev112, align 8, !tbaa !20
   %x113 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %30 = load i32, i32* %x113, align 4, !tbaa !95
+  %30 = load i32, i32* %x113, align 4, !tbaa !94
   %and114 = and i32 %30, 4095
   call void @input_report_abs(%struct.input_dev* %29, i32 0, i32 %and114)
   %input_dev115 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 6
   %31 = load %struct.input_dev*, %struct.input_dev** %input_dev115, align 8, !tbaa !20
   %y116 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %32 = load i32, i32* %y116, align 4, !tbaa !97
+  %32 = load i32, i32* %y116, align 4, !tbaa !96
   %and117 = and i32 %32, 4095
   call void @input_report_abs(%struct.input_dev* %31, i32 1, i32 %and117)
   %input_dev118 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 6
   %33 = load %struct.input_dev*, %struct.input_dev** %input_dev118, align 8, !tbaa !20
   %p119 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
-  %34 = load i32, i32* %p119, align 4, !tbaa !98
+  %34 = load i32, i32* %p119, align 4, !tbaa !97
   %and120 = and i32 %34, 4095
   call void @input_report_abs(%struct.input_dev* %33, i32 24, i32 %and120)
   %input_dev121 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 6
@@ -2504,9 +2479,9 @@ if.end111:                                        ; preds = %lor.lhs.false83
   %bf.set = or i8 %bf.clear125, 1
   store i8 %bf.set, i8* %pen_is_down123, align 4
   %ts_reader_min_interval = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 15
-  %37 = load i64, i64* %ts_reader_min_interval, align 8, !tbaa !70
+  %37 = load i64, i64* %ts_reader_min_interval, align 8, !tbaa !69
   %ts_reader_interval126 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 14
-  store i64 %37, i64* %ts_reader_interval126, align 8, !tbaa !71
+  store i64 %37, i64* %ts_reader_interval126, align 8, !tbaa !70
   br label %out
 
 if.else127:                                       ; preds = %if.else36
@@ -2530,7 +2505,7 @@ do.body132:                                       ; preds = %if.else127
 
 if.then145:                                       ; preds = %do.body132
   %dev146 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 8
-  %38 = load %struct.device*, %struct.device** %dev146, align 8, !tbaa !49
+  %38 = load %struct.device*, %struct.device** %dev146, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm97xx_read_samples.descriptor.26 to %struct._ddebug*), %struct.device* %38, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.27, i32 0, i32 0))
   br label %do.end152
 
@@ -2541,9 +2516,9 @@ do.end152:                                        ; preds = %if.then145, %do.bod
   %bf.set156 = or i8 %bf.clear155, 1
   store i8 %bf.set156, i8* %pen_is_down153, align 4
   %ts_reader_min_interval157 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 15
-  %39 = load i64, i64* %ts_reader_min_interval157, align 8, !tbaa !70
+  %39 = load i64, i64* %ts_reader_min_interval157, align 8, !tbaa !69
   %ts_reader_interval158 = getelementptr inbounds %struct.wm97xx, %struct.wm97xx* %wm, i32 0, i32 14
-  store i64 %39, i64* %ts_reader_interval158, align 8, !tbaa !71
+  store i64 %39, i64* %ts_reader_interval158, align 8, !tbaa !70
   br label %out
 
 out:                                              ; preds = %do.end152, %if.else127, %if.end111, %if.then103, %do.body90, %if.then31, %if.then29, %if.else26, %do.end23
@@ -2594,7 +2569,7 @@ declare void @driver_unregister(%struct.device_driver*) #1
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9705_poll_sample(%struct.wm97xx.3* %wm, i32 %adcsel, i32* %sample) #0 {
 entry:
-  %0 = load i32, i32* @delay, align 4, !tbaa !58
+  %0 = load i32, i32* @delay, align 4, !tbaa !52
   %mul = mul nsw i32 5, %0
   %and = and i32 %adcsel, 32768
   %tobool = icmp ne i32 %and, 0
@@ -2642,7 +2617,7 @@ land.lhs.true12:                                  ; preds = %if.end10
   %mach_ops13 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 11
   %2 = load %struct.wm97xx_mach_ops.9*, %struct.wm97xx_mach_ops.9** %mach_ops13, align 8, !tbaa !2
   %pre_sample = getelementptr inbounds %struct.wm97xx_mach_ops.9, %struct.wm97xx_mach_ops.9* %2, i32 0, i32 7
-  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !99
+  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !98
   %tobool14 = icmp ne void (i32)* %3, null
   br i1 %tobool14, label %if.then15, label %if.end18
 
@@ -2650,20 +2625,20 @@ if.then15:                                        ; preds = %land.lhs.true12
   %mach_ops16 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 11
   %4 = load %struct.wm97xx_mach_ops.9*, %struct.wm97xx_mach_ops.9** %mach_ops16, align 8, !tbaa !2
   %pre_sample17 = getelementptr inbounds %struct.wm97xx_mach_ops.9, %struct.wm97xx_mach_ops.9* %4, i32 0, i32 7
-  %5 = load void (i32)*, void (i32)** %pre_sample17, align 8, !tbaa !99
-  call void @"simpll__indirect$0"(i32 %adcsel, void (i32)* %5)
+  %5 = load void (i32)*, void (i32)** %pre_sample17, align 8, !tbaa !98
+  call void @simpll__indirect_1(i32 %adcsel, void (i32)* %5)
   br label %if.end18
 
 if.end18:                                         ; preds = %if.then15, %land.lhs.true12, %if.end10
   %and19 = and i32 %adcsel, 28672
   %or = or i32 %and19, 32768
-  %6 = load i32, i32* @delay, align 4, !tbaa !58
+  %6 = load i32, i32* @delay, align 4, !tbaa !52
   %shl = shl i32 %6, 4
   %and20 = and i32 %shl, 240
   %or21 = or i32 %or, %and20
   %conv22 = trunc i32 %or21 to i16
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.3*, i16, i16)*)(%struct.wm97xx.3* %wm, i16 zeroext 118, i16 zeroext %conv22)
-  %7 = load i32, i32* @delay, align 4, !tbaa !58
+  %7 = load i32, i32* @delay, align 4, !tbaa !52
   call void @poll_delay(i32 %7)
   br label %while.cond
 
@@ -2713,13 +2688,13 @@ do.body35:                                        ; preds = %if.then28
 
 if.then44:                                        ; preds = %do.body35
   %dev = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 8
-  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !49
+  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9705_poll_sample.descriptor to %struct._ddebug*), %struct.device* %8, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.3.72, i32 0, i32 0))
   br label %cleanup99
 
 if.end50:                                         ; preds = %while.end
   %call51 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.3*, i16)*)(%struct.wm97xx.3* %wm, i16 zeroext 122)
-  store i32 %call51, i32* %sample, align 4, !tbaa !58
+  store i32 %call51, i32* %sample, align 4, !tbaa !52
   %mach_ops52 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 11
   %9 = load %struct.wm97xx_mach_ops.9*, %struct.wm97xx_mach_ops.9** %mach_ops52, align 8, !tbaa !2
   %tobool53 = icmp ne %struct.wm97xx_mach_ops.9* %9, null
@@ -2729,7 +2704,7 @@ land.lhs.true54:                                  ; preds = %if.end50
   %mach_ops55 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 11
   %10 = load %struct.wm97xx_mach_ops.9*, %struct.wm97xx_mach_ops.9** %mach_ops55, align 8, !tbaa !2
   %post_sample = getelementptr inbounds %struct.wm97xx_mach_ops.9, %struct.wm97xx_mach_ops.9* %10, i32 0, i32 8
-  %11 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !100
+  %11 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !99
   %tobool56 = icmp ne void (i32)* %11, null
   br i1 %tobool56, label %if.then57, label %if.end60
 
@@ -2737,12 +2712,12 @@ if.then57:                                        ; preds = %land.lhs.true54
   %mach_ops58 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 11
   %12 = load %struct.wm97xx_mach_ops.9*, %struct.wm97xx_mach_ops.9** %mach_ops58, align 8, !tbaa !2
   %post_sample59 = getelementptr inbounds %struct.wm97xx_mach_ops.9, %struct.wm97xx_mach_ops.9* %12, i32 0, i32 8
-  %13 = load void (i32)*, void (i32)** %post_sample59, align 8, !tbaa !100
-  call void @"simpll__indirect$0"(i32 %adcsel, void (i32)* %13)
+  %13 = load void (i32)*, void (i32)** %post_sample59, align 8, !tbaa !99
+  call void @simpll__indirect_1(i32 %adcsel, void (i32)* %13)
   br label %if.end60
 
 if.end60:                                         ; preds = %if.then57, %land.lhs.true54, %if.end50
-  %14 = load i32, i32* %sample, align 4, !tbaa !58
+  %14 = load i32, i32* %sample, align 4, !tbaa !52
   %xor = xor i32 %14, %adcsel
   %and61 = and i32 %xor, 28672
   %tobool62 = icmp ne i32 %and61, 0
@@ -2764,9 +2739,9 @@ do.body65:                                        ; preds = %if.end60
 
 if.then78:                                        ; preds = %do.body65
   %dev79 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 8
-  %15 = load %struct.device*, %struct.device** %dev79, align 8, !tbaa !49
+  %15 = load %struct.device*, %struct.device** %dev79, align 8, !tbaa !42
   %and80 = and i32 %adcsel, 28672
-  %16 = load i32, i32* %sample, align 4, !tbaa !58
+  %16 = load i32, i32* %sample, align 4, !tbaa !52
   %and81 = and i32 %16, 28672
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9705_poll_sample.descriptor.4 to %struct._ddebug*), %struct.device* %15, i8* getelementptr inbounds ([35 x i8], [35 x i8]* @.str.5.75, i32 0, i32 0), i32 %and80, i32 %and81)
   br label %cleanup99
@@ -2776,7 +2751,7 @@ if.end88:                                         ; preds = %if.end60
   br i1 %tobool89, label %land.lhs.true91, label %cleanup99
 
 land.lhs.true91:                                  ; preds = %if.end88
-  %17 = load i32, i32* %sample, align 4, !tbaa !58
+  %17 = load i32, i32* %sample, align 4, !tbaa !52
   %and92 = and i32 %17, 32768
   %tobool93 = icmp ne i32 %and92, 0
   br i1 %tobool93, label %cleanup99, label %if.then94
@@ -2801,30 +2776,30 @@ define internal i32 @wm9705_acc_enable(%struct.wm97xx.3* %wm, i32 %enable) #0 {
 entry:
   %dig = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 1
-  %0 = load i16, i16* %arrayidx, align 2, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 2, !tbaa !45
   br label %if.end
 
 if.end:                                           ; preds = %entry
   %conv = zext i16 %0 to i32
   %and = and i32 %conv, -29688
   %conv9 = trunc i32 %and to i16
-  %1 = load i32, i32* @delay, align 4, !tbaa !58
+  %1 = load i32, i32* @delay, align 4, !tbaa !52
   %shl = shl i32 %1, 4
   %and10 = and i32 %shl, 240
   %or = or i32 3080, %and10
   %acc_slot = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 19
-  %2 = load i16, i16* %acc_slot, align 8, !tbaa !101
+  %2 = load i16, i16* %acc_slot, align 8, !tbaa !100
   %conv11 = zext i16 %2 to i32
   %sub = sub nsw i32 %conv11, 5
   %and12 = and i32 %sub, 7
   %or13 = or i32 %or, %and12
   %acc_rate = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 20
-  %3 = load i16, i16* %acc_rate, align 2, !tbaa !102
+  %3 = load i16, i16* %acc_rate, align 2, !tbaa !101
   %conv14 = zext i16 %3 to i32
   %and15 = and i32 %conv14, 3
   %shl16 = shl i32 %and15, 8
   %acc_rate17 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 20
-  %4 = load i16, i16* %acc_rate17, align 2, !tbaa !102
+  %4 = load i16, i16* %acc_rate17, align 2, !tbaa !101
   %conv18 = zext i16 %4 to i32
   %and19 = and i32 %conv18, 4
   %tobool20 = icmp ne i32 %and19, 0
@@ -2834,7 +2809,7 @@ if.end:                                           ; preds = %entry
   %conv23 = zext i16 %conv9 to i32
   %or24 = or i32 %conv23, %or22
   %conv25 = trunc i32 %or24 to i16
-  %5 = load i32, i32* @pil, align 4, !tbaa !58
+  %5 = load i32, i32* @pil, align 4, !tbaa !52
   %tobool26 = icmp ne i32 %5, 0
   %conv28 = zext i16 %conv25 to i32
   %or29 = or i32 %conv28, 12288
@@ -2859,7 +2834,7 @@ entry:
   %tobool = icmp ne i32 %enable, 0
   %dig = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 2
-  %0 = load i16, i16* %arrayidx, align 4, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 4, !tbaa !45
   %conv = zext i16 %0 to i32
   br i1 %tobool, label %if.then, label %if.else
 
@@ -2885,11 +2860,11 @@ define internal void @wm9705_dig_restore(%struct.wm97xx.3* %wm) #0 {
 entry:
   %dig_save = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 4
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig_save, i64 0, i64 1
-  %0 = load i16, i16* %arrayidx, align 2, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 2, !tbaa !45
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.3*, i16, i16)*)(%struct.wm97xx.3* %wm, i16 zeroext 118, i16 zeroext %0)
   %dig_save1 = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 4
   %arrayidx2 = getelementptr inbounds [3 x i16], [3 x i16]* %dig_save1, i64 0, i64 2
-  %1 = load i16, i16* %arrayidx2, align 2, !tbaa !51
+  %1 = load i16, i16* %arrayidx2, align 2, !tbaa !45
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.3*, i16, i16)*)(%struct.wm97xx.3* %wm, i16 zeroext 120, i16 zeroext %1)
   ret void
 }
@@ -2927,7 +2902,7 @@ define internal void @poll_delay(i32 %d) #4 {
 entry:
   %idxprom = sext i32 %d to i64
   %arrayidx = getelementptr inbounds [16 x i32], [16 x i32]* @delay_table, i64 0, i64 %idxprom
-  %0 = load i32, i32* %arrayidx, align 4, !tbaa !58
+  %0 = load i32, i32* %arrayidx, align 4, !tbaa !52
   %add = add nsw i32 63, %0
   %conv = sext i32 %add to i64
   call void @__udelay(i64 %conv)
@@ -2941,7 +2916,7 @@ define internal i32 @is_pden(%struct.wm97xx.3* %wm) #4 {
 entry:
   %dig = getelementptr inbounds %struct.wm97xx.3, %struct.wm97xx.3* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 2
-  %0 = load i16, i16* %arrayidx, align 4, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 4, !tbaa !45
   %conv = zext i16 %0 to i32
   %and = and i32 %conv, 4096
   ret i32 %and
@@ -2952,7 +2927,7 @@ declare void @__udelay(i64) #1
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9712_poll_sample(%struct.wm97xx.343* %wm, i32 %adcsel, i32* %sample) #0 {
 entry:
-  %0 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %0 = load i32, i32* @delay.32, align 4, !tbaa !52
   %mul = mul nsw i32 5, %0
   %and = and i32 %adcsel, 32768
   %tobool = icmp ne i32 %and, 0
@@ -3000,7 +2975,7 @@ land.lhs.true12:                                  ; preds = %if.end10
   %mach_ops13 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %2 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops13, align 8, !tbaa !2
   %pre_sample = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %2, i32 0, i32 7
-  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !99
+  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !98
   %tobool14 = icmp ne void (i32)* %3, null
   br i1 %tobool14, label %if.then15, label %if.end18
 
@@ -3008,20 +2983,20 @@ if.then15:                                        ; preds = %land.lhs.true12
   %mach_ops16 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %4 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops16, align 8, !tbaa !2
   %pre_sample17 = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %4, i32 0, i32 7
-  %5 = load void (i32)*, void (i32)** %pre_sample17, align 8, !tbaa !99
+  %5 = load void (i32)*, void (i32)** %pre_sample17, align 8, !tbaa !98
   call void %5(i32 %adcsel)
   br label %if.end18
 
 if.end18:                                         ; preds = %if.then15, %land.lhs.true12, %if.end10
   %and19 = and i32 %adcsel, 28672
   %or = or i32 %and19, 32768
-  %6 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %6 = load i32, i32* @delay.32, align 4, !tbaa !52
   %shl = shl i32 %6, 4
   %and20 = and i32 %shl, 240
   %or21 = or i32 %or, %and20
   %conv22 = trunc i32 %or21 to i16
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.343*, i16, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 118, i16 zeroext %conv22)
-  %7 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %7 = load i32, i32* @delay.32, align 4, !tbaa !52
   call void @poll_delay.39(i32 %7)
   br label %while.cond
 
@@ -3071,13 +3046,13 @@ do.body35:                                        ; preds = %if.then28
 
 if.then44:                                        ; preds = %do.body35
   %dev = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !49
+  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_poll_sample.descriptor to %struct._ddebug*), %struct.device* %8, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.3.41, i32 0, i32 0))
   br label %cleanup104
 
 if.end50:                                         ; preds = %while.end
   %call51 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.343*, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 122)
-  store i32 %call51, i32* %sample, align 4, !tbaa !58
+  store i32 %call51, i32* %sample, align 4, !tbaa !52
   %mach_ops52 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %9 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops52, align 8, !tbaa !2
   %tobool53 = icmp ne %struct.wm97xx_mach_ops.349* %9, null
@@ -3087,7 +3062,7 @@ land.lhs.true54:                                  ; preds = %if.end50
   %mach_ops55 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %10 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops55, align 8, !tbaa !2
   %post_sample = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %10, i32 0, i32 8
-  %11 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !100
+  %11 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !99
   %tobool56 = icmp ne void (i32)* %11, null
   br i1 %tobool56, label %if.then57, label %if.end60
 
@@ -3095,12 +3070,12 @@ if.then57:                                        ; preds = %land.lhs.true54
   %mach_ops58 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %12 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops58, align 8, !tbaa !2
   %post_sample59 = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %12, i32 0, i32 8
-  %13 = load void (i32)*, void (i32)** %post_sample59, align 8, !tbaa !100
+  %13 = load void (i32)*, void (i32)** %post_sample59, align 8, !tbaa !99
   call void %13(i32 %adcsel)
   br label %if.end60
 
 if.end60:                                         ; preds = %if.then57, %land.lhs.true54, %if.end50
-  %14 = load i32, i32* %sample, align 4, !tbaa !58
+  %14 = load i32, i32* %sample, align 4, !tbaa !52
   %xor = xor i32 %14, %adcsel
   %and61 = and i32 %xor, 28672
   %tobool62 = icmp ne i32 %and61, 0
@@ -3122,9 +3097,9 @@ do.body65:                                        ; preds = %if.end60
 
 if.then78:                                        ; preds = %do.body65
   %dev79 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %15 = load %struct.device*, %struct.device** %dev79, align 8, !tbaa !49
+  %15 = load %struct.device*, %struct.device** %dev79, align 8, !tbaa !42
   %and80 = and i32 %adcsel, 28672
-  %16 = load i32, i32* %sample, align 4, !tbaa !58
+  %16 = load i32, i32* %sample, align 4, !tbaa !52
   %and81 = and i32 %16, 28672
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_poll_sample.descriptor.4 to %struct._ddebug*), %struct.device* %15, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.5.42, i32 0, i32 0), i32 %and80, i32 %and81)
   br label %cleanup104
@@ -3134,15 +3109,15 @@ if.end88:                                         ; preds = %if.end60
   br i1 %tobool89, label %land.lhs.true91, label %cleanup104
 
 land.lhs.true91:                                  ; preds = %if.end88
-  %17 = load i32, i32* %sample, align 4, !tbaa !58
+  %17 = load i32, i32* %sample, align 4, !tbaa !52
   %and92 = and i32 %17, 32768
   %tobool93 = icmp ne i32 %and92, 0
   br i1 %tobool93, label %cleanup104, label %if.then94
 
 if.then94:                                        ; preds = %land.lhs.true91
   %call95 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.343*, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 122)
-  store i32 %call95, i32* %sample, align 4, !tbaa !58
-  %18 = load i32, i32* %sample, align 4, !tbaa !58
+  store i32 %call95, i32* %sample, align 4, !tbaa !52
+  %18 = load i32, i32* %sample, align 4, !tbaa !52
   %and96 = and i32 %18, 32768
   %tobool97 = icmp ne i32 %and96, 0
   br i1 %tobool97, label %cleanup104, label %if.then98
@@ -3162,7 +3137,7 @@ cleanup104:                                       ; preds = %if.then98, %if.then
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9712_poll_touch(%struct.wm97xx.343* %wm, %struct.wm97xx_data* %data) #0 {
 entry:
-  %0 = load i32, i32* @coord, align 4, !tbaa !58
+  %0 = load i32, i32* @coord, align 4, !tbaa !52
   %tobool = icmp ne i32 %0, 0
   br i1 %tobool, label %if.then, label %if.else
 
@@ -3184,7 +3159,7 @@ if.end5:                                          ; preds = %if.else
   br i1 %cmp7, label %cleanup, label %if.end9
 
 if.end9:                                          ; preds = %if.end5
-  %1 = load i32, i32* @pil.27, align 4, !tbaa !58
+  %1 = load i32, i32* @pil.27, align 4, !tbaa !52
   %tobool10 = icmp eq i32 %1, 0
   %2 = load i32, i32* @five_wire, align 4
   %tobool11 = icmp ne i32 %2, 0
@@ -3198,7 +3173,7 @@ if.then12:                                        ; preds = %if.end9
   br i1 %cmp14, label %cleanup, label %if.end20
 
 if.else17:                                        ; preds = %if.end9
-  store i32 45248, i32* %p18, align 4, !tbaa !98
+  store i32 45248, i32* %p18, align 4, !tbaa !97
   br label %if.end20
 
 if.end20:                                         ; preds = %if.else17, %if.then12, %if.then
@@ -3214,10 +3189,10 @@ define internal i32 @wm9712_acc_enable(%struct.wm97xx.343* %wm, i32 %enable) #0 
 entry:
   %dig = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 1
-  %0 = load i16, i16* %arrayidx, align 2, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 2, !tbaa !45
   %dig3 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 0
   %arrayidx4 = getelementptr inbounds [3 x i16], [3 x i16]* %dig3, i64 0, i64 2
-  %1 = load i16, i16* %arrayidx4, align 4, !tbaa !51
+  %1 = load i16, i16* %arrayidx4, align 4, !tbaa !45
   %tobool = icmp ne i32 %enable, 0
   br i1 %tobool, label %if.then, label %if.else
 
@@ -3225,7 +3200,7 @@ if.then:                                          ; preds = %entry
   %mach_ops = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %2 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops, align 8, !tbaa !2
   %acc_startup = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %2, i32 0, i32 3
-  %3 = load i32 (%struct.wm97xx.343*)*, i32 (%struct.wm97xx.343*)** %acc_startup, align 8, !tbaa !103
+  %3 = load i32 (%struct.wm97xx.343*)*, i32 (%struct.wm97xx.343*)** %acc_startup, align 8, !tbaa !102
   %tobool5 = icmp ne i32 (%struct.wm97xx.343*)* %3, null
   br i1 %tobool5, label %if.then6, label %if.end10
 
@@ -3233,7 +3208,7 @@ if.then6:                                         ; preds = %if.then
   %mach_ops7 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %4 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops7, align 8, !tbaa !2
   %acc_startup8 = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %4, i32 0, i32 3
-  %5 = load i32 (%struct.wm97xx.343*)*, i32 (%struct.wm97xx.343*)** %acc_startup8, align 8, !tbaa !103
+  %5 = load i32 (%struct.wm97xx.343*)*, i32 (%struct.wm97xx.343*)** %acc_startup8, align 8, !tbaa !102
   %call = call i32 %5(%struct.wm97xx.343* %wm)
   %cmp = icmp slt i32 %call, 0
   br i1 %cmp, label %cleanup, label %if.end10
@@ -3242,23 +3217,23 @@ if.end10:                                         ; preds = %if.then6, %if.then
   %conv = zext i16 %0 to i32
   %and = and i32 %conv, -29688
   %conv11 = trunc i32 %and to i16
-  %6 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %6 = load i32, i32* @delay.32, align 4, !tbaa !52
   %shl = shl i32 %6, 4
   %and12 = and i32 %shl, 240
   %or = or i32 3080, %and12
   %acc_slot = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 19
-  %7 = load i16, i16* %acc_slot, align 8, !tbaa !101
+  %7 = load i16, i16* %acc_slot, align 8, !tbaa !100
   %conv13 = zext i16 %7 to i32
   %sub = sub nsw i32 %conv13, 5
   %and14 = and i32 %sub, 7
   %or15 = or i32 %or, %and14
   %acc_rate = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 20
-  %8 = load i16, i16* %acc_rate, align 2, !tbaa !102
+  %8 = load i16, i16* %acc_rate, align 2, !tbaa !101
   %conv16 = zext i16 %8 to i32
   %and17 = and i32 %conv16, 3
   %shl18 = shl i32 %and17, 8
   %acc_rate19 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 20
-  %9 = load i16, i16* %acc_rate19, align 2, !tbaa !102
+  %9 = load i16, i16* %acc_rate19, align 2, !tbaa !101
   %conv20 = zext i16 %9 to i32
   %and21 = and i32 %conv20, 4
   %tobool22 = icmp ne i32 %and21, 0
@@ -3268,7 +3243,7 @@ if.end10:                                         ; preds = %if.then6, %if.then
   %conv25 = zext i16 %conv11 to i32
   %or26 = or i32 %conv25, %or24
   %conv27 = trunc i32 %or26 to i16
-  %10 = load i32, i32* @pil.27, align 4, !tbaa !58
+  %10 = load i32, i32* @pil.27, align 4, !tbaa !52
   %tobool28 = icmp ne i32 %10, 0
   %conv30 = zext i16 %conv27 to i32
   %or31 = or i32 %conv30, 12288
@@ -3289,7 +3264,7 @@ if.else:                                          ; preds = %entry
   %mach_ops43 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %11 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops43, align 8, !tbaa !2
   %acc_shutdown = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %11, i32 0, i32 4
-  %12 = load void (%struct.wm97xx.343*)*, void (%struct.wm97xx.343*)** %acc_shutdown, align 8, !tbaa !104
+  %12 = load void (%struct.wm97xx.343*)*, void (%struct.wm97xx.343*)** %acc_shutdown, align 8, !tbaa !103
   %tobool44 = icmp ne void (%struct.wm97xx.343*)* %12, null
   br i1 %tobool44, label %if.then45, label %if.end49
 
@@ -3297,7 +3272,7 @@ if.then45:                                        ; preds = %if.else
   %mach_ops46 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %13 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops46, align 8, !tbaa !2
   %acc_shutdown47 = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %13, i32 0, i32 4
-  %14 = load void (%struct.wm97xx.343*)*, void (%struct.wm97xx.343*)** %acc_shutdown47, align 8, !tbaa !104
+  %14 = load void (%struct.wm97xx.343*)*, void (%struct.wm97xx.343*)** %acc_shutdown47, align 8, !tbaa !103
   call void %14(%struct.wm97xx.343* %wm)
   br label %if.end49
 
@@ -3316,7 +3291,7 @@ cleanup:                                          ; preds = %if.end49, %if.then6
 ; Function Attrs: nounwind uwtable
 define internal void @wm9712_phy_init(%struct.wm97xx.343* %wm) #0 {
 entry:
-  %0 = load i32, i32* @rpu, align 4, !tbaa !58
+  %0 = load i32, i32* @rpu, align 4, !tbaa !52
   %tobool = icmp ne i32 %0, 0
   br i1 %tobool, label %if.then, label %if.end14
 
@@ -3324,7 +3299,7 @@ if.then:                                          ; preds = %entry
   %conv = zext i16 8193 to i32
   %and = and i32 %conv, 65472
   %conv1 = trunc i32 %and to i16
-  %1 = load i32, i32* @rpu, align 4, !tbaa !58
+  %1 = load i32, i32* @rpu, align 4, !tbaa !52
   %and2 = and i32 %1, 63
   %conv3 = zext i16 %conv1 to i32
   %or = or i32 %conv3, %and2
@@ -3344,15 +3319,15 @@ if.then:                                          ; preds = %entry
 
 if.then11:                                        ; preds = %if.then
   %dev = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %2 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !49
-  %3 = load i32, i32* @rpu, align 4, !tbaa !58
+  %2 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
+  %3 = load i32, i32* @rpu, align 4, !tbaa !52
   %div = sdiv i32 64000, %3
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_phy_init.descriptor to %struct._ddebug*), %struct.device* %2, i8* getelementptr inbounds ([39 x i8], [39 x i8]* @.str.6.56, i32 0, i32 0), i32 %div)
   br label %if.end14
 
 if.end14:                                         ; preds = %if.then11, %if.then, %entry
   %dig2.0 = phi i16 [ 8193, %entry ], [ %conv4, %if.then11 ], [ %conv4, %if.then ]
-  %4 = load i32, i32* @five_wire, align 4, !tbaa !58
+  %4 = load i32, i32* @five_wire, align 4, !tbaa !52
   %tobool15 = icmp ne i32 %4, 0
   br i1 %tobool15, label %if.then16, label %if.end47
 
@@ -3375,23 +3350,23 @@ if.then16:                                        ; preds = %if.end14
 
 if.then34:                                        ; preds = %if.then16
   %dev35 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %5 = load %struct.device*, %struct.device** %dev35, align 8, !tbaa !49
+  %5 = load %struct.device*, %struct.device** %dev35, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_phy_init.descriptor.7 to %struct._ddebug*), %struct.device* %5, i8* getelementptr inbounds ([34 x i8], [34 x i8]* @.str.8.26, i32 0, i32 0))
   br label %do.end41
 
 do.end41:                                         ; preds = %if.then34, %if.then16
-  %6 = load i32, i32* @pil.27, align 4, !tbaa !58
+  %6 = load i32, i32* @pil.27, align 4, !tbaa !52
   %tobool42 = icmp ne i32 %6, 0
   br i1 %tobool42, label %if.then43, label %if.end47
 
 if.then43:                                        ; preds = %do.end41
   %7 = call i32 (%struct.device*, i8*, ...) @dev_warn(%struct.device* null, i8* null)
-  store i32 0, i32* @pil.27, align 4, !tbaa !58
+  store i32 0, i32* @pil.27, align 4, !tbaa !52
   br label %if.end47
 
 if.end47:                                         ; preds = %if.then43, %do.end41, %if.end14
   %dig2.1 = phi i16 [ %dig2.0, %if.end14 ], [ %conv19, %if.then43 ], [ %conv19, %do.end41 ]
-  %8 = load i32, i32* @pil.27, align 4, !tbaa !58
+  %8 = load i32, i32* @pil.27, align 4, !tbaa !52
   %cmp = icmp eq i32 %8, 2
   br i1 %cmp, label %if.then49, label %if.else
 
@@ -3414,12 +3389,12 @@ if.then49:                                        ; preds = %if.end47
 
 if.then67:                                        ; preds = %if.then49
   %dev68 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %9 = load %struct.device*, %struct.device** %dev68, align 8, !tbaa !49
+  %9 = load %struct.device*, %struct.device** %dev68, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_phy_init.descriptor.10 to %struct._ddebug*), %struct.device* %9, i8* getelementptr inbounds ([48 x i8], [48 x i8]* @.str.11.29, i32 0, i32 0))
   br label %if.end100
 
 if.else:                                          ; preds = %if.end47
-  %10 = load i32, i32* @pil.27, align 4, !tbaa !58
+  %10 = load i32, i32* @pil.27, align 4, !tbaa !52
   %tobool75 = icmp ne i32 %10, 0
   br i1 %tobool75, label %do.body78, label %if.end100
 
@@ -3439,22 +3414,22 @@ do.body78:                                        ; preds = %if.else
 
 if.then91:                                        ; preds = %do.body78
   %dev92 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %11 = load %struct.device*, %struct.device** %dev92, align 8, !tbaa !49
+  %11 = load %struct.device*, %struct.device** %dev92, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_phy_init.descriptor.12 to %struct._ddebug*), %struct.device* %11, i8* getelementptr inbounds ([48 x i8], [48 x i8]* @.str.13.30, i32 0, i32 0))
   br label %if.end100
 
 if.end100:                                        ; preds = %if.then91, %do.body78, %if.else, %if.then67, %if.then49
   %dig2.2 = phi i16 [ %conv52, %if.then67 ], [ %conv52, %if.then49 ], [ %dig2.1, %do.body78 ], [ %dig2.1, %if.then91 ], [ %dig2.1, %if.else ]
-  %12 = load i32, i32* @pil.27, align 4, !tbaa !58
+  %12 = load i32, i32* @pil.27, align 4, !tbaa !52
   %tobool101 = icmp ne i32 %12, 0
   br i1 %tobool101, label %if.end103, label %if.then102
 
 if.then102:                                       ; preds = %if.end100
-  store i32 0, i32* @pressure.31, align 4, !tbaa !58
+  store i32 0, i32* @pressure.31, align 4, !tbaa !52
   br label %if.end103
 
 if.end103:                                        ; preds = %if.then102, %if.end100
-  %13 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %13 = load i32, i32* @delay.32, align 4, !tbaa !52
   %cmp104 = icmp slt i32 %13, 0
   %14 = load i32, i32* @delay.32, align 4
   %cmp106 = icmp sgt i32 %14, 15
@@ -3477,19 +3452,19 @@ do.body110:                                       ; preds = %if.end103
 
 if.then123:                                       ; preds = %do.body110
   %dev124 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %15 = load %struct.device*, %struct.device** %dev124, align 8, !tbaa !49
+  %15 = load %struct.device*, %struct.device** %dev124, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_phy_init.descriptor.14 to %struct._ddebug*), %struct.device* %15, i8* getelementptr inbounds ([30 x i8], [30 x i8]* @.str.15.33, i32 0, i32 0))
   br label %do.end130
 
 do.end130:                                        ; preds = %if.then123, %do.body110
-  store i32 4, i32* @delay.32, align 4, !tbaa !58
+  store i32 4, i32* @delay.32, align 4, !tbaa !52
   br label %if.end131
 
 if.end131:                                        ; preds = %do.end130, %if.end103
   %conv132 = zext i16 0 to i32
   %and133 = and i32 %conv132, 65295
   %conv134 = trunc i32 %and133 to i16
-  %16 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %16 = load i32, i32* @delay.32, align 4, !tbaa !52
   %shl = shl i32 %16, 4
   %and135 = and i32 %shl, 240
   %conv136 = zext i16 %conv134 to i32
@@ -3510,22 +3485,22 @@ if.end131:                                        ; preds = %do.end130, %if.end1
 
 if.then153:                                       ; preds = %if.end131
   %dev154 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %17 = load %struct.device*, %struct.device** %dev154, align 8, !tbaa !49
-  %18 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %17 = load %struct.device*, %struct.device** %dev154, align 8, !tbaa !42
+  %18 = load i32, i32* @delay.32, align 4, !tbaa !52
   %idxprom = sext i32 %18 to i64
   %arrayidx = getelementptr inbounds [16 x i32], [16 x i32]* @delay_table.34, i64 0, i64 %idxprom
-  %19 = load i32, i32* %arrayidx, align 4, !tbaa !58
+  %19 = load i32, i32* %arrayidx, align 4, !tbaa !52
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_phy_init.descriptor.16 to %struct._ddebug*), %struct.device* %17, i8* getelementptr inbounds ([40 x i8], [40 x i8]* @.str.17.35, i32 0, i32 0), i32 %19)
   br label %do.end160
 
 do.end160:                                        ; preds = %if.then153, %if.end131
-  %20 = load i32, i32* @mask.36, align 4, !tbaa !58
+  %20 = load i32, i32* @mask.36, align 4, !tbaa !52
   %and161 = and i32 %20, 3
   %shl162 = shl i32 %and161, 6
   %conv163 = zext i16 %dig2.2 to i32
   %or164 = or i32 %conv163, %shl162
   %conv165 = trunc i32 %or164 to i16
-  %21 = load i32, i32* @mask.36, align 4, !tbaa !58
+  %21 = load i32, i32* @mask.36, align 4, !tbaa !52
   %tobool166 = icmp ne i32 %21, 0
   br i1 %tobool166, label %if.then167, label %if.end178
 
@@ -3545,7 +3520,7 @@ if.then167:                                       ; preds = %do.end160
   br label %if.end178
 
 if.end178:                                        ; preds = %if.then167, %do.end160
-  %22 = load i32, i32* @coord, align 4, !tbaa !58
+  %22 = load i32, i32* @coord, align 4, !tbaa !52
   %tobool179 = icmp ne i32 %22, 0
   %conv181 = zext i16 %conv165 to i32
   %or182 = or i32 %conv181, 512
@@ -3561,7 +3536,7 @@ define internal void @wm9712_dig_enable(%struct.wm97xx.343* %wm, i32 %enable) #0
 entry:
   %dig = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 2
-  %0 = load i16, i16* %arrayidx, align 4, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 4, !tbaa !45
   %tobool = icmp ne i32 %enable, 0
   %conv = zext i16 %0 to i32
   br i1 %tobool, label %if.then, label %if.else
@@ -3588,11 +3563,11 @@ define internal void @wm9712_dig_restore(%struct.wm97xx.343* %wm) #0 {
 entry:
   %dig_save = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 4
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig_save, i64 0, i64 1
-  %0 = load i16, i16* %arrayidx, align 2, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 2, !tbaa !45
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.343*, i16, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 118, i16 zeroext %0)
   %dig_save1 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 4
   %arrayidx2 = getelementptr inbounds [3 x i16], [3 x i16]* %dig_save1, i64 0, i64 2
-  %1 = load i16, i16* %arrayidx2, align 2, !tbaa !51
+  %1 = load i16, i16* %arrayidx2, align 2, !tbaa !45
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.343*, i16, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 120, i16 zeroext %1)
   ret void
 }
@@ -3628,7 +3603,7 @@ declare i32 @dev_warn(%struct.device*, i8*, ...) #1
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9712_poll_coord(%struct.wm97xx.343* %wm, %struct.wm97xx_data* %data) #0 {
 entry:
-  %0 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %0 = load i32, i32* @delay.32, align 4, !tbaa !52
   %mul = mul nsw i32 5, %0
   %pen_probably_down = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 21
   %bf.load = load i8, i8* %pen_probably_down, align 4
@@ -3669,7 +3644,7 @@ land.lhs.true:                                    ; preds = %if.end7
   %mach_ops9 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %2 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops9, align 8, !tbaa !2
   %pre_sample = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %2, i32 0, i32 7
-  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !99
+  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !98
   %tobool10 = icmp ne void (i32)* %3, null
   br i1 %tobool10, label %if.then11, label %if.end14
 
@@ -3677,22 +3652,22 @@ if.then11:                                        ; preds = %land.lhs.true
   %mach_ops12 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %4 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops12, align 8, !tbaa !2
   %pre_sample13 = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %4, i32 0, i32 7
-  %5 = load void (i32)*, void (i32)** %pre_sample13, align 8, !tbaa !99
+  %5 = load void (i32)*, void (i32)** %pre_sample13, align 8, !tbaa !98
   call void %5(i32 12288)
   br label %if.end14
 
 if.end14:                                         ; preds = %if.then11, %land.lhs.true, %if.end7
-  %6 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %6 = load i32, i32* @delay.32, align 4, !tbaa !52
   %shl = shl i32 %6, 4
   %and15 = and i32 %shl, 240
   %or = or i32 34816, %and15
   %conv16 = trunc i32 %or to i16
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.343*, i16, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 118, i16 zeroext %conv16)
-  %7 = load i32, i32* @delay.32, align 4, !tbaa !58
+  %7 = load i32, i32* @delay.32, align 4, !tbaa !52
   call void @poll_delay.39(i32 %7)
   %call17 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.343*, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 122)
   %x = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  store i32 %call17, i32* %x, align 4, !tbaa !95
+  store i32 %call17, i32* %x, align 4, !tbaa !94
   br label %while.cond
 
 while.cond:                                       ; preds = %while.body, %if.end14
@@ -3741,15 +3716,15 @@ do.body30:                                        ; preds = %if.then23
 
 if.then39:                                        ; preds = %do.body30
   %dev = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 8
-  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !49
+  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9712_poll_coord.descriptor to %struct._ddebug*), %struct.device* %8, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.3.41, i32 0, i32 0))
   br label %cleanup89
 
 if.end45:                                         ; preds = %while.end
   %call46 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.343*, i16)*)(%struct.wm97xx.343* %wm, i16 zeroext 122)
   %y = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  store i32 %call46, i32* %y, align 4, !tbaa !97
-  %9 = load i32, i32* @pil.27, align 4, !tbaa !58
+  store i32 %call46, i32* %y, align 4, !tbaa !96
+  %9 = load i32, i32* @pil.27, align 4, !tbaa !52
   %tobool47 = icmp ne i32 %9, 0
   br i1 %tobool47, label %if.then48, label %if.end52
 
@@ -3760,7 +3735,7 @@ if.then48:                                        ; preds = %if.end45
 if.end52:                                         ; preds = %if.then48, %if.end45
   %.sink = phi i32 [ %call49, %if.then48 ], [ 45248, %if.end45 ]
   %p51 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
-  store i32 %.sink, i32* %p51, align 4, !tbaa !98
+  store i32 %.sink, i32* %p51, align 4, !tbaa !97
   %mach_ops53 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %10 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops53, align 8, !tbaa !2
   %tobool54 = icmp ne %struct.wm97xx_mach_ops.349* %10, null
@@ -3770,7 +3745,7 @@ land.lhs.true55:                                  ; preds = %if.end52
   %mach_ops56 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %11 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops56, align 8, !tbaa !2
   %post_sample = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %11, i32 0, i32 8
-  %12 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !100
+  %12 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !99
   %tobool57 = icmp ne void (i32)* %12, null
   br i1 %tobool57, label %if.then58, label %if.end61
 
@@ -3778,46 +3753,46 @@ if.then58:                                        ; preds = %land.lhs.true55
   %mach_ops59 = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 11
   %13 = load %struct.wm97xx_mach_ops.349*, %struct.wm97xx_mach_ops.349** %mach_ops59, align 8, !tbaa !2
   %post_sample60 = getelementptr inbounds %struct.wm97xx_mach_ops.349, %struct.wm97xx_mach_ops.349* %13, i32 0, i32 8
-  %14 = load void (i32)*, void (i32)** %post_sample60, align 8, !tbaa !100
+  %14 = load void (i32)*, void (i32)** %post_sample60, align 8, !tbaa !99
   call void %14(i32 12288)
   br label %if.end61
 
 if.end61:                                         ; preds = %if.then58, %land.lhs.true55, %if.end52
   %x62 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %15 = load i32, i32* %x62, align 4, !tbaa !95
+  %15 = load i32, i32* %x62, align 4, !tbaa !94
   %and63 = and i32 %15, 4096
   %tobool64 = icmp ne i32 %and63, 0
   br i1 %tobool64, label %lor.lhs.false, label %cleanup89
 
 lor.lhs.false:                                    ; preds = %if.end61
   %y65 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %16 = load i32, i32* %y65, align 4, !tbaa !97
+  %16 = load i32, i32* %y65, align 4, !tbaa !96
   %and66 = and i32 %16, 8192
   %tobool67 = icmp ne i32 %and66, 0
   br i1 %tobool67, label %if.end69, label %cleanup89
 
 if.end69:                                         ; preds = %lor.lhs.false
-  %17 = load i32, i32* @pil.27, align 4, !tbaa !58
+  %17 = load i32, i32* @pil.27, align 4, !tbaa !52
   %tobool70 = icmp ne i32 %17, 0
   br i1 %tobool70, label %land.lhs.true71, label %if.end76
 
 land.lhs.true71:                                  ; preds = %if.end69
   %p72 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
-  %18 = load i32, i32* %p72, align 4, !tbaa !98
+  %18 = load i32, i32* %p72, align 4, !tbaa !97
   %and73 = and i32 %18, 12288
   %tobool74 = icmp ne i32 %and73, 0
   br i1 %tobool74, label %if.end76, label %cleanup89
 
 if.end76:                                         ; preds = %land.lhs.true71, %if.end69
   %x77 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %19 = load i32, i32* %x77, align 4, !tbaa !95
+  %19 = load i32, i32* %x77, align 4, !tbaa !94
   %and78 = and i32 %19, 32768
   %tobool79 = icmp ne i32 %and78, 0
   br i1 %tobool79, label %lor.lhs.false80, label %if.then84
 
 lor.lhs.false80:                                  ; preds = %if.end76
   %y81 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %20 = load i32, i32* %y81, align 4, !tbaa !97
+  %20 = load i32, i32* %y81, align 4, !tbaa !96
   %and82 = and i32 %20, 32768
   %tobool83 = icmp ne i32 %and82, 0
   br i1 %tobool83, label %cleanup89, label %if.then84
@@ -3839,7 +3814,7 @@ define internal void @poll_delay.39(i32 %d) #4 {
 entry:
   %idxprom = sext i32 %d to i64
   %arrayidx = getelementptr inbounds [16 x i32], [16 x i32]* @delay_table.34, i64 0, i64 %idxprom
-  %0 = load i32, i32* %arrayidx, align 4, !tbaa !58
+  %0 = load i32, i32* %arrayidx, align 4, !tbaa !52
   %add = add nsw i32 63, %0
   %conv = sext i32 %add to i64
   call void @__udelay(i64 %conv)
@@ -3851,7 +3826,7 @@ define internal i32 @is_pden.40(%struct.wm97xx.343* %wm) #4 {
 entry:
   %dig = getelementptr inbounds %struct.wm97xx.343, %struct.wm97xx.343* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 2
-  %0 = load i16, i16* %arrayidx, align 4, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 4, !tbaa !45
   %conv = zext i16 %0 to i32
   %and = and i32 %conv, 2048
   ret i32 %and
@@ -3860,7 +3835,7 @@ entry:
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9713_poll_sample(%struct.wm97xx.683* %wm, i32 %adcsel, i32* %sample) #0 {
 entry:
-  %0 = load i32, i32* @delay.64, align 4, !tbaa !58
+  %0 = load i32, i32* @delay.64, align 4, !tbaa !52
   %mul = mul nsw i32 5, %0
   %and = and i32 %adcsel, 32768
   %tobool = icmp ne i32 %and, 0
@@ -3919,7 +3894,7 @@ land.lhs.true20:                                  ; preds = %if.end10
   %mach_ops21 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %2 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops21, align 8, !tbaa !2
   %pre_sample = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %2, i32 0, i32 7
-  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !99
+  %3 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !98
   %tobool22 = icmp ne void (i32)* %3, null
   br i1 %tobool22, label %if.then23, label %if.end26
 
@@ -3927,7 +3902,7 @@ if.then23:                                        ; preds = %land.lhs.true20
   %mach_ops24 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %4 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops24, align 8, !tbaa !2
   %pre_sample25 = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %4, i32 0, i32 7
-  %5 = load void (i32)*, void (i32)** %pre_sample25, align 8, !tbaa !99
+  %5 = load void (i32)*, void (i32)** %pre_sample25, align 8, !tbaa !98
   call void %5(i32 %adcsel)
   br label %if.end26
 
@@ -3936,7 +3911,7 @@ if.end26:                                         ; preds = %if.then23, %land.lh
   %or28 = or i32 %conv27, 512
   %conv29 = trunc i32 %or28 to i16
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 116, i16 zeroext %conv29)
-  %6 = load i32, i32* @delay.64, align 4, !tbaa !58
+  %6 = load i32, i32* @delay.64, align 4, !tbaa !52
   call void @poll_delay.70(i32 %6)
   br label %while.cond
 
@@ -3986,13 +3961,13 @@ do.body42:                                        ; preds = %if.then35
 
 if.then51:                                        ; preds = %do.body42
   %dev = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 8
-  %7 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !49
+  %7 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9713_poll_sample.descriptor to %struct._ddebug*), %struct.device* %7, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.3.72, i32 0, i32 0))
   br label %cleanup106
 
 if.end57:                                         ; preds = %while.end
   %call58 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.683*, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 122)
-  store i32 %call58, i32* %sample, align 4, !tbaa !58
+  store i32 %call58, i32* %sample, align 4, !tbaa !52
   %mach_ops59 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %8 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops59, align 8, !tbaa !2
   %tobool60 = icmp ne %struct.wm97xx_mach_ops.689* %8, null
@@ -4002,7 +3977,7 @@ land.lhs.true61:                                  ; preds = %if.end57
   %mach_ops62 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %9 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops62, align 8, !tbaa !2
   %post_sample = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %9, i32 0, i32 8
-  %10 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !100
+  %10 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !99
   %tobool63 = icmp ne void (i32)* %10, null
   br i1 %tobool63, label %if.then64, label %if.end67
 
@@ -4010,12 +3985,12 @@ if.then64:                                        ; preds = %land.lhs.true61
   %mach_ops65 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %11 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops65, align 8, !tbaa !2
   %post_sample66 = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %11, i32 0, i32 8
-  %12 = load void (i32)*, void (i32)** %post_sample66, align 8, !tbaa !100
+  %12 = load void (i32)*, void (i32)** %post_sample66, align 8, !tbaa !99
   call void %12(i32 %adcsel)
   br label %if.end67
 
 if.end67:                                         ; preds = %if.then64, %land.lhs.true61, %if.end57
-  %13 = load i32, i32* %sample, align 4, !tbaa !58
+  %13 = load i32, i32* %sample, align 4, !tbaa !52
   %xor = xor i32 %13, %adcsel
   %and68 = and i32 %xor, 28672
   %tobool69 = icmp ne i32 %and68, 0
@@ -4037,9 +4012,9 @@ do.body72:                                        ; preds = %if.end67
 
 if.then85:                                        ; preds = %do.body72
   %dev86 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 8
-  %14 = load %struct.device*, %struct.device** %dev86, align 8, !tbaa !49
+  %14 = load %struct.device*, %struct.device** %dev86, align 8, !tbaa !42
   %and87 = and i32 %adcsel, 28672
-  %15 = load i32, i32* %sample, align 4, !tbaa !58
+  %15 = load i32, i32* %sample, align 4, !tbaa !52
   %and88 = and i32 %15, 28672
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9713_poll_sample.descriptor.4 to %struct._ddebug*), %struct.device* %14, i8* getelementptr inbounds ([35 x i8], [35 x i8]* @.str.5.75, i32 0, i32 0), i32 %and87, i32 %and88)
   br label %cleanup106
@@ -4049,7 +4024,7 @@ if.end95:                                         ; preds = %if.end67
   br i1 %tobool96, label %land.lhs.true98, label %cleanup106
 
 land.lhs.true98:                                  ; preds = %if.end95
-  %16 = load i32, i32* %sample, align 4, !tbaa !58
+  %16 = load i32, i32* %sample, align 4, !tbaa !52
   %and99 = and i32 %16, 32768
   %tobool100 = icmp ne i32 %and99, 0
   br i1 %tobool100, label %cleanup106, label %if.then101
@@ -4069,7 +4044,7 @@ cleanup106:                                       ; preds = %if.then101, %land.l
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9713_poll_touch(%struct.wm97xx.683* %wm, %struct.wm97xx_data* %data) #0 {
 entry:
-  %0 = load i32, i32* @coord.69, align 4, !tbaa !58
+  %0 = load i32, i32* @coord.69, align 4, !tbaa !52
   %tobool = icmp ne i32 %0, 0
   br i1 %tobool, label %if.then, label %if.else
 
@@ -4091,7 +4066,7 @@ if.end5:                                          ; preds = %if.else
   br i1 %cmp7, label %cleanup, label %if.end9
 
 if.end9:                                          ; preds = %if.end5
-  %1 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %1 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool10 = icmp ne i32 %1, 0
   %p = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
   br i1 %tobool10, label %if.then11, label %if.else16
@@ -4102,7 +4077,7 @@ if.then11:                                        ; preds = %if.end9
   br i1 %cmp13, label %cleanup, label %if.end19
 
 if.else16:                                        ; preds = %if.end9
-  store i32 45248, i32* %p, align 4, !tbaa !98
+  store i32 45248, i32* %p, align 4, !tbaa !97
   br label %if.end19
 
 if.end19:                                         ; preds = %if.else16, %if.then11, %if.then
@@ -4118,13 +4093,13 @@ define internal i32 @wm9713_acc_enable(%struct.wm97xx.683* %wm, i32 %enable) #0 
 entry:
   %dig = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 0
-  %0 = load i16, i16* %arrayidx, align 8, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 8, !tbaa !45
   %dig4 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 0
   %arrayidx5 = getelementptr inbounds [3 x i16], [3 x i16]* %dig4, i64 0, i64 1
-  %1 = load i16, i16* %arrayidx5, align 2, !tbaa !51
+  %1 = load i16, i16* %arrayidx5, align 2, !tbaa !45
   %dig6 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 0
   %arrayidx7 = getelementptr inbounds [3 x i16], [3 x i16]* %dig6, i64 0, i64 2
-  %2 = load i16, i16* %arrayidx7, align 4, !tbaa !51
+  %2 = load i16, i16* %arrayidx7, align 4, !tbaa !45
   %tobool = icmp ne i32 %enable, 0
   br i1 %tobool, label %if.then, label %if.else
 
@@ -4132,7 +4107,7 @@ if.then:                                          ; preds = %entry
   %mach_ops = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %3 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops, align 8, !tbaa !2
   %acc_startup = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %3, i32 0, i32 3
-  %4 = load i32 (%struct.wm97xx.683*)*, i32 (%struct.wm97xx.683*)** %acc_startup, align 8, !tbaa !103
+  %4 = load i32 (%struct.wm97xx.683*)*, i32 (%struct.wm97xx.683*)** %acc_startup, align 8, !tbaa !102
   %tobool8 = icmp ne i32 (%struct.wm97xx.683*)* %4, null
   br i1 %tobool8, label %land.lhs.true, label %if.end
 
@@ -4140,7 +4115,7 @@ land.lhs.true:                                    ; preds = %if.then
   %mach_ops9 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %5 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops9, align 8, !tbaa !2
   %acc_startup10 = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %5, i32 0, i32 3
-  %6 = load i32 (%struct.wm97xx.683*)*, i32 (%struct.wm97xx.683*)** %acc_startup10, align 8, !tbaa !103
+  %6 = load i32 (%struct.wm97xx.683*)*, i32 (%struct.wm97xx.683*)** %acc_startup10, align 8, !tbaa !102
   %call = call i32 %6(%struct.wm97xx.683* %wm)
   %cmp = icmp slt i32 %call, 0
   br i1 %cmp, label %cleanup, label %if.end
@@ -4153,7 +4128,7 @@ if.end:                                           ; preds = %land.lhs.true, %if.
   %conv13 = zext i16 %conv12 to i32
   %or = or i32 %conv13, 263
   %conv14 = trunc i32 %or to i16
-  %7 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %7 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool15 = icmp ne i32 %7, 0
   %conv17 = zext i16 %conv14 to i32
   %or18 = or i32 %conv17, 8
@@ -4162,23 +4137,23 @@ if.end:                                           ; preds = %land.lhs.true, %if.
   %conv21 = zext i16 %1 to i32
   %and22 = and i32 %conv21, -1016
   %conv23 = trunc i32 %and22 to i16
-  %8 = load i32, i32* @delay.64, align 4, !tbaa !58
+  %8 = load i32, i32* @delay.64, align 4, !tbaa !52
   %shl = shl i32 %8, 4
   %and24 = and i32 %shl, 240
   %or25 = or i32 8, %and24
   %acc_slot = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 19
-  %9 = load i16, i16* %acc_slot, align 8, !tbaa !101
+  %9 = load i16, i16* %acc_slot, align 8, !tbaa !100
   %conv26 = zext i16 %9 to i32
   %sub = sub nsw i32 %conv26, 5
   %and27 = and i32 %sub, 7
   %or28 = or i32 %or25, %and27
   %acc_rate = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 20
-  %10 = load i16, i16* %acc_rate, align 2, !tbaa !102
+  %10 = load i16, i16* %acc_rate, align 2, !tbaa !101
   %conv29 = zext i16 %10 to i32
   %and30 = and i32 %conv29, 3
   %shl31 = shl i32 %and30, 8
   %acc_rate32 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 20
-  %11 = load i16, i16* %acc_rate32, align 2, !tbaa !102
+  %11 = load i16, i16* %acc_rate32, align 2, !tbaa !101
   %conv33 = zext i16 %11 to i32
   %and34 = and i32 %conv33, 4
   %tobool35 = icmp ne i32 %and34, 0
@@ -4206,7 +4181,7 @@ if.else:                                          ; preds = %entry
   %mach_ops53 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %12 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops53, align 8, !tbaa !2
   %acc_shutdown = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %12, i32 0, i32 4
-  %13 = load void (%struct.wm97xx.683*)*, void (%struct.wm97xx.683*)** %acc_shutdown, align 8, !tbaa !104
+  %13 = load void (%struct.wm97xx.683*)*, void (%struct.wm97xx.683*)** %acc_shutdown, align 8, !tbaa !103
   %tobool54 = icmp ne void (%struct.wm97xx.683*)* %13, null
   br i1 %tobool54, label %if.then55, label %if.end59
 
@@ -4214,7 +4189,7 @@ if.then55:                                        ; preds = %if.else
   %mach_ops56 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %14 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops56, align 8, !tbaa !2
   %acc_shutdown57 = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %14, i32 0, i32 4
-  %15 = load void (%struct.wm97xx.683*)*, void (%struct.wm97xx.683*)** %acc_shutdown57, align 8, !tbaa !104
+  %15 = load void (%struct.wm97xx.683*)*, void (%struct.wm97xx.683*)** %acc_shutdown57, align 8, !tbaa !103
   call void %15(%struct.wm97xx.683* %wm)
   br label %if.end59
 
@@ -4236,7 +4211,7 @@ cleanup:                                          ; preds = %if.end59, %land.lhs
 ; Function Attrs: nounwind uwtable
 define internal void @wm9713_phy_init(%struct.wm97xx.683* %wm) #0 {
 entry:
-  %0 = load i32, i32* @rpu.55, align 4, !tbaa !58
+  %0 = load i32, i32* @rpu.55, align 4, !tbaa !52
   %tobool = icmp ne i32 %0, 0
   br i1 %tobool, label %if.then, label %if.end
 
@@ -4244,7 +4219,7 @@ if.then:                                          ; preds = %entry
   %conv = zext i16 1 to i32
   %and = and i32 %conv, 65472
   %conv1 = trunc i32 %and to i16
-  %1 = load i32, i32* @rpu.55, align 4, !tbaa !58
+  %1 = load i32, i32* @rpu.55, align 4, !tbaa !52
   %and2 = and i32 %1, 63
   %conv3 = zext i16 %conv1 to i32
   %or = or i32 %conv3, %and2
@@ -4254,7 +4229,7 @@ if.then:                                          ; preds = %entry
 
 if.end:                                           ; preds = %if.then, %entry
   %dig3.0 = phi i16 [ %conv4, %if.then ], [ 1, %entry ]
-  %3 = load i32, i32* @five_wire.57, align 4, !tbaa !58
+  %3 = load i32, i32* @five_wire.57, align 4, !tbaa !52
   %tobool5 = icmp ne i32 %3, 0
   br i1 %tobool5, label %if.then6, label %if.end17
 
@@ -4263,18 +4238,18 @@ if.then6:                                         ; preds = %if.end
   %or8 = or i32 %conv7, 4096
   %conv9 = trunc i32 %or8 to i16
   %4 = call i32 (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  %5 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %5 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool12 = icmp ne i32 %5, 0
   br i1 %tobool12, label %if.then13, label %if.end17
 
 if.then13:                                        ; preds = %if.then6
   %6 = call i32 (%struct.device*, i8*, ...) @dev_warn(%struct.device* null, i8* null)
-  store i32 0, i32* @pil.59, align 4, !tbaa !58
+  store i32 0, i32* @pil.59, align 4, !tbaa !52
   br label %if.end17
 
 if.end17:                                         ; preds = %if.then13, %if.then6, %if.end
   %dig3.1 = phi i16 [ %dig3.0, %if.end ], [ %conv9, %if.then13 ], [ %conv9, %if.then6 ]
-  %7 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %7 = load i32, i32* @pil.59, align 4, !tbaa !52
   %cmp = icmp eq i32 %7, 2
   br i1 %cmp, label %if.then19, label %if.else
 
@@ -4286,7 +4261,7 @@ if.then19:                                        ; preds = %if.end17
   br label %if.end30
 
 if.else:                                          ; preds = %if.end17
-  %9 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %9 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool25 = icmp ne i32 %9, 0
   br i1 %tobool25, label %if.then26, label %if.end30
 
@@ -4296,16 +4271,16 @@ if.then26:                                        ; preds = %if.else
 
 if.end30:                                         ; preds = %if.then26, %if.else, %if.then19
   %dig3.2 = phi i16 [ %conv22, %if.then19 ], [ %dig3.1, %if.then26 ], [ %dig3.1, %if.else ]
-  %11 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %11 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool31 = icmp ne i32 %11, 0
   br i1 %tobool31, label %if.end33, label %if.then32
 
 if.then32:                                        ; preds = %if.end30
-  store i32 0, i32* @pressure.63, align 4, !tbaa !58
+  store i32 0, i32* @pressure.63, align 4, !tbaa !52
   br label %if.end33
 
 if.end33:                                         ; preds = %if.then32, %if.end30
-  %12 = load i32, i32* @delay.64, align 4, !tbaa !58
+  %12 = load i32, i32* @delay.64, align 4, !tbaa !52
   %cmp34 = icmp slt i32 %12, 0
   %13 = load i32, i32* @delay.64, align 4
   %cmp36 = icmp sgt i32 %13, 15
@@ -4314,7 +4289,7 @@ if.end33:                                         ; preds = %if.then32, %if.end3
 
 if.then38:                                        ; preds = %if.end33
   %14 = call i32 (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
-  store i32 4, i32* @delay.64, align 4, !tbaa !58
+  store i32 4, i32* @delay.64, align 4, !tbaa !52
   %15 = call i32 (%struct.device*, i8*, ...) @_dev_info(%struct.device* null, i8* null)
   br label %if.end43
 
@@ -4322,19 +4297,19 @@ if.end43:                                         ; preds = %if.then38, %if.end3
   %conv44 = zext i16 64 to i32
   %and45 = and i32 %conv44, 65295
   %conv46 = trunc i32 %and45 to i16
-  %16 = load i32, i32* @delay.64, align 4, !tbaa !58
+  %16 = load i32, i32* @delay.64, align 4, !tbaa !52
   %shl = shl i32 %16, 4
   %and47 = and i32 %shl, 240
   %conv48 = zext i16 %conv46 to i32
   %or49 = or i32 %conv48, %and47
   %conv50 = trunc i32 %or49 to i16
-  %17 = load i32, i32* @mask.68, align 4, !tbaa !58
+  %17 = load i32, i32* @mask.68, align 4, !tbaa !52
   %and51 = and i32 %17, 3
   %shl52 = shl i32 %and51, 4
   %conv53 = zext i16 %dig3.2 to i32
   %or54 = or i32 %conv53, %shl52
   %conv55 = trunc i32 %or54 to i16
-  %18 = load i32, i32* @coord.69, align 4, !tbaa !58
+  %18 = load i32, i32* @coord.69, align 4, !tbaa !52
   %tobool56 = icmp ne i32 %18, 0
   %conv58 = zext i16 %conv55 to i32
   %or59 = or i32 %conv58, 512
@@ -4343,7 +4318,7 @@ if.end43:                                         ; preds = %if.then38, %if.end3
   %call62 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.683*, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 90)
   %conv63 = trunc i32 %call62 to i16
   %misc = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 3
-  store i16 %conv63, i16* %misc, align 4, !tbaa !68
+  store i16 %conv63, i16* %misc, align 4, !tbaa !67
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 116, i16 zeroext 0)
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 118, i16 zeroext %conv50)
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 120, i16 zeroext %dig3.3)
@@ -4366,7 +4341,7 @@ if.then:                                          ; preds = %entry
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 60, i16 zeroext %conv2)
   %dig = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 2
-  %0 = load i16, i16* %arrayidx, align 4, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 4, !tbaa !45
   %conv3 = zext i16 %0 to i32
   %or = or i32 %conv3, 49152
   %conv4 = trunc i32 %or to i16
@@ -4377,7 +4352,7 @@ if.then:                                          ; preds = %entry
 if.else:                                          ; preds = %entry
   %dig6 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 0
   %arrayidx7 = getelementptr inbounds [3 x i16], [3 x i16]* %dig6, i64 0, i64 2
-  %1 = load i16, i16* %arrayidx7, align 4, !tbaa !51
+  %1 = load i16, i16* %arrayidx7, align 4, !tbaa !45
   %conv8 = zext i16 %1 to i32
   %and9 = and i32 %conv8, -49153
   %conv10 = trunc i32 %and9 to i16
@@ -4399,15 +4374,15 @@ define internal void @wm9713_dig_restore(%struct.wm97xx.683* %wm) #0 {
 entry:
   %dig_save = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 4
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig_save, i64 0, i64 0
-  %0 = load i16, i16* %arrayidx, align 2, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 2, !tbaa !45
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 116, i16 zeroext %0)
   %dig_save1 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 4
   %arrayidx2 = getelementptr inbounds [3 x i16], [3 x i16]* %dig_save1, i64 0, i64 1
-  %1 = load i16, i16* %arrayidx2, align 2, !tbaa !51
+  %1 = load i16, i16* %arrayidx2, align 2, !tbaa !45
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 118, i16 zeroext %1)
   %dig_save3 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 4
   %arrayidx4 = getelementptr inbounds [3 x i16], [3 x i16]* %dig_save3, i64 0, i64 2
-  %2 = load i16, i16* %arrayidx4, align 2, !tbaa !51
+  %2 = load i16, i16* %arrayidx4, align 2, !tbaa !45
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 120, i16 zeroext %2)
   ret void
 }
@@ -4442,7 +4417,7 @@ if.end:                                           ; preds = %if.else, %if.then
 ; Function Attrs: nounwind uwtable
 define internal i32 @wm9713_poll_coord(%struct.wm97xx.683* %wm, %struct.wm97xx_data* %data) #0 {
 entry:
-  %0 = load i32, i32* @delay.64, align 4, !tbaa !58
+  %0 = load i32, i32* @delay.64, align 4, !tbaa !52
   %mul = mul nsw i32 5, %0
   %pen_probably_down = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 21
   %bf.load = load i8, i8* %pen_probably_down, align 4
@@ -4479,7 +4454,7 @@ if.end7:                                          ; preds = %LeafBlock, %entry
   %conv10 = zext i16 %conv9 to i32
   %and11 = and i32 %conv10, -255
   %conv12 = trunc i32 %and11 to i16
-  %1 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %1 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool13 = icmp ne i32 %1, 0
   %conv15 = zext i16 %conv12 to i32
   %or = or i32 %conv15, 8
@@ -4494,7 +4469,7 @@ land.lhs.true:                                    ; preds = %if.end7
   %mach_ops19 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %3 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops19, align 8, !tbaa !2
   %pre_sample = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %3, i32 0, i32 7
-  %4 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !99
+  %4 = load void (i32)*, void (i32)** %pre_sample, align 8, !tbaa !98
   %tobool20 = icmp ne void (i32)* %4, null
   br i1 %tobool20, label %if.then21, label %if.end24
 
@@ -4502,7 +4477,7 @@ if.then21:                                        ; preds = %land.lhs.true
   %mach_ops22 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %5 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops22, align 8, !tbaa !2
   %pre_sample23 = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %5, i32 0, i32 7
-  %6 = load void (i32)*, void (i32)** %pre_sample23, align 8, !tbaa !99
+  %6 = load void (i32)*, void (i32)** %pre_sample23, align 8, !tbaa !98
   call void %6(i32 12288)
   br label %if.end24
 
@@ -4512,11 +4487,11 @@ if.end24:                                         ; preds = %if.then21, %land.lh
   %or27 = or i32 %or26, 1
   %conv28 = trunc i32 %or27 to i16
   call void bitcast (void (%struct.wm97xx*, i16, i16)* @wm97xx_reg_write to void (%struct.wm97xx.683*, i16, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 116, i16 zeroext %conv28)
-  %7 = load i32, i32* @delay.64, align 4, !tbaa !58
+  %7 = load i32, i32* @delay.64, align 4, !tbaa !52
   call void @poll_delay.70(i32 %7)
   %call29 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.683*, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 122)
   %x = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  store i32 %call29, i32* %x, align 4, !tbaa !95
+  store i32 %call29, i32* %x, align 4, !tbaa !94
   br label %while.cond
 
 while.cond:                                       ; preds = %while.body, %if.end24
@@ -4565,15 +4540,15 @@ do.body42:                                        ; preds = %if.then35
 
 if.then51:                                        ; preds = %do.body42
   %dev = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 8
-  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !49
+  %8 = load %struct.device*, %struct.device** %dev, align 8, !tbaa !42
   call void (%struct._ddebug*, %struct.device*, i8*, ...) @__dynamic_dev_dbg(%struct._ddebug* bitcast ({ i8*, i8*, i8*, i8*, i8, i8, i8, i8 }* @wm9713_poll_coord.descriptor to %struct._ddebug*), %struct.device* %8, i8* getelementptr inbounds ([19 x i8], [19 x i8]* @.str.3.72, i32 0, i32 0))
   br label %cleanup101
 
 if.end57:                                         ; preds = %while.end
   %call58 = call i32 bitcast (i32 (%struct.wm97xx*, i16)* @wm97xx_reg_read to i32 (%struct.wm97xx.683*, i16)*)(%struct.wm97xx.683* %wm, i16 zeroext 122)
   %y = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  store i32 %call58, i32* %y, align 4, !tbaa !97
-  %9 = load i32, i32* @pil.59, align 4, !tbaa !58
+  store i32 %call58, i32* %y, align 4, !tbaa !96
+  %9 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool59 = icmp ne i32 %9, 0
   br i1 %tobool59, label %if.then60, label %if.end64
 
@@ -4584,7 +4559,7 @@ if.then60:                                        ; preds = %if.end57
 if.end64:                                         ; preds = %if.then60, %if.end57
   %.sink = phi i32 [ %call61, %if.then60 ], [ 45248, %if.end57 ]
   %p63 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
-  store i32 %.sink, i32* %p63, align 4, !tbaa !98
+  store i32 %.sink, i32* %p63, align 4, !tbaa !97
   %mach_ops65 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %10 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops65, align 8, !tbaa !2
   %tobool66 = icmp ne %struct.wm97xx_mach_ops.689* %10, null
@@ -4594,7 +4569,7 @@ land.lhs.true67:                                  ; preds = %if.end64
   %mach_ops68 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %11 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops68, align 8, !tbaa !2
   %post_sample = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %11, i32 0, i32 8
-  %12 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !100
+  %12 = load void (i32)*, void (i32)** %post_sample, align 8, !tbaa !99
   %tobool69 = icmp ne void (i32)* %12, null
   br i1 %tobool69, label %if.then70, label %if.end73
 
@@ -4602,46 +4577,46 @@ if.then70:                                        ; preds = %land.lhs.true67
   %mach_ops71 = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 11
   %13 = load %struct.wm97xx_mach_ops.689*, %struct.wm97xx_mach_ops.689** %mach_ops71, align 8, !tbaa !2
   %post_sample72 = getelementptr inbounds %struct.wm97xx_mach_ops.689, %struct.wm97xx_mach_ops.689* %13, i32 0, i32 8
-  %14 = load void (i32)*, void (i32)** %post_sample72, align 8, !tbaa !100
+  %14 = load void (i32)*, void (i32)** %post_sample72, align 8, !tbaa !99
   call void %14(i32 12288)
   br label %if.end73
 
 if.end73:                                         ; preds = %if.then70, %land.lhs.true67, %if.end64
   %x74 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %15 = load i32, i32* %x74, align 4, !tbaa !95
+  %15 = load i32, i32* %x74, align 4, !tbaa !94
   %and75 = and i32 %15, 4096
   %tobool76 = icmp ne i32 %and75, 0
   br i1 %tobool76, label %lor.lhs.false, label %cleanup101
 
 lor.lhs.false:                                    ; preds = %if.end73
   %y77 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %16 = load i32, i32* %y77, align 4, !tbaa !97
+  %16 = load i32, i32* %y77, align 4, !tbaa !96
   %and78 = and i32 %16, 8192
   %tobool79 = icmp ne i32 %and78, 0
   br i1 %tobool79, label %if.end81, label %cleanup101
 
 if.end81:                                         ; preds = %lor.lhs.false
-  %17 = load i32, i32* @pil.59, align 4, !tbaa !58
+  %17 = load i32, i32* @pil.59, align 4, !tbaa !52
   %tobool82 = icmp ne i32 %17, 0
   br i1 %tobool82, label %land.lhs.true83, label %if.end88
 
 land.lhs.true83:                                  ; preds = %if.end81
   %p84 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 2
-  %18 = load i32, i32* %p84, align 4, !tbaa !98
+  %18 = load i32, i32* %p84, align 4, !tbaa !97
   %and85 = and i32 %18, 12288
   %tobool86 = icmp ne i32 %and85, 0
   br i1 %tobool86, label %if.end88, label %cleanup101
 
 if.end88:                                         ; preds = %land.lhs.true83, %if.end81
   %x89 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 0
-  %19 = load i32, i32* %x89, align 4, !tbaa !95
+  %19 = load i32, i32* %x89, align 4, !tbaa !94
   %and90 = and i32 %19, 32768
   %tobool91 = icmp ne i32 %and90, 0
   br i1 %tobool91, label %lor.lhs.false92, label %if.then96
 
 lor.lhs.false92:                                  ; preds = %if.end88
   %y93 = getelementptr inbounds %struct.wm97xx_data, %struct.wm97xx_data* %data, i32 0, i32 1
-  %20 = load i32, i32* %y93, align 4, !tbaa !97
+  %20 = load i32, i32* %y93, align 4, !tbaa !96
   %and94 = and i32 %20, 32768
   %tobool95 = icmp ne i32 %and94, 0
   br i1 %tobool95, label %cleanup101, label %if.then96
@@ -4663,7 +4638,7 @@ define internal void @poll_delay.70(i32 %d) #4 {
 entry:
   %idxprom = sext i32 %d to i64
   %arrayidx = getelementptr inbounds [16 x i32], [16 x i32]* @delay_table.66, i64 0, i64 %idxprom
-  %0 = load i32, i32* %arrayidx, align 4, !tbaa !58
+  %0 = load i32, i32* %arrayidx, align 4, !tbaa !52
   %add = add nsw i32 63, %0
   %conv = sext i32 %add to i64
   call void @__udelay(i64 %conv)
@@ -4675,17 +4650,19 @@ define internal i32 @is_pden.71(%struct.wm97xx.683* %wm) #4 {
 entry:
   %dig = getelementptr inbounds %struct.wm97xx.683, %struct.wm97xx.683* %wm, i32 0, i32 0
   %arrayidx = getelementptr inbounds [3 x i16], [3 x i16]* %dig, i64 0, i64 2
-  %0 = load i16, i16* %arrayidx, align 4, !tbaa !51
+  %0 = load i16, i16* %arrayidx, align 4, !tbaa !45
   %conv = zext i16 %0 to i32
   %and = and i32 %conv, 2048
   ret i32 %and
 }
 
+declare void @simpll__indirect_0(%struct.snd_ac97*, i16, i16, void (%struct.snd_ac97*, i16, i16)*)
+
 declare void @__dynamic_dev_dbg(%struct._ddebug*, %struct.device*, i8*, ...) #1
 
-declare void @"simpll__indirect$0"(i32, void (i32)*)
+declare i16 @simpll__indirect_0.1(%struct.snd_ac97*, i16, i16 (%struct.snd_ac97*, i16)*)
 
-declare void @"simpll__indirect$0.1"(%struct.snd_ac97*, i16, i16, void (%struct.snd_ac97*, i16, i16)*)
+declare void @simpll__indirect_1(i32, void (i32)*)
 
 attributes #0 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "counting-function"="mcount" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
@@ -4719,87 +4696,86 @@ attributes #6 = { nounwind }
 !18 = !{!"timer_list", !12, i64 0, !14, i64 16, !7, i64 24, !7, i64 32, !14, i64 40, !10, i64 48, !10, i64 52, !7, i64 56, !4, i64 64, !13, i64 80}
 !19 = !{!3, !6, i64 600}
 !20 = !{!3, !7, i64 40}
-!21 = !{!3, !7, i64 48}
-!22 = !{!23, !7, i64 24}
-!23 = !{!"snd_ac97", !7, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40, !7, i64 48, !6, i64 56, !6, i64 58, !8, i64 64, !8, i64 232, !6, i64 400, !6, i64 402, !10, i64 404, !6, i64 408, !6, i64 410, !6, i64 412, !7, i64 416, !10, i64 424, !10, i64 428, !4, i64 432, !10, i64 456, !4, i64 460, !4, i64 720, !4, i64 736, !4, i64 768, !4, i64 769, !10, i64 772, !15, i64 776, !24, i64 1000, !4, i64 2136}
-!24 = !{!"device", !7, i64 0, !7, i64 8, !25, i64 16, !7, i64 80, !7, i64 88, !8, i64 96, !7, i64 264, !7, i64 272, !7, i64 280, !27, i64 288, !7, i64 880, !10, i64 888, !7, i64 896, !32, i64 904, !7, i64 912, !12, i64 920, !7, i64 936, !33, i64 944, !7, i64 960, !34, i64 968, !10, i64 976, !10, i64 980, !11, i64 984, !12, i64 1056, !35, i64 1072, !7, i64 1104, !7, i64 1112, !7, i64 1120, !7, i64 1128}
-!25 = !{!"kobject", !7, i64 0, !12, i64 8, !7, i64 24, !7, i64 32, !7, i64 40, !7, i64 48, !26, i64 56, !10, i64 60, !10, i64 60, !10, i64 60, !10, i64 60, !10, i64 60}
-!26 = !{!"kref", !9, i64 0}
-!27 = !{!"dev_pm_info", !28, i64 0, !10, i64 4, !10, i64 4, !29, i64 4, !29, i64 4, !29, i64 4, !29, i64 4, !11, i64 8, !12, i64 80, !30, i64 96, !7, i64 192, !29, i64 200, !29, i64 200, !18, i64 208, !14, i64 336, !16, i64 344, !31, i64 424, !9, i64 512, !9, i64 516, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 521, !10, i64 521, !10, i64 521, !10, i64 521, !10, i64 521, !4, i64 524, !4, i64 528, !10, i64 532, !10, i64 536, !14, i64 544, !14, i64 552, !14, i64 560, !14, i64 568, !7, i64 576, !7, i64 584}
-!28 = !{!"pm_message", !10, i64 0}
-!29 = !{!"_Bool", !4, i64 0}
-!30 = !{!"completion", !10, i64 0, !31, i64 8}
-!31 = !{!"__wait_queue_head", !11, i64 0, !12, i64 72}
-!32 = !{!"long long", !4, i64 0}
-!33 = !{!"dev_archdata", !7, i64 0, !7, i64 8}
-!34 = !{!"acpi_dev_node", !7, i64 0}
-!35 = !{!"klist_node", !7, i64 0, !12, i64 8, !26, i64 24}
-!36 = !{!37, !7, i64 0}
-!37 = !{!"snd_ac97_bus", !7, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !6, i64 32, !6, i64 34, !6, i64 34, !6, i64 34, !10, i64 36, !11, i64 40, !4, i64 112, !6, i64 128, !7, i64 136, !4, i64 144, !7, i64 176}
-!38 = !{!39, !7, i64 24}
-!39 = !{!"snd_ac97_bus_ops", !7, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40}
-!40 = !{!3, !6, i64 6}
-!41 = !{!3, !6, i64 598}
-!42 = !{!3, !7, i64 32}
-!43 = !{!44, !7, i64 64}
-!44 = !{!"wm97xx_codec_drv", !6, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40, !7, i64 48, !7, i64 56, !7, i64 64}
-!45 = !{!44, !7, i64 16}
-!46 = !{!44, !7, i64 56}
-!47 = !{!44, !7, i64 48}
-!48 = !{!24, !7, i64 280}
-!49 = !{!3, !7, i64 56}
-!50 = !{!44, !7, i64 40}
-!51 = !{!6, !6, i64 0}
-!52 = !{!53, !7, i64 0}
-!53 = !{!"input_dev", !7, i64 0, !7, i64 8, !7, i64 16, !54, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !4, i64 144, !4, i64 152, !4, i64 160, !4, i64 168, !4, i64 176, !4, i64 184, !4, i64 200, !10, i64 208, !10, i64 212, !10, i64 216, !7, i64 224, !7, i64 232, !7, i64 240, !7, i64 248, !10, i64 256, !18, i64 264, !4, i64 392, !7, i64 400, !7, i64 408, !4, i64 416, !4, i64 512, !4, i64 520, !4, i64 528, !7, i64 536, !7, i64 544, !7, i64 552, !7, i64 560, !7, i64 568, !11, i64 576, !8, i64 648, !10, i64 816, !29, i64 820, !24, i64 824, !12, i64 1960, !12, i64 1976, !10, i64 1992, !10, i64 1996, !7, i64 2000, !29, i64 2008}
-!54 = !{!"input_id", !6, i64 0, !6, i64 2, !6, i64 4, !6, i64 6}
-!55 = !{!53, !7, i64 8}
-!56 = !{!53, !7, i64 536}
-!57 = !{!53, !7, i64 544}
-!58 = !{!10, !10, i64 0}
-!59 = !{!53, !7, i64 824}
-!60 = !{!3, !7, i64 64}
-!61 = !{!62, !7, i64 16}
-!62 = !{!"platform_device", !7, i64 0, !10, i64 8, !29, i64 12, !24, i64 16, !10, i64 1152, !7, i64 1160, !7, i64 1168, !7, i64 1176, !63, i64 1184}
-!63 = !{!"pdev_archdata"}
-!64 = !{!62, !7, i64 296}
-!65 = !{!3, !7, i64 72}
-!66 = !{!53, !10, i64 816}
-!67 = !{!39, !7, i64 16}
-!68 = !{!3, !6, i64 20}
-!69 = !{!3, !10, i64 496}
-!70 = !{!3, !14, i64 488}
-!71 = !{!3, !14, i64 480}
-!72 = !{!3, !7, i64 504}
-!73 = !{!24, !7, i64 480}
-!74 = !{!75, !10, i64 0}
-!75 = !{!"wm97xx_mach_ops", !10, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40, !10, i64 48, !7, i64 56, !7, i64 64}
-!76 = !{!44, !7, i64 32}
-!77 = !{!17, !14, i64 0}
-!78 = !{i64 0, i64 8, !79}
-!79 = !{!14, !14, i64 0}
-!80 = !{!16, !7, i64 24}
-!81 = !{!18, !7, i64 32}
-!82 = !{!18, !14, i64 40}
-!83 = !{!75, !10, i64 48}
-!84 = !{i32 -2143697598, i32 -2143697573, i32 -2143697303, i32 -2143697506, i32 -2143697475, i32 -2143697445}
-!85 = !{!75, !7, i64 40}
-!86 = !{i32 396182}
-!87 = !{!12, !7, i64 0}
-!88 = !{!12, !7, i64 8}
-!89 = !{i32 -2143701185, i32 -2143701160, i32 -2143700890, i32 -2143701093, i32 -2143701062, i32 -2143701032}
-!90 = !{!75, !7, i64 16}
-!91 = !{!75, !7, i64 8}
-!92 = !{i32 -2143710482, i32 -2143710457, i32 -2143710187, i32 -2143710390, i32 -2143710359, i32 -2143710329}
-!93 = !{i32 -2143709919, i32 -2143709894, i32 -2143709624, i32 -2143709827, i32 -2143709796, i32 -2143709766}
-!94 = !{!44, !7, i64 24}
-!95 = !{!96, !10, i64 0}
-!96 = !{!"wm97xx_data", !10, i64 0, !10, i64 4, !10, i64 8}
-!97 = !{!96, !10, i64 4}
-!98 = !{!96, !10, i64 8}
-!99 = !{!75, !7, i64 56}
-!100 = !{!75, !7, i64 64}
-!101 = !{!3, !6, i64 592}
-!102 = !{!3, !6, i64 594}
-!103 = !{!75, !7, i64 24}
-!104 = !{!75, !7, i64 32}
+!21 = !{!3, !6, i64 6}
+!22 = !{!3, !6, i64 598}
+!23 = !{!3, !7, i64 32}
+!24 = !{!25, !7, i64 64}
+!25 = !{!"wm97xx_codec_drv", !6, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40, !7, i64 48, !7, i64 56, !7, i64 64}
+!26 = !{!25, !7, i64 16}
+!27 = !{!25, !7, i64 56}
+!28 = !{!25, !7, i64 48}
+!29 = !{!30, !7, i64 280}
+!30 = !{!"device", !7, i64 0, !7, i64 8, !31, i64 16, !7, i64 80, !7, i64 88, !8, i64 96, !7, i64 264, !7, i64 272, !7, i64 280, !33, i64 288, !7, i64 880, !10, i64 888, !7, i64 896, !38, i64 904, !7, i64 912, !12, i64 920, !7, i64 936, !39, i64 944, !7, i64 960, !40, i64 968, !10, i64 976, !10, i64 980, !11, i64 984, !12, i64 1056, !41, i64 1072, !7, i64 1104, !7, i64 1112, !7, i64 1120, !7, i64 1128}
+!31 = !{!"kobject", !7, i64 0, !12, i64 8, !7, i64 24, !7, i64 32, !7, i64 40, !7, i64 48, !32, i64 56, !10, i64 60, !10, i64 60, !10, i64 60, !10, i64 60, !10, i64 60}
+!32 = !{!"kref", !9, i64 0}
+!33 = !{!"dev_pm_info", !34, i64 0, !10, i64 4, !10, i64 4, !35, i64 4, !35, i64 4, !35, i64 4, !35, i64 4, !11, i64 8, !12, i64 80, !36, i64 96, !7, i64 192, !35, i64 200, !35, i64 200, !18, i64 208, !14, i64 336, !16, i64 344, !37, i64 424, !9, i64 512, !9, i64 516, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 520, !10, i64 521, !10, i64 521, !10, i64 521, !10, i64 521, !10, i64 521, !4, i64 524, !4, i64 528, !10, i64 532, !10, i64 536, !14, i64 544, !14, i64 552, !14, i64 560, !14, i64 568, !7, i64 576, !7, i64 584}
+!34 = !{!"pm_message", !10, i64 0}
+!35 = !{!"_Bool", !4, i64 0}
+!36 = !{!"completion", !10, i64 0, !37, i64 8}
+!37 = !{!"__wait_queue_head", !11, i64 0, !12, i64 72}
+!38 = !{!"long long", !4, i64 0}
+!39 = !{!"dev_archdata", !7, i64 0, !7, i64 8}
+!40 = !{!"acpi_dev_node", !7, i64 0}
+!41 = !{!"klist_node", !7, i64 0, !12, i64 8, !32, i64 24}
+!42 = !{!3, !7, i64 56}
+!43 = !{!3, !7, i64 48}
+!44 = !{!25, !7, i64 40}
+!45 = !{!6, !6, i64 0}
+!46 = !{!47, !7, i64 0}
+!47 = !{!"input_dev", !7, i64 0, !7, i64 8, !7, i64 16, !48, i64 24, !4, i64 32, !4, i64 40, !4, i64 48, !4, i64 144, !4, i64 152, !4, i64 160, !4, i64 168, !4, i64 176, !4, i64 184, !4, i64 200, !10, i64 208, !10, i64 212, !10, i64 216, !7, i64 224, !7, i64 232, !7, i64 240, !7, i64 248, !10, i64 256, !18, i64 264, !4, i64 392, !7, i64 400, !7, i64 408, !4, i64 416, !4, i64 512, !4, i64 520, !4, i64 528, !7, i64 536, !7, i64 544, !7, i64 552, !7, i64 560, !7, i64 568, !11, i64 576, !8, i64 648, !10, i64 816, !35, i64 820, !30, i64 824, !12, i64 1960, !12, i64 1976, !10, i64 1992, !10, i64 1996, !7, i64 2000, !35, i64 2008}
+!48 = !{!"input_id", !6, i64 0, !6, i64 2, !6, i64 4, !6, i64 6}
+!49 = !{!47, !7, i64 8}
+!50 = !{!47, !7, i64 536}
+!51 = !{!47, !7, i64 544}
+!52 = !{!10, !10, i64 0}
+!53 = !{!47, !7, i64 824}
+!54 = !{!3, !7, i64 64}
+!55 = !{!56, !7, i64 16}
+!56 = !{!"platform_device", !7, i64 0, !10, i64 8, !35, i64 12, !30, i64 16, !10, i64 1152, !7, i64 1160, !7, i64 1168, !7, i64 1176, !57, i64 1184}
+!57 = !{!"pdev_archdata"}
+!58 = !{!56, !7, i64 296}
+!59 = !{!3, !7, i64 72}
+!60 = !{!47, !10, i64 816}
+!61 = !{!62, !7, i64 24}
+!62 = !{!"snd_ac97", !7, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40, !7, i64 48, !6, i64 56, !6, i64 58, !8, i64 64, !8, i64 232, !6, i64 400, !6, i64 402, !10, i64 404, !6, i64 408, !6, i64 410, !6, i64 412, !7, i64 416, !10, i64 424, !10, i64 428, !4, i64 432, !10, i64 456, !4, i64 460, !4, i64 720, !4, i64 736, !4, i64 768, !4, i64 769, !10, i64 772, !15, i64 776, !30, i64 1000, !4, i64 2136}
+!63 = !{!64, !7, i64 0}
+!64 = !{!"snd_ac97_bus", !7, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !6, i64 32, !6, i64 34, !6, i64 34, !6, i64 34, !10, i64 36, !11, i64 40, !4, i64 112, !6, i64 128, !7, i64 136, !4, i64 144, !7, i64 176}
+!65 = !{!66, !7, i64 16}
+!66 = !{!"snd_ac97_bus_ops", !7, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40}
+!67 = !{!3, !6, i64 20}
+!68 = !{!3, !10, i64 496}
+!69 = !{!3, !14, i64 488}
+!70 = !{!3, !14, i64 480}
+!71 = !{!3, !7, i64 504}
+!72 = !{!30, !7, i64 480}
+!73 = !{!74, !10, i64 0}
+!74 = !{!"wm97xx_mach_ops", !10, i64 0, !7, i64 8, !7, i64 16, !7, i64 24, !7, i64 32, !7, i64 40, !10, i64 48, !7, i64 56, !7, i64 64}
+!75 = !{!25, !7, i64 32}
+!76 = !{!17, !14, i64 0}
+!77 = !{i64 0, i64 8, !78}
+!78 = !{!14, !14, i64 0}
+!79 = !{!16, !7, i64 24}
+!80 = !{!18, !7, i64 32}
+!81 = !{!18, !14, i64 40}
+!82 = !{!74, !10, i64 48}
+!83 = !{i32 -2143697598, i32 -2143697573, i32 -2143697303, i32 -2143697506, i32 -2143697475, i32 -2143697445}
+!84 = !{!74, !7, i64 40}
+!85 = !{i32 396182}
+!86 = !{!12, !7, i64 0}
+!87 = !{!12, !7, i64 8}
+!88 = !{i32 -2143701185, i32 -2143701160, i32 -2143700890, i32 -2143701093, i32 -2143701062, i32 -2143701032}
+!89 = !{!74, !7, i64 16}
+!90 = !{!74, !7, i64 8}
+!91 = !{i32 -2143710482, i32 -2143710457, i32 -2143710187, i32 -2143710390, i32 -2143710359, i32 -2143710329}
+!92 = !{i32 -2143709919, i32 -2143709894, i32 -2143709624, i32 -2143709827, i32 -2143709796, i32 -2143709766}
+!93 = !{!25, !7, i64 24}
+!94 = !{!95, !10, i64 0}
+!95 = !{!"wm97xx_data", !10, i64 0, !10, i64 4, !10, i64 8}
+!96 = !{!95, !10, i64 4}
+!97 = !{!95, !10, i64 8}
+!98 = !{!74, !7, i64 56}
+!99 = !{!74, !7, i64 64}
+!100 = !{!3, !6, i64 592}
+!101 = !{!3, !6, i64 594}
+!102 = !{!74, !7, i64 24}
+!103 = !{!74, !7, i64 32}

@@ -432,6 +432,8 @@ entry:
   %_min3 = alloca i32, align 4
   %call = call %struct.fw_unit* @fw_unit(%struct.device* %dev)
   %call1 = call %struct.fw_device* @fw_parent_device(%struct.fw_unit* %call)
+  %0 = bitcast i32* %model to i8*
+  %1 = bitcast i32* %firmware_revision to i8*
   %is_local = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 12
   %bf.load = load i16, i16* %is_local, align 4
   %bf.clear = and i16 %bf.load, 1
@@ -441,19 +443,19 @@ entry:
 
 if.end:                                           ; preds = %entry
   %card = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 5
-  %0 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
-  %device2 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %0, i32 0, i32 1
-  %1 = load %struct.device*, %struct.device** %device2, align 8, !tbaa !32
-  %call3 = call i32 @dma_get_max_seg_size(%struct.device* %1)
+  %2 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
+  %device2 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %2, i32 0, i32 1
+  %3 = load %struct.device*, %struct.device** %device2, align 8, !tbaa !32
+  %call3 = call i32 @dma_get_max_seg_size(%struct.device* %3)
   %cmp = icmp ugt i32 %call3, 65532
   br i1 %cmp, label %if.then4, label %if.end25
 
 if.then4:                                         ; preds = %if.end
   %card5 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 5
-  %2 = load %struct.fw_card*, %struct.fw_card** %card5, align 8, !tbaa !2
-  %device6 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %2, i32 0, i32 1
-  %3 = load %struct.device*, %struct.device** %device6, align 8, !tbaa !32
-  %call7 = call i32 @dma_set_max_seg_size(%struct.device* %3, i32 65532)
+  %4 = load %struct.fw_card*, %struct.fw_card** %card5, align 8, !tbaa !2
+  %device6 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %4, i32 0, i32 1
+  %5 = load %struct.device*, %struct.device** %device6, align 8, !tbaa !32
+  %call7 = call i32 @dma_set_max_seg_size(%struct.device* %5, i32 65532)
   %tobool8 = icmp ne i32 %call7, 0
   %lnot = xor i1 %tobool8, true
   %lnot9 = xor i1 %lnot, true
@@ -482,27 +484,27 @@ if.end25:                                         ; preds = %if.end17, %if.end
 if.end30:                                         ; preds = %if.end25
   %hostdata = getelementptr inbounds %struct.Scsi_Host, %struct.Scsi_Host* %call26, i32 0, i32 54
   %arraydecay = getelementptr inbounds [0 x i64], [0 x i64]* %hostdata, i32 0, i32 0
-  %4 = bitcast i64* %arraydecay to %struct.sbp2_target*
+  %6 = bitcast i64* %arraydecay to %struct.sbp2_target*
   %device31 = getelementptr inbounds %struct.fw_unit, %struct.fw_unit* %call, i32 0, i32 0
-  %5 = bitcast %struct.sbp2_target* %4 to i8*
-  %call32 = call i32 @dev_set_drvdata(%struct.device* %device31, i8* %5)
-  %unit33 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %4, i32 0, i32 0
+  %7 = bitcast %struct.sbp2_target* %6 to i8*
+  %call32 = call i32 @dev_set_drvdata(%struct.device* %device31, i8* %7)
+  %unit33 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %6, i32 0, i32 0
   store %struct.fw_unit* %call, %struct.fw_unit** %unit33, align 8, !tbaa !34
-  %lu_list = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %4, i32 0, i32 1
+  %lu_list = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %6, i32 0, i32 1
   call void @INIT_LIST_HEAD(%struct.list_head* %lu_list)
   %config_rom = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 9
-  %6 = load i32*, i32** %config_rom, align 8, !tbaa !36
-  %arrayidx = getelementptr inbounds i32, i32* %6, i64 3
-  %7 = load i32, i32* %arrayidx, align 4, !tbaa !37
-  %conv34 = zext i32 %7 to i64
+  %8 = load i32*, i32** %config_rom, align 8, !tbaa !36
+  %arrayidx = getelementptr inbounds i32, i32* %8, i64 3
+  %9 = load i32, i32* %arrayidx, align 4, !tbaa !37
+  %conv34 = zext i32 %9 to i64
   %shl = shl i64 %conv34, 32
   %config_rom35 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 9
-  %8 = load i32*, i32** %config_rom35, align 8, !tbaa !36
-  %arrayidx36 = getelementptr inbounds i32, i32* %8, i64 4
-  %9 = load i32, i32* %arrayidx36, align 4, !tbaa !37
-  %conv37 = zext i32 %9 to i64
+  %10 = load i32*, i32** %config_rom35, align 8, !tbaa !36
+  %arrayidx36 = getelementptr inbounds i32, i32* %10, i64 4
+  %11 = load i32, i32* %arrayidx36, align 4, !tbaa !37
+  %conv37 = zext i32 %11 to i64
   %or = or i64 %shl, %conv37
-  %guid = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %4, i32 0, i32 3
+  %guid = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %6, i32 0, i32 3
   store i64 %or, i64* %guid, align 8, !tbaa !38
   %call38 = call i32 @fw_device_enable_phys_dma(%struct.fw_device* %call1)
   %cmp39 = icmp slt i32 %call38, 0
@@ -513,97 +515,103 @@ if.end42:                                         ; preds = %if.end30
   store i16 16, i16* %max_cmd_len, align 8, !tbaa !39
   %device43 = getelementptr inbounds %struct.fw_unit, %struct.fw_unit* %call, i32 0, i32 0
   %card44 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 5
-  %10 = load %struct.fw_card*, %struct.fw_card** %card44, align 8, !tbaa !2
-  %device45 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %10, i32 0, i32 1
-  %11 = load %struct.device*, %struct.device** %device45, align 8, !tbaa !32
-  %call46 = call i32 @scsi_add_host_with_dma(%struct.Scsi_Host* %call26, %struct.device* %device43, %struct.device* %11)
+  %12 = load %struct.fw_card*, %struct.fw_card** %card44, align 8, !tbaa !2
+  %device45 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %12, i32 0, i32 1
+  %13 = load %struct.device*, %struct.device** %device45, align 8, !tbaa !32
+  %call46 = call i32 @scsi_add_host_with_dma(%struct.Scsi_Host* %call26, %struct.device* %device43, %struct.device* %13)
   %cmp47 = icmp slt i32 %call46, 0
   br i1 %cmp47, label %fail_shost_put, label %if.end50
 
 if.end50:                                         ; preds = %if.end42
   %directory = getelementptr inbounds %struct.fw_unit, %struct.fw_unit* %call, i32 0, i32 1
-  %12 = load i32*, i32** %directory, align 8, !tbaa !42
+  %14 = load i32*, i32** %directory, align 8, !tbaa !42
   %config_rom51 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 9
-  %13 = load i32*, i32** %config_rom51, align 8, !tbaa !36
-  %sub.ptr.lhs.cast = ptrtoint i32* %12 to i64
-  %sub.ptr.rhs.cast = ptrtoint i32* %13 to i64
+  %15 = load i32*, i32** %config_rom51, align 8, !tbaa !36
+  %sub.ptr.lhs.cast = ptrtoint i32* %14 to i64
+  %sub.ptr.rhs.cast = ptrtoint i32* %15 to i64
   %sub.ptr.sub = sub i64 %sub.ptr.lhs.cast, %sub.ptr.rhs.cast
   %sub.ptr.div = sdiv exact i64 %sub.ptr.sub, 4
   %mul = mul nsw i64 %sub.ptr.div, 4
   %add = add nsw i64 %mul, 1024
   %and = and i64 %add, 16777215
   %conv52 = trunc i64 %and to i32
-  %directory_id = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %4, i32 0, i32 4
+  %directory_id = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %6, i32 0, i32 4
   store i32 %conv52, i32* %directory_id, align 8, !tbaa !44
   store i32 -16777216, i32* %firmware_revision, align 4, !tbaa !37
   store i32 -16777216, i32* %model, align 4, !tbaa !37
   %directory53 = getelementptr inbounds %struct.fw_unit, %struct.fw_unit* %call, i32 0, i32 1
-  %14 = load i32*, i32** %directory53, align 8, !tbaa !42
-  %call54 = call i32 @sbp2_scan_unit_dir(%struct.sbp2_target* %4, i32* %14, i32* %model, i32* %firmware_revision)
+  %16 = load i32*, i32** %directory53, align 8, !tbaa !42
+  %call54 = call i32 @sbp2_scan_unit_dir(%struct.sbp2_target* %6, i32* %16, i32* %model, i32* %firmware_revision)
   %cmp55 = icmp slt i32 %call54, 0
   br i1 %cmp55, label %fail_remove, label %if.end58
 
 if.end58:                                         ; preds = %if.end50
-  call void @sbp2_clamp_management_orb_timeout(%struct.sbp2_target* %4)
-  %15 = load i32, i32* %model, align 4, !tbaa !37
-  %16 = load i32, i32* %firmware_revision, align 4, !tbaa !37
-  call void @sbp2_init_workarounds(%struct.sbp2_target* %4, i32 %15, i32 %16)
+  call void @sbp2_clamp_management_orb_timeout(%struct.sbp2_target* %6)
+  %17 = load i32, i32* %model, align 4, !tbaa !37
+  %18 = load i32, i32* %firmware_revision, align 4, !tbaa !37
+  call void @sbp2_init_workarounds(%struct.sbp2_target* %6, i32 %17, i32 %18)
+  %19 = bitcast i32* %_min1 to i8*
   %max_speed = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 4
-  %17 = load i32, i32* %max_speed, align 8, !tbaa !45
-  %add59 = add i32 %17, 7
+  %20 = load i32, i32* %max_speed, align 8, !tbaa !45
+  %add59 = add i32 %20, 7
   store i32 %add59, i32* %_min1, align 4, !tbaa !37
+  %21 = bitcast i32* %_min2 to i8*
   store i32 10, i32* %_min2, align 4, !tbaa !37
+  %22 = bitcast i32* %_min3 to i8*
   %card60 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call1, i32 0, i32 5
-  %18 = load %struct.fw_card*, %struct.fw_card** %card60, align 8, !tbaa !2
-  %max_receive = getelementptr inbounds %struct.fw_card, %struct.fw_card* %18, i32 0, i32 15
-  %19 = load i32, i32* %max_receive, align 8, !tbaa !46
-  %sub = sub i32 %19, 1
+  %23 = load %struct.fw_card*, %struct.fw_card** %card60, align 8, !tbaa !2
+  %max_receive = getelementptr inbounds %struct.fw_card, %struct.fw_card* %23, i32 0, i32 15
+  %24 = load i32, i32* %max_receive, align 8, !tbaa !46
+  %sub = sub i32 %24, 1
   store i32 %sub, i32* %_min3, align 4, !tbaa !37
-  %20 = load i32, i32* %_min1, align 4, !tbaa !37
-  %21 = load i32, i32* %_min2, align 4, !tbaa !37
-  %cmp66 = icmp ult i32 %20, %21
+  %25 = load i32, i32* %_min1, align 4, !tbaa !37
+  %26 = load i32, i32* %_min2, align 4, !tbaa !37
+  %cmp66 = icmp ult i32 %25, %26
   br i1 %cmp66, label %cond.true, label %cond.false71
 
 cond.true:                                        ; preds = %if.end58
-  %22 = load i32, i32* %_min1, align 4, !tbaa !37
-  %23 = load i32, i32* %_min3, align 4, !tbaa !37
-  %cmp68 = icmp ult i32 %22, %23
-  %24 = load i32, i32* %_min1, align 4
-  %25 = load i32, i32* %_min3, align 4
-  %cond = select i1 %cmp68, i32 %24, i32 %25
+  %27 = load i32, i32* %_min1, align 4, !tbaa !37
+  %28 = load i32, i32* %_min3, align 4, !tbaa !37
+  %cmp68 = icmp ult i32 %27, %28
+  %29 = load i32, i32* %_min1, align 4
+  %30 = load i32, i32* %_min3, align 4
+  %cond = select i1 %cmp68, i32 %29, i32 %30
   br label %cond.end78
 
 cond.false71:                                     ; preds = %if.end58
-  %26 = load i32, i32* %_min2, align 4, !tbaa !37
-  %27 = load i32, i32* %_min3, align 4, !tbaa !37
-  %cmp72 = icmp ult i32 %26, %27
-  %28 = load i32, i32* %_min2, align 4
-  %29 = load i32, i32* %_min3, align 4
-  %cond77 = select i1 %cmp72, i32 %28, i32 %29
+  %31 = load i32, i32* %_min2, align 4, !tbaa !37
+  %32 = load i32, i32* %_min3, align 4, !tbaa !37
+  %cmp72 = icmp ult i32 %31, %32
+  %33 = load i32, i32* %_min2, align 4
+  %34 = load i32, i32* %_min3, align 4
+  %cond77 = select i1 %cmp72, i32 %33, i32 %34
   br label %cond.end78
 
 cond.end78:                                       ; preds = %cond.false71, %cond.true
   %cond79 = phi i32 [ %cond, %cond.true ], [ %cond77, %cond.false71 ]
-  %max_payload = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %4, i32 0, i32 9
+  %35 = bitcast i32* %_min3 to i8*
+  %36 = bitcast i32* %_min2 to i8*
+  %37 = bitcast i32* %_min1 to i8*
+  %max_payload = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %6, i32 0, i32 9
   store i32 %cond79, i32* %max_payload, align 4, !tbaa !47
-  %lu_list80 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %4, i32 0, i32 1
+  %lu_list80 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %6, i32 0, i32 1
   br label %for.cond
 
 for.cond:                                         ; preds = %for.body, %cond.end78
   %link86.sink = phi %struct.list_head* [ %link86, %for.body ], [ %lu_list80, %cond.end78 ]
   %next87 = getelementptr inbounds %struct.list_head, %struct.list_head* %link86.sink, i32 0, i32 0
-  %30 = load %struct.list_head*, %struct.list_head** %next87, align 8, !tbaa !48
-  %31 = bitcast %struct.list_head* %30 to i8*
-  %add.ptr89 = getelementptr inbounds i8, i8* %31, i64 -8
-  %32 = bitcast i8* %add.ptr89 to %struct.sbp2_logical_unit*
-  %link = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %32, i32 0, i32 1
-  %lu_list82 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %4, i32 0, i32 1
+  %38 = load %struct.list_head*, %struct.list_head** %next87, align 8, !tbaa !48
+  %39 = bitcast %struct.list_head* %38 to i8*
+  %add.ptr89 = getelementptr inbounds i8, i8* %39, i64 -8
+  %40 = bitcast i8* %add.ptr89 to %struct.sbp2_logical_unit*
+  %link = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %40, i32 0, i32 1
+  %lu_list82 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %6, i32 0, i32 1
   %cmp83 = icmp ne %struct.list_head* %link, %lu_list82
   br i1 %cmp83, label %for.body, label %cleanup
 
 for.body:                                         ; preds = %for.cond
-  call void @sbp2_queue_work(%struct.sbp2_logical_unit* %32, i64 50)
-  %link86 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %32, i32 0, i32 1
+  call void @sbp2_queue_work(%struct.sbp2_logical_unit* %40, i64 50)
+  %link86 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %40, i32 0, i32 1
   br label %for.cond
 
 fail_remove:                                      ; preds = %if.end50
@@ -616,6 +624,8 @@ fail_shost_put:                                   ; preds = %if.end42, %if.end30
 
 cleanup:                                          ; preds = %fail_shost_put, %fail_remove, %for.cond, %if.end25, %entry
   %retval.0 = phi i32 [ -12, %fail_shost_put ], [ -12, %fail_remove ], [ -19, %entry ], [ -12, %if.end25 ], [ 0, %for.cond ]
+  %41 = bitcast i32* %firmware_revision to i8*
+  %42 = bitcast i32* %model to i8*
   ret i32 %retval.0
 }
 
@@ -757,6 +767,8 @@ declare i32 @fw_device_enable_phys_dma(%struct.fw_device*) #1
 ; Function Attrs: nounwind uwtable
 define internal void @sbp2_conditionally_block(%struct.sbp2_logical_unit* %lu) #2 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %tgt1 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
   %0 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt1, align 8, !tbaa !61
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %0)
@@ -767,34 +779,38 @@ entry:
   %4 = bitcast i64* %3 to i8*
   %add.ptr = getelementptr inbounds i8, i8* %4, i64 -3016
   %5 = bitcast i8* %add.ptr to %struct.Scsi_Host*
+  %6 = bitcast i64* %__dummy to i8*
+  %7 = bitcast i64* %__dummy2 to i8*
+  %8 = bitcast i64* %__dummy2 to i8*
+  %9 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %1, i32 0, i32 18
   %call5 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call6 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call5)
   %dont_block = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %0, i32 0, i32 10
-  %6 = load i32, i32* %dont_block, align 8, !tbaa !62
-  %tobool = icmp ne i32 %6, 0
+  %10 = load i32, i32* %dont_block, align 8, !tbaa !62
+  %tobool = icmp ne i32 %10, 0
   br i1 %tobool, label %if.end19, label %land.lhs.true
 
 land.lhs.true:                                    ; preds = %entry
   %blocked = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 11
-  %7 = load i8, i8* %blocked, align 1, !tbaa !63, !range !64
-  %tobool9 = trunc i8 %7 to i1
+  %11 = load i8, i8* %blocked, align 1, !tbaa !63, !range !64
+  %tobool9 = trunc i8 %11 to i1
   br i1 %tobool9, label %if.end19, label %land.lhs.true10
 
 land.lhs.true10:                                  ; preds = %land.lhs.true
   %generation = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 7
-  %8 = load i32, i32* %generation, align 8, !tbaa !65
+  %12 = load i32, i32* %generation, align 8, !tbaa !65
   %generation11 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %1, i32 0, i32 5
-  %9 = load i32, i32* %generation11, align 4, !tbaa !66
-  %cmp12 = icmp ne i32 %8, %9
+  %13 = load i32, i32* %generation11, align 4, !tbaa !66
+  %cmp12 = icmp ne i32 %12, %13
   br i1 %cmp12, label %if.then, label %if.end19
 
 if.then:                                          ; preds = %land.lhs.true10
   %blocked14 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 11
   store i8 1, i8* %blocked14, align 1, !tbaa !63
   %blocked15 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %0, i32 0, i32 11
-  %10 = load i32, i32* %blocked15, align 4, !tbaa !67
-  %inc = add nsw i32 %10, 1
+  %14 = load i32, i32* %blocked15, align 4, !tbaa !67
+  %inc = add nsw i32 %14, 1
   store i32 %inc, i32* %blocked15, align 4, !tbaa !67
   %cmp16 = icmp eq i32 %inc, 1
   br i1 %cmp16, label %if.then18, label %if.end19
@@ -857,8 +873,14 @@ declare void @scsi_block_requests(%struct.Scsi_Host*) #1
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @spin_unlock_irqrestore(%struct.spinlock* %lock, i64 %flags) #3 {
 entry:
-  %0 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
-  %rlock = bitcast %union.anon.0* %0 to %struct.raw_spinlock*
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
+  %4 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
+  %rlock = bitcast %union.anon.0* %4 to %struct.raw_spinlock*
   call void @_raw_spin_unlock_irqrestore(%struct.raw_spinlock* %rlock, i64 %flags)
   ret void
 }
@@ -886,6 +908,8 @@ entry:
 ; Function Attrs: nounwind uwtable
 define internal void @sbp2_unblock(%struct.sbp2_target* %tgt) #2 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %tgt)
   %card1 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
   %0 = load %struct.fw_card*, %struct.fw_card** %card1, align 8, !tbaa !2
@@ -894,12 +918,16 @@ entry:
   %3 = bitcast i64* %2 to i8*
   %add.ptr = getelementptr inbounds i8, i8* %3, i64 -3016
   %4 = bitcast i8* %add.ptr to %struct.Scsi_Host*
+  %5 = bitcast i64* %__dummy to i8*
+  %6 = bitcast i64* %__dummy2 to i8*
+  %7 = bitcast i64* %__dummy2 to i8*
+  %8 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %0, i32 0, i32 18
   %call4 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call5 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call4)
   %dont_block = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %tgt, i32 0, i32 10
-  %5 = load i32, i32* %dont_block, align 8, !tbaa !62
-  %inc = add nsw i32 %5, 1
+  %9 = load i32, i32* %dont_block, align 8, !tbaa !62
+  %inc = add nsw i32 %9, 1
   store i32 %inc, i32* %dont_block, align 8, !tbaa !62
   %lock8 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %0, i32 0, i32 18
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock8, i64 %call5)
@@ -914,7 +942,8 @@ define internal i32 @sbp2_lun2int(i16 zeroext %lun) #2 {
 entry:
   %eight_bytes_lun = alloca %struct.scsi_lun, align 1
   %0 = bitcast %struct.scsi_lun* %eight_bytes_lun to i8*
-  call void @llvm.memset.p0i8.i64(i8* %0, i8 0, i64 8, i32 1, i1 false)
+  %1 = bitcast %struct.scsi_lun* %eight_bytes_lun to i8*
+  call void @llvm.memset.p0i8.i64(i8* %1, i8 0, i64 8, i32 1, i1 false)
   %conv = zext i16 %lun to i32
   %shr = ashr i32 %conv, 8
   %and = and i32 %shr, 255
@@ -929,6 +958,7 @@ entry:
   %arrayidx6 = getelementptr inbounds [8 x i8], [8 x i8]* %scsi_lun5, i64 0, i64 1
   store i8 %conv4, i8* %arrayidx6, align 1, !tbaa !68
   %call = call i32 @scsilun_to_int(%struct.scsi_lun* %eight_bytes_lun)
+  %2 = bitcast %struct.scsi_lun* %eight_bytes_lun to i8*
   ret i32 %call
 }
 
@@ -1219,6 +1249,7 @@ entry:
 define internal i64 @dma_map_single_attrs(%struct.device* %dev, i8* %ptr, i64 %size, i32 %dir, %struct.sigset_t* %attrs) #3 {
 entry:
   %call = call %struct.dma_map_ops* @get_dma_ops(%struct.device* %dev)
+  %conv = trunc i64 %size to i32
   call void @kmemcheck_mark_initialized()
   %call1 = call i32 @valid_dma_direction(i32 %dir)
   %tobool = icmp ne i32 %call1, 0
@@ -1335,41 +1366,49 @@ if.end5:                                          ; preds = %if.else, %if.then1,
 define internal void @sbp2_send_orb(%struct.sbp2_orb* %orb, %struct.sbp2_logical_unit* %lu, i32 %node_id, i32 %generation, i64 %offset) #2 {
 entry:
   %orb_pointer = alloca %struct.exception_table_entry, align 4
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %tgt = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
   %0 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt, align 8, !tbaa !61
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %0)
+  %1 = bitcast %struct.exception_table_entry* %orb_pointer to i8*
   %high = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %orb_pointer, i32 0, i32 0
   store i32 0, i32* %high, align 4, !tbaa !96
   %request_bus = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb, i32 0, i32 2
-  %1 = load i64, i64* %request_bus, align 8, !tbaa !97
-  %conv = trunc i64 %1 to i32
+  %2 = load i64, i64* %request_bus, align 8, !tbaa !97
+  %conv = trunc i64 %2 to i32
   %call1 = call i32 @__fswab32(i32 %conv) #6
   %low = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %orb_pointer, i32 0, i32 1
   store i32 %call1, i32* %low, align 4, !tbaa !98
+  %3 = bitcast i64* %__dummy to i8*
+  %4 = bitcast i64* %__dummy2 to i8*
+  %5 = bitcast i64* %__dummy2 to i8*
+  %6 = bitcast i64* %__dummy to i8*
   %card = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %2 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
-  %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %2, i32 0, i32 18
+  %7 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
+  %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %7, i32 0, i32 18
   %call4 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call5 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call4)
   %link = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb, i32 0, i32 5
   %orb_list = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 3
   call void @list_add_tail(%struct.list_head* %link, %struct.list_head* %orb_list)
   %card8 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %3 = load %struct.fw_card*, %struct.fw_card** %card8, align 8, !tbaa !2
-  %lock9 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %3, i32 0, i32 18
+  %8 = load %struct.fw_card*, %struct.fw_card** %card8, align 8, !tbaa !2
+  %lock9 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %8, i32 0, i32 18
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock9, i64 %call5)
   %kref = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb, i32 0, i32 1
   call void @kref_get(%struct.arch_spinlock* %kref)
   %kref10 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb, i32 0, i32 1
   call void @kref_get(%struct.arch_spinlock* %kref10)
   %card11 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %4 = load %struct.fw_card*, %struct.fw_card** %card11, align 8, !tbaa !2
+  %9 = load %struct.fw_card*, %struct.fw_card** %card11, align 8, !tbaa !2
   %t = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb, i32 0, i32 0
   %max_speed = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 4
-  %5 = load i32, i32* %max_speed, align 8, !tbaa !45
-  %6 = bitcast %struct.exception_table_entry* %orb_pointer to i8*
-  %7 = bitcast %struct.sbp2_orb* %orb to i8*
-  call void @fw_send_request(%struct.fw_card* %4, %struct.fw_transaction* %t, i32 1, i32 %node_id, i32 %generation, i32 %5, i64 %offset, i8* %6, i64 8, void (%struct.fw_card*, i32, i8*, i64, i8*)* @complete_transaction, i8* %7)
+  %10 = load i32, i32* %max_speed, align 8, !tbaa !45
+  %11 = bitcast %struct.exception_table_entry* %orb_pointer to i8*
+  %12 = bitcast %struct.sbp2_orb* %orb to i8*
+  call void @fw_send_request(%struct.fw_card* %9, %struct.fw_transaction* %t, i32 1, i32 %node_id, i32 %generation, i32 %10, i64 %offset, i8* %11, i64 8, void (%struct.fw_card*, i32, i8*, i64, i8*)* @complete_transaction, i8* %12)
+  %13 = bitcast %struct.exception_table_entry* %orb_pointer to i8*
   ret void
 }
 
@@ -1381,47 +1420,54 @@ declare i64 @wait_for_completion_timeout(%struct.completion*, i64) #1
 define internal i32 @sbp2_cancel_orbs(%struct.sbp2_logical_unit* %lu) #2 {
 entry:
   %list = alloca %struct.list_head, align 8
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %tgt = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
   %0 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt, align 8, !tbaa !61
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %0)
+  %1 = bitcast %struct.list_head* %list to i8*
   call void @INIT_LIST_HEAD(%struct.list_head* %list)
+  %2 = bitcast i64* %__dummy to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy2 to i8*
+  %5 = bitcast i64* %__dummy to i8*
   %card = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %1 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
-  %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %1, i32 0, i32 18
+  %6 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
+  %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %6, i32 0, i32 18
   %call3 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call4 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call3)
   %orb_list = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 3
   call void @list_splice_init(%struct.list_head* %orb_list, %struct.list_head* %list)
   %card7 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %2 = load %struct.fw_card*, %struct.fw_card** %card7, align 8, !tbaa !2
-  %lock8 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %2, i32 0, i32 18
+  %7 = load %struct.fw_card*, %struct.fw_card** %card7, align 8, !tbaa !2
+  %lock8 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %7, i32 0, i32 18
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock8, i64 %call4)
   %next9 = getelementptr inbounds %struct.list_head, %struct.list_head* %list, i32 0, i32 0
-  %3 = load %struct.list_head*, %struct.list_head** %next9, align 8, !tbaa !49
-  %4 = bitcast %struct.list_head* %3 to i8*
-  %add.ptr = getelementptr inbounds i8, i8* %4, i64 -320
-  %5 = bitcast i8* %add.ptr to %struct.sbp2_orb*
+  %8 = load %struct.list_head*, %struct.list_head** %next9, align 8, !tbaa !49
+  %9 = bitcast %struct.list_head* %8 to i8*
+  %add.ptr = getelementptr inbounds i8, i8* %9, i64 -320
+  %10 = bitcast i8* %add.ptr to %struct.sbp2_orb*
   br label %for.cond
 
 for.cond:                                         ; preds = %for.inc, %entry
-  %.sink = phi %struct.sbp2_orb* [ %8, %for.inc ], [ %5, %entry ]
-  %orb.0 = phi %struct.sbp2_orb* [ %5, %entry ], [ %8, %for.inc ]
+  %.sink = phi %struct.sbp2_orb* [ %13, %for.inc ], [ %10, %entry ]
+  %orb.0 = phi %struct.sbp2_orb* [ %10, %entry ], [ %13, %for.inc ]
   %retval1.0 = phi i32 [ -2, %entry ], [ 0, %for.inc ]
   %link24 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %.sink, i32 0, i32 5
   %next25 = getelementptr inbounds %struct.list_head, %struct.list_head* %link24, i32 0, i32 0
-  %6 = load %struct.list_head*, %struct.list_head** %next25, align 8, !tbaa !99
-  %7 = bitcast %struct.list_head* %6 to i8*
-  %add.ptr27 = getelementptr inbounds i8, i8* %7, i64 -320
-  %8 = bitcast i8* %add.ptr27 to %struct.sbp2_orb*
+  %11 = load %struct.list_head*, %struct.list_head** %next25, align 8, !tbaa !99
+  %12 = bitcast %struct.list_head* %11 to i8*
+  %add.ptr27 = getelementptr inbounds i8, i8* %12, i64 -320
+  %13 = bitcast i8* %add.ptr27 to %struct.sbp2_orb*
   %link15 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb.0, i32 0, i32 5
   %cmp16 = icmp ne %struct.list_head* %link15, %list
   br i1 %cmp16, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
   %card18 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %9 = load %struct.fw_card*, %struct.fw_card** %card18, align 8, !tbaa !2
+  %14 = load %struct.fw_card*, %struct.fw_card** %card18, align 8, !tbaa !2
   %t = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb.0, i32 0, i32 0
-  %call19 = call i32 @fw_cancel_transaction(%struct.fw_card* %9, %struct.fw_transaction* %t)
+  %call19 = call i32 @fw_cancel_transaction(%struct.fw_card* %14, %struct.fw_transaction* %t)
   %cmp20 = icmp eq i32 %call19, 0
   br i1 %cmp20, label %for.inc, label %if.end
 
@@ -1429,8 +1475,8 @@ if.end:                                           ; preds = %for.body
   %rcode = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb.0, i32 0, i32 3
   store i32 17, i32* %rcode, align 8, !tbaa !100
   %callback = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb.0, i32 0, i32 4
-  %10 = load void (%struct.sbp2_orb*, %struct.sbp2_status*)*, void (%struct.sbp2_orb*, %struct.sbp2_status*)** %callback, align 8, !tbaa !101
-  call void %10(%struct.sbp2_orb* %orb.0, %struct.sbp2_status* null)
+  %15 = load void (%struct.sbp2_orb*, %struct.sbp2_status*)*, void (%struct.sbp2_orb*, %struct.sbp2_status*)** %callback, align 8, !tbaa !101
+  call void %15(%struct.sbp2_orb* %orb.0, %struct.sbp2_status* null)
   %kref = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %orb.0, i32 0, i32 1
   call void @kref_put(%struct.arch_spinlock* %kref, void (%struct.arch_spinlock*)* @free_orb)
   br label %for.inc
@@ -1439,6 +1485,7 @@ for.inc:                                          ; preds = %if.end, %for.body
   br label %for.cond
 
 for.end:                                          ; preds = %for.cond
+  %16 = bitcast %struct.list_head* %list to i8*
   ret i32 %retval1.0
 }
 
@@ -1548,6 +1595,7 @@ if.then15:                                        ; preds = %if.end
   br label %return
 
 return:                                           ; preds = %if.then15, %if.end
+  %retval.0 = phi i32 [ 1, %if.then15 ], [ 0, %if.end ]
   ret void
 }
 
@@ -1735,13 +1783,19 @@ if.end33:                                         ; preds = %if.then31, %if.end,
 ; Function Attrs: nounwind uwtable
 define internal void @complete_transaction(%struct.fw_card* %card, i32 %rcode, i8* %payload, i64 %length, i8* %data) #2 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %0 = bitcast i8* %data to %struct.sbp2_orb*
+  %1 = bitcast i64* %__dummy to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %card, i32 0, i32 18
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call2 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %rcode5 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %0, i32 0, i32 3
-  %1 = load i32, i32* %rcode5, align 8, !tbaa !100
-  %cmp6 = icmp eq i32 %1, -1
+  %5 = load i32, i32* %rcode5, align 8, !tbaa !100
+  %cmp6 = icmp eq i32 %5, -1
   br i1 %cmp6, label %if.then, label %if.end
 
 if.then:                                          ; preds = %entry
@@ -1751,8 +1805,8 @@ if.then:                                          ; preds = %entry
 
 if.end:                                           ; preds = %if.then, %entry
   %rcode9 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %0, i32 0, i32 3
-  %2 = load i32, i32* %rcode9, align 8, !tbaa !100
-  %cmp10 = icmp ne i32 %2, 0
+  %6 = load i32, i32* %rcode9, align 8, !tbaa !100
+  %cmp10 = icmp ne i32 %6, 0
   br i1 %cmp10, label %if.then12, label %if.else
 
 if.then12:                                        ; preds = %if.end
@@ -1761,8 +1815,8 @@ if.then12:                                        ; preds = %if.end
   %lock13 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %card, i32 0, i32 18
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock13, i64 %call2)
   %callback = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %0, i32 0, i32 4
-  %3 = load void (%struct.sbp2_orb*, %struct.sbp2_status*)*, void (%struct.sbp2_orb*, %struct.sbp2_status*)** %callback, align 8, !tbaa !101
-  call void %3(%struct.sbp2_orb* %0, %struct.sbp2_status* null)
+  %7 = load void (%struct.sbp2_orb*, %struct.sbp2_status*)*, void (%struct.sbp2_orb*, %struct.sbp2_status*)** %callback, align 8, !tbaa !101
+  call void %7(%struct.sbp2_orb* %0, %struct.sbp2_status* null)
   %kref = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %0, i32 0, i32 1
   call void @kref_put(%struct.arch_spinlock* %kref, void (%struct.arch_spinlock*)* @free_orb)
   br label %if.end16
@@ -1891,6 +1945,9 @@ entry:
   %ci = alloca %struct.fw_csr_iterator, align 8
   %key = alloca i32, align 4
   %value = alloca i32, align 4
+  %0 = bitcast %struct.fw_csr_iterator* %ci to i8*
+  %1 = bitcast i32* %key to i8*
+  %2 = bitcast i32* %value to i8*
   call void @fw_csr_iterator_init(%struct.fw_csr_iterator* %ci, i32* %directory)
   br label %while.cond
 
@@ -1900,69 +1957,69 @@ while.cond:                                       ; preds = %sw.epilog, %entry
   br i1 %tobool, label %while.body, label %cleanup
 
 while.body:                                       ; preds = %while.cond
-  %0 = load i32, i32* %key, align 4, !tbaa !37
-  %Pivot26 = icmp slt i32 %0, 60
+  %3 = load i32, i32* %key, align 4, !tbaa !37
+  %Pivot26 = icmp slt i32 %3, 60
   br i1 %Pivot26, label %NodeBlock9, label %NodeBlock23
 
 NodeBlock23:                                      ; preds = %while.body
-  %Pivot24 = icmp slt i32 %0, 141
+  %Pivot24 = icmp slt i32 %3, 141
   br i1 %Pivot24, label %NodeBlock15, label %NodeBlock21
 
 NodeBlock21:                                      ; preds = %NodeBlock23
-  %Pivot22 = icmp slt i32 %0, 212
+  %Pivot22 = icmp slt i32 %3, 212
   br i1 %Pivot22, label %LeafBlock17, label %LeafBlock19
 
 LeafBlock19:                                      ; preds = %NodeBlock21
-  %SwitchLeaf20 = icmp eq i32 %0, 212
+  %SwitchLeaf20 = icmp eq i32 %3, 212
   br i1 %SwitchLeaf20, label %sw.bb11, label %sw.epilog
 
 LeafBlock17:                                      ; preds = %NodeBlock21
-  %SwitchLeaf18 = icmp eq i32 %0, 141
+  %SwitchLeaf18 = icmp eq i32 %3, 141
   br i1 %SwitchLeaf18, label %sw.bb9, label %sw.epilog
 
 NodeBlock15:                                      ; preds = %NodeBlock23
-  %Pivot16 = icmp slt i32 %0, 84
+  %Pivot16 = icmp slt i32 %3, 84
   br i1 %Pivot16, label %LeafBlock11, label %LeafBlock13
 
 LeafBlock13:                                      ; preds = %NodeBlock15
-  %SwitchLeaf14 = icmp eq i32 %0, 84
+  %SwitchLeaf14 = icmp eq i32 %3, 84
   br i1 %SwitchLeaf14, label %sw.bb, label %sw.epilog
 
 LeafBlock11:                                      ; preds = %NodeBlock15
-  %SwitchLeaf12 = icmp eq i32 %0, 60
+  %SwitchLeaf12 = icmp eq i32 %3, 60
   br i1 %SwitchLeaf12, label %sw.bb3, label %sw.epilog
 
 NodeBlock9:                                       ; preds = %while.body
-  %Pivot10 = icmp slt i32 %0, 32
+  %Pivot10 = icmp slt i32 %3, 32
   br i1 %Pivot10, label %NodeBlock, label %NodeBlock7
 
 NodeBlock7:                                       ; preds = %NodeBlock9
-  %Pivot8 = icmp slt i32 %0, 58
+  %Pivot8 = icmp slt i32 %3, 58
   br i1 %Pivot8, label %LeafBlock3, label %LeafBlock5
 
 LeafBlock5:                                       ; preds = %NodeBlock7
-  %SwitchLeaf6 = icmp eq i32 %0, 58
+  %SwitchLeaf6 = icmp eq i32 %3, 58
   br i1 %SwitchLeaf6, label %sw.bb4, label %sw.epilog
 
 LeafBlock3:                                       ; preds = %NodeBlock7
-  %SwitchLeaf4 = icmp eq i32 %0, 32
+  %SwitchLeaf4 = icmp eq i32 %3, 32
   br i1 %SwitchLeaf4, label %sw.bb1, label %sw.epilog
 
 NodeBlock:                                        ; preds = %NodeBlock9
-  %Pivot = icmp slt i32 %0, 23
+  %Pivot = icmp slt i32 %3, 23
   br i1 %Pivot, label %LeafBlock, label %LeafBlock1
 
 LeafBlock1:                                       ; preds = %NodeBlock
-  %SwitchLeaf2 = icmp eq i32 %0, 23
+  %SwitchLeaf2 = icmp eq i32 %3, 23
   br i1 %SwitchLeaf2, label %sw.bb2, label %sw.epilog
 
 LeafBlock:                                        ; preds = %NodeBlock
-  %SwitchLeaf = icmp eq i32 %0, 20
+  %SwitchLeaf = icmp eq i32 %3, 20
   br i1 %SwitchLeaf, label %sw.bb6, label %sw.epilog
 
 sw.bb:                                            ; preds = %LeafBlock13
-  %1 = load i32, i32* %value, align 4, !tbaa !37
-  %mul = mul nsw i32 4, %1
+  %4 = load i32, i32* %value, align 4, !tbaa !37
+  %mul = mul nsw i32 4, %4
   %conv = sext i32 %mul to i64
   %add = add i64 281474708275200, %conv
   %management_agent_address = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %tgt, i32 0, i32 2
@@ -1970,24 +2027,24 @@ sw.bb:                                            ; preds = %LeafBlock13
   br label %sw.epilog
 
 sw.bb1:                                           ; preds = %LeafBlock3
-  %2 = load i32, i32* %value, align 4, !tbaa !37
+  %5 = load i32, i32* %value, align 4, !tbaa !37
   %directory_id = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %tgt, i32 0, i32 4
-  store i32 %2, i32* %directory_id, align 8, !tbaa !44
+  store i32 %5, i32* %directory_id, align 8, !tbaa !44
   br label %sw.epilog
 
 sw.bb2:                                           ; preds = %LeafBlock1
-  %3 = load i32, i32* %value, align 4, !tbaa !37
-  store i32 %3, i32* %model, align 4, !tbaa !37
+  %6 = load i32, i32* %value, align 4, !tbaa !37
+  store i32 %6, i32* %model, align 4, !tbaa !37
   br label %sw.epilog
 
 sw.bb3:                                           ; preds = %LeafBlock11
-  %4 = load i32, i32* %value, align 4, !tbaa !37
-  store i32 %4, i32* %firmware_revision, align 4, !tbaa !37
+  %7 = load i32, i32* %value, align 4, !tbaa !37
+  store i32 %7, i32* %firmware_revision, align 4, !tbaa !37
   br label %sw.epilog
 
 sw.bb4:                                           ; preds = %LeafBlock5
-  %5 = load i32, i32* %value, align 4, !tbaa !37
-  %shr = ashr i32 %5, 8
+  %8 = load i32, i32* %value, align 4, !tbaa !37
+  %shr = ashr i32 %8, 8
   %and = and i32 %shr, 255
   %mul5 = mul nsw i32 %and, 500
   %mgt_orb_timeout = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %tgt, i32 0, i32 8
@@ -1995,27 +2052,27 @@ sw.bb4:                                           ; preds = %LeafBlock5
   br label %sw.epilog
 
 sw.bb6:                                           ; preds = %LeafBlock
-  %6 = load i32, i32* %value, align 4, !tbaa !37
-  %call7 = call i32 @sbp2_add_logical_unit(%struct.sbp2_target* %tgt, i32 %6)
+  %9 = load i32, i32* %value, align 4, !tbaa !37
+  %call7 = call i32 @sbp2_add_logical_unit(%struct.sbp2_target* %tgt, i32 %9)
   %cmp = icmp slt i32 %call7, 0
   br i1 %cmp, label %cleanup, label %sw.epilog
 
 sw.bb9:                                           ; preds = %LeafBlock17
   %p = getelementptr inbounds %struct.fw_csr_iterator, %struct.fw_csr_iterator* %ci, i32 0, i32 0
-  %7 = load i32*, i32** %p, align 8, !tbaa !113
-  %add.ptr = getelementptr inbounds i32, i32* %7, i64 -1
-  %8 = load i32, i32* %value, align 4, !tbaa !37
-  %idx.ext = sext i32 %8 to i64
+  %10 = load i32*, i32** %p, align 8, !tbaa !113
+  %add.ptr = getelementptr inbounds i32, i32* %10, i64 -1
+  %11 = load i32, i32* %value, align 4, !tbaa !37
+  %idx.ext = sext i32 %11 to i64
   %add.ptr10 = getelementptr inbounds i32, i32* %add.ptr, i64 %idx.ext
   call void @sbp2_get_unit_unique_id(%struct.sbp2_target* %tgt, i32* %add.ptr10)
   br label %sw.epilog
 
 sw.bb11:                                          ; preds = %LeafBlock19
   %p12 = getelementptr inbounds %struct.fw_csr_iterator, %struct.fw_csr_iterator* %ci, i32 0, i32 0
-  %9 = load i32*, i32** %p12, align 8, !tbaa !113
-  %add.ptr13 = getelementptr inbounds i32, i32* %9, i64 -1
-  %10 = load i32, i32* %value, align 4, !tbaa !37
-  %idx.ext14 = sext i32 %10 to i64
+  %12 = load i32*, i32** %p12, align 8, !tbaa !113
+  %add.ptr13 = getelementptr inbounds i32, i32* %12, i64 -1
+  %13 = load i32, i32* %value, align 4, !tbaa !37
+  %idx.ext14 = sext i32 %13 to i64
   %add.ptr15 = getelementptr inbounds i32, i32* %add.ptr13, i64 %idx.ext14
   %call16 = call i32 @sbp2_scan_logical_unit_dir(%struct.sbp2_target* %tgt, i32* %add.ptr15)
   %cmp17 = icmp slt i32 %call16, 0
@@ -2026,6 +2083,9 @@ sw.epilog:                                        ; preds = %sw.bb11, %sw.bb9, %
 
 cleanup:                                          ; preds = %sw.bb11, %sw.bb6, %while.cond
   %retval.0 = phi i32 [ -12, %sw.bb6 ], [ -12, %sw.bb11 ], [ 0, %while.cond ]
+  %14 = bitcast i32* %value to i8*
+  %15 = bitcast i32* %key to i8*
+  %16 = bitcast %struct.fw_csr_iterator* %ci to i8*
   ret i32 %retval.0
 }
 
@@ -2198,6 +2258,9 @@ entry:
   %ci = alloca %struct.fw_csr_iterator, align 8
   %key = alloca i32, align 4
   %value = alloca i32, align 4
+  %0 = bitcast %struct.fw_csr_iterator* %ci to i8*
+  %1 = bitcast i32* %key to i8*
+  %2 = bitcast i32* %value to i8*
   call void @fw_csr_iterator_init(%struct.fw_csr_iterator* %ci, i32* %directory)
   br label %while.cond
 
@@ -2207,13 +2270,13 @@ while.cond:                                       ; preds = %if.end, %entry
   br i1 %tobool, label %while.body, label %cleanup
 
 while.body:                                       ; preds = %while.cond
-  %0 = load i32, i32* %key, align 4, !tbaa !37
-  %cmp = icmp eq i32 %0, 20
+  %3 = load i32, i32* %key, align 4, !tbaa !37
+  %cmp = icmp eq i32 %3, 20
   br i1 %cmp, label %land.lhs.true, label %if.end
 
 land.lhs.true:                                    ; preds = %while.body
-  %1 = load i32, i32* %value, align 4, !tbaa !37
-  %call1 = call i32 @sbp2_add_logical_unit(%struct.sbp2_target* %tgt, i32 %1)
+  %4 = load i32, i32* %value, align 4, !tbaa !37
+  %call1 = call i32 @sbp2_add_logical_unit(%struct.sbp2_target* %tgt, i32 %4)
   %cmp2 = icmp slt i32 %call1, 0
   br i1 %cmp2, label %cleanup, label %if.end
 
@@ -2222,6 +2285,9 @@ if.end:                                           ; preds = %land.lhs.true, %whi
 
 cleanup:                                          ; preds = %land.lhs.true, %while.cond
   %retval.0 = phi i32 [ -12, %land.lhs.true ], [ 0, %while.cond ]
+  %5 = bitcast i32* %value to i8*
+  %6 = bitcast i32* %key to i8*
+  %7 = bitcast %struct.fw_csr_iterator* %ci to i8*
   ret i32 %retval.0
 }
 
@@ -2229,7 +2295,10 @@ cleanup:                                          ; preds = %land.lhs.true, %whi
 define internal void @sbp2_status_write(%struct.fw_card* %card, %struct.fw_request* %request, i32 %tcode, i32 %destination, i32 %source, i32 %generation, i64 %offset, i8* %payload, i64 %length, i8* %callback_data) #2 {
 entry:
   %status = alloca %struct.sbp2_status, align 4
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %0 = bitcast i8* %callback_data to %struct.sbp2_logical_unit*
+  %1 = bitcast %struct.sbp2_status* %status to i8*
   %cmp = icmp ne i32 %tcode, 1
   %cmp1 = icmp ult i64 %length, 8
   %or.cond = or i1 %cmp, %cmp1
@@ -2242,13 +2311,13 @@ if.then:                                          ; preds = %entry
   br label %cleanup
 
 if.end:                                           ; preds = %entry
-  %1 = bitcast i8* %payload to i32*
-  %call = call i32 @__be32_to_cpup(i32* %1)
+  %2 = bitcast i8* %payload to i32*
+  %call = call i32 @__be32_to_cpup(i32* %2)
   %status4 = getelementptr inbounds %struct.sbp2_status, %struct.sbp2_status* %status, i32 0, i32 0
   store i32 %call, i32* %status4, align 4, !tbaa !125
   %add.ptr = getelementptr i8, i8* %payload, i64 4
-  %2 = bitcast i8* %add.ptr to i32*
-  %call5 = call i32 @__be32_to_cpup(i32* %2)
+  %3 = bitcast i8* %add.ptr to i32*
+  %call5 = call i32 @__be32_to_cpup(i32* %3)
   %orb_low = getelementptr inbounds %struct.sbp2_status, %struct.sbp2_status* %status, i32 0, i32 1
   store i32 %call5, i32* %orb_low, align 4, !tbaa !126
   %data = getelementptr inbounds %struct.sbp2_status, %struct.sbp2_status* %status, i32 0, i32 2
@@ -2267,16 +2336,16 @@ if.then7:                                         ; preds = %if.end
 
 if.end11:                                         ; preds = %if.then7, %if.end
   %status12 = getelementptr inbounds %struct.sbp2_status, %struct.sbp2_status* %status, i32 0, i32 0
-  %3 = load i32, i32* %status12, align 4, !tbaa !125
-  %shr = lshr i32 %3, 30
+  %4 = load i32, i32* %status12, align 4, !tbaa !125
+  %shr = lshr i32 %4, 30
   %and = and i32 %shr, 3
   %cmp13 = icmp eq i32 %and, 2
   br i1 %cmp13, label %if.then19, label %lor.lhs.false14
 
 lor.lhs.false14:                                  ; preds = %if.end11
   %status15 = getelementptr inbounds %struct.sbp2_status, %struct.sbp2_status* %status, i32 0, i32 0
-  %4 = load i32, i32* %status15, align 4, !tbaa !125
-  %shr16 = lshr i32 %4, 30
+  %5 = load i32, i32* %status15, align 4, !tbaa !125
+  %shr16 = lshr i32 %5, 30
   %and17 = and i32 %shr16, 3
   %cmp18 = icmp eq i32 %and17, 3
   br i1 %cmp18, label %if.then19, label %do.body23
@@ -2288,6 +2357,10 @@ if.then19:                                        ; preds = %lor.lhs.false14, %i
   br label %cleanup
 
 do.body23:                                        ; preds = %lor.lhs.false14
+  %6 = bitcast i64* %__dummy to i8*
+  %7 = bitcast i64* %__dummy2 to i8*
+  %8 = bitcast i64* %__dummy2 to i8*
+  %9 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %card, i32 0, i32 18
   %call26 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call27 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call26)
@@ -2297,61 +2370,61 @@ do.body23:                                        ; preds = %lor.lhs.false14
 for.cond:                                         ; preds = %for.inc, %do.body23
   %link47.sink = phi %struct.list_head* [ %link47, %for.inc ], [ %orb_list, %do.body23 ]
   %next48 = getelementptr inbounds %struct.list_head, %struct.list_head* %link47.sink, i32 0, i32 0
-  %5 = load %struct.list_head*, %struct.list_head** %next48, align 8, !tbaa !48
-  %6 = bitcast %struct.list_head* %5 to i8*
-  %add.ptr50 = getelementptr inbounds i8, i8* %6, i64 -320
-  %7 = bitcast i8* %add.ptr50 to %struct.sbp2_orb*
-  %link = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 5
+  %10 = load %struct.list_head*, %struct.list_head** %next48, align 8, !tbaa !48
+  %11 = bitcast %struct.list_head* %10 to i8*
+  %add.ptr50 = getelementptr inbounds i8, i8* %11, i64 -320
+  %12 = bitcast i8* %add.ptr50 to %struct.sbp2_orb*
+  %link = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 5
   %orb_list32 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %0, i32 0, i32 3
   %cmp33 = icmp ne %struct.list_head* %link, %orb_list32
   br i1 %cmp33, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
   %status35 = getelementptr inbounds %struct.sbp2_status, %struct.sbp2_status* %status, i32 0, i32 0
-  %8 = load i32, i32* %status35, align 4, !tbaa !125
-  %and36 = and i32 %8, 65535
+  %13 = load i32, i32* %status35, align 4, !tbaa !125
+  %and36 = and i32 %13, 65535
   %cmp37 = icmp eq i32 %and36, 0
   br i1 %cmp37, label %land.lhs.true, label %for.inc
 
 land.lhs.true:                                    ; preds = %for.body
   %orb_low39 = getelementptr inbounds %struct.sbp2_status, %struct.sbp2_status* %status, i32 0, i32 1
-  %9 = load i32, i32* %orb_low39, align 4, !tbaa !126
-  %conv40 = zext i32 %9 to i64
-  %request_bus = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 2
-  %10 = load i64, i64* %request_bus, align 8, !tbaa !97
-  %cmp41 = icmp eq i64 %conv40, %10
+  %14 = load i32, i32* %orb_low39, align 4, !tbaa !126
+  %conv40 = zext i32 %14 to i64
+  %request_bus = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 2
+  %15 = load i64, i64* %request_bus, align 8, !tbaa !97
+  %cmp41 = icmp eq i64 %conv40, %15
   br i1 %cmp41, label %if.then43, label %for.inc
 
 if.then43:                                        ; preds = %land.lhs.true
-  %rcode = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 3
+  %rcode = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 3
   store i32 0, i32* %rcode, align 8, !tbaa !100
-  %link44 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 5
+  %link44 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 5
   call void @list_del(%struct.list_head* %link44)
   br label %for.end
 
 for.inc:                                          ; preds = %land.lhs.true, %for.body
-  %link47 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 5
+  %link47 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 5
   br label %for.cond
 
 for.end:                                          ; preds = %if.then43, %for.cond
   %lock51 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %card, i32 0, i32 18
   call void @spin_unlock_irqrestore(%struct.spinlock* %lock51, i64 %call27)
-  %link52 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 5
+  %link52 = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 5
   %orb_list53 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %0, i32 0, i32 3
   %cmp54 = icmp ne %struct.list_head* %link52, %orb_list53
   br i1 %cmp54, label %if.then56, label %if.else
 
 if.then56:                                        ; preds = %for.end
-  %callback = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 4
-  %11 = load void (%struct.sbp2_orb*, %struct.sbp2_status*)*, void (%struct.sbp2_orb*, %struct.sbp2_status*)** %callback, align 8, !tbaa !101
-  call void %11(%struct.sbp2_orb* %7, %struct.sbp2_status* %status)
-  %kref = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %7, i32 0, i32 1
+  %callback = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 4
+  %16 = load void (%struct.sbp2_orb*, %struct.sbp2_status*)*, void (%struct.sbp2_orb*, %struct.sbp2_status*)** %callback, align 8, !tbaa !101
+  call void %16(%struct.sbp2_orb* %12, %struct.sbp2_status* %status)
+  %kref = getelementptr inbounds %struct.sbp2_orb, %struct.sbp2_orb* %12, i32 0, i32 1
   call void @kref_put(%struct.arch_spinlock* %kref, void (%struct.arch_spinlock*)* @free_orb)
   br label %if.end60
 
 if.else:                                          ; preds = %for.end
   %call58 = call %struct.device* @lu_dev(%struct.sbp2_logical_unit* %0)
-  %12 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
+  %17 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   br label %if.end60
 
 if.end60:                                         ; preds = %if.else, %if.then56
@@ -2359,6 +2432,7 @@ if.end60:                                         ; preds = %if.else, %if.then56
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end60, %if.then19, %if.then
+  %18 = bitcast %struct.sbp2_status* %status to i8*
   ret void
 }
 
@@ -2378,48 +2452,49 @@ entry:
   %tgt1 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 0
   %2 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt1, align 8, !tbaa !61
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %2)
+  %3 = bitcast %struct.sbp2_login_response* %response to i8*
   %call2 = call i32 @fw_device_is_shutdown(%struct.fw_device* %call)
   %tobool = icmp ne i32 %call2, 0
   br i1 %tobool, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %entry
   %generation3 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 3
-  %3 = load i32, i32* %generation3, align 4, !tbaa !55
+  %4 = load i32, i32* %generation3, align 4, !tbaa !55
   call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !127
   %node_id4 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 2
-  %4 = load i32, i32* %node_id4, align 8, !tbaa !57
+  %5 = load i32, i32* %node_id4, align 8, !tbaa !57
   %card = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %5 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
-  %node_id5 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %5, i32 0, i32 4
-  %6 = load i32, i32* %node_id5, align 8, !tbaa !128
+  %6 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
+  %node_id5 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %6, i32 0, i32 4
+  %7 = load i32, i32* %node_id5, align 8, !tbaa !128
   %has_sdev = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 10
-  %7 = load i8, i8* %has_sdev, align 8, !tbaa !118, !range !64
-  %tobool6 = trunc i8 %7 to i1
+  %8 = load i8, i8* %has_sdev, align 8, !tbaa !118, !range !64
+  %tobool6 = trunc i8 %8 to i1
   br i1 %tobool6, label %if.then7, label %if.end10
 
 if.then7:                                         ; preds = %if.end
   %node_id8 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 2
-  %8 = load i32, i32* %node_id8, align 8, !tbaa !57
+  %9 = load i32, i32* %node_id8, align 8, !tbaa !57
   %login_id = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 6
-  %9 = load i32, i32* %login_id, align 4, !tbaa !54
-  %call9 = call i32 @sbp2_send_management_orb(%struct.sbp2_logical_unit* %1, i32 %8, i32 %3, i32 7, i32 %9, i8* null)
+  %10 = load i32, i32* %login_id, align 4, !tbaa !54
+  %call9 = call i32 @sbp2_send_management_orb(%struct.sbp2_logical_unit* %1, i32 %9, i32 %4, i32 7, i32 %10, i8* null)
   br label %if.end10
 
 if.end10:                                         ; preds = %if.then7, %if.end
   %lun = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 5
-  %10 = load i16, i16* %lun, align 8, !tbaa !53
-  %conv = zext i16 %10 to i32
-  %11 = bitcast %struct.sbp2_login_response* %response to i8*
-  %call11 = call i32 @sbp2_send_management_orb(%struct.sbp2_logical_unit* %1, i32 %4, i32 %3, i32 0, i32 %conv, i8* %11)
+  %11 = load i16, i16* %lun, align 8, !tbaa !53
+  %conv = zext i16 %11 to i32
+  %12 = bitcast %struct.sbp2_login_response* %response to i8*
+  %call11 = call i32 @sbp2_send_management_orb(%struct.sbp2_logical_unit* %1, i32 %5, i32 %4, i32 0, i32 %conv, i8* %12)
   %cmp = icmp slt i32 %call11, 0
   br i1 %cmp, label %if.then13, label %if.end23
 
 if.then13:                                        ; preds = %if.end10
   %retries = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 8
-  %12 = load i32, i32* %retries, align 4, !tbaa !59
-  %inc = add nsw i32 %12, 1
+  %13 = load i32, i32* %retries, align 4, !tbaa !59
+  %inc = add nsw i32 %13, 1
   store i32 %inc, i32* %retries, align 4, !tbaa !59
-  %cmp14 = icmp slt i32 %12, 5
+  %cmp14 = icmp slt i32 %13, 5
   br i1 %cmp14, label %if.then16, label %if.else
 
 if.then16:                                        ; preds = %if.then13
@@ -2428,49 +2503,49 @@ if.then16:                                        ; preds = %if.then13
 
 if.else:                                          ; preds = %if.then13
   %call17 = call %struct.device* @tgt_dev(%struct.sbp2_target* %2)
-  %13 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
+  %14 = call i32 (%struct.device*, i8*, ...) @dev_err(%struct.device* null, i8* null)
   %tgt21 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 0
-  %14 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt21, align 8, !tbaa !61
-  call void @sbp2_unblock(%struct.sbp2_target* %14)
+  %15 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt21, align 8, !tbaa !61
+  call void @sbp2_unblock(%struct.sbp2_target* %15)
   br label %cleanup
 
 if.end23:                                         ; preds = %if.end10
   %node_id24 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %2, i32 0, i32 5
-  store i32 %4, i32* %node_id24, align 4, !tbaa !129
-  %shl = shl i32 %6, 16
+  store i32 %5, i32* %node_id24, align 4, !tbaa !129
+  %shl = shl i32 %7, 16
   %address_high = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %2, i32 0, i32 6
   store i32 %shl, i32* %address_high, align 8, !tbaa !130
   call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !131
   %generation25 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 7
-  store i32 %3, i32* %generation25, align 8, !tbaa !65
+  store i32 %4, i32* %generation25, align 8, !tbaa !65
   %command_block_agent = getelementptr inbounds %struct.sbp2_login_response, %struct.sbp2_login_response* %response, i32 0, i32 1
   %high = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %command_block_agent, i32 0, i32 0
-  %15 = load i32, i32* %high, align 4, !tbaa !132
-  %call26 = call i32 @__fswab32(i32 %15) #6
+  %16 = load i32, i32* %high, align 4, !tbaa !132
+  %call26 = call i32 @__fswab32(i32 %16) #6
   %and = and i32 %call26, 65535
   %conv27 = zext i32 %and to i64
   %shl28 = shl i64 %conv27, 32
   %command_block_agent29 = getelementptr inbounds %struct.sbp2_login_response, %struct.sbp2_login_response* %response, i32 0, i32 1
   %low = getelementptr inbounds %struct.exception_table_entry, %struct.exception_table_entry* %command_block_agent29, i32 0, i32 1
-  %16 = load i32, i32* %low, align 4, !tbaa !134
-  %call30 = call i32 @__fswab32(i32 %16) #6
+  %17 = load i32, i32* %low, align 4, !tbaa !134
+  %call30 = call i32 @__fswab32(i32 %17) #6
   %conv31 = zext i32 %call30 to i64
   %or = or i64 %shl28, %conv31
   %command_block_agent_address = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 4
   store i64 %or, i64* %command_block_agent_address, align 8, !tbaa !135
   %misc = getelementptr inbounds %struct.sbp2_login_response, %struct.sbp2_login_response* %response, i32 0, i32 0
-  %17 = load i32, i32* %misc, align 4, !tbaa !136
-  %call32 = call i32 @__fswab32(i32 %17) #6
+  %18 = load i32, i32* %misc, align 4, !tbaa !136
+  %call32 = call i32 @__fswab32(i32 %18) #6
   %and33 = and i32 %call32, 65535
   %login_id34 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 6
   store i32 %and33, i32* %login_id34, align 4, !tbaa !54
   %call35 = call %struct.device* @tgt_dev(%struct.sbp2_target* %2)
   %lun36 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 5
-  %18 = load i16, i16* %lun36, align 8, !tbaa !53
-  %conv37 = zext i16 %18 to i32
+  %19 = load i16, i16* %lun36, align 8, !tbaa !53
+  %conv37 = zext i16 %19 to i32
   %retries38 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 8
-  %19 = load i32, i32* %retries38, align 4, !tbaa !59
-  call void (%struct.device*, i8*, ...) @dev_notice(%struct.device* %call35, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.17, i32 0, i32 0), i32 %conv37, i32 %19)
+  %20 = load i32, i32* %retries38, align 4, !tbaa !59
+  call void (%struct.device*, i8*, ...) @dev_notice(%struct.device* %call35, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.17, i32 0, i32 0), i32 %conv37, i32 %20)
   call void @sbp2_set_busy_timeout(%struct.sbp2_logical_unit* %1)
   %work40 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 9
   %work41 = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %work40, i32 0, i32 0
@@ -2478,8 +2553,8 @@ if.end23:                                         ; preds = %if.end10
   store void (%struct.work_struct*)* @sbp2_reconnect, void (%struct.work_struct*)** %func, align 8, !tbaa !122
   call void @sbp2_agent_reset(%struct.sbp2_logical_unit* %1)
   %has_sdev42 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 10
-  %20 = load i8, i8* %has_sdev42, align 8, !tbaa !118, !range !64
-  %tobool43 = trunc i8 %20 to i1
+  %21 = load i8, i8* %has_sdev42, align 8, !tbaa !118, !range !64
+  %tobool43 = trunc i8 %21 to i1
   br i1 %tobool43, label %if.then44, label %if.end46
 
 if.then44:                                        ; preds = %if.end23
@@ -2489,10 +2564,10 @@ if.then44:                                        ; preds = %if.end23
 
 if.end46:                                         ; preds = %if.end23
   %tgt47 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 0
-  %21 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt47, align 8, !tbaa !61
-  %workarounds = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %21, i32 0, i32 7
-  %22 = load i32, i32* %workarounds, align 4, !tbaa !137
-  %and48 = and i32 %22, 16
+  %22 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt47, align 8, !tbaa !61
+  %workarounds = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %22, i32 0, i32 7
+  %23 = load i32, i32* %workarounds, align 4, !tbaa !137
+  %and48 = and i32 %23, 16
   %tobool49 = icmp ne i32 %and48, 0
   br i1 %tobool49, label %if.then50, label %if.end51
 
@@ -2501,28 +2576,28 @@ if.then50:                                        ; preds = %if.end46
   br label %if.end51
 
 if.end51:                                         ; preds = %if.then50, %if.end46
-  %23 = bitcast %struct.sbp2_target* %2 to i8*
-  %24 = bitcast i8* %23 to i64*
-  %25 = bitcast i64* %24 to i8*
-  %add.ptr54 = getelementptr inbounds i8, i8* %25, i64 -3016
-  %26 = bitcast i8* %add.ptr54 to %struct.Scsi_Host*
+  %24 = bitcast %struct.sbp2_target* %2 to i8*
+  %25 = bitcast i8* %24 to i64*
+  %26 = bitcast i64* %25 to i8*
+  %add.ptr54 = getelementptr inbounds i8, i8* %26, i64 -3016
+  %27 = bitcast i8* %add.ptr54 to %struct.Scsi_Host*
   %lun55 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 5
-  %27 = load i16, i16* %lun55, align 8, !tbaa !53
-  %call56 = call i32 @sbp2_lun2int(i16 zeroext %27)
-  %28 = bitcast %struct.sbp2_logical_unit* %1 to i8*
-  %call57 = call %struct.scsi_device* @__scsi_add_device(%struct.Scsi_Host* %26, i32 0, i32 0, i32 %call56, i8* %28)
-  %29 = bitcast %struct.scsi_device* %call57 to i8*
-  %call58 = call i64 @IS_ERR(i8* %29)
+  %28 = load i16, i16* %lun55, align 8, !tbaa !53
+  %call56 = call i32 @sbp2_lun2int(i16 zeroext %28)
+  %29 = bitcast %struct.sbp2_logical_unit* %1 to i8*
+  %call57 = call %struct.scsi_device* @__scsi_add_device(%struct.Scsi_Host* %27, i32 0, i32 0, i32 %call56, i8* %29)
+  %30 = bitcast %struct.scsi_device* %call57 to i8*
+  %call58 = call i64 @IS_ERR(i8* %30)
   %tobool59 = icmp ne i64 %call58, 0
   br i1 %tobool59, label %out_logout_login, label %if.end61
 
 if.end61:                                         ; preds = %if.end51
   call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !138
   %card62 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %30 = load %struct.fw_card*, %struct.fw_card** %card62, align 8, !tbaa !2
-  %generation63 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %30, i32 0, i32 5
-  %31 = load i32, i32* %generation63, align 4, !tbaa !66
-  %cmp64 = icmp ne i32 %3, %31
+  %31 = load %struct.fw_card*, %struct.fw_card** %card62, align 8, !tbaa !2
+  %generation63 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %31, i32 0, i32 5
+  %32 = load i32, i32* %generation63, align 4, !tbaa !66
+  %cmp64 = icmp ne i32 %4, %32
   br i1 %cmp64, label %if.then66, label %if.end67
 
 if.then66:                                        ; preds = %if.end61
@@ -2540,13 +2615,13 @@ if.end67:                                         ; preds = %if.end61
 out_logout_login:                                 ; preds = %if.then66, %if.end51
   call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !139
   %generation69 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 3
-  %32 = load i32, i32* %generation69, align 4, !tbaa !55
+  %33 = load i32, i32* %generation69, align 4, !tbaa !55
   call void asm sideeffect "", "~{memory},~{dirflag},~{fpsr},~{flags}"() #7, !srcloc !140
   %node_id70 = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 2
-  %33 = load i32, i32* %node_id70, align 8, !tbaa !57
+  %34 = load i32, i32* %node_id70, align 8, !tbaa !57
   %login_id71 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 6
-  %34 = load i32, i32* %login_id71, align 4, !tbaa !54
-  %call72 = call i32 @sbp2_send_management_orb(%struct.sbp2_logical_unit* %1, i32 %33, i32 %32, i32 7, i32 %34, i8* null)
+  %35 = load i32, i32* %login_id71, align 4, !tbaa !54
+  %call72 = call i32 @sbp2_send_management_orb(%struct.sbp2_logical_unit* %1, i32 %34, i32 %33, i32 7, i32 %35, i8* null)
   %work74 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %1, i32 0, i32 9
   %work75 = getelementptr inbounds %struct.delayed_work, %struct.delayed_work* %work74, i32 0, i32 0
   %func76 = getelementptr inbounds %struct.work_struct, %struct.work_struct* %work75, i32 0, i32 2
@@ -2554,6 +2629,7 @@ out_logout_login:                                 ; preds = %if.then66, %if.end5
   br label %cleanup
 
 cleanup:                                          ; preds = %out_logout_login, %if.end67, %if.then44, %if.else, %if.then16, %entry
+  %36 = bitcast %struct.sbp2_login_response* %response to i8*
   ret void
 }
 
@@ -2568,19 +2644,21 @@ entry:
   %tgt = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
   %0 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt, align 8, !tbaa !61
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %0)
+  %1 = bitcast i32* %d to i8*
   store i32 260049920, i32* %d, align 4, !tbaa !37
   %card = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %1 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
+  %2 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
   %tgt1 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
-  %2 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt1, align 8, !tbaa !61
-  %node_id = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %2, i32 0, i32 5
-  %3 = load i32, i32* %node_id, align 4, !tbaa !129
+  %3 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt1, align 8, !tbaa !61
+  %node_id = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %3, i32 0, i32 5
+  %4 = load i32, i32* %node_id, align 4, !tbaa !129
   %generation = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 7
-  %4 = load i32, i32* %generation, align 8, !tbaa !65
+  %5 = load i32, i32* %generation, align 8, !tbaa !65
   %max_speed = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 4
-  %5 = load i32, i32* %max_speed, align 8, !tbaa !45
-  %6 = bitcast i32* %d to i8*
-  %call2 = call i32 @fw_run_transaction(%struct.fw_card* %1, i32 0, i32 %3, i32 %4, i32 %5, i64 281474708275728, i8* %6, i64 4)
+  %6 = load i32, i32* %max_speed, align 8, !tbaa !45
+  %7 = bitcast i32* %d to i8*
+  %call2 = call i32 @fw_run_transaction(%struct.fw_card* %2, i32 0, i32 %4, i32 %5, i32 %6, i64 281474708275728, i8* %7, i64 4)
+  %8 = bitcast i32* %d to i8*
   ret void
 }
 
@@ -2677,28 +2755,32 @@ entry:
   %tgt = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
   %0 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt, align 8, !tbaa !61
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %0)
+  %1 = bitcast i32* %d to i8*
   store i32 0, i32* %d, align 4, !tbaa !37
   %card = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 5
-  %1 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
+  %2 = load %struct.fw_card*, %struct.fw_card** %card, align 8, !tbaa !2
   %tgt1 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
-  %2 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt1, align 8, !tbaa !61
-  %node_id = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %2, i32 0, i32 5
-  %3 = load i32, i32* %node_id, align 4, !tbaa !129
+  %3 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt1, align 8, !tbaa !61
+  %node_id = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %3, i32 0, i32 5
+  %4 = load i32, i32* %node_id, align 4, !tbaa !129
   %generation = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 7
-  %4 = load i32, i32* %generation, align 8, !tbaa !65
+  %5 = load i32, i32* %generation, align 8, !tbaa !65
   %max_speed = getelementptr inbounds %struct.fw_device, %struct.fw_device* %call, i32 0, i32 4
-  %5 = load i32, i32* %max_speed, align 8, !tbaa !45
+  %6 = load i32, i32* %max_speed, align 8, !tbaa !45
   %command_block_agent_address = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 4
-  %6 = load i64, i64* %command_block_agent_address, align 8, !tbaa !135
-  %add = add i64 %6, 4
-  %7 = bitcast i32* %d to i8*
-  %call2 = call i32 @fw_run_transaction(%struct.fw_card* %1, i32 0, i32 %3, i32 %4, i32 %5, i64 %add, i8* %7, i64 4)
+  %7 = load i64, i64* %command_block_agent_address, align 8, !tbaa !135
+  %add = add i64 %7, 4
+  %8 = bitcast i32* %d to i8*
+  %call2 = call i32 @fw_run_transaction(%struct.fw_card* %2, i32 0, i32 %4, i32 %5, i32 %6, i64 %add, i8* %8, i64 4)
+  %9 = bitcast i32* %d to i8*
   ret void
 }
 
 ; Function Attrs: nounwind uwtable
 define internal void @sbp2_conditionally_unblock(%struct.sbp2_logical_unit* %lu) #2 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %tgt1 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 0
   %0 = load %struct.sbp2_target*, %struct.sbp2_target** %tgt1, align 8, !tbaa !61
   %call = call %struct.fw_device* @target_parent_device(%struct.sbp2_target* %0)
@@ -2709,28 +2791,32 @@ entry:
   %4 = bitcast i64* %3 to i8*
   %add.ptr = getelementptr inbounds i8, i8* %4, i64 -3016
   %5 = bitcast i8* %add.ptr to %struct.Scsi_Host*
+  %6 = bitcast i64* %__dummy to i8*
+  %7 = bitcast i64* %__dummy2 to i8*
+  %8 = bitcast i64* %__dummy2 to i8*
+  %9 = bitcast i64* %__dummy to i8*
   %lock = getelementptr inbounds %struct.fw_card, %struct.fw_card* %1, i32 0, i32 18
   %call5 = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %lock)
   %call6 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call5)
   %blocked = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 11
-  %6 = load i8, i8* %blocked, align 1, !tbaa !63, !range !64
-  %tobool = trunc i8 %6 to i1
+  %10 = load i8, i8* %blocked, align 1, !tbaa !63, !range !64
+  %tobool = trunc i8 %10 to i1
   br i1 %tobool, label %land.lhs.true, label %if.end
 
 land.lhs.true:                                    ; preds = %entry
   %generation = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 7
-  %7 = load i32, i32* %generation, align 8, !tbaa !65
+  %11 = load i32, i32* %generation, align 8, !tbaa !65
   %generation10 = getelementptr inbounds %struct.fw_card, %struct.fw_card* %1, i32 0, i32 5
-  %8 = load i32, i32* %generation10, align 4, !tbaa !66
-  %cmp11 = icmp eq i32 %7, %8
+  %12 = load i32, i32* %generation10, align 4, !tbaa !66
+  %cmp11 = icmp eq i32 %11, %12
   br i1 %cmp11, label %if.then, label %if.end
 
 if.then:                                          ; preds = %land.lhs.true
   %blocked13 = getelementptr inbounds %struct.sbp2_logical_unit, %struct.sbp2_logical_unit* %lu, i32 0, i32 11
   store i8 0, i8* %blocked13, align 1, !tbaa !63
   %blocked14 = getelementptr inbounds %struct.sbp2_target, %struct.sbp2_target* %0, i32 0, i32 11
-  %9 = load i32, i32* %blocked14, align 4, !tbaa !67
-  %dec = add nsw i32 %9, -1
+  %13 = load i32, i32* %blocked14, align 4, !tbaa !67
+  %dec = add nsw i32 %13, -1
   store i32 %dec, i32* %blocked14, align 4, !tbaa !67
   %cmp15 = icmp eq i32 %dec, 0
   %frombool = zext i1 %cmp15 to i8

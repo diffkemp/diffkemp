@@ -2941,11 +2941,31 @@ entry:
 if.end:                                           ; preds = %entry
   %0 = load i32, i32* @ttymajor, align 4, !tbaa !55
   %1 = bitcast i8* %argp to i32*
-  %2 = call i32 @"simpll__inlineasm$0"(i32 %0, i32* %1)
+  %2 = call i32 @simpll__inlineasm_0(i32 %0, i32* %1)
   br label %cleanup243
 
-for.body6:                                        ; preds = %for.body6
+for.cond:                                         ; No predecessors!
+  br label %for.cond4
+
+for.cond4:                                        ; preds = %for.body6, %for.cond
+  %j.0 = phi i32 [ %inc, %for.body6 ], [ 0, %for.cond ]
+  %result.1 = phi i32 [ %result.2, %for.body6 ], [ %result.1, %for.cond ]
   br label %for.body6
+
+for.body6:                                        ; preds = %for.cond4
+  %idxprom = zext i32 undef to i64
+  %arrayidx = getelementptr inbounds [4 x %struct.mxser_board], [4 x %struct.mxser_board]* @mxser_boards, i64 0, i64 %idxprom
+  %ports = getelementptr inbounds %struct.mxser_board, %struct.mxser_board* %arrayidx, i32 0, i32 7
+  %idxprom7 = zext i32 %j.0 to i64
+  %arrayidx8 = getelementptr inbounds [8 x %struct.mxser_port], [8 x %struct.mxser_port]* %ports, i64 0, i64 %idxprom7
+  %ioaddr = getelementptr inbounds %struct.mxser_port, %struct.mxser_port* %arrayidx8, i32 0, i32 2
+  %3 = load i64, i64* %ioaddr, align 8, !tbaa !24
+  %tobool9 = icmp ne i64 %3, 0
+  %shl = shl i32 1, undef
+  %or = or i32 %result.1, %shl
+  %result.2 = select i1 %tobool9, i32 %or, i32 %result.1
+  %inc = add i32 %j.0, 1
+  br label %for.cond4
 
 for.inc231:                                       ; preds = %for.inc231
   br label %for.inc231
@@ -6860,7 +6880,7 @@ declare i8* @dev_get_drvdata(%struct.device*) #3
 
 declare void @pci_unregister_driver(%struct.pci_driver*) #3
 
-declare i32 @"simpll__inlineasm$0"(i32, i32*)
+declare i32 @simpll__inlineasm_0(i32, i32*)
 
 attributes #0 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }

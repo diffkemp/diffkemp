@@ -1011,28 +1011,57 @@ entry:
 if.end18:                                         ; preds = %entry
   %call.i = call i8* @__kmalloc(i64 48, i32 208) #8
   %0 = bitcast i8* %call.i to %struct.snd_minor*
+  br label %cond.end
+
+cond.end:                                         ; preds = %if.end18
+  switch i32 %type, label %if.end3.i [
+    i32 1, label %snd_find_free_minor.exit
+    i32 2, label %if.then2.i
+  ]
+
+if.then2.i:                                       ; preds = %cond.end
+  br label %snd_find_free_minor.exit
+
+if.end3.i:                                        ; preds = %cond.end
   br label %for.cond.i
 
-for.cond.i:                                       ; preds = %for.inc.i, %if.end18
-  %minor.0.i = phi i32 [ %inc.i, %for.inc.i ], [ 0, %if.end18 ]
-  br label %if.end15.i
+for.cond.i:                                       ; preds = %for.inc.i, %if.end3.i
+  %minor.0.i = phi i32 [ 0, %if.end3.i ], [ %inc.i, %for.inc.i ]
+  %conv.i = sext i32 %minor.0.i to i64
+  %cmp4.i = icmp ult i64 %conv.i, 256
+  br i1 %cmp4.i, label %for.body.i, label %snd_find_free_minor.exit
 
-if.end15.i:                                       ; preds = %for.cond.i
+for.body.i:                                       ; preds = %for.cond.i
+  %and.i = and i32 %minor.0.i, 31
+  %cmp6.i = icmp eq i32 %and.i, 0
+  br i1 %cmp6.i, label %for.inc.i, label %if.end9.i
+
+if.end9.i:                                        ; preds = %for.body.i
+  switch i32 %minor.0.i, label %if.end15.i [
+    i32 1, label %for.inc.i
+    i32 33, label %for.inc.i
+  ]
+
+if.end15.i:                                       ; preds = %if.end9.i
   %idxprom.i = sext i32 %minor.0.i to i64
   %arrayidx.i = getelementptr inbounds [256 x %struct.snd_minor*], [256 x %struct.snd_minor*]* @snd_minors, i64 0, i64 %idxprom.i
   %1 = load %struct.snd_minor*, %struct.snd_minor** %arrayidx.i, align 8, !tbaa !2
   %tobool.i = icmp ne %struct.snd_minor* %1, null
-  br i1 %tobool.i, label %for.inc.i, label %if.end32
+  br i1 %tobool.i, label %for.inc.i, label %snd_find_free_minor.exit
 
-for.inc.i:                                        ; preds = %if.end15.i
+for.inc.i:                                        ; preds = %if.end15.i, %if.end9.i, %if.end9.i, %for.body.i
   %inc.i = add nsw i32 %minor.0.i, 1
   br label %for.cond.i
 
-if.end32:                                         ; preds = %if.end15.i
+snd_find_free_minor.exit:                         ; preds = %if.end15.i, %for.cond.i, %if.then2.i, %cond.end
+  %retval.0.i = phi i32 [ 33, %if.then2.i ], [ 1, %cond.end ], [ %minor.0.i, %if.end15.i ], [ -16, %for.cond.i ]
+  br label %if.end32
+
+if.end32:                                         ; preds = %snd_find_free_minor.exit
   %2 = load %struct.class*, %struct.class** @sound_class, align 8, !tbaa !2
   %3 = load i32, i32* @major, align 4, !tbaa !25
   %shl = shl i32 %3, 20
-  %or = or i32 %shl, %minor.0.i
+  %or = or i32 %shl, %retval.0.i
   %call33 = call %struct.device* (%struct.class*, %struct.device*, i32, i8*, i8*, ...) @device_create(%struct.class* %2, %struct.device* %device, i32 %or, i8* %private_data, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.2, i32 0, i32 0), i8* %name)
   %dev34 = getelementptr inbounds %struct.snd_minor, %struct.snd_minor* %0, i32 0, i32 5
   store %struct.device* %call33, %struct.device** %dev34, align 8, !tbaa !6
@@ -3286,6 +3315,7 @@ if.end95:                                         ; preds = %if.then93, %if.end8
   call void @INIT_LIST_HEAD(%struct.list_head* %controls)
   %ctl_files = getelementptr inbounds %struct.snd_card, %struct.snd_card* %0, i32 0, i32 17
   call void @INIT_LIST_HEAD(%struct.list_head* %ctl_files)
+  %files_lock = getelementptr inbounds %struct.snd_card, %struct.snd_card* %0, i32 0, i32 23
   call void @spinlock_check()
   %files_lock103 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %0, i32 0, i32 23
   %11 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %files_lock103, i32 0, i32 0
@@ -7729,7 +7759,7 @@ if.end47:                                         ; preds = %if.end36
   %3 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
   %4 = bitcast %struct.snd_card* %1 to i8*
   %arraydecay48 = getelementptr inbounds [16 x i8], [16 x i8]* %name, i32 0, i32 0
-  %call49 = call i32 @snd_register_device(%struct.snd_card* %1, i8* %4, i8* %arraydecay48)
+  %call49 = call i32 @snd_register_device(i32 0, %struct.snd_card* %1, i8* %4, i8* %arraydecay48)
   %cmp50 = icmp slt i32 %call49, 0
   %call49. = select i1 %cmp50, i32 %call49, i32 0
   br label %cleanup
@@ -7845,10 +7875,10 @@ cleanup:                                          ; preds = %for.end, %if.end36,
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal i32 @snd_register_device(%struct.snd_card* %card, i8* %private_data, i8* %name) #3 {
+define internal i32 @snd_register_device(i32 %type, %struct.snd_card* %card, i8* %private_data, i8* %name) #3 {
 entry:
   %call = call %struct.device* @snd_card_get_device_link(%struct.snd_card* %card)
-  %call1 = call i32 @snd_register_device_for_dev(i32 undef, %struct.snd_card* undef, i32 undef, %struct.file_operations* undef, i8* %private_data, i8* %name, %struct.device* %call)
+  %call1 = call i32 @snd_register_device_for_dev(i32 %type, %struct.snd_card* undef, i32 undef, %struct.file_operations* undef, i8* %private_data, i8* %name, %struct.device* %call)
   ret i32 %call1
 }
 

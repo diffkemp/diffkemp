@@ -636,15 +636,17 @@ define internal i32 @snd_intel8x0_probe(%struct.pci_dev* %pci, %struct.pci_devic
 entry:
   %card = alloca %struct.snd_card*, align 8
   %chip = alloca %struct.intel8x0*, align 8
-  %0 = load i32, i32* @index, align 4, !tbaa !2
-  %1 = load i8*, i8** @id, align 8, !tbaa !6
-  %call = call i32 @snd_card_create(i32 %0, i8* %1, %struct.module* @__this_module, i32 0, %struct.snd_card** %card)
+  %0 = bitcast %struct.snd_card** %card to i8*
+  %1 = bitcast %struct.intel8x0** %chip to i8*
+  %2 = load i32, i32* @index, align 4, !tbaa !2
+  %3 = load i8*, i8** @id, align 8, !tbaa !6
+  %call = call i32 @snd_card_create(i32 %2, i8* %3, %struct.module* @__this_module, i32 0, %struct.snd_card** %card)
   %cmp = icmp slt i32 %call, 0
   br i1 %cmp, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %entry
-  %2 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
-  %cmp1 = icmp slt i32 %2, 0
+  %4 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
+  %cmp1 = icmp slt i32 %4, 0
   br i1 %cmp1, label %if.then2, label %if.end4
 
 if.then2:                                         ; preds = %if.end
@@ -653,45 +655,45 @@ if.then2:                                         ; preds = %if.end
   br label %if.end4
 
 if.end4:                                          ; preds = %if.then2, %if.end
-  %3 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %driver = getelementptr inbounds %struct.snd_card, %struct.snd_card* %3, i32 0, i32 2
+  %5 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %driver = getelementptr inbounds %struct.snd_card, %struct.snd_card* %5, i32 0, i32 2
   %arraydecay = getelementptr inbounds [16 x i8], [16 x i8]* %driver, i32 0, i32 0
   %call5 = call i8* @strcpy(i8* %arraydecay, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.2, i32 0, i32 0))
-  %4 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
-  %tobool = icmp ne i32 %4, 0
+  %6 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
+  %tobool = icmp ne i32 %6, 0
   br i1 %tobool, label %if.end14, label %if.then6
 
 if.then6:                                         ; preds = %if.end4
   %driver_data = getelementptr inbounds %struct.pci_device_id, %struct.pci_device_id* %pci_id, i32 0, i32 6
-  %5 = load i64, i64* %driver_data, align 8, !tbaa !8
-  %Pivot = icmp slt i64 %5, 4
+  %7 = load i64, i64* %driver_data, align 8, !tbaa !8
+  %Pivot = icmp slt i64 %7, 4
   br i1 %Pivot, label %LeafBlock, label %LeafBlock1
 
 LeafBlock1:                                       ; preds = %if.then6
-  %SwitchLeaf2 = icmp eq i64 %5, 4
+  %SwitchLeaf2 = icmp eq i64 %7, 4
   br i1 %SwitchLeaf2, label %sw.bb, label %if.end14
 
 LeafBlock:                                        ; preds = %if.then6
-  %SwitchLeaf = icmp eq i64 %5, 1
+  %SwitchLeaf = icmp eq i64 %7, 1
   br i1 %SwitchLeaf, label %sw.bb10, label %if.end14
 
 sw.bb:                                            ; preds = %LeafBlock1
-  %6 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %driver7 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %6, i32 0, i32 2
+  %8 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %driver7 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %8, i32 0, i32 2
   %arraydecay8 = getelementptr inbounds [16 x i8], [16 x i8]* %driver7, i32 0, i32 0
   %call9 = call i8* @strcpy(i8* %arraydecay8, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.3, i32 0, i32 0))
   br label %if.end14
 
 sw.bb10:                                          ; preds = %LeafBlock
-  %7 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %driver11 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %7, i32 0, i32 2
+  %9 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %driver11 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %9, i32 0, i32 2
   %arraydecay12 = getelementptr inbounds [16 x i8], [16 x i8]* %driver11, i32 0, i32 0
   %call13 = call i8* @strcpy(i8* %arraydecay12, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.4, i32 0, i32 0))
   br label %if.end14
 
 if.end14:                                         ; preds = %sw.bb10, %sw.bb, %LeafBlock, %LeafBlock1, %if.end4
-  %8 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %shortname = getelementptr inbounds %struct.snd_card, %struct.snd_card* %8, i32 0, i32 3
+  %10 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %shortname = getelementptr inbounds %struct.snd_card, %struct.snd_card* %10, i32 0, i32 3
   %arraydecay15 = getelementptr inbounds [32 x i8], [32 x i8]* %shortname, i32 0, i32 0
   %call16 = call i8* @strcpy(i8* %arraydecay15, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.5, i32 0, i32 0))
   br label %for.cond
@@ -699,26 +701,26 @@ if.end14:                                         ; preds = %sw.bb10, %sw.bb, %L
 for.cond:                                         ; preds = %for.inc, %if.end14
   %name.0 = phi %struct.shortname_table* [ getelementptr inbounds ([23 x %struct.shortname_table], [23 x %struct.shortname_table]* @shortnames, i32 0, i32 0), %if.end14 ], [ %incdec.ptr, %for.inc ]
   %id = getelementptr inbounds %struct.shortname_table, %struct.shortname_table* %name.0, i32 0, i32 0
-  %9 = load i32, i32* %id, align 8, !tbaa !11
-  %tobool17 = icmp ne i32 %9, 0
+  %11 = load i32, i32* %id, align 8, !tbaa !11
+  %tobool17 = icmp ne i32 %11, 0
   br i1 %tobool17, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
   %device = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %pci, i32 0, i32 8
-  %10 = load i16, i16* %device, align 2, !tbaa !13
-  %conv = zext i16 %10 to i32
+  %12 = load i16, i16* %device, align 2, !tbaa !13
+  %conv = zext i16 %12 to i32
   %id18 = getelementptr inbounds %struct.shortname_table, %struct.shortname_table* %name.0, i32 0, i32 0
-  %11 = load i32, i32* %id18, align 8, !tbaa !11
-  %cmp19 = icmp eq i32 %conv, %11
+  %13 = load i32, i32* %id18, align 8, !tbaa !11
+  %cmp19 = icmp eq i32 %conv, %13
   br i1 %cmp19, label %if.then21, label %for.inc
 
 if.then21:                                        ; preds = %for.body
-  %12 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %shortname22 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %12, i32 0, i32 3
+  %14 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %shortname22 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %14, i32 0, i32 3
   %arraydecay23 = getelementptr inbounds [32 x i8], [32 x i8]* %shortname22, i32 0, i32 0
   %s = getelementptr inbounds %struct.shortname_table, %struct.shortname_table* %name.0, i32 0, i32 1
-  %13 = load i8*, i8** %s, align 8, !tbaa !38
-  %call24 = call i8* @strcpy(i8* %arraydecay23, i8* %13)
+  %15 = load i8*, i8** %s, align 8, !tbaa !38
+  %call24 = call i8* @strcpy(i8* %arraydecay23, i8* %15)
   br label %for.end
 
 for.inc:                                          ; preds = %for.body
@@ -726,120 +728,125 @@ for.inc:                                          ; preds = %for.body
   br label %for.cond
 
 for.end:                                          ; preds = %if.then21, %for.cond
-  %14 = load i32, i32* @buggy_irq, align 4, !tbaa !2
-  %cmp26 = icmp slt i32 %14, 0
+  %16 = load i32, i32* @buggy_irq, align 4, !tbaa !2
+  %cmp26 = icmp slt i32 %16, 0
   br i1 %cmp26, label %if.then28, label %if.end34
 
 if.then28:                                        ; preds = %for.end
   %driver_data29 = getelementptr inbounds %struct.pci_device_id, %struct.pci_device_id* %pci_id, i32 0, i32 6
-  %15 = load i64, i64* %driver_data29, align 8, !tbaa !8
-  %cmp30 = icmp eq i64 %15, 4
+  %17 = load i64, i64* %driver_data29, align 8, !tbaa !8
+  %cmp30 = icmp eq i64 %17, 4
   %.sink = select i1 %cmp30, i32 1, i32 0
   store i32 %.sink, i32* @buggy_irq, align 4, !tbaa !2
   br label %if.end34
 
 if.end34:                                         ; preds = %if.then28, %for.end
+  %18 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %driver_data35 = getelementptr inbounds %struct.pci_device_id, %struct.pci_device_id* %pci_id, i32 0, i32 6
+  %19 = load i64, i64* %driver_data35, align 8, !tbaa !8
   %call36 = call i32 @snd_intel8x0_create()
   %cmp37 = icmp slt i32 %call36, 0
   br i1 %cmp37, label %if.then39, label %if.end41
 
 if.then39:                                        ; preds = %if.end34
-  %16 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %call40 = call i32 @snd_card_free(%struct.snd_card* %16)
+  %20 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %call40 = call i32 @snd_card_free(%struct.snd_card* %20)
   br label %cleanup
 
 if.end41:                                         ; preds = %if.end34
-  %17 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
-  %18 = bitcast %struct.intel8x0* %17 to i8*
-  %19 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %private_data = getelementptr inbounds %struct.snd_card, %struct.snd_card* %19, i32 0, i32 8
-  store i8* %18, i8** %private_data, align 8, !tbaa !39
-  %20 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
-  %21 = load i32, i32* @ac97_clock, align 4, !tbaa !2
-  %22 = load i8*, i8** @ac97_quirk, align 8, !tbaa !6
-  %call42 = call i32 @snd_intel8x0_mixer(%struct.intel8x0* %20, i32 %21, i8* %22)
+  %21 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  %22 = bitcast %struct.intel8x0* %21 to i8*
+  %23 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %private_data = getelementptr inbounds %struct.snd_card, %struct.snd_card* %23, i32 0, i32 8
+  store i8* %22, i8** %private_data, align 8, !tbaa !39
+  %24 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  %25 = load i32, i32* @ac97_clock, align 4, !tbaa !2
+  %26 = load i8*, i8** @ac97_quirk, align 8, !tbaa !6
+  %call42 = call i32 @snd_intel8x0_mixer(%struct.intel8x0* %24, i32 %25, i8* %26)
   %cmp43 = icmp slt i32 %call42, 0
   br i1 %cmp43, label %if.then45, label %if.end47
 
 if.then45:                                        ; preds = %if.end41
-  %23 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %call46 = call i32 @snd_card_free(%struct.snd_card* %23)
+  %27 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %call46 = call i32 @snd_card_free(%struct.snd_card* %27)
   br label %cleanup
 
 if.end47:                                         ; preds = %if.end41
-  %24 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
-  %call48 = call i32 @snd_intel8x0_pcm(%struct.intel8x0* %24)
+  %28 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  %call48 = call i32 @snd_intel8x0_pcm(%struct.intel8x0* %28)
   %cmp49 = icmp slt i32 %call48, 0
   br i1 %cmp49, label %if.then51, label %if.end53
 
 if.then51:                                        ; preds = %if.end47
-  %25 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %call52 = call i32 @snd_card_free(%struct.snd_card* %25)
+  %29 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %call52 = call i32 @snd_card_free(%struct.snd_card* %29)
   br label %cleanup
 
 if.end53:                                         ; preds = %if.end47
-  %26 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
-  call void @snd_intel8x0_proc_init(%struct.intel8x0* %26)
-  %27 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %longname = getelementptr inbounds %struct.snd_card, %struct.snd_card* %27, i32 0, i32 4
+  %30 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  call void @snd_intel8x0_proc_init(%struct.intel8x0* %30)
+  %31 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %longname = getelementptr inbounds %struct.snd_card, %struct.snd_card* %31, i32 0, i32 4
   %arraydecay54 = getelementptr inbounds [80 x i8], [80 x i8]* %longname, i32 0, i32 0
-  %28 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %shortname55 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %28, i32 0, i32 3
+  %32 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %shortname55 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %32, i32 0, i32 3
   %arraydecay56 = getelementptr inbounds [32 x i8], [32 x i8]* %shortname55, i32 0, i32 0
-  %29 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
-  %ac97 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %29, i32 0, i32 13
+  %33 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  %ac97 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %33, i32 0, i32 13
   %arrayidx = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97, i64 0, i64 0
-  %30 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx, align 8, !tbaa !6
-  %call57 = call i8* @snd_ac97_get_short_name(%struct.snd_ac97* %30)
-  %31 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
-  %irq = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %31, i32 0, i32 1
-  %32 = load i32, i32* %irq, align 4, !tbaa !45
-  %call58 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %arraydecay54, i64 80, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str.6, i32 0, i32 0), i8* %arraydecay56, i8* %call57, i32 %32)
-  %33 = load i32, i32* @ac97_clock, align 4, !tbaa !2
-  %cmp59 = icmp eq i32 %33, 0
-  %34 = load i32, i32* @ac97_clock, align 4
-  %cmp61 = icmp eq i32 %34, 1
+  %34 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx, align 8, !tbaa !6
+  %call57 = call i8* @snd_ac97_get_short_name(%struct.snd_ac97* %34)
+  %35 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  %irq = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %35, i32 0, i32 1
+  %36 = load i32, i32* %irq, align 4, !tbaa !45
+  %call58 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %arraydecay54, i64 80, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str.6, i32 0, i32 0), i8* %arraydecay56, i8* %call57, i32 %36)
+  %37 = load i32, i32* @ac97_clock, align 4, !tbaa !2
+  %cmp59 = icmp eq i32 %37, 0
+  %38 = load i32, i32* @ac97_clock, align 4
+  %cmp61 = icmp eq i32 %38, 1
   %or.cond = or i1 %cmp59, %cmp61
   br i1 %or.cond, label %if.then63, label %if.end74
 
 if.then63:                                        ; preds = %if.end53
-  %35 = load i32, i32* @ac97_clock, align 4, !tbaa !2
-  %cmp64 = icmp eq i32 %35, 0
-  %36 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  %39 = load i32, i32* @ac97_clock, align 4, !tbaa !2
+  %cmp64 = icmp eq i32 %39, 0
+  %40 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
   br i1 %cmp64, label %if.then66, label %if.else72
 
 if.then66:                                        ; preds = %if.then63
-  %call67 = call i32 @intel8x0_in_clock_list(%struct.intel8x0* %36)
+  %call67 = call i32 @intel8x0_in_clock_list(%struct.intel8x0* %40)
   %cmp68 = icmp eq i32 %call67, 0
   br i1 %cmp68, label %if.then70, label %if.end74
 
 if.then70:                                        ; preds = %if.then66
-  %37 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
-  call void @intel8x0_measure_ac97_clock(%struct.intel8x0* %37)
+  %41 = load %struct.intel8x0*, %struct.intel8x0** %chip, align 8, !tbaa !6
+  call void @intel8x0_measure_ac97_clock(%struct.intel8x0* %41)
   br label %if.end74
 
 if.else72:                                        ; preds = %if.then63
-  call void @intel8x0_measure_ac97_clock(%struct.intel8x0* %36)
+  call void @intel8x0_measure_ac97_clock(%struct.intel8x0* %40)
   br label %if.end74
 
 if.end74:                                         ; preds = %if.else72, %if.then70, %if.then66, %if.end53
-  %38 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
-  %call75 = call i32 @snd_card_register(%struct.snd_card* %38)
+  %42 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %call75 = call i32 @snd_card_register(%struct.snd_card* %42)
   %cmp76 = icmp slt i32 %call75, 0
-  %39 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
+  %43 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !6
   br i1 %cmp76, label %if.then78, label %if.end80
 
 if.then78:                                        ; preds = %if.end74
-  %call79 = call i32 @snd_card_free(%struct.snd_card* %39)
+  %call79 = call i32 @snd_card_free(%struct.snd_card* %43)
   br label %cleanup
 
 if.end80:                                         ; preds = %if.end74
-  %40 = bitcast %struct.snd_card* %39 to i8*
-  call void @pci_set_drvdata(%struct.pci_dev* %pci, i8* %40)
+  %44 = bitcast %struct.snd_card* %43 to i8*
+  call void @pci_set_drvdata(%struct.pci_dev* %pci, i8* %44)
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end80, %if.then78, %if.then51, %if.then45, %if.then39, %entry
   %retval.0 = phi i32 [ %call36, %if.then39 ], [ %call42, %if.then45 ], [ %call48, %if.then51 ], [ %call75, %if.then78 ], [ 0, %if.end80 ], [ %call, %entry ]
+  %45 = bitcast %struct.intel8x0** %chip to i8*
+  %46 = bitcast %struct.snd_card** %card to i8*
   ret i32 %retval.0
 }
 
@@ -1344,6 +1351,7 @@ for.body55:                                       ; preds = %for.cond51
   br label %for.cond51
 
 cleanup:                                          ; preds = %for.cond51, %if.else, %if.then
+  %retval.0 = phi i32 [ %call, %if.then ], [ %call4, %if.else ], [ 0, %for.cond51 ]
   ret void
 }
 
@@ -1675,14 +1683,20 @@ declare i32 @request_threaded_irq(i32, i32 (i32, i8*)*, i32 (i32, i8*)*, i64, i8
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @snd_intel8x0_update(%struct.intel8x0* %chip, %struct.ichdev* %ichdev) #3 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
   %reg_offset = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 1
   %0 = load i64, i64* %reg_offset, align 8, !tbaa !57
+  %1 = bitcast i64* %__dummy to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy to i8*
   %reg_lock = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 20
   %call = call %struct.raw_spinlock* @spinlock_check(%struct.spinlock* %reg_lock)
   %call2 = call i64 @_raw_spin_lock_irqsave(%struct.raw_spinlock* %call)
   %roff_sr = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 19
-  %1 = load i32, i32* %roff_sr, align 8, !tbaa !70
-  %conv5 = zext i32 %1 to i64
+  %5 = load i32, i32* %roff_sr, align 8, !tbaa !70
+  %conv5 = zext i32 %5 to i64
   %add = add i64 %0, %conv5
   %conv6 = trunc i64 %add to i32
   %call7 = call zeroext i8 @igetbyte(%struct.intel8x0* %chip, i32 %conv6)
@@ -1697,23 +1711,23 @@ entry:
 
 if.else:                                          ; preds = %entry
   %civ13 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 15
-  %2 = load i32, i32* %civ13, align 8, !tbaa !69
-  %cmp14 = icmp eq i32 %conv12, %2
+  %6 = load i32, i32* %civ13, align 8, !tbaa !69
+  %cmp14 = icmp eq i32 %conv12, %6
   %civ17 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 15
-  %3 = load i32, i32* %civ17, align 8, !tbaa !69
+  %7 = load i32, i32* %civ17, align 8, !tbaa !69
   br i1 %cmp14, label %if.then16, label %if.else20
 
 if.then16:                                        ; preds = %if.else
-  %inc = add nsw i32 %3, 1
+  %inc = add nsw i32 %7, 1
   store i32 %inc, i32* %civ17, align 8, !tbaa !69
   %civ18 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 15
-  %4 = load i32, i32* %civ18, align 8, !tbaa !69
-  %and19 = and i32 %4, 31
+  %8 = load i32, i32* %civ18, align 8, !tbaa !69
+  %and19 = and i32 %8, 31
   store i32 %and19, i32* %civ18, align 8, !tbaa !69
   br label %if.end28
 
 if.else20:                                        ; preds = %if.else
-  %sub = sub nsw i32 %conv12, %3
+  %sub = sub nsw i32 %conv12, %7
   %cmp22 = icmp slt i32 %sub, 0
   %add25 = add nsw i32 %sub, 32
   %add25.sub = select i1 %cmp22, i32 %add25, i32 %sub
@@ -1724,11 +1738,11 @@ if.else20:                                        ; preds = %if.else
 if.end28:                                         ; preds = %if.else20, %if.then16, %entry
   %step.2 = phi i32 [ 0, %entry ], [ 1, %if.then16 ], [ %add25.sub, %if.else20 ]
   %fragsize1 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 8
-  %5 = load i32, i32* %fragsize1, align 4, !tbaa !84
-  %mul = mul i32 %step.2, %5
+  %9 = load i32, i32* %fragsize1, align 4, !tbaa !84
+  %mul = mul i32 %step.2, %9
   %position = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 9
-  %6 = load i32, i32* %position, align 8, !tbaa !85
-  %add29 = add i32 %6, %mul
+  %10 = load i32, i32* %position, align 8, !tbaa !85
+  %add29 = add i32 %10, %mul
   store i32 %add29, i32* %position, align 8, !tbaa !85
   %in_measurement = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 9
   %bf.load = load i16, i16* %in_measurement, align 8
@@ -1740,27 +1754,27 @@ if.end28:                                         ; preds = %if.else20, %if.then
 
 if.then31:                                        ; preds = %if.end28
   %size = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 6
-  %7 = load i32, i32* %size, align 4, !tbaa !86
+  %11 = load i32, i32* %size, align 4, !tbaa !86
   %position32 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 9
-  %8 = load i32, i32* %position32, align 8, !tbaa !85
-  %rem = urem i32 %8, %7
+  %12 = load i32, i32* %position32, align 8, !tbaa !85
+  %rem = urem i32 %12, %11
   store i32 %rem, i32* %position32, align 8, !tbaa !85
   br label %if.end33
 
 if.end33:                                         ; preds = %if.then31, %if.end28
   %lvi = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 13
-  %9 = load i32, i32* %lvi, align 8, !tbaa !68
-  %add34 = add nsw i32 %9, %step.2
+  %13 = load i32, i32* %lvi, align 8, !tbaa !68
+  %add34 = add nsw i32 %13, %step.2
   store i32 %add34, i32* %lvi, align 8, !tbaa !68
   %lvi35 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 13
-  %10 = load i32, i32* %lvi35, align 8, !tbaa !68
-  %and36 = and i32 %10, 31
+  %14 = load i32, i32* %lvi35, align 8, !tbaa !68
+  %and36 = and i32 %14, 31
   store i32 %and36, i32* %lvi35, align 8, !tbaa !68
   %add37 = add i64 %0, 5
   %conv38 = trunc i64 %add37 to i32
   %lvi39 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 13
-  %11 = load i32, i32* %lvi39, align 8, !tbaa !68
-  %conv40 = trunc i32 %11 to i8
+  %15 = load i32, i32* %lvi39, align 8, !tbaa !68
+  %conv40 = trunc i32 %15 to i8
   call void @iputbyte(%struct.intel8x0* %chip, i32 %conv38, i8 zeroext %conv40)
   br label %for.cond
 
@@ -1772,43 +1786,43 @@ for.cond:                                         ; preds = %for.inc, %if.end33
 
 for.body:                                         ; preds = %for.cond
   %lvi_frag = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 14
-  %12 = load i32, i32* %lvi_frag, align 4, !tbaa !87
-  %inc43 = add nsw i32 %12, 1
+  %16 = load i32, i32* %lvi_frag, align 4, !tbaa !87
+  %inc43 = add nsw i32 %16, 1
   store i32 %inc43, i32* %lvi_frag, align 4, !tbaa !87
   %frags = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 12
-  %13 = load i32, i32* %frags, align 4, !tbaa !88
+  %17 = load i32, i32* %frags, align 4, !tbaa !88
   %lvi_frag44 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 14
-  %14 = load i32, i32* %lvi_frag44, align 4, !tbaa !87
-  %rem45 = srem i32 %14, %13
+  %18 = load i32, i32* %lvi_frag44, align 4, !tbaa !87
+  %rem45 = srem i32 %18, %17
   store i32 %rem45, i32* %lvi_frag44, align 4, !tbaa !87
   %physbuf = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 5
-  %15 = load i32, i32* %physbuf, align 8, !tbaa !89
+  %19 = load i32, i32* %physbuf, align 8, !tbaa !89
   %lvi_frag46 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 14
-  %16 = load i32, i32* %lvi_frag46, align 4, !tbaa !87
+  %20 = load i32, i32* %lvi_frag46, align 4, !tbaa !87
   %fragsize147 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 8
-  %17 = load i32, i32* %fragsize147, align 4, !tbaa !84
-  %mul48 = mul i32 %16, %17
-  %add49 = add i32 %15, %mul48
+  %21 = load i32, i32* %fragsize147, align 4, !tbaa !84
+  %mul48 = mul i32 %20, %21
+  %add49 = add i32 %19, %mul48
   %bdbar = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 2
-  %18 = load i32*, i32** %bdbar, align 8, !tbaa !90
+  %22 = load i32*, i32** %bdbar, align 8, !tbaa !90
   %lvi50 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 13
-  %19 = load i32, i32* %lvi50, align 8, !tbaa !68
-  %mul51 = mul nsw i32 %19, 2
+  %23 = load i32, i32* %lvi50, align 8, !tbaa !68
+  %mul51 = mul nsw i32 %23, 2
   %idxprom = sext i32 %mul51 to i64
-  %arrayidx = getelementptr inbounds i32, i32* %18, i64 %idxprom
+  %arrayidx = getelementptr inbounds i32, i32* %22, i64 %idxprom
   store i32 %add49, i32* %arrayidx, align 4, !tbaa !2
   %ack52 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 16
-  %20 = load i32, i32* %ack52, align 4, !tbaa !91
-  %dec = add nsw i32 %20, -1
+  %24 = load i32, i32* %ack52, align 4, !tbaa !91
+  %dec = add nsw i32 %24, -1
   store i32 %dec, i32* %ack52, align 4, !tbaa !91
   %cmp53 = icmp eq i32 %dec, 0
   br i1 %cmp53, label %if.then55, label %for.inc
 
 if.then55:                                        ; preds = %for.body
   %ack_reload = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 17
-  %21 = load i32, i32* %ack_reload, align 8, !tbaa !92
+  %25 = load i32, i32* %ack_reload, align 8, !tbaa !92
   %ack56 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 16
-  store i32 %21, i32* %ack56, align 4, !tbaa !91
+  store i32 %25, i32* %ack56, align 4, !tbaa !91
   br label %for.inc
 
 for.inc:                                          ; preds = %if.then55, %for.body
@@ -1824,20 +1838,20 @@ for.end:                                          ; preds = %for.cond
 
 land.lhs.true:                                    ; preds = %for.end
   %substream = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 4
-  %22 = load %struct.snd_pcm_substream*, %struct.snd_pcm_substream** %substream, align 8, !tbaa !51
-  %tobool61 = icmp ne %struct.snd_pcm_substream* %22, null
+  %26 = load %struct.snd_pcm_substream*, %struct.snd_pcm_substream** %substream, align 8, !tbaa !51
+  %tobool61 = icmp ne %struct.snd_pcm_substream* %26, null
   br i1 %tobool61, label %if.then62, label %if.end64
 
 if.then62:                                        ; preds = %land.lhs.true
   %substream63 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 4
-  %23 = load %struct.snd_pcm_substream*, %struct.snd_pcm_substream** %substream63, align 8, !tbaa !51
-  call void @snd_pcm_period_elapsed(%struct.snd_pcm_substream* %23)
+  %27 = load %struct.snd_pcm_substream*, %struct.snd_pcm_substream** %substream63, align 8, !tbaa !51
+  call void @snd_pcm_period_elapsed(%struct.snd_pcm_substream* %27)
   br label %if.end64
 
 if.end64:                                         ; preds = %if.then62, %land.lhs.true, %for.end
   %roff_sr65 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %ichdev, i32 0, i32 19
-  %24 = load i32, i32* %roff_sr65, align 8, !tbaa !70
-  %conv66 = zext i32 %24 to i64
+  %28 = load i32, i32* %roff_sr65, align 8, !tbaa !70
+  %conv66 = zext i32 %28 to i64
   %add67 = add i64 %0, %conv66
   %conv68 = trunc i64 %add67 to i32
   %and69 = and i32 %conv8, 28
@@ -1877,8 +1891,14 @@ entry:
 ; Function Attrs: inlinehint nounwind uwtable
 define internal void @spin_unlock_irqrestore(%struct.spinlock* %lock, i64 %flags) #3 {
 entry:
-  %0 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
-  %rlock = bitcast %union.anon.11* %0 to %struct.raw_spinlock*
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %0 = bitcast i64* %__dummy to i8*
+  %1 = bitcast i64* %__dummy2 to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy to i8*
+  %4 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %lock, i32 0, i32 0
+  %rlock = bitcast %union.anon.11* %4 to %struct.raw_spinlock*
   call void @_raw_spin_unlock_irqrestore(%struct.raw_spinlock* %rlock, i64 %flags)
   ret void
 }
@@ -1892,6 +1912,18 @@ declare i32 @ioread8(i8*) #1
 ; Function Attrs: nounwind uwtable
 define internal i32 @snd_intel8x0_ich_chip_init(%struct.intel8x0* %chip, i32 %probing) #2 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy19 = alloca i64, align 8
+  %__dummy220 = alloca i64, align 8
+  %__dummy36 = alloca i64, align 8
+  %__dummy237 = alloca i64, align 8
+  %__dummy43 = alloca i64, align 8
+  %__dummy244 = alloca i64, align 8
+  %__dummy82 = alloca i64, align 8
+  %__dummy283 = alloca i64, align 8
+  %__dummy89 = alloca i64, align 8
+  %__dummy290 = alloca i64, align 8
   %val = alloca i32, align 4
   %device_type = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
   %0 = load i32, i32* %device_type, align 8, !tbaa !54
@@ -1939,12 +1971,20 @@ do.body:                                          ; preds = %land.lhs.true, %if.
 
 if.end15:                                         ; preds = %do.body
   %call16 = call i64 @schedule_timeout_uninterruptible(i64 1)
+  %4 = bitcast i64* %__dummy to i8*
+  %5 = bitcast i64* %__dummy2 to i8*
+  %6 = bitcast i64* %__dummy2 to i8*
+  %7 = bitcast i64* %__dummy to i8*
   %tobool18 = icmp ne i32 1, 0
   br i1 %tobool18, label %land.lhs.true, label %do.end
 
 land.lhs.true:                                    ; preds = %if.end15
-  %4 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
-  %sub = sub nsw i64 %add, %4
+  %8 = bitcast i64* %__dummy19 to i8*
+  %9 = bitcast i64* %__dummy220 to i8*
+  %10 = bitcast i64* %__dummy220 to i8*
+  %11 = bitcast i64* %__dummy19 to i8*
+  %12 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
+  %sub = sub nsw i64 %add, %12
   %cmp25 = icmp sge i64 %sub, 0
   br i1 %cmp25, label %do.body, label %do.end
 
@@ -1958,24 +1998,32 @@ if.then28:                                        ; preds = %do.end
   br label %cleanup
 
 if.end30:                                         ; preds = %do.end, %do.body
-  %5 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
-  %add31 = add i64 %5, 62
+  %13 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
+  %add31 = add i64 %13, 62
   br label %while.cond
 
 while.cond:                                       ; preds = %while.body, %if.end30
   %status.1 = phi i32 [ %and12, %if.end30 ], [ %or59, %while.body ]
   %codec_isr_bits32 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 18
-  %6 = load i32, i32* %codec_isr_bits32, align 8, !tbaa !95
-  %cmp33 = icmp ne i32 %status.1, %6
+  %14 = load i32, i32* %codec_isr_bits32, align 8, !tbaa !95
+  %cmp33 = icmp ne i32 %status.1, %14
   br i1 %cmp33, label %land.rhs35, label %if.end101
 
 land.rhs35:                                       ; preds = %while.cond
+  %15 = bitcast i64* %__dummy36 to i8*
+  %16 = bitcast i64* %__dummy237 to i8*
+  %17 = bitcast i64* %__dummy237 to i8*
+  %18 = bitcast i64* %__dummy36 to i8*
   %tobool41 = icmp ne i32 1, 0
   br i1 %tobool41, label %land.lhs.true42, label %if.end101
 
 land.lhs.true42:                                  ; preds = %land.rhs35
-  %7 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
-  %sub50 = sub nsw i64 %add31, %7
+  %19 = bitcast i64* %__dummy43 to i8*
+  %20 = bitcast i64* %__dummy244 to i8*
+  %21 = bitcast i64* %__dummy244 to i8*
+  %22 = bitcast i64* %__dummy43 to i8*
+  %23 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
+  %sub50 = sub nsw i64 %add31, %23
   %cmp51 = icmp sge i64 %sub50, 0
   br i1 %cmp51, label %while.body, label %if.end101
 
@@ -1983,8 +2031,8 @@ while.body:                                       ; preds = %land.lhs.true42
   %call55 = call i64 @schedule_timeout_uninterruptible(i64 1)
   %call56 = call i32 @igetdword(%struct.intel8x0* %chip, i32 48)
   %codec_isr_bits57 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 18
-  %8 = load i32, i32* %codec_isr_bits57, align 8, !tbaa !95
-  %and58 = and i32 %call56, %8
+  %24 = load i32, i32* %codec_isr_bits57, align 8, !tbaa !95
+  %and58 = and i32 %call56, %24
   %or59 = or i32 %status.1, %and58
   br label %while.cond
 
@@ -1995,29 +2043,29 @@ for.cond:                                         ; preds = %for.inc, %if.else60
   %status.2 = phi i32 [ 0, %if.else60 ], [ %status.3, %for.inc ]
   %i.0 = phi i32 [ 0, %if.else60 ], [ %inc, %for.inc ]
   %ncodecs = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 16
-  %9 = load i32, i32* %ncodecs, align 8, !tbaa !53
-  %cmp61 = icmp ult i32 %i.0, %9
+  %25 = load i32, i32* %ncodecs, align 8, !tbaa !53
+  %cmp61 = icmp ult i32 %i.0, %25
   br i1 %cmp61, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
   %ac97 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %idxprom = sext i32 %i.0 to i64
   %arrayidx = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97, i64 0, i64 %idxprom
-  %10 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx, align 8, !tbaa !6
-  %tobool63 = icmp ne %struct.snd_ac97* %10, null
+  %26 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx, align 8, !tbaa !6
+  %tobool63 = icmp ne %struct.snd_ac97* %26, null
   br i1 %tobool63, label %if.then64, label %for.inc
 
 if.then64:                                        ; preds = %for.body
   %codec_bit = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 17
-  %11 = load i32*, i32** %codec_bit, align 8, !tbaa !96
+  %27 = load i32*, i32** %codec_bit, align 8, !tbaa !96
   %ac97_sdin = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 14
   %idxprom65 = sext i32 %i.0 to i64
   %arrayidx66 = getelementptr inbounds [3 x i32], [3 x i32]* %ac97_sdin, i64 0, i64 %idxprom65
-  %12 = load i32, i32* %arrayidx66, align 4, !tbaa !2
-  %idxprom67 = zext i32 %12 to i64
-  %arrayidx68 = getelementptr inbounds i32, i32* %11, i64 %idxprom67
-  %13 = load i32, i32* %arrayidx68, align 4, !tbaa !2
-  %or69 = or i32 %status.2, %13
+  %28 = load i32, i32* %arrayidx66, align 4, !tbaa !2
+  %idxprom67 = zext i32 %28 to i64
+  %arrayidx68 = getelementptr inbounds i32, i32* %27, i64 %idxprom67
+  %29 = load i32, i32* %arrayidx68, align 4, !tbaa !2
+  %or69 = or i32 %status.2, %29
   br label %for.inc
 
 for.inc:                                          ; preds = %if.then64, %for.body
@@ -2026,33 +2074,41 @@ for.inc:                                          ; preds = %if.then64, %for.bod
   br label %for.cond
 
 for.end:                                          ; preds = %for.cond
-  %14 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
-  %add71 = add i64 %14, 250
+  %30 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
+  %add71 = add i64 %30, 250
   br label %do.body72
 
 do.body72:                                        ; preds = %land.lhs.true88, %for.end
   %call73 = call i32 @igetdword(%struct.intel8x0* %chip, i32 48)
   %codec_isr_bits74 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 18
-  %15 = load i32, i32* %codec_isr_bits74, align 8, !tbaa !95
-  %and75 = and i32 %call73, %15
+  %31 = load i32, i32* %codec_isr_bits74, align 8, !tbaa !95
+  %and75 = and i32 %call73, %31
   %cmp76 = icmp eq i32 %status.2, %and75
   br i1 %cmp76, label %if.end101, label %if.end79
 
 if.end79:                                         ; preds = %do.body72
   %call80 = call i64 @schedule_timeout_uninterruptible(i64 1)
+  %32 = bitcast i64* %__dummy82 to i8*
+  %33 = bitcast i64* %__dummy283 to i8*
+  %34 = bitcast i64* %__dummy283 to i8*
+  %35 = bitcast i64* %__dummy82 to i8*
   %tobool87 = icmp ne i32 1, 0
   br i1 %tobool87, label %land.lhs.true88, label %if.end101
 
 land.lhs.true88:                                  ; preds = %if.end79
-  %16 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
-  %sub96 = sub nsw i64 %add71, %16
+  %36 = bitcast i64* %__dummy89 to i8*
+  %37 = bitcast i64* %__dummy290 to i8*
+  %38 = bitcast i64* %__dummy290 to i8*
+  %39 = bitcast i64* %__dummy89 to i8*
+  %40 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
+  %sub96 = sub nsw i64 %add71, %40
   %cmp97 = icmp sge i64 %sub96, 0
   br i1 %cmp97, label %do.body72, label %if.end101
 
 if.end101:                                        ; preds = %land.lhs.true88, %if.end79, %do.body72, %land.lhs.true42, %land.rhs35, %while.cond
   %device_type102 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %17 = load i32, i32* %device_type102, align 8, !tbaa !54
-  %cmp103 = icmp eq i32 %17, 2
+  %41 = load i32, i32* %device_type102, align 8, !tbaa !54
+  %cmp103 = icmp eq i32 %41, 2
   br i1 %cmp103, label %if.then105, label %if.end110
 
 if.then105:                                       ; preds = %if.end101
@@ -2065,24 +2121,26 @@ if.then105:                                       ; preds = %if.end101
 
 if.end110:                                        ; preds = %if.then105, %if.end101
   %device_type111 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %18 = load i32, i32* %device_type111, align 8, !tbaa !54
-  %cmp112 = icmp ne i32 %18, 4
-  %19 = load i32, i32* @spdif_aclink, align 4
-  %tobool115 = icmp ne i32 %19, 0
+  %42 = load i32, i32* %device_type111, align 8, !tbaa !54
+  %cmp112 = icmp ne i32 %42, 4
+  %43 = load i32, i32* @spdif_aclink, align 4
+  %tobool115 = icmp ne i32 %43, 0
   %or.cond = or i1 %cmp112, %tobool115
   br i1 %or.cond, label %cleanup, label %if.then116
 
 if.then116:                                       ; preds = %if.end110
+  %44 = bitcast i32* %val to i8*
   %pci117 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %20 = load %struct.pci_dev*, %struct.pci_dev** %pci117, align 8, !tbaa !93
-  call void @pci_read_config_dword(%struct.pci_dev* %20, i32 76, i32* %val)
-  %21 = load i32, i32* %val, align 4, !tbaa !2
-  %or119 = or i32 %21, 16777216
+  %45 = load %struct.pci_dev*, %struct.pci_dev** %pci117, align 8, !tbaa !93
+  call void @pci_read_config_dword(%struct.pci_dev* %45, i32 76, i32* %val)
+  %46 = load i32, i32* %val, align 4, !tbaa !2
+  %or119 = or i32 %46, 16777216
   store i32 %or119, i32* %val, align 4, !tbaa !2
   %pci120 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %22 = load %struct.pci_dev*, %struct.pci_dev** %pci120, align 8, !tbaa !93
-  %23 = load i32, i32* %val, align 4, !tbaa !2
-  call void @pci_write_config_dword(%struct.pci_dev* %22, i32 76, i32 %23)
+  %47 = load %struct.pci_dev*, %struct.pci_dev** %pci120, align 8, !tbaa !93
+  %48 = load i32, i32* %val, align 4, !tbaa !2
+  call void @pci_write_config_dword(%struct.pci_dev* %47, i32 76, i32 %48)
+  %49 = bitcast i32* %val to i8*
   br label %cleanup
 
 cleanup:                                          ; preds = %if.then116, %if.end110, %if.then28, %if.end5
@@ -2215,6 +2273,10 @@ cleanup:                                          ; preds = %if.end, %entry
 ; Function Attrs: nounwind uwtable
 define internal i32 @snd_intel8x0_ich_chip_reset(%struct.intel8x0* %chip) #2 {
 entry:
+  %__dummy = alloca i64, align 8
+  %__dummy2 = alloca i64, align 8
+  %__dummy8 = alloca i64, align 8
+  %__dummy29 = alloca i64, align 8
   %call = call i32 @igetdword(%struct.intel8x0* %chip, i32 44)
   %and = and i32 %call, -3145737
   %and1 = and i32 %and, 2
@@ -2235,12 +2297,20 @@ do.body:                                          ; preds = %land.lhs.true, %ent
 
 if.end:                                           ; preds = %do.body
   %call6 = call i64 @schedule_timeout_uninterruptible(i64 1)
+  %1 = bitcast i64* %__dummy to i8*
+  %2 = bitcast i64* %__dummy2 to i8*
+  %3 = bitcast i64* %__dummy2 to i8*
+  %4 = bitcast i64* %__dummy to i8*
   %tobool = icmp ne i32 1, 0
   br i1 %tobool, label %land.lhs.true, label %do.end
 
 land.lhs.true:                                    ; preds = %if.end
-  %1 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
-  %sub = sub nsw i64 %add2, %1
+  %5 = bitcast i64* %__dummy8 to i8*
+  %6 = bitcast i64* %__dummy29 to i8*
+  %7 = bitcast i64* %__dummy29 to i8*
+  %8 = bitcast i64* %__dummy8 to i8*
+  %9 = load volatile i64, i64* @jiffies, align 8, !tbaa !94
+  %sub = sub nsw i64 %add2, %9
   %cmp14 = icmp sge i64 %sub, 0
   br i1 %cmp14, label %do.body, label %do.end
 
@@ -2415,28 +2485,30 @@ define internal i32 @snd_intel8x0_mixer(%struct.intel8x0* %chip, i32 %ac97_clock
 entry:
   %pbus = alloca %struct.snd_ac97_bus*, align 8
   %ac97 = alloca %struct.snd_ac97_template, align 8
+  %0 = bitcast %struct.snd_ac97_bus** %pbus to i8*
+  %1 = bitcast %struct.snd_ac97_template* %ac97 to i8*
   %spdif_idx = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
   store i32 -1, i32* %spdif_idx, align 4, !tbaa !105
-  %0 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
-  %tobool = icmp ne i32 %0, 0
+  %2 = load i32, i32* @spdif_aclink, align 4, !tbaa !2
+  %tobool = icmp ne i32 %2, 0
   br i1 %tobool, label %if.end, label %if.then
 
 if.then:                                          ; preds = %entry
   %device_type = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %1 = load i32, i32* %device_type, align 8, !tbaa !54
-  %Pivot4 = icmp slt i32 %1, 3
+  %3 = load i32, i32* %device_type, align 8, !tbaa !54
+  %Pivot4 = icmp slt i32 %3, 3
   br i1 %Pivot4, label %LeafBlock, label %NodeBlock
 
 NodeBlock:                                        ; preds = %if.then
-  %Pivot = icmp slt i32 %1, 4
+  %Pivot = icmp slt i32 %3, 4
   br i1 %Pivot, label %sw.bb2, label %LeafBlock1
 
 LeafBlock1:                                       ; preds = %NodeBlock
-  %SwitchLeaf2 = icmp eq i32 %1, 4
+  %SwitchLeaf2 = icmp eq i32 %3, 4
   br i1 %SwitchLeaf2, label %sw.bb, label %if.end
 
 LeafBlock:                                        ; preds = %if.then
-  %SwitchLeaf = icmp eq i32 %1, 1
+  %SwitchLeaf = icmp eq i32 %3, 1
   br i1 %SwitchLeaf, label %sw.bb4, label %if.end
 
 sw.bb:                                            ; preds = %LeafBlock1
@@ -2460,11 +2532,11 @@ if.end:                                           ; preds = %sw.bb4, %sw.bb2, %s
   %bf.clear = and i16 %bf.load, -33
   %bf.set = or i16 %bf.clear, 32
   store i16 %bf.set, i16* %in_ac97_init, align 8
-  %2 = bitcast %struct.snd_ac97_template* %ac97 to i8*
-  call void @llvm.memset.p0i8.i64(i8* %2, i8 0, i64 40, i32 8, i1 false)
-  %3 = bitcast %struct.intel8x0* %chip to i8*
+  %4 = bitcast %struct.snd_ac97_template* %ac97 to i8*
+  call void @llvm.memset.p0i8.i64(i8* %4, i8 0, i64 40, i32 8, i1 false)
+  %5 = bitcast %struct.intel8x0* %chip to i8*
   %private_data = getelementptr inbounds %struct.snd_ac97_template, %struct.snd_ac97_template* %ac97, i32 0, i32 0
-  store i8* %3, i8** %private_data, align 8, !tbaa !106
+  store i8* %5, i8** %private_data, align 8, !tbaa !106
   %private_free = getelementptr inbounds %struct.snd_ac97_template, %struct.snd_ac97_template* %ac97, i32 0, i32 1
   store void (%struct.snd_ac97*)* @snd_intel8x0_mixer_free_ac97, void (%struct.snd_ac97*)** %private_free, align 8, !tbaa !108
   %scaps = getelementptr inbounds %struct.snd_ac97_template, %struct.snd_ac97_template* %ac97, i32 0, i32 5
@@ -2479,15 +2551,15 @@ if.end:                                           ; preds = %sw.bb4, %sw.bb2, %s
 
 if.then9:                                         ; preds = %if.end
   %scaps10 = getelementptr inbounds %struct.snd_ac97_template, %struct.snd_ac97_template* %ac97, i32 0, i32 5
-  %4 = load i32, i32* %scaps10, align 4, !tbaa !109
-  %or = or i32 %4, 256
+  %6 = load i32, i32* %scaps10, align 4, !tbaa !109
+  %or = or i32 %6, 256
   store i32 %or, i32* %scaps10, align 4, !tbaa !109
   br label %if.end11
 
 if.end11:                                         ; preds = %if.then9, %if.end
   %device_type12 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %5 = load i32, i32* %device_type12, align 8, !tbaa !54
-  %cmp = icmp ne i32 %5, 3
+  %7 = load i32, i32* %device_type12, align 8, !tbaa !54
+  %cmp = icmp ne i32 %7, 3
   br i1 %cmp, label %if.then13, label %if.else67
 
 if.then13:                                        ; preds = %if.end11
@@ -2503,24 +2575,24 @@ for.cond:                                         ; preds = %for.inc, %if.then13
   %codecs.0 = phi i32 [ 0, %if.then13 ], [ %codecs.1, %for.inc ]
   %i.0 = phi i32 [ 0, %if.then13 ], [ %inc60, %for.inc ]
   %max_codecs = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 15
-  %6 = load i32, i32* %max_codecs, align 4, !tbaa !110
-  %cmp17 = icmp ult i32 %i.0, %6
+  %8 = load i32, i32* %max_codecs, align 4, !tbaa !110
+  %cmp17 = icmp ult i32 %i.0, %8
   br i1 %cmp17, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
   %codec_bit = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 17
-  %7 = load i32*, i32** %codec_bit, align 8, !tbaa !96
+  %9 = load i32*, i32** %codec_bit, align 8, !tbaa !96
   %idxprom = zext i32 %i.0 to i64
-  %arrayidx = getelementptr inbounds i32, i32* %7, i64 %idxprom
-  %8 = load i32, i32* %arrayidx, align 4, !tbaa !2
-  %and = and i32 %call, %8
+  %arrayidx = getelementptr inbounds i32, i32* %9, i64 %idxprom
+  %10 = load i32, i32* %arrayidx, align 4, !tbaa !2
+  %and = and i32 %call, %10
   %tobool18 = icmp ne i32 %and, 0
   br i1 %tobool18, label %if.end20, label %for.inc
 
 if.end20:                                         ; preds = %for.body
   %device_type21 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %9 = load i32, i32* %device_type21, align 8, !tbaa !54
-  %cmp22 = icmp eq i32 %9, 1
+  %11 = load i32, i32* %device_type21, align 8, !tbaa !54
+  %cmp22 = icmp eq i32 %11, 1
   br i1 %cmp22, label %if.then23, label %if.end59.sink.split
 
 if.then23:                                        ; preds = %if.end20
@@ -2535,8 +2607,8 @@ if.then23:                                        ; preds = %if.end20
   %ac97_sdin28 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 14
   %idxprom29 = zext i32 %codecs.0 to i64
   %arrayidx30 = getelementptr inbounds [3 x i32], [3 x i32]* %ac97_sdin28, i64 0, i64 %idxprom29
-  %10 = load i32, i32* %arrayidx30, align 4, !tbaa !2
-  %cmp31 = icmp uge i32 %10, 3
+  %12 = load i32, i32* %arrayidx30, align 4, !tbaa !2
+  %cmp31 = icmp uge i32 %12, 3
   %lnot = xor i1 %cmp31, true
   %lnot33 = xor i1 %lnot, true
   %lnot.ext = zext i1 %lnot33 to i32
@@ -2624,15 +2696,15 @@ if.end81:                                         ; preds = %LeafBlock6, %for.co
   %codecs.6 = phi i32 [ %codecs.0., %for.end ], [ %codecs.4, %LeafBlock6 ], [ %codecs.3, %for.cond68 ]
   %ops.0 = phi %struct.snd_ac97_bus_ops* [ @snd_intel8x0_mixer.standard_bus_ops, %for.end ], [ @snd_intel8x0_mixer.ali_bus_ops, %LeafBlock6 ], [ @snd_intel8x0_mixer.ali_bus_ops, %for.cond68 ]
   %card = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 5
-  %11 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !111
-  %12 = bitcast %struct.intel8x0* %chip to i8*
-  %call82 = call i32 @snd_ac97_bus(%struct.snd_card* %11, i32 0, %struct.snd_ac97_bus_ops* %ops.0, i8* %12, %struct.snd_ac97_bus** %pbus)
+  %13 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !111
+  %14 = bitcast %struct.intel8x0* %chip to i8*
+  %call82 = call i32 @snd_ac97_bus(%struct.snd_card* %13, i32 0, %struct.snd_ac97_bus_ops* %ops.0, i8* %14, %struct.snd_ac97_bus** %pbus)
   %cmp83 = icmp slt i32 %call82, 0
   br i1 %cmp83, label %__err, label %if.end86
 
 if.end86:                                         ; preds = %if.end81
-  %13 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %private_free87 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %13, i32 0, i32 2
+  %15 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %private_free87 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %15, i32 0, i32 2
   store void (%struct.snd_ac97_bus*)* @snd_intel8x0_mixer_free_ac97_bus, void (%struct.snd_ac97_bus*)** %private_free87, align 8, !tbaa !112
   %cmp88 = icmp sge i32 %ac97_clock, 8000
   %cmp90 = icmp sle i32 %ac97_clock, 48000
@@ -2640,32 +2712,32 @@ if.end86:                                         ; preds = %if.end81
   br i1 %or.cond, label %if.then92, label %if.end93
 
 if.then92:                                        ; preds = %if.end86
-  %14 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %clock = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %14, i32 0, i32 6
+  %16 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %clock = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %16, i32 0, i32 6
   store i32 %ac97_clock, i32* %clock, align 4, !tbaa !114
   br label %if.end93
 
 if.end93:                                         ; preds = %if.then92, %if.end86
   %device_type94 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %15 = load i32, i32* %device_type94, align 8, !tbaa !54
-  %cmp95 = icmp eq i32 %15, 3
-  %16 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %no_vra = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %16, i32 0, i32 5
+  %17 = load i32, i32* %device_type94, align 8, !tbaa !54
+  %cmp95 = icmp eq i32 %17, 3
+  %18 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %no_vra = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %18, i32 0, i32 5
   %bf.load98 = load i8, i8* %no_vra, align 2
   %.sink9 = select i1 %cmp95, i8 -2, i8 -3
   %.sink8 = select i1 %cmp95, i8 1, i8 2
   %bf.clear103 = and i8 %bf.load98, %.sink9
   %bf.set104 = or i8 %bf.clear103, %.sink8
   store i8 %bf.set104, i8* %no_vra, align 2
-  %17 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %19 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
   %ac97_bus = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
-  store %struct.snd_ac97_bus* %17, %struct.snd_ac97_bus** %ac97_bus, align 8, !tbaa !115
+  store %struct.snd_ac97_bus* %19, %struct.snd_ac97_bus** %ac97_bus, align 8, !tbaa !115
   %ncodecs = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 16
   store i32 %codecs.6, i32* %ncodecs, align 8, !tbaa !53
   %pci = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %18 = load %struct.pci_dev*, %struct.pci_dev** %pci, align 8, !tbaa !93
+  %20 = load %struct.pci_dev*, %struct.pci_dev** %pci, align 8, !tbaa !93
   %pci106 = getelementptr inbounds %struct.snd_ac97_template, %struct.snd_ac97_template* %ac97, i32 0, i32 2
-  store %struct.pci_dev* %18, %struct.pci_dev** %pci106, align 8, !tbaa !116
+  store %struct.pci_dev* %20, %struct.pci_dev** %pci106, align 8, !tbaa !116
   br label %for.cond107
 
 for.cond107:                                      ; preds = %for.inc128, %if.end93
@@ -2677,11 +2749,11 @@ for.body110:                                      ; preds = %for.cond107
   %conv111 = trunc i32 %i.2 to i16
   %num = getelementptr inbounds %struct.snd_ac97_template, %struct.snd_ac97_template* %ac97, i32 0, i32 3
   store i16 %conv111, i16* %num, align 8, !tbaa !117
-  %19 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %21 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
   %ac97112 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %idxprom113 = zext i32 %i.2 to i64
   %arrayidx114 = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97112, i64 0, i64 %idxprom113
-  %call115 = call i32 @snd_ac97_mixer(%struct.snd_ac97_bus* %19, %struct.snd_ac97_template* %ac97, %struct.snd_ac97** %arrayidx114)
+  %call115 = call i32 @snd_ac97_mixer(%struct.snd_ac97_bus* %21, %struct.snd_ac97_template* %ac97, %struct.snd_ac97** %arrayidx114)
   %cmp116 = icmp slt i32 %call115, 0
   br i1 %cmp116, label %if.then118, label %for.inc128
 
@@ -2704,16 +2776,16 @@ for.inc128:                                       ; preds = %if.end122, %for.bod
 for.end130:                                       ; preds = %for.cond107
   %ac97131 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %arrayidx132 = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97131, i64 0, i64 0
-  %20 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx132, align 8, !tbaa !6
-  %call133 = call i32 @snd_ac97_tune_hardware(%struct.snd_ac97* %20, %struct.ac97_quirk* getelementptr inbounds ([66 x %struct.ac97_quirk], [66 x %struct.ac97_quirk]* @ac97_quirks, i32 0, i32 0), i8* %quirk_override)
+  %22 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx132, align 8, !tbaa !6
+  %call133 = call i32 @snd_ac97_tune_hardware(%struct.snd_ac97* %22, %struct.ac97_quirk* getelementptr inbounds ([66 x %struct.ac97_quirk], [66 x %struct.ac97_quirk]* @ac97_quirks, i32 0, i32 0), i8* %quirk_override)
   %device_type134 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %21 = load i32, i32* %device_type134, align 8, !tbaa !54
-  %cmp135 = icmp eq i32 %21, 1
+  %23 = load i32, i32* %device_type134, align 8, !tbaa !54
+  %cmp135 = icmp eq i32 %23, 1
   br i1 %cmp135, label %if.then137, label %if.end141
 
 if.then137:                                       ; preds = %for.end130
-  %22 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %isdin = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %22, i32 0, i32 5
+  %24 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %isdin = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %24, i32 0, i32 5
   %bf.load138 = load i8, i8* %isdin, align 2
   %bf.clear139 = and i8 %bf.load138, -5
   %bf.set140 = or i8 %bf.clear139, 4
@@ -2722,60 +2794,60 @@ if.then137:                                       ; preds = %for.end130
 
 if.end141:                                        ; preds = %if.then137, %for.end130
   %device_type142 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %23 = load i32, i32* %device_type142, align 8, !tbaa !54
-  %cmp143 = icmp ne i32 %23, 1
+  %25 = load i32, i32* %device_type142, align 8, !tbaa !54
+  %cmp143 = icmp ne i32 %25, 1
   %sub = sub i32 6, 2
   %sub. = select i1 %cmp143, i32 %sub, i32 6
   %spdif_idx147 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
-  %24 = load i32, i32* %spdif_idx147, align 4, !tbaa !105
-  %cmp148 = icmp slt i32 %24, 0
+  %26 = load i32, i32* %spdif_idx147, align 4, !tbaa !105
+  %cmp148 = icmp slt i32 %26, 0
   %dec = add i32 %sub., -1
   %i.4 = select i1 %cmp148, i32 %dec, i32 %sub.
-  %25 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %27 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
   %conv152 = trunc i32 %i.4 to i16
-  %call153 = call i32 @snd_ac97_pcm_assign(%struct.snd_ac97_bus* %25, i16 zeroext %conv152, %struct.ac97_pcm* getelementptr inbounds ([6 x %struct.ac97_pcm], [6 x %struct.ac97_pcm]* @ac97_pcm_defs, i32 0, i32 0))
+  %call153 = call i32 @snd_ac97_pcm_assign(%struct.snd_ac97_bus* %27, i16 zeroext %conv152, %struct.ac97_pcm* getelementptr inbounds ([6 x %struct.ac97_pcm], [6 x %struct.ac97_pcm]* @ac97_pcm_defs, i32 0, i32 0))
   %cmp154 = icmp slt i32 %call153, 0
   br i1 %cmp154, label %__err, label %if.end157
 
 if.end157:                                        ; preds = %if.end141
-  %26 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %26, i32 0, i32 10
-  %27 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms, align 8, !tbaa !118
-  %arrayidx158 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %27, i64 0
+  %28 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %28, i32 0, i32 10
+  %29 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms, align 8, !tbaa !118
+  %arrayidx158 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %29, i64 0
   %ichd = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %arrayidx159 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd, i64 0, i64 1
   %pcm = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx159, i32 0, i32 23
   store %struct.ac97_pcm* %arrayidx158, %struct.ac97_pcm** %pcm, align 8, !tbaa !119
-  %28 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms160 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %28, i32 0, i32 10
-  %29 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms160, align 8, !tbaa !118
-  %arrayidx161 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %29, i64 1
+  %30 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms160 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %30, i32 0, i32 10
+  %31 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms160, align 8, !tbaa !118
+  %arrayidx161 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %31, i64 1
   %ichd162 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %arrayidx163 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd162, i64 0, i64 0
   %pcm164 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx163, i32 0, i32 23
   store %struct.ac97_pcm* %arrayidx161, %struct.ac97_pcm** %pcm164, align 8, !tbaa !119
-  %30 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms165 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %30, i32 0, i32 10
-  %31 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms165, align 8, !tbaa !118
-  %arrayidx166 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %31, i64 2
+  %32 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms165 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %32, i32 0, i32 10
+  %33 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms165, align 8, !tbaa !118
+  %arrayidx166 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %33, i64 2
   %ichd167 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %arrayidx168 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd167, i64 0, i64 2
   %pcm169 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx168, i32 0, i32 23
   store %struct.ac97_pcm* %arrayidx166, %struct.ac97_pcm** %pcm169, align 8, !tbaa !119
   %spdif_idx170 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
-  %32 = load i32, i32* %spdif_idx170, align 4, !tbaa !105
-  %cmp171 = icmp sge i32 %32, 0
+  %34 = load i32, i32* %spdif_idx170, align 4, !tbaa !105
+  %cmp171 = icmp sge i32 %34, 0
   br i1 %cmp171, label %if.then173, label %if.end181
 
 if.then173:                                       ; preds = %if.end157
-  %33 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms174 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %33, i32 0, i32 10
-  %34 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms174, align 8, !tbaa !118
-  %arrayidx175 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %34, i64 3
+  %35 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms174 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %35, i32 0, i32 10
+  %36 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms174, align 8, !tbaa !118
+  %arrayidx175 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %36, i64 3
   %ichd176 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %spdif_idx177 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
-  %35 = load i32, i32* %spdif_idx177, align 4, !tbaa !105
-  %idxprom178 = sext i32 %35 to i64
+  %37 = load i32, i32* %spdif_idx177, align 4, !tbaa !105
+  %idxprom178 = sext i32 %37 to i64
   %arrayidx179 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd176, i64 0, i64 %idxprom178
   %pcm180 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx179, i32 0, i32 23
   store %struct.ac97_pcm* %arrayidx175, %struct.ac97_pcm** %pcm180, align 8, !tbaa !119
@@ -2783,23 +2855,23 @@ if.then173:                                       ; preds = %if.end157
 
 if.end181:                                        ; preds = %if.then173, %if.end157
   %device_type182 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %36 = load i32, i32* %device_type182, align 8, !tbaa !54
-  %cmp183 = icmp eq i32 %36, 1
+  %38 = load i32, i32* %device_type182, align 8, !tbaa !54
+  %cmp183 = icmp eq i32 %38, 1
   br i1 %cmp183, label %if.then185, label %if.end196
 
 if.then185:                                       ; preds = %if.end181
-  %37 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms186 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %37, i32 0, i32 10
-  %38 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms186, align 8, !tbaa !118
-  %arrayidx187 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %38, i64 4
+  %39 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms186 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %39, i32 0, i32 10
+  %40 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms186, align 8, !tbaa !118
+  %arrayidx187 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %40, i64 4
   %ichd188 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %arrayidx189 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd188, i64 0, i64 4
   %pcm190 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx189, i32 0, i32 23
   store %struct.ac97_pcm* %arrayidx187, %struct.ac97_pcm** %pcm190, align 8, !tbaa !119
-  %39 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms191 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %39, i32 0, i32 10
-  %40 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms191, align 8, !tbaa !118
-  %arrayidx192 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %40, i64 5
+  %41 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms191 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %41, i32 0, i32 10
+  %42 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms191, align 8, !tbaa !118
+  %arrayidx192 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %42, i64 5
   %ichd193 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %arrayidx194 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd193, i64 0, i64 3
   %pcm195 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx194, i32 0, i32 23
@@ -2808,20 +2880,20 @@ if.then185:                                       ; preds = %if.end181
 
 if.end196:                                        ; preds = %if.then185, %if.end181
   %device_type197 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %41 = load i32, i32* %device_type197, align 8, !tbaa !54
-  %cmp198 = icmp eq i32 %41, 1
+  %43 = load i32, i32* %device_type197, align 8, !tbaa !54
+  %cmp198 = icmp eq i32 %43, 1
   br i1 %cmp198, label %if.then200, label %if.end250
 
 if.then200:                                       ; preds = %if.end196
   %ichd202 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %arrayidx203 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd202, i64 0, i64 4
   %pcm204 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx203, i32 0, i32 23
-  %42 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcm204, align 8, !tbaa !119
+  %44 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcm204, align 8, !tbaa !119
   %call206 = call zeroext i8 @igetbyte(%struct.intel8x0* %chip, i32 128)
   %conv207 = zext i8 %call206 to i32
   %and208 = and i32 %conv207, -241
   %conv209 = trunc i32 %and208 to i8
-  %tobool210 = icmp ne %struct.ac97_pcm* %42, null
+  %tobool210 = icmp ne %struct.ac97_pcm* %44, null
   %conv212 = zext i8 %conv209 to i32
   br i1 %tobool210, label %if.then211, label %if.else245
 
@@ -2830,8 +2902,8 @@ if.then211:                                       ; preds = %if.then200
   %conv214 = trunc i32 %or213 to i8
   %ac97_sdin215 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 14
   %arrayidx216 = getelementptr inbounds [3 x i32], [3 x i32]* %ac97_sdin215, i64 0, i64 0
-  %43 = load i32, i32* %arrayidx216, align 8, !tbaa !2
-  %shl = shl i32 %43, 4
+  %45 = load i32, i32* %arrayidx216, align 8, !tbaa !2
+  %shl = shl i32 %45, 4
   %conv217 = zext i8 %conv214 to i32
   %or218 = or i32 %conv217, %shl
   %conv219 = trunc i32 %or218 to i8
@@ -2843,28 +2915,28 @@ for.cond220:                                      ; preds = %for.inc242, %if.the
   br i1 %cmp221, label %for.body223, label %if.end249
 
 for.body223:                                      ; preds = %for.cond220
-  %r = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %42, i32 0, i32 5
+  %r = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %44, i32 0, i32 5
   %arrayidx224 = getelementptr inbounds [2 x %struct.anon.63], [2 x %struct.anon.63]* %r, i64 0, i64 0
   %codec = getelementptr inbounds %struct.anon.63, %struct.anon.63* %arrayidx224, i32 0, i32 3
   %idxprom225 = zext i32 %i.5 to i64
   %arrayidx226 = getelementptr inbounds [4 x %struct.snd_ac97*], [4 x %struct.snd_ac97*]* %codec, i64 0, i64 %idxprom225
-  %44 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx226, align 8, !tbaa !6
-  %tobool227 = icmp ne %struct.snd_ac97* %44, null
+  %46 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx226, align 8, !tbaa !6
+  %tobool227 = icmp ne %struct.snd_ac97* %46, null
   br i1 %tobool227, label %if.then228, label %for.inc242
 
 if.then228:                                       ; preds = %for.body223
   %ac97_sdin229 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 14
-  %r230 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %42, i32 0, i32 5
+  %r230 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %44, i32 0, i32 5
   %arrayidx231 = getelementptr inbounds [2 x %struct.anon.63], [2 x %struct.anon.63]* %r230, i64 0, i64 0
   %codec232 = getelementptr inbounds %struct.anon.63, %struct.anon.63* %arrayidx231, i32 0, i32 3
   %arrayidx233 = getelementptr inbounds [4 x %struct.snd_ac97*], [4 x %struct.snd_ac97*]* %codec232, i64 0, i64 1
-  %45 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx233, align 8, !tbaa !6
-  %num234 = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %45, i32 0, i32 11
-  %46 = load i16, i16* %num234, align 8, !tbaa !120
-  %idxprom235 = zext i16 %46 to i64
+  %47 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx233, align 8, !tbaa !6
+  %num234 = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %47, i32 0, i32 11
+  %48 = load i16, i16* %num234, align 8, !tbaa !120
+  %idxprom235 = zext i16 %48 to i64
   %arrayidx236 = getelementptr inbounds [3 x i32], [3 x i32]* %ac97_sdin229, i64 0, i64 %idxprom235
-  %47 = load i32, i32* %arrayidx236, align 4, !tbaa !2
-  %shl237 = shl i32 %47, 6
+  %49 = load i32, i32* %arrayidx236, align 4, !tbaa !2
+  %shl237 = shl i32 %49, 6
   %conv238 = zext i8 %conv219 to i32
   %or239 = or i32 %conv238, %shl237
   %conv240 = trunc i32 %or239 to i8
@@ -2885,15 +2957,15 @@ if.end249:                                        ; preds = %if.else245, %if.the
   br label %if.end250
 
 if.end250:                                        ; preds = %if.end249, %if.end196
-  %48 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms251 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %48, i32 0, i32 10
-  %49 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms251, align 8, !tbaa !118
-  %arrayidx252 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %49, i64 0
+  %50 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms251 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %50, i32 0, i32 10
+  %51 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms251, align 8, !tbaa !118
+  %arrayidx252 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %51, i64 0
   %r253 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %arrayidx252, i32 0, i32 5
   %arrayidx254 = getelementptr inbounds [2 x %struct.anon.63], [2 x %struct.anon.63]* %r253, i64 0, i64 0
   %slots = getelementptr inbounds %struct.anon.63, %struct.anon.63* %arrayidx254, i32 0, i32 0
-  %50 = load i16, i16* %slots, align 8, !tbaa !122
-  %conv255 = zext i16 %50 to i32
+  %52 = load i16, i16* %slots, align 8, !tbaa !122
+  %conv255 = zext i16 %52 to i32
   %and256 = and i32 %conv255, 128
   %tobool257 = icmp ne i32 %and256, 0
   br i1 %tobool257, label %if.then258, label %if.end284
@@ -2904,15 +2976,15 @@ if.then258:                                       ; preds = %if.end250
   %bf.clear260 = and i16 %bf.load259, -2
   %bf.set261 = or i16 %bf.clear260, 1
   store i16 %bf.set261, i16* %multi4, align 8
-  %51 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms262 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %51, i32 0, i32 10
-  %52 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms262, align 8, !tbaa !118
-  %arrayidx263 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %52, i64 0
+  %53 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms262 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %53, i32 0, i32 10
+  %54 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms262, align 8, !tbaa !118
+  %arrayidx263 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %54, i64 0
   %r264 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %arrayidx263, i32 0, i32 5
   %arrayidx265 = getelementptr inbounds [2 x %struct.anon.63], [2 x %struct.anon.63]* %r264, i64 0, i64 0
   %slots266 = getelementptr inbounds %struct.anon.63, %struct.anon.63* %arrayidx265, i32 0, i32 0
-  %53 = load i16, i16* %slots266, align 8, !tbaa !122
-  %conv267 = zext i16 %53 to i32
+  %55 = load i16, i16* %slots266, align 8, !tbaa !122
+  %conv267 = zext i16 %55 to i32
   %and268 = and i32 %conv267, 512
   %tobool269 = icmp ne i32 %and268, 0
   br i1 %tobool269, label %if.then270, label %if.end284
@@ -2925,10 +2997,10 @@ if.then270:                                       ; preds = %if.then258
   store i16 %bf.set273, i16* %multi6, align 8
   %ac97274 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %arrayidx275 = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97274, i64 0, i64 0
-  %54 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx275, align 8, !tbaa !6
-  %flags = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %54, i32 0, i32 19
-  %55 = load i32, i32* %flags, align 4, !tbaa !124
-  %and276 = and i32 %55, 524288
+  %56 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx275, align 8, !tbaa !6
+  %flags = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %56, i32 0, i32 19
+  %57 = load i32, i32* %flags, align 4, !tbaa !124
+  %and276 = and i32 %57, 524288
   %tobool277 = icmp ne i32 %and276, 0
   br i1 %tobool277, label %if.then278, label %if.end284
 
@@ -2941,16 +3013,16 @@ if.then278:                                       ; preds = %if.then270
   br label %if.end284
 
 if.end284:                                        ; preds = %if.then278, %if.then270, %if.then258, %if.end250
-  %56 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
-  %pcms285 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %56, i32 0, i32 10
-  %57 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms285, align 8, !tbaa !118
-  %arrayidx286 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %57, i64 0
+  %58 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %pbus, align 8, !tbaa !6
+  %pcms285 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %58, i32 0, i32 10
+  %59 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcms285, align 8, !tbaa !118
+  %arrayidx286 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %59, i64 0
   %r287 = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %arrayidx286, i32 0, i32 5
   %arrayidx288 = getelementptr inbounds [2 x %struct.anon.63], [2 x %struct.anon.63]* %r287, i64 0, i64 1
   %rslots = getelementptr inbounds %struct.anon.63, %struct.anon.63* %arrayidx288, i32 0, i32 1
   %arrayidx289 = getelementptr inbounds [4 x i16], [4 x i16]* %rslots, i64 0, i64 0
-  %58 = load i16, i16* %arrayidx289, align 2, !tbaa !125
-  %tobool290 = icmp ne i16 %58, 0
+  %60 = load i16, i16* %arrayidx289, align 2, !tbaa !125
+  %tobool290 = icmp ne i16 %60, 0
   br i1 %tobool290, label %if.then291, label %if.end296
 
 if.then291:                                       ; preds = %if.end284
@@ -2963,8 +3035,8 @@ if.then291:                                       ; preds = %if.end284
 
 if.end296:                                        ; preds = %if.then291, %if.end284
   %device_type297 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %59 = load i32, i32* %device_type297, align 8, !tbaa !54
-  %cmp298 = icmp eq i32 %59, 1
+  %61 = load i32, i32* %device_type297, align 8, !tbaa !54
+  %cmp298 = icmp eq i32 %61, 1
   br i1 %cmp298, label %if.then300, label %if.end310
 
 if.then300:                                       ; preds = %if.end296
@@ -2983,31 +3055,31 @@ if.then305:                                       ; preds = %if.then300
 
 if.end310:                                        ; preds = %if.then305, %if.then300, %if.end296
   %device_type311 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %60 = load i32, i32* %device_type311, align 8, !tbaa !54
-  %cmp312 = icmp ne i32 %60, 4
-  %61 = load i32, i32* @spdif_aclink, align 4
-  %tobool315 = icmp ne i32 %61, 0
+  %62 = load i32, i32* %device_type311, align 8, !tbaa !54
+  %cmp312 = icmp ne i32 %62, 4
+  %63 = load i32, i32* @spdif_aclink, align 4
+  %tobool315 = icmp ne i32 %63, 0
   %or.cond10 = or i1 %cmp312, %tobool315
   br i1 %or.cond10, label %if.end322, label %if.then316
 
 if.then316:                                       ; preds = %if.end310
   %ichd317 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %spdif_idx318 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 10
-  %62 = load i32, i32* %spdif_idx318, align 4, !tbaa !105
-  %idxprom319 = sext i32 %62 to i64
+  %64 = load i32, i32* %spdif_idx318, align 4, !tbaa !105
+  %idxprom319 = sext i32 %64 to i64
   %arrayidx320 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd317, i64 0, i64 %idxprom319
   %pcm321 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx320, i32 0, i32 23
-  %63 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcm321, align 8, !tbaa !119
-  %rates = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %63, i32 0, i32 4
+  %65 = load %struct.ac97_pcm*, %struct.ac97_pcm** %pcm321, align 8, !tbaa !119
+  %rates = getelementptr inbounds %struct.ac97_pcm, %struct.ac97_pcm* %65, i32 0, i32 4
   store i32 128, i32* %rates, align 8, !tbaa !126
   br label %if.end322
 
 if.end322:                                        ; preds = %if.then316, %if.end310
   %device_type323 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %64 = load i32, i32* %device_type323, align 8, !tbaa !54
-  %cmp324 = icmp ne i32 %64, 1
-  %65 = load i32, i32* @spdif_aclink, align 4
-  %tobool327 = icmp ne i32 %65, 0
+  %66 = load i32, i32* %device_type323, align 8, !tbaa !54
+  %cmp324 = icmp ne i32 %66, 1
+  %67 = load i32, i32* @spdif_aclink, align 4
+  %tobool327 = icmp ne i32 %67, 0
   %or.cond11 = or i1 %cmp324, %tobool327
   br i1 %or.cond11, label %if.end335, label %if.then328
 
@@ -3018,8 +3090,8 @@ if.then328:                                       ; preds = %if.end322
   call void @iputdword(%struct.intel8x0* %chip, i32 44, i32 %or331)
   %ac97332 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %arrayidx333 = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97332, i64 0, i64 0
-  %66 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx333, align 8, !tbaa !6
-  %call334 = call i32 @snd_ac97_update_bits(%struct.snd_ac97* %66, i16 zeroext 42, i16 zeroext 48, i16 zeroext 48)
+  %68 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx333, align 8, !tbaa !6
+  %call334 = call i32 @snd_ac97_update_bits(%struct.snd_ac97* %68, i16 zeroext 42, i16 zeroext 48, i16 zeroext 48)
   br label %if.end335
 
 if.end335:                                        ; preds = %if.then328, %if.end322
@@ -3032,8 +3104,8 @@ if.end335:                                        ; preds = %if.then328, %if.end
 __err:                                            ; preds = %if.end141, %if.end122, %if.end81
   %err.0 = phi i32 [ %call82, %if.end81 ], [ %call115, %if.end122 ], [ %call153, %if.end141 ]
   %device_type339 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %67 = load i32, i32* %device_type339, align 8, !tbaa !54
-  %cmp340 = icmp ne i32 %67, 3
+  %69 = load i32, i32* %device_type339, align 8, !tbaa !54
+  %cmp340 = icmp ne i32 %69, 3
   br i1 %cmp340, label %if.then342, label %cleanup346
 
 if.then342:                                       ; preds = %__err
@@ -3044,6 +3116,8 @@ if.then342:                                       ; preds = %__err
 
 cleanup346:                                       ; preds = %if.then342, %__err, %if.end335
   %retval.0 = phi i32 [ 0, %if.end335 ], [ %err.0, %if.then342 ], [ %err.0, %__err ]
+  %70 = bitcast %struct.snd_ac97_template* %ac97 to i8*
+  %71 = bitcast %struct.snd_ac97_bus** %pbus to i8*
   ret i32 %retval.0
 }
 
@@ -3143,19 +3217,21 @@ cleanup:                                          ; preds = %for.end, %if.end14
 define internal void @snd_intel8x0_proc_init(%struct.intel8x0* %chip) #2 {
 entry:
   %entry1 = alloca %struct.snd_info_entry*, align 8
+  %0 = bitcast %struct.snd_info_entry** %entry1 to i8*
   %card = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 5
-  %0 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !111
-  %call = call i32 @snd_card_proc_new(%struct.snd_card* %0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.124, i32 0, i32 0), %struct.snd_info_entry** %entry1)
+  %1 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !111
+  %call = call i32 @snd_card_proc_new(%struct.snd_card* %1, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.124, i32 0, i32 0), %struct.snd_info_entry** %entry1)
   %tobool = icmp ne i32 %call, 0
   br i1 %tobool, label %if.end, label %if.then
 
 if.then:                                          ; preds = %entry
-  %1 = load %struct.snd_info_entry*, %struct.snd_info_entry** %entry1, align 8, !tbaa !6
-  %2 = bitcast %struct.intel8x0* %chip to i8*
-  call void @snd_info_set_text_ops(%struct.snd_info_entry* %1, i8* %2, void (%struct.snd_info_entry*, %struct.snd_info_buffer*)* @snd_intel8x0_proc_read)
+  %2 = load %struct.snd_info_entry*, %struct.snd_info_entry** %entry1, align 8, !tbaa !6
+  %3 = bitcast %struct.intel8x0* %chip to i8*
+  call void @snd_info_set_text_ops(%struct.snd_info_entry* %2, i8* %3, void (%struct.snd_info_entry*, %struct.snd_info_buffer*)* @snd_intel8x0_proc_read)
   br label %if.end
 
 if.end:                                           ; preds = %if.then, %entry
+  %4 = bitcast %struct.snd_info_entry** %entry1 to i8*
   ret void
 }
 
@@ -3192,11 +3268,13 @@ define internal void @intel8x0_measure_ac97_clock(%struct.intel8x0* %chip) #2 {
 entry:
   %start_time = alloca %struct.load_weight, align 8
   %stop_time = alloca %struct.load_weight, align 8
+  %0 = bitcast %struct.load_weight* %start_time to i8*
+  %1 = bitcast %struct.load_weight* %stop_time to i8*
   %ac97_bus = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
-  %0 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus, align 8, !tbaa !115
-  %clock = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %0, i32 0, i32 6
-  %1 = load i32, i32* %clock, align 4, !tbaa !114
-  %cmp = icmp ne i32 %1, 48000
+  %2 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus, align 8, !tbaa !115
+  %clock = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %2, i32 0, i32 6
+  %3 = load i32, i32* %clock, align 4, !tbaa !114
+  %cmp = icmp ne i32 %3, 48000
   br i1 %cmp, label %cleanup, label %if.end
 
 if.end:                                           ; preds = %entry
@@ -3207,19 +3285,19 @@ __again:                                          ; preds = %if.then104, %if.end
   %attempt.0 = phi i32 [ 1, %if.end ], [ %inc, %if.then104 ]
   %pcm = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 7
   %arrayidx = getelementptr inbounds [6 x %struct.snd_pcm*], [6 x %struct.snd_pcm*]* %pcm, i64 0, i64 0
-  %2 = load %struct.snd_pcm*, %struct.snd_pcm** %arrayidx, align 8, !tbaa !6
-  %streams = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %2, i32 0, i32 8
+  %4 = load %struct.snd_pcm*, %struct.snd_pcm** %arrayidx, align 8, !tbaa !6
+  %streams = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %4, i32 0, i32 8
   %arrayidx1 = getelementptr inbounds [2 x %struct.snd_pcm_str], [2 x %struct.snd_pcm_str]* %streams, i64 0, i64 0
   %substream = getelementptr inbounds %struct.snd_pcm_str, %struct.snd_pcm_str* %arrayidx1, i32 0, i32 4
-  %3 = load %struct.snd_pcm_substream*, %struct.snd_pcm_substream** %substream, align 8, !tbaa !130
-  %tobool = icmp ne %struct.snd_pcm_substream* %3, null
+  %5 = load %struct.snd_pcm_substream*, %struct.snd_pcm_substream** %substream, align 8, !tbaa !130
+  %tobool = icmp ne %struct.snd_pcm_substream* %5, null
   br i1 %tobool, label %lor.lhs.false, label %if.then3
 
 lor.lhs.false:                                    ; preds = %__again
-  %dma_buffer = getelementptr inbounds %struct.snd_pcm_substream, %struct.snd_pcm_substream* %3, i32 0, i32 8
+  %dma_buffer = getelementptr inbounds %struct.snd_pcm_substream, %struct.snd_pcm_substream* %5, i32 0, i32 8
   %bytes = getelementptr inbounds %struct.snd_dma_buffer, %struct.snd_dma_buffer* %dma_buffer, i32 0, i32 3
-  %4 = load i64, i64* %bytes, align 8, !tbaa !133
-  %cmp2 = icmp ult i64 %4, 32768
+  %6 = load i64, i64* %bytes, align 8, !tbaa !133
+  %cmp2 = icmp ult i64 %6, 32768
   br i1 %cmp2, label %if.then3, label %if.end4
 
 if.then3:                                         ; preds = %lor.lhs.false, %__again
@@ -3229,10 +3307,10 @@ if.then3:                                         ; preds = %lor.lhs.false, %__a
 if.end4:                                          ; preds = %lor.lhs.false
   %ichd = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 8
   %arrayidx5 = getelementptr inbounds [6 x %struct.ichdev], [6 x %struct.ichdev]* %ichd, i64 0, i64 1
-  %dma_buffer6 = getelementptr inbounds %struct.snd_pcm_substream, %struct.snd_pcm_substream* %3, i32 0, i32 8
+  %dma_buffer6 = getelementptr inbounds %struct.snd_pcm_substream, %struct.snd_pcm_substream* %5, i32 0, i32 8
   %addr = getelementptr inbounds %struct.snd_dma_buffer, %struct.snd_dma_buffer* %dma_buffer6, i32 0, i32 2
-  %5 = load i64, i64* %addr, align 8, !tbaa !134
-  %conv = trunc i64 %5 to i32
+  %7 = load i64, i64* %addr, align 8, !tbaa !134
+  %conv = trunc i64 %7 to i32
   %physbuf = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 5
   store i32 %conv, i32* %physbuf, align 8, !tbaa !89
   %fragsize = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 7
@@ -3243,23 +3321,23 @@ if.end4:                                          ; preds = %lor.lhs.false
   store %struct.snd_pcm_substream* null, %struct.snd_pcm_substream** %substream7, align 8, !tbaa !51
   %ac97 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %arrayidx8 = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97, i64 0, i64 0
-  %6 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx8, align 8, !tbaa !6
-  %call = call i32 @snd_ac97_set_rate(%struct.snd_ac97* %6, i32 44, i32 48000)
+  %8 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx8, align 8, !tbaa !6
+  %call = call i32 @snd_ac97_set_rate(%struct.snd_ac97* %8, i32 44, i32 48000)
   %cmp9 = icmp slt i32 %call, 0
   br i1 %cmp9, label %if.then11, label %if.end14
 
 if.then11:                                        ; preds = %if.end4
   %ac97_bus12 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
-  %7 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus12, align 8, !tbaa !115
-  %clock13 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %7, i32 0, i32 6
-  %8 = load i32, i32* %clock13, align 4, !tbaa !114
-  call void (i32, i8*, i32, i8*, ...) @__snd_printk(i32 0, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str.7, i32 0, i32 0), i32 2793, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.143, i32 0, i32 0), i32 %8)
+  %9 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus12, align 8, !tbaa !115
+  %clock13 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %9, i32 0, i32 6
+  %10 = load i32, i32* %clock13, align 4, !tbaa !114
+  call void (i32, i8*, i32, i8*, ...) @__snd_printk(i32 0, i8* getelementptr inbounds ([21 x i8], [21 x i8]* @.str.7, i32 0, i32 0), i32 2793, i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.143, i32 0, i32 0), i32 %10)
   br label %cleanup
 
 if.end14:                                         ; preds = %if.end4
   call void @snd_intel8x0_setup_periods(%struct.intel8x0* %chip, %struct.ichdev* %arrayidx5)
   %reg_offset = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 1
-  %9 = load i64, i64* %reg_offset, align 8, !tbaa !57
+  %11 = load i64, i64* %reg_offset, align 8, !tbaa !57
   %reg_lock = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 20
   call void @spin_lock_irq(%struct.spinlock* %reg_lock)
   %in_measurement = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 9
@@ -3268,9 +3346,9 @@ if.end14:                                         ; preds = %if.end4
   %bf.set = or i16 %bf.clear, 128
   store i16 %bf.set, i16* %in_measurement, align 8
   %device_type = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %10 = load i32, i32* %device_type, align 8, !tbaa !54
-  %cmp15 = icmp ne i32 %10, 3
-  %add = add i64 %9, 11
+  %12 = load i32, i32* %device_type, align 8, !tbaa !54
+  %cmp15 = icmp ne i32 %12, 3
+  %add = add i64 %11, 11
   %conv18 = trunc i64 %add to i32
   br i1 %cmp15, label %if.then17, label %if.else
 
@@ -3281,8 +3359,8 @@ if.then17:                                        ; preds = %if.end14
 if.else:                                          ; preds = %if.end14
   call void @iputbyte(%struct.intel8x0* %chip, i32 %conv18, i8 zeroext 16)
   %ali_slot = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 22
-  %11 = load i32, i32* %ali_slot, align 4, !tbaa !136
-  %shl = shl i32 1, %11
+  %13 = load i32, i32* %ali_slot, align 4, !tbaa !136
+  %shl = shl i32 1, %13
   call void @iputdword(%struct.intel8x0* %chip, i32 8, i32 %shl)
   br label %if.end21
 
@@ -3298,17 +3376,17 @@ if.end21:                                         ; preds = %if.else, %if.then17
 do.body:                                          ; preds = %do.cond, %if.end21
   %timeout.1 = phi i32 [ %timeout.0, %if.end21 ], [ %dec, %do.cond ]
   %reg_offset24 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 1
-  %12 = load i64, i64* %reg_offset24, align 8, !tbaa !57
-  %add25 = add i64 %12, 4
+  %14 = load i64, i64* %reg_offset24, align 8, !tbaa !57
+  %add25 = add i64 %14, 4
   %conv26 = trunc i64 %add25 to i32
   %call27 = call zeroext i8 @igetbyte(%struct.intel8x0* %chip, i32 %conv26)
   %conv28 = zext i8 %call27 to i32
   %reg_offset29 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 1
-  %13 = load i64, i64* %reg_offset29, align 8, !tbaa !57
+  %15 = load i64, i64* %reg_offset29, align 8, !tbaa !57
   %roff_picb = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 20
-  %14 = load i32, i32* %roff_picb, align 4, !tbaa !137
-  %conv30 = zext i32 %14 to i64
-  %add31 = add i64 %13, %conv30
+  %16 = load i32, i32* %roff_picb, align 4, !tbaa !137
+  %conv30 = zext i32 %16 to i64
+  %add31 = add i64 %15, %conv30
   %conv32 = trunc i64 %add31 to i32
   %call33 = call zeroext i16 @igetword(%struct.intel8x0* %chip, i32 %conv32)
   %conv34 = zext i16 %call33 to i64
@@ -3321,8 +3399,8 @@ if.then37:                                        ; preds = %do.body
 
 if.end38:                                         ; preds = %do.body
   %reg_offset39 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 1
-  %15 = load i64, i64* %reg_offset39, align 8, !tbaa !57
-  %add40 = add i64 %15, 4
+  %17 = load i64, i64* %reg_offset39, align 8, !tbaa !57
+  %add40 = add i64 %17, 4
   %conv41 = trunc i64 %add40 to i32
   %call42 = call zeroext i8 @igetbyte(%struct.intel8x0* %chip, i32 %conv41)
   %conv43 = zext i8 %call42 to i32
@@ -3331,11 +3409,11 @@ if.end38:                                         ; preds = %do.body
 
 land.lhs.true:                                    ; preds = %if.end38
   %reg_offset46 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 1
-  %16 = load i64, i64* %reg_offset46, align 8, !tbaa !57
+  %18 = load i64, i64* %reg_offset46, align 8, !tbaa !57
   %roff_picb47 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 20
-  %17 = load i32, i32* %roff_picb47, align 4, !tbaa !137
-  %conv48 = zext i32 %17 to i64
-  %add49 = add i64 %16, %conv48
+  %19 = load i32, i32* %roff_picb47, align 4, !tbaa !137
+  %conv48 = zext i32 %19 to i64
+  %add49 = add i64 %18, %conv48
   %conv50 = trunc i64 %add49 to i32
   %call51 = call zeroext i16 @igetword(%struct.intel8x0* %chip, i32 %conv50)
   %conv52 = zext i16 %call51 to i64
@@ -3354,16 +3432,16 @@ do.end:                                           ; preds = %do.cond, %land.lhs.
 
 if.else61:                                        ; preds = %do.end
   %fragsize1 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 8
-  %18 = load i32, i32* %fragsize1, align 4, !tbaa !84
-  %conv62 = zext i32 %18 to i64
+  %20 = load i32, i32* %fragsize1, align 4, !tbaa !84
+  %conv62 = zext i32 %20 to i64
   %pos_shift = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 10
-  %19 = load i32, i32* %pos_shift, align 4, !tbaa !138
-  %sh_prom = zext i32 %19 to i64
+  %21 = load i32, i32* %pos_shift, align 4, !tbaa !138
+  %sh_prom = zext i32 %21 to i64
   %shl63 = shl i64 %conv34, %sh_prom
   %sub = sub i64 %conv62, %shl63
   %position = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 9
-  %20 = load i32, i32* %position, align 8, !tbaa !85
-  %conv64 = zext i32 %20 to i64
+  %22 = load i32, i32* %position, align 8, !tbaa !85
+  %conv64 = zext i32 %22 to i64
   %add65 = add i64 %sub, %conv64
   br label %if.end66
 
@@ -3375,23 +3453,23 @@ if.end66:                                         ; preds = %if.else61, %do.end
   store i16 %bf.clear69, i16* %in_measurement67, align 8
   call void @ktime_get_ts(%struct.load_weight* %stop_time)
   %device_type70 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 0
-  %21 = load i32, i32* %device_type70, align 8, !tbaa !54
-  %cmp71 = icmp eq i32 %21, 3
+  %23 = load i32, i32* %device_type70, align 8, !tbaa !54
+  %cmp71 = icmp eq i32 %23, 3
   br i1 %cmp71, label %if.then73, label %if.else83
 
 if.then73:                                        ; preds = %if.end66
   %ali_slot74 = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 22
-  %22 = load i32, i32* %ali_slot74, align 4, !tbaa !136
-  %add75 = add i32 %22, 16
+  %24 = load i32, i32* %ali_slot74, align 4, !tbaa !136
+  %add75 = add i32 %24, 16
   %shl76 = shl i32 1, %add75
   call void @iputdword(%struct.intel8x0* %chip, i32 8, i32 %shl76)
-  %add77 = add i64 %9, 11
+  %add77 = add i64 %11, 11
   %conv78 = trunc i64 %add77 to i32
   call void @iputbyte(%struct.intel8x0* %chip, i32 %conv78, i8 zeroext 0)
   br label %while.cond
 
 while.cond:                                       ; preds = %while.body, %if.then73
-  %add79 = add i64 %9, 11
+  %add79 = add i64 %11, 11
   %conv80 = trunc i64 %add79 to i32
   %call81 = call zeroext i8 @igetbyte(%struct.intel8x0* %chip, i32 %conv80)
   %tobool82 = icmp ne i8 %call81, 0
@@ -3401,16 +3479,16 @@ while.body:                                       ; preds = %while.cond
   br label %while.cond
 
 if.else83:                                        ; preds = %if.end66
-  %add84 = add i64 %9, 11
+  %add84 = add i64 %11, 11
   %conv85 = trunc i64 %add84 to i32
   call void @iputbyte(%struct.intel8x0* %chip, i32 %conv85, i8 zeroext 0)
   br label %while.cond86
 
 while.cond86:                                     ; preds = %while.body93, %if.else83
   %roff_sr = getelementptr inbounds %struct.ichdev, %struct.ichdev* %arrayidx5, i32 0, i32 19
-  %23 = load i32, i32* %roff_sr, align 8, !tbaa !70
-  %conv87 = zext i32 %23 to i64
-  %add88 = add i64 %9, %conv87
+  %25 = load i32, i32* %roff_sr, align 8, !tbaa !70
+  %conv87 = zext i32 %25 to i64
+  %add88 = add i64 %11, %conv87
   %conv89 = trunc i64 %add88 to i32
   %call90 = call zeroext i8 @igetbyte(%struct.intel8x0* %chip, i32 %conv89)
   %conv91 = zext i8 %call90 to i32
@@ -3423,7 +3501,7 @@ while.body93:                                     ; preds = %while.cond86
   br label %while.cond86
 
 if.end95:                                         ; preds = %while.cond86, %while.cond
-  %add96 = add i64 %9, 11
+  %add96 = add i64 %11, 11
   %conv97 = trunc i64 %add96 to i32
   call void @iputbyte(%struct.intel8x0* %chip, i32 %conv97, i8 zeroext 2)
   %reg_lock98 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 20
@@ -3447,19 +3525,19 @@ if.then104:                                       ; preds = %__retry
 if.end106:                                        ; preds = %if.end95
   %div = udiv i64 %pos.0, 4
   %tv_sec = getelementptr inbounds %struct.load_weight, %struct.load_weight* %stop_time, i32 0, i32 0
-  %24 = load i64, i64* %tv_sec, align 8, !tbaa !139
+  %26 = load i64, i64* %tv_sec, align 8, !tbaa !139
   %tv_sec107 = getelementptr inbounds %struct.load_weight, %struct.load_weight* %start_time, i32 0, i32 0
-  %25 = load i64, i64* %tv_sec107, align 8, !tbaa !139
-  %sub108 = sub nsw i64 %24, %25
+  %27 = load i64, i64* %tv_sec107, align 8, !tbaa !139
+  %sub108 = sub nsw i64 %26, %27
   %mul = mul i64 %sub108, 1000000
   %tv_nsec = getelementptr inbounds %struct.load_weight, %struct.load_weight* %stop_time, i32 0, i32 1
-  %26 = load i64, i64* %tv_nsec, align 8, !tbaa !140
+  %28 = load i64, i64* %tv_nsec, align 8, !tbaa !140
   %tv_nsec109 = getelementptr inbounds %struct.load_weight, %struct.load_weight* %start_time, i32 0, i32 1
-  %27 = load i64, i64* %tv_nsec109, align 8, !tbaa !140
-  %sub110 = sub nsw i64 %26, %27
+  %29 = load i64, i64* %tv_nsec109, align 8, !tbaa !140
+  %sub110 = sub nsw i64 %28, %29
   %div111 = sdiv i64 %sub110, 1000
   %add112 = add i64 %mul, %div111
-  %28 = call i32 (i8*, ...) @printk(i8* null)
+  %30 = call i32 (i8*, ...) @printk(i8* null)
   %cmp114 = icmp eq i64 %add112, 0
   br i1 %cmp114, label %if.then116, label %if.end117
 
@@ -3481,7 +3559,7 @@ if.end117:                                        ; preds = %if.end106
   br i1 %or.cond, label %if.then129, label %if.else131
 
 if.then129:                                       ; preds = %if.end117
-  %29 = call i32 (i8*, ...) @printk(i8* null)
+  %31 = call i32 (i8*, ...) @printk(i8* null)
   br label %__retry
 
 if.else131:                                       ; preds = %if.end117
@@ -3492,8 +3570,8 @@ if.else131:                                       ; preds = %if.end117
 
 if.then137:                                       ; preds = %if.else131
   %ac97_bus138 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
-  %30 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus138, align 8, !tbaa !115
-  %clock139 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %30, i32 0, i32 6
+  %32 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus138, align 8, !tbaa !115
+  %clock139 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %32, i32 0, i32 6
   store i32 41000, i32* %clock139, align 4, !tbaa !114
   br label %__end
 
@@ -3505,8 +3583,8 @@ if.else140:                                       ; preds = %if.else131
 
 if.then146:                                       ; preds = %if.else140
   %ac97_bus147 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
-  %31 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus147, align 8, !tbaa !115
-  %clock148 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %31, i32 0, i32 6
+  %33 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus147, align 8, !tbaa !115
+  %clock148 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %33, i32 0, i32 6
   store i32 44100, i32* %clock148, align 4, !tbaa !114
   br label %__end
 
@@ -3518,28 +3596,30 @@ if.else149:                                       ; preds = %if.else140
 
 if.then155:                                       ; preds = %if.else149
   %ac97_bus156 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
-  %32 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus156, align 8, !tbaa !115
-  %clock157 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %32, i32 0, i32 6
-  %33 = load i32, i32* %clock157, align 4, !tbaa !114
-  %mul158 = mul i32 %33, 48000
+  %34 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus156, align 8, !tbaa !115
+  %clock157 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %34, i32 0, i32 6
+  %35 = load i32, i32* %clock157, align 4, !tbaa !114
+  %mul158 = mul i32 %35, 48000
   %conv159 = zext i32 %mul158 to i64
   %div160 = udiv i64 %conv159, %add123
   %conv161 = trunc i64 %div160 to i32
   %ac97_bus162 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 12
-  %34 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus162, align 8, !tbaa !115
-  %clock163 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %34, i32 0, i32 6
+  %36 = load %struct.snd_ac97_bus*, %struct.snd_ac97_bus** %ac97_bus162, align 8, !tbaa !115
+  %clock163 = getelementptr inbounds %struct.snd_ac97_bus, %struct.snd_ac97_bus* %36, i32 0, i32 6
   store i32 %conv161, i32* %clock163, align 4, !tbaa !114
   br label %__end
 
 __end:                                            ; preds = %if.then155, %if.else149, %if.then146, %if.then137, %__retry
-  %35 = call i32 (i8*, ...) @printk(i8* null)
+  %37 = call i32 (i8*, ...) @printk(i8* null)
   %ac97171 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %arrayidx172 = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97171, i64 0, i64 0
-  %36 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx172, align 8, !tbaa !6
-  %call173 = call i32 @snd_ac97_update_power(%struct.snd_ac97* %36, i32 44, i32 0)
+  %38 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx172, align 8, !tbaa !6
+  %call173 = call i32 @snd_ac97_update_power(%struct.snd_ac97* %38, i32 44, i32 0)
   br label %cleanup
 
 cleanup:                                          ; preds = %__end, %if.then11, %if.then3, %entry
+  %39 = bitcast %struct.load_weight* %stop_time to i8*
+  %40 = bitcast %struct.load_weight* %start_time to i8*
   ret void
 }
 
@@ -3830,14 +3910,16 @@ entry:
   %pcm = alloca %struct.snd_pcm*, align 8
   %name = alloca [32 x i8], align 16
   %chmap = alloca %struct.snd_pcm_chmap*, align 8
+  %0 = bitcast %struct.snd_pcm** %pcm to i8*
+  %1 = bitcast [32 x i8]* %name to i8*
   %suffix = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 0
-  %0 = load i8*, i8** %suffix, align 8, !tbaa !144
-  %tobool = icmp ne i8* %0, null
+  %2 = load i8*, i8** %suffix, align 8, !tbaa !144
+  %tobool = icmp ne i8* %2, null
   %arraydecay = getelementptr inbounds [32 x i8], [32 x i8]* %name, i32 0, i32 0
   br i1 %tobool, label %if.then, label %if.else
 
 if.then:                                          ; preds = %entry
-  %1 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %3 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
   br label %if.end
 
 if.else:                                          ; preds = %entry
@@ -3846,68 +3928,68 @@ if.else:                                          ; preds = %entry
 
 if.end:                                           ; preds = %if.else, %if.then
   %card = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 5
-  %2 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !111
+  %4 = load %struct.snd_card*, %struct.snd_card** %card, align 8, !tbaa !111
   %arraydecay4 = getelementptr inbounds [32 x i8], [32 x i8]* %name, i32 0, i32 0
   %playback_ops = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 1
-  %3 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops, align 8, !tbaa !145
-  %tobool5 = icmp ne %struct.snd_pcm_ops* %3, null
+  %5 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops, align 8, !tbaa !145
+  %tobool5 = icmp ne %struct.snd_pcm_ops* %5, null
   %cond = select i1 %tobool5, i32 1, i32 0
   %capture_ops = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 2
-  %4 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %capture_ops, align 8, !tbaa !146
-  %tobool6 = icmp ne %struct.snd_pcm_ops* %4, null
+  %6 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %capture_ops, align 8, !tbaa !146
+  %tobool6 = icmp ne %struct.snd_pcm_ops* %6, null
   %cond7 = select i1 %tobool6, i32 1, i32 0
-  %call8 = call i32 @snd_pcm_new(%struct.snd_card* %2, i8* %arraydecay4, i32 %device, i32 %cond, i32 %cond7, %struct.snd_pcm** %pcm)
+  %call8 = call i32 @snd_pcm_new(%struct.snd_card* %4, i8* %arraydecay4, i32 %device, i32 %cond, i32 %cond7, %struct.snd_pcm** %pcm)
   %cmp = icmp slt i32 %call8, 0
   br i1 %cmp, label %cleanup74, label %if.end10
 
 if.end10:                                         ; preds = %if.end
   %playback_ops11 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 1
-  %5 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops11, align 8, !tbaa !145
-  %tobool12 = icmp ne %struct.snd_pcm_ops* %5, null
+  %7 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops11, align 8, !tbaa !145
+  %tobool12 = icmp ne %struct.snd_pcm_ops* %7, null
   br i1 %tobool12, label %if.then13, label %if.end15
 
 if.then13:                                        ; preds = %if.end10
-  %6 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  %8 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
   %playback_ops14 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 1
-  %7 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops14, align 8, !tbaa !145
-  call void @snd_pcm_set_ops(%struct.snd_pcm* %6, i32 0, %struct.snd_pcm_ops* %7)
+  %9 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops14, align 8, !tbaa !145
+  call void @snd_pcm_set_ops(%struct.snd_pcm* %8, i32 0, %struct.snd_pcm_ops* %9)
   br label %if.end15
 
 if.end15:                                         ; preds = %if.then13, %if.end10
   %capture_ops16 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 2
-  %8 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %capture_ops16, align 8, !tbaa !146
-  %tobool17 = icmp ne %struct.snd_pcm_ops* %8, null
+  %10 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %capture_ops16, align 8, !tbaa !146
+  %tobool17 = icmp ne %struct.snd_pcm_ops* %10, null
   br i1 %tobool17, label %if.then18, label %if.end20
 
 if.then18:                                        ; preds = %if.end15
-  %9 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  %11 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
   %capture_ops19 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 2
-  %10 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %capture_ops19, align 8, !tbaa !146
-  call void @snd_pcm_set_ops(%struct.snd_pcm* %9, i32 1, %struct.snd_pcm_ops* %10)
+  %12 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %capture_ops19, align 8, !tbaa !146
+  call void @snd_pcm_set_ops(%struct.snd_pcm* %11, i32 1, %struct.snd_pcm_ops* %12)
   br label %if.end20
 
 if.end20:                                         ; preds = %if.then18, %if.end15
-  %11 = bitcast %struct.intel8x0* %chip to i8*
-  %12 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
-  %private_data = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %12, i32 0, i32 11
-  store i8* %11, i8** %private_data, align 8, !tbaa !147
-  %13 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
-  %info_flags = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %13, i32 0, i32 3
+  %13 = bitcast %struct.intel8x0* %chip to i8*
+  %14 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  %private_data = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %14, i32 0, i32 11
+  store i8* %13, i8** %private_data, align 8, !tbaa !147
+  %15 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  %info_flags = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %15, i32 0, i32 3
   store i32 0, i32* %info_flags, align 4, !tbaa !150
   %suffix21 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 0
-  %14 = load i8*, i8** %suffix21, align 8, !tbaa !144
-  %tobool22 = icmp ne i8* %14, null
-  %15 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
-  %name24 = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %15, i32 0, i32 7
+  %16 = load i8*, i8** %suffix21, align 8, !tbaa !144
+  %tobool22 = icmp ne i8* %16, null
+  %17 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  %name24 = getelementptr inbounds %struct.snd_pcm, %struct.snd_pcm* %17, i32 0, i32 7
   %arraydecay25 = getelementptr inbounds [80 x i8], [80 x i8]* %name24, i32 0, i32 0
   %card26 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 5
-  %16 = load %struct.snd_card*, %struct.snd_card** %card26, align 8, !tbaa !111
-  %shortname = getelementptr inbounds %struct.snd_card, %struct.snd_card* %16, i32 0, i32 3
+  %18 = load %struct.snd_card*, %struct.snd_card** %card26, align 8, !tbaa !111
+  %shortname = getelementptr inbounds %struct.snd_card, %struct.snd_card* %18, i32 0, i32 3
   %arraydecay27 = getelementptr inbounds [32 x i8], [32 x i8]* %shortname, i32 0, i32 0
   br i1 %tobool22, label %if.then23, label %if.else30
 
 if.then23:                                        ; preds = %if.end20
-  %17 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
+  %19 = call i32 (i8*, i8*, ...) @sprintf(i8* null, i8* null)
   br label %if.end37
 
 if.else30:                                        ; preds = %if.end20
@@ -3915,36 +3997,37 @@ if.else30:                                        ; preds = %if.end20
   br label %if.end37
 
 if.end37:                                         ; preds = %if.else30, %if.then23
-  %18 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  %20 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
   %pcm38 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 7
   %idxprom = sext i32 %device to i64
   %arrayidx = getelementptr inbounds [6 x %struct.snd_pcm*], [6 x %struct.snd_pcm*]* %pcm38, i64 0, i64 %idxprom
-  store %struct.snd_pcm* %18, %struct.snd_pcm** %arrayidx, align 8, !tbaa !6
-  %19 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  store %struct.snd_pcm* %20, %struct.snd_pcm** %arrayidx, align 8, !tbaa !6
+  %21 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
   %pci = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %20 = load %struct.pci_dev*, %struct.pci_dev** %pci, align 8, !tbaa !93
-  %dev = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %20, i32 0, i32 34
-  %21 = bitcast %struct.device* %dev to i8*
+  %22 = load %struct.pci_dev*, %struct.pci_dev** %pci, align 8, !tbaa !93
+  %dev = getelementptr inbounds %struct.pci_dev, %struct.pci_dev* %22, i32 0, i32 34
+  %23 = bitcast %struct.device* %dev to i8*
   %prealloc_size = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 3
-  %22 = load i64, i64* %prealloc_size, align 8, !tbaa !151
+  %24 = load i64, i64* %prealloc_size, align 8, !tbaa !151
   %prealloc_max_size = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 4
-  %23 = load i64, i64* %prealloc_max_size, align 8, !tbaa !152
-  %call39 = call i32 @snd_pcm_lib_preallocate_pages_for_all(%struct.snd_pcm* %19, i32 2, i8* %21, i64 %22, i64 %23)
+  %25 = load i64, i64* %prealloc_max_size, align 8, !tbaa !152
+  %call39 = call i32 @snd_pcm_lib_preallocate_pages_for_all(%struct.snd_pcm* %21, i32 2, i8* %23, i64 %24, i64 %25)
   %ac97_idx = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 5
-  %24 = load i32, i32* %ac97_idx, align 8, !tbaa !128
-  %cmp40 = icmp eq i32 %24, 1
+  %26 = load i32, i32* %ac97_idx, align 8, !tbaa !128
+  %cmp40 = icmp eq i32 %26, 1
   br i1 %cmp40, label %land.lhs.true, label %cleanup74
 
 land.lhs.true:                                    ; preds = %if.end37
   %playback_ops41 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 1
-  %25 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops41, align 8, !tbaa !145
-  %tobool42 = icmp ne %struct.snd_pcm_ops* %25, null
+  %27 = load %struct.snd_pcm_ops*, %struct.snd_pcm_ops** %playback_ops41, align 8, !tbaa !145
+  %tobool42 = icmp ne %struct.snd_pcm_ops* %27, null
   br i1 %tobool42, label %if.then43, label %cleanup74
 
 if.then43:                                        ; preds = %land.lhs.true
+  %28 = bitcast %struct.snd_pcm_chmap** %chmap to i8*
   %ac97_idx44 = getelementptr inbounds %struct.ich_pcm_table, %struct.ich_pcm_table* %rec, i32 0, i32 5
-  %26 = load i32, i32* %ac97_idx44, align 8, !tbaa !128
-  %cmp45 = icmp eq i32 %26, 1
+  %29 = load i32, i32* %ac97_idx44, align 8, !tbaa !128
+  %cmp45 = icmp eq i32 %29, 1
   br i1 %cmp45, label %if.then46, label %if.end65
 
 if.then46:                                        ; preds = %if.then43
@@ -3976,32 +4059,35 @@ if.else56:                                        ; preds = %if.else49
 
 if.end65:                                         ; preds = %if.else56, %if.else49, %if.then46, %if.then43
   %chs.3 = phi i32 [ 2, %if.then43 ], [ 8, %if.then46 ], [ %., %if.else56 ], [ 6, %if.else49 ]
-  %27 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
-  %call66 = call i32 @snd_pcm_add_chmap_ctls(%struct.snd_pcm* %27, i32 0, %struct.snd_pcm_chmap_elem* getelementptr inbounds ([0 x %struct.snd_pcm_chmap_elem], [0 x %struct.snd_pcm_chmap_elem]* @snd_pcm_alt_chmaps, i32 0, i32 0), i32 %chs.3, i64 0, %struct.snd_pcm_chmap** %chmap)
+  %30 = load %struct.snd_pcm*, %struct.snd_pcm** %pcm, align 8, !tbaa !6
+  %call66 = call i32 @snd_pcm_add_chmap_ctls(%struct.snd_pcm* %30, i32 0, %struct.snd_pcm_chmap_elem* getelementptr inbounds ([0 x %struct.snd_pcm_chmap_elem], [0 x %struct.snd_pcm_chmap_elem]* @snd_pcm_alt_chmaps, i32 0, i32 0), i32 %chs.3, i64 0, %struct.snd_pcm_chmap** %chmap)
   %cmp67 = icmp slt i32 %call66, 0
   br i1 %cmp67, label %cleanup, label %if.end69
 
 if.end69:                                         ; preds = %if.end65
-  %28 = load %struct.snd_pcm_chmap*, %struct.snd_pcm_chmap** %chmap, align 8, !tbaa !6
-  %channel_mask = getelementptr inbounds %struct.snd_pcm_chmap, %struct.snd_pcm_chmap* %28, i32 0, i32 5
+  %31 = load %struct.snd_pcm_chmap*, %struct.snd_pcm_chmap** %chmap, align 8, !tbaa !6
+  %channel_mask = getelementptr inbounds %struct.snd_pcm_chmap, %struct.snd_pcm_chmap* %31, i32 0, i32 5
   store i32 340, i32* %channel_mask, align 4, !tbaa !153
-  %29 = load %struct.snd_pcm_chmap*, %struct.snd_pcm_chmap** %chmap, align 8, !tbaa !6
+  %32 = load %struct.snd_pcm_chmap*, %struct.snd_pcm_chmap** %chmap, align 8, !tbaa !6
   %ac97 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 13
   %arrayidx70 = getelementptr inbounds [3 x %struct.snd_ac97*], [3 x %struct.snd_ac97*]* %ac97, i64 0, i64 0
-  %30 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx70, align 8, !tbaa !6
-  %chmaps = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %30, i32 0, i32 30
+  %33 = load %struct.snd_ac97*, %struct.snd_ac97** %arrayidx70, align 8, !tbaa !6
+  %chmaps = getelementptr inbounds %struct.snd_ac97, %struct.snd_ac97* %33, i32 0, i32 30
   %arrayidx71 = getelementptr inbounds [2 x %struct.snd_pcm_chmap*], [2 x %struct.snd_pcm_chmap*]* %chmaps, i64 0, i64 0
-  store %struct.snd_pcm_chmap* %29, %struct.snd_pcm_chmap** %arrayidx71, align 8, !tbaa !6
+  store %struct.snd_pcm_chmap* %32, %struct.snd_pcm_chmap** %arrayidx71, align 8, !tbaa !6
   br label %cleanup
 
 cleanup:                                          ; preds = %if.end69, %if.end65
   %cleanup.dest.slot.0 = phi i32 [ 0, %if.end69 ], [ 1, %if.end65 ]
+  %34 = bitcast %struct.snd_pcm_chmap** %chmap to i8*
   %SwitchLeaf = icmp eq i32 %cleanup.dest.slot.0, 0
   %.call66 = select i1 %SwitchLeaf, i32 0, i32 %call66
   br label %cleanup74
 
 cleanup74:                                        ; preds = %cleanup, %land.lhs.true, %if.end37, %if.end
   %retval.1 = phi i32 [ %call8, %if.end ], [ 0, %land.lhs.true ], [ 0, %if.end37 ], [ %.call66, %cleanup ]
+  %35 = bitcast [32 x i8]* %name to i8*
+  %36 = bitcast %struct.snd_pcm** %pcm to i8*
   ret i32 %retval.1
 }
 
@@ -5602,10 +5688,12 @@ if.else:                                          ; preds = %land.lhs.true, %if.
   %5 = load i16, i16* %subsystem_vendor14, align 8, !tbaa !177
   %conv15 = zext i16 %5 to i32
   %cmp16 = icmp eq i32 %conv15, 6840
+  %lor.ext. = select i1 %cmp16, i32 %lor.ext, i32 0
   %. = select i1 %cmp16, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @.str.41, i32 0, i32 0), i8* getelementptr inbounds ([29 x i8], [29 x i8]* @.str.42, i32 0, i32 0)
   br label %fini
 
 fini:                                             ; preds = %if.else, %land.lhs.true, %lor.end, %if.then
+  %result.2 = phi i32 [ %0, %if.then ], [ %lor.ext, %lor.end ], [ %lor.ext., %if.else ], [ %lor.ext, %land.lhs.true ]
   %msg.2 = phi i8* [ %cond, %if.then ], [ null, %lor.end ], [ %., %if.else ], [ getelementptr inbounds ([11 x i8], [11 x i8]* @.str.40, i32 0, i32 0), %land.lhs.true ]
   %cmp22 = icmp ne i8* %msg.2, null
   br i1 %cmp22, label %if.then24, label %if.end26
@@ -5687,36 +5775,38 @@ for.end15:                                        ; preds = %for.cond2
   br i1 %or.cond, label %__hw_end, label %if.then18
 
 if.then18:                                        ; preds = %for.end15
+  %7 = bitcast i32* %val to i8*
   %pci = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %7 = load %struct.pci_dev*, %struct.pci_dev** %pci, align 8, !tbaa !93
-  call void @pci_read_config_dword(%struct.pci_dev* %7, i32 76, i32* %val)
-  %8 = load i32, i32* %val, align 4, !tbaa !2
-  %and = and i32 %8, -16777217
+  %8 = load %struct.pci_dev*, %struct.pci_dev** %pci, align 8, !tbaa !93
+  call void @pci_read_config_dword(%struct.pci_dev* %8, i32 76, i32* %val)
+  %9 = load i32, i32* %val, align 4, !tbaa !2
+  %and = and i32 %9, -16777217
   store i32 %and, i32* %val, align 4, !tbaa !2
   %pci19 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %9 = load %struct.pci_dev*, %struct.pci_dev** %pci19, align 8, !tbaa !93
-  %10 = load i32, i32* %val, align 4, !tbaa !2
-  call void @pci_write_config_dword(%struct.pci_dev* %9, i32 76, i32 %10)
+  %10 = load %struct.pci_dev*, %struct.pci_dev** %pci19, align 8, !tbaa !93
+  %11 = load i32, i32* %val, align 4, !tbaa !2
+  call void @pci_write_config_dword(%struct.pci_dev* %10, i32 76, i32 %11)
+  %12 = bitcast i32* %val to i8*
   br label %__hw_end
 
 __hw_end:                                         ; preds = %if.then18, %for.end15, %entry
   %irq22 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 1
-  %11 = load i32, i32* %irq22, align 4, !tbaa !45
-  %cmp23 = icmp sge i32 %11, 0
+  %13 = load i32, i32* %irq22, align 4, !tbaa !45
+  %cmp23 = icmp sge i32 %13, 0
   br i1 %cmp23, label %if.then25, label %if.end27
 
 if.then25:                                        ; preds = %__hw_end
   %irq26 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 1
-  %12 = load i32, i32* %irq26, align 4, !tbaa !45
-  %13 = bitcast %struct.intel8x0* %chip to i8*
-  call void @free_irq(i32 %12, i8* %13)
+  %14 = load i32, i32* %irq26, align 4, !tbaa !45
+  %15 = bitcast %struct.intel8x0* %chip to i8*
+  call void @free_irq(i32 %14, i8* %15)
   br label %if.end27
 
 if.end27:                                         ; preds = %if.then25, %__hw_end
   %bdbars = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 22
   %area = getelementptr inbounds %struct.snd_dma_buffer, %struct.snd_dma_buffer* %bdbars, i32 0, i32 1
-  %14 = load i8*, i8** %area, align 8, !tbaa !179
-  %tobool28 = icmp ne i8* %14, null
+  %16 = load i8*, i8** %area, align 8, !tbaa !179
+  %tobool28 = icmp ne i8* %16, null
   br i1 %tobool28, label %if.then29, label %if.end34
 
 if.then29:                                        ; preds = %if.end27
@@ -5726,41 +5816,41 @@ if.then29:                                        ; preds = %if.end27
 
 if.end34:                                         ; preds = %if.then29, %if.end27
   %addr = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 2
-  %15 = load i8*, i8** %addr, align 8, !tbaa !97
-  %tobool35 = icmp ne i8* %15, null
+  %17 = load i8*, i8** %addr, align 8, !tbaa !97
+  %tobool35 = icmp ne i8* %17, null
   br i1 %tobool35, label %if.then36, label %if.end39
 
 if.then36:                                        ; preds = %if.end34
   %pci37 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %16 = load %struct.pci_dev*, %struct.pci_dev** %pci37, align 8, !tbaa !93
+  %18 = load %struct.pci_dev*, %struct.pci_dev** %pci37, align 8, !tbaa !93
   %addr38 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 2
-  %17 = load i8*, i8** %addr38, align 8, !tbaa !97
-  call void @pci_iounmap(%struct.pci_dev* %16, i8* %17)
+  %19 = load i8*, i8** %addr38, align 8, !tbaa !97
+  call void @pci_iounmap(%struct.pci_dev* %18, i8* %19)
   br label %if.end39
 
 if.end39:                                         ; preds = %if.then36, %if.end34
   %bmaddr = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 3
-  %18 = load i8*, i8** %bmaddr, align 8, !tbaa !74
-  %tobool40 = icmp ne i8* %18, null
+  %20 = load i8*, i8** %bmaddr, align 8, !tbaa !74
+  %tobool40 = icmp ne i8* %20, null
   br i1 %tobool40, label %if.then41, label %if.end44
 
 if.then41:                                        ; preds = %if.end39
   %pci42 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %19 = load %struct.pci_dev*, %struct.pci_dev** %pci42, align 8, !tbaa !93
+  %21 = load %struct.pci_dev*, %struct.pci_dev** %pci42, align 8, !tbaa !93
   %bmaddr43 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 3
-  %20 = load i8*, i8** %bmaddr43, align 8, !tbaa !74
-  call void @pci_iounmap(%struct.pci_dev* %19, i8* %20)
+  %22 = load i8*, i8** %bmaddr43, align 8, !tbaa !74
+  call void @pci_iounmap(%struct.pci_dev* %21, i8* %22)
   br label %if.end44
 
 if.end44:                                         ; preds = %if.then41, %if.end39
   %pci45 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %21 = load %struct.pci_dev*, %struct.pci_dev** %pci45, align 8, !tbaa !93
-  call void @pci_release_regions(%struct.pci_dev* %21)
+  %23 = load %struct.pci_dev*, %struct.pci_dev** %pci45, align 8, !tbaa !93
+  call void @pci_release_regions(%struct.pci_dev* %23)
   %pci46 = getelementptr inbounds %struct.intel8x0, %struct.intel8x0* %chip, i32 0, i32 4
-  %22 = load %struct.pci_dev*, %struct.pci_dev** %pci46, align 8, !tbaa !93
-  call void @pci_disable_device(%struct.pci_dev* %22)
-  %23 = bitcast %struct.intel8x0* %chip to i8*
-  call void @kfree(i8* %23)
+  %24 = load %struct.pci_dev*, %struct.pci_dev** %pci46, align 8, !tbaa !93
+  call void @pci_disable_device(%struct.pci_dev* %24)
+  %25 = bitcast %struct.intel8x0* %chip to i8*
+  call void @kfree(i8* %25)
   ret i32 0
 }
 
@@ -5792,13 +5882,18 @@ entry:
   %ecx = alloca i32, align 4
   %edx = alloca i32, align 4
   %signature = alloca [13 x i8], align 1
-  %0 = load i32, i32* getelementptr inbounds (%struct.cpuinfo_x86, %struct.cpuinfo_x86* @boot_cpu_data, i32 0, i32 9), align 16, !tbaa !182
-  %cmp = icmp slt i32 %0, 0
+  %0 = bitcast i32* %eax to i8*
+  %1 = bitcast i32* %ebx to i8*
+  %2 = bitcast i32* %ecx to i8*
+  %3 = bitcast i32* %edx to i8*
+  %4 = bitcast [13 x i8]* %signature to i8*
+  %5 = load i32, i32* getelementptr inbounds (%struct.cpuinfo_x86, %struct.cpuinfo_x86* @boot_cpu_data, i32 0, i32 9), align 16, !tbaa !182
+  %cmp = icmp slt i32 %5, 0
   br i1 %cmp, label %cleanup, label %cond.true1
 
 cond.true1:                                       ; preds = %entry
-  %1 = load volatile i64, i64* bitcast (i32* getelementptr inbounds (%struct.cpuinfo_x86, %struct.cpuinfo_x86* @boot_cpu_data, i64 0, i32 10, i64 4) to i64*), align 8, !tbaa !94
-  %and.i = and i64 2147483648, %1
+  %6 = load volatile i64, i64* bitcast (i32* getelementptr inbounds (%struct.cpuinfo_x86, %struct.cpuinfo_x86* @boot_cpu_data, i64 0, i32 10, i64 4) to i64*), align 8, !tbaa !94
+  %and.i = and i64 2147483648, %6
   %cmp.i = icmp ne i64 %and.i, 0
   %conv.i = zext i1 %cmp.i to i32
   %tobool = icmp ne i32 %conv.i, 0
@@ -5809,45 +5904,45 @@ if.then5:                                         ; preds = %cond.true1
   %cmp6 = icmp uge i64 4, 64
   %arraydecay = getelementptr inbounds [13 x i8], [13 x i8]* %signature, i32 0, i32 0
   %add.ptr = getelementptr inbounds i8, i8* %arraydecay, i64 0
-  %2 = bitcast i32* %ebx to i8*
+  %7 = bitcast i32* %ebx to i8*
   br i1 %cmp6, label %if.then7, label %if.else
 
 if.then7:                                         ; preds = %if.then5
-  %call8 = call i8* @__memcpy(i8* %add.ptr, i8* %2, i64 4)
+  %call8 = call i8* @__memcpy(i8* %add.ptr, i8* %7, i64 4)
   br label %if.end11
 
 if.else:                                          ; preds = %if.then5
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %add.ptr, i8* %2, i64 4, i32 1, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %add.ptr, i8* %7, i64 4, i32 1, i1 false)
   br label %if.end11
 
 if.end11:                                         ; preds = %if.else, %if.then7
   %cmp14 = icmp uge i64 4, 64
   %arraydecay16 = getelementptr inbounds [13 x i8], [13 x i8]* %signature, i32 0, i32 0
   %add.ptr17 = getelementptr inbounds i8, i8* %arraydecay16, i64 4
-  %3 = bitcast i32* %ecx to i8*
+  %8 = bitcast i32* %ecx to i8*
   br i1 %cmp14, label %if.then15, label %if.else19
 
 if.then15:                                        ; preds = %if.end11
-  %call18 = call i8* @__memcpy(i8* %add.ptr17, i8* %3, i64 4)
+  %call18 = call i8* @__memcpy(i8* %add.ptr17, i8* %8, i64 4)
   br label %if.end22
 
 if.else19:                                        ; preds = %if.end11
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %add.ptr17, i8* %3, i64 4, i32 1, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %add.ptr17, i8* %8, i64 4, i32 1, i1 false)
   br label %if.end22
 
 if.end22:                                         ; preds = %if.else19, %if.then15
   %cmp26 = icmp uge i64 4, 64
   %arraydecay28 = getelementptr inbounds [13 x i8], [13 x i8]* %signature, i32 0, i32 0
   %add.ptr29 = getelementptr inbounds i8, i8* %arraydecay28, i64 8
-  %4 = bitcast i32* %edx to i8*
+  %9 = bitcast i32* %edx to i8*
   br i1 %cmp26, label %if.then27, label %if.else31
 
 if.then27:                                        ; preds = %if.end22
-  %call30 = call i8* @__memcpy(i8* %add.ptr29, i8* %4, i64 4)
+  %call30 = call i8* @__memcpy(i8* %add.ptr29, i8* %9, i64 4)
   br label %if.end34
 
 if.else31:                                        ; preds = %if.end22
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %add.ptr29, i8* %4, i64 4, i32 1, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %add.ptr29, i8* %9, i64 4, i32 1, i1 false)
   br label %if.end34
 
 if.end34:                                         ; preds = %if.else31, %if.then27
@@ -5863,6 +5958,11 @@ if.end41:                                         ; preds = %if.end34, %cond.tru
 
 cleanup:                                          ; preds = %if.end41, %if.end34, %entry
   %retval.0 = phi i1 [ false, %if.end41 ], [ false, %entry ], [ true, %if.end34 ]
+  %10 = bitcast [13 x i8]* %signature to i8*
+  %11 = bitcast i32* %edx to i8*
+  %12 = bitcast i32* %ecx to i8*
+  %13 = bitcast i32* %ebx to i8*
+  %14 = bitcast i32* %eax to i8*
   ret i1 %retval.0
 }
 

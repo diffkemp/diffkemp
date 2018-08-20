@@ -884,13 +884,17 @@ entry:
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-declare %struct.tcp_sock* @tcp_sk(%struct.sock*) #0
+define internal %struct.tcp_sock* @tcp_sk(%struct.sock* %sk) #0 !dbg !8292 {
+entry:
+  %0 = bitcast %struct.sock* %sk to %struct.tcp_sock*, !dbg !8297
+  ret %struct.tcp_sock* %0, !dbg !8298
+}
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk) #0 !dbg !8292 {
+define internal %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk) #0 !dbg !8299 {
 entry:
-  %0 = bitcast %struct.sock* %sk to %struct.inet_connection_sock*, !dbg !8297
-  ret %struct.inet_connection_sock* %0, !dbg !8298
+  %0 = bitcast %struct.sock* %sk to %struct.inet_connection_sock*, !dbg !8304
+  ret %struct.inet_connection_sock* %0, !dbg !8305
 }
 
 declare zeroext i1 @tcp_is_cwnd_limited(%struct.sock*, i32) #4
@@ -9210,10 +9214,17 @@ attributes #5 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="fals
 !8289 = !DILocation(line: 69, column: 6, scope: !8270)
 !8290 = !DILocation(line: 69, column: 18, scope: !8270)
 !8291 = !DILocation(line: 70, column: 1, scope: !8270)
-!8292 = distinct !DISubprogram(name: "inet_csk", scope: !7162, file: !7162, line: 139, type: !8293, isLocal: true, isDefinition: true, scopeLine: 140, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !8295)
+!8292 = distinct !DISubprogram(name: "tcp_sk", scope: !7599, file: !7599, line: 337, type: !8293, isLocal: true, isDefinition: true, scopeLine: 338, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !8295)
 !8293 = !DISubroutineType(types: !8294)
-!8294 = !{!7160, !7501}
+!8294 = !{!7597, !7501}
 !8295 = !{!8296}
-!8296 = !DILocalVariable(name: "sk", arg: 1, scope: !8292, file: !7162, line: 139, type: !7501)
-!8297 = !DILocation(line: 141, column: 9, scope: !8292)
-!8298 = !DILocation(line: 141, column: 2, scope: !8292)
+!8296 = !DILocalVariable(name: "sk", arg: 1, scope: !8292, file: !7599, line: 337, type: !7501)
+!8297 = !DILocation(line: 339, column: 9, scope: !8292)
+!8298 = !DILocation(line: 339, column: 2, scope: !8292)
+!8299 = distinct !DISubprogram(name: "inet_csk", scope: !7162, file: !7162, line: 139, type: !8300, isLocal: true, isDefinition: true, scopeLine: 140, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !8302)
+!8300 = !DISubroutineType(types: !8301)
+!8301 = !{!7160, !7501}
+!8302 = !{!8303}
+!8303 = !DILocalVariable(name: "sk", arg: 1, scope: !8299, file: !7162, line: 139, type: !7501)
+!8304 = !DILocation(line: 141, column: 9, scope: !8299)
+!8305 = !DILocation(line: 141, column: 2, scope: !8299)

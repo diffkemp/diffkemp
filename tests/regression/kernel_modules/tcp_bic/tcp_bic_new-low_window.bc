@@ -1004,53 +1004,57 @@ entry:
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-declare %struct.tcp_sock* @tcp_sk(%struct.sock*) #5
-
-; Function Attrs: inlinehint nounwind uwtable
-define internal %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk) #5 !dbg !10509 {
+define internal %struct.tcp_sock* @tcp_sk(%struct.sock* %sk) #5 !dbg !10509 {
 entry:
-  %0 = bitcast %struct.sock* %sk to %struct.inet_connection_sock*, !dbg !10514
-  ret %struct.inet_connection_sock* %0, !dbg !10515
+  %0 = bitcast %struct.sock* %sk to %struct.tcp_sock*, !dbg !10514
+  ret %struct.tcp_sock* %0, !dbg !10515
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal zeroext i1 @tcp_is_cwnd_limited(%struct.sock* %sk) #5 !dbg !10516 {
+define internal %struct.inet_connection_sock* @inet_csk(%struct.sock* %sk) #5 !dbg !10516 {
 entry:
-  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10520
-  %call1 = call zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %call), !dbg !10521
-  br i1 %call1, label %if.then, label %if.end, !dbg !10523
+  %0 = bitcast %struct.sock* %sk to %struct.inet_connection_sock*, !dbg !10521
+  ret %struct.inet_connection_sock* %0, !dbg !10522
+}
+
+; Function Attrs: inlinehint nounwind uwtable
+define internal zeroext i1 @tcp_is_cwnd_limited(%struct.sock* %sk) #5 !dbg !10523 {
+entry:
+  %call = call %struct.tcp_sock* @tcp_sk(%struct.sock* %sk), !dbg !10527
+  %call1 = call zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %call), !dbg !10528
+  br i1 %call1, label %if.then, label %if.end, !dbg !10530
 
 if.then:                                          ; preds = %entry
-  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10524
-  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10524, !tbaa !10418
-  %max_packets_out = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 44, !dbg !10525
-  %1 = load i32, i32* %max_packets_out, align 8, !dbg !10525, !tbaa !10526
-  %mul = mul i32 2, %1, !dbg !10527
-  %cmp = icmp ult i32 %0, %mul, !dbg !10528
-  br label %cleanup, !dbg !10529
+  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 53, !dbg !10531
+  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10531, !tbaa !10418
+  %max_packets_out = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 44, !dbg !10532
+  %1 = load i32, i32* %max_packets_out, align 8, !dbg !10532, !tbaa !10533
+  %mul = mul i32 2, %1, !dbg !10534
+  %cmp = icmp ult i32 %0, %mul, !dbg !10535
+  br label %cleanup, !dbg !10536
 
 if.end:                                           ; preds = %entry
-  %is_cwnd_limited = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 34, !dbg !10530
-  %bf.load = load i8, i8* %is_cwnd_limited, align 1, !dbg !10530
-  %bf.lshr = lshr i8 %bf.load, 5, !dbg !10530
-  %bf.clear = and i8 %bf.lshr, 1, !dbg !10530
-  %tobool = icmp ne i8 %bf.clear, 0, !dbg !10531
-  br label %cleanup, !dbg !10532
+  %is_cwnd_limited = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %call, i32 0, i32 34, !dbg !10537
+  %bf.load = load i8, i8* %is_cwnd_limited, align 1, !dbg !10537
+  %bf.lshr = lshr i8 %bf.load, 5, !dbg !10537
+  %bf.clear = and i8 %bf.lshr, 1, !dbg !10537
+  %tobool = icmp ne i8 %bf.clear, 0, !dbg !10538
+  br label %cleanup, !dbg !10539
 
 cleanup:                                          ; preds = %if.end, %if.then
   %retval.0 = phi i1 [ %cmp, %if.then ], [ %tobool, %if.end ]
-  ret i1 %retval.0, !dbg !10533
+  ret i1 %retval.0, !dbg !10540
 }
 
 ; Function Attrs: inlinehint nounwind uwtable
-define internal zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %tp) #5 !dbg !10534 {
+define internal zeroext i1 @tcp_in_slow_start(%struct.tcp_sock* %tp) #5 !dbg !10541 {
 entry:
-  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 53, !dbg !10539
-  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10539, !tbaa !10418
-  %snd_ssthresh = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 52, !dbg !10540
-  %1 = load i32, i32* %snd_ssthresh, align 8, !dbg !10540, !tbaa !10355
-  %cmp = icmp ult i32 %0, %1, !dbg !10541
-  ret i1 %cmp, !dbg !10542
+  %snd_cwnd = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 53, !dbg !10546
+  %0 = load i32, i32* %snd_cwnd, align 4, !dbg !10546, !tbaa !10418
+  %snd_ssthresh = getelementptr inbounds %struct.tcp_sock, %struct.tcp_sock* %tp, i32 0, i32 52, !dbg !10547
+  %1 = load i32, i32* %snd_ssthresh, align 8, !dbg !10547, !tbaa !10355
+  %cmp = icmp ult i32 %0, %1, !dbg !10548
+  ret i1 %cmp, !dbg !10549
 }
 
 declare i32 @tcp_slow_start(%struct.tcp_sock*, i32) #3
@@ -11585,37 +11589,44 @@ attributes #5 = { inlinehint nounwind uwtable "correctly-rounded-divide-sqrt-fp-
 !10506 = !DILocation(line: 67, column: 6, scope: !10487)
 !10507 = !DILocation(line: 67, column: 18, scope: !10487)
 !10508 = !DILocation(line: 68, column: 1, scope: !10487)
-!10509 = distinct !DISubprogram(name: "inet_csk", scope: !9562, file: !9562, line: 146, type: !10510, isLocal: true, isDefinition: true, scopeLine: 147, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10512)
+!10509 = distinct !DISubprogram(name: "tcp_sk", scope: !9965, file: !9965, line: 392, type: !10510, isLocal: true, isDefinition: true, scopeLine: 393, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10512)
 !10510 = !DISubroutineType(types: !10511)
-!10511 = !{!9560, !6777}
+!10511 = !{!9963, !6777}
 !10512 = !{!10513}
-!10513 = !DILocalVariable(name: "sk", arg: 1, scope: !10509, file: !9562, line: 146, type: !6777)
-!10514 = !DILocation(line: 148, column: 9, scope: !10509)
-!10515 = !DILocation(line: 148, column: 2, scope: !10509)
-!10516 = distinct !DISubprogram(name: "tcp_is_cwnd_limited", scope: !9541, file: !9541, line: 1130, type: !6775, isLocal: true, isDefinition: true, scopeLine: 1131, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10517)
-!10517 = !{!10518, !10519}
-!10518 = !DILocalVariable(name: "sk", arg: 1, scope: !10516, file: !9541, line: 1130, type: !6777)
-!10519 = !DILocalVariable(name: "tp", scope: !10516, file: !9541, line: 1132, type: !10439)
-!10520 = !DILocation(line: 1132, column: 30, scope: !10516)
-!10521 = !DILocation(line: 1135, column: 6, scope: !10522)
-!10522 = distinct !DILexicalBlock(scope: !10516, file: !9541, line: 1135, column: 6)
-!10523 = !DILocation(line: 1135, column: 6, scope: !10516)
-!10524 = !DILocation(line: 1136, column: 14, scope: !10522)
-!10525 = !DILocation(line: 1136, column: 33, scope: !10522)
-!10526 = !{!10356, !10344, i64 2336}
-!10527 = !DILocation(line: 1136, column: 27, scope: !10522)
-!10528 = !DILocation(line: 1136, column: 23, scope: !10522)
-!10529 = !DILocation(line: 1136, column: 3, scope: !10522)
-!10530 = !DILocation(line: 1138, column: 13, scope: !10516)
-!10531 = !DILocation(line: 1138, column: 9, scope: !10516)
-!10532 = !DILocation(line: 1138, column: 2, scope: !10516)
-!10533 = !DILocation(line: 1139, column: 1, scope: !10516)
-!10534 = distinct !DISubprogram(name: "tcp_in_slow_start", scope: !9541, file: !9541, line: 1065, type: !10535, isLocal: true, isDefinition: true, scopeLine: 1066, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10537)
-!10535 = !DISubroutineType(types: !10536)
-!10536 = !{!301, !10439}
-!10537 = !{!10538}
-!10538 = !DILocalVariable(name: "tp", arg: 1, scope: !10534, file: !9541, line: 1065, type: !10439)
-!10539 = !DILocation(line: 1067, column: 13, scope: !10534)
-!10540 = !DILocation(line: 1067, column: 28, scope: !10534)
-!10541 = !DILocation(line: 1067, column: 22, scope: !10534)
-!10542 = !DILocation(line: 1067, column: 2, scope: !10534)
+!10513 = !DILocalVariable(name: "sk", arg: 1, scope: !10509, file: !9965, line: 392, type: !6777)
+!10514 = !DILocation(line: 394, column: 9, scope: !10509)
+!10515 = !DILocation(line: 394, column: 2, scope: !10509)
+!10516 = distinct !DISubprogram(name: "inet_csk", scope: !9562, file: !9562, line: 146, type: !10517, isLocal: true, isDefinition: true, scopeLine: 147, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10519)
+!10517 = !DISubroutineType(types: !10518)
+!10518 = !{!9560, !6777}
+!10519 = !{!10520}
+!10520 = !DILocalVariable(name: "sk", arg: 1, scope: !10516, file: !9562, line: 146, type: !6777)
+!10521 = !DILocation(line: 148, column: 9, scope: !10516)
+!10522 = !DILocation(line: 148, column: 2, scope: !10516)
+!10523 = distinct !DISubprogram(name: "tcp_is_cwnd_limited", scope: !9541, file: !9541, line: 1130, type: !6775, isLocal: true, isDefinition: true, scopeLine: 1131, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10524)
+!10524 = !{!10525, !10526}
+!10525 = !DILocalVariable(name: "sk", arg: 1, scope: !10523, file: !9541, line: 1130, type: !6777)
+!10526 = !DILocalVariable(name: "tp", scope: !10523, file: !9541, line: 1132, type: !10439)
+!10527 = !DILocation(line: 1132, column: 30, scope: !10523)
+!10528 = !DILocation(line: 1135, column: 6, scope: !10529)
+!10529 = distinct !DILexicalBlock(scope: !10523, file: !9541, line: 1135, column: 6)
+!10530 = !DILocation(line: 1135, column: 6, scope: !10523)
+!10531 = !DILocation(line: 1136, column: 14, scope: !10529)
+!10532 = !DILocation(line: 1136, column: 33, scope: !10529)
+!10533 = !{!10356, !10344, i64 2336}
+!10534 = !DILocation(line: 1136, column: 27, scope: !10529)
+!10535 = !DILocation(line: 1136, column: 23, scope: !10529)
+!10536 = !DILocation(line: 1136, column: 3, scope: !10529)
+!10537 = !DILocation(line: 1138, column: 13, scope: !10523)
+!10538 = !DILocation(line: 1138, column: 9, scope: !10523)
+!10539 = !DILocation(line: 1138, column: 2, scope: !10523)
+!10540 = !DILocation(line: 1139, column: 1, scope: !10523)
+!10541 = distinct !DISubprogram(name: "tcp_in_slow_start", scope: !9541, file: !9541, line: 1065, type: !10542, isLocal: true, isDefinition: true, scopeLine: 1066, flags: DIFlagPrototyped, isOptimized: true, unit: !2, variables: !10544)
+!10542 = !DISubroutineType(types: !10543)
+!10543 = !{!301, !10439}
+!10544 = !{!10545}
+!10545 = !DILocalVariable(name: "tp", arg: 1, scope: !10541, file: !9541, line: 1065, type: !10439)
+!10546 = !DILocation(line: 1067, column: 13, scope: !10541)
+!10547 = !DILocation(line: 1067, column: 28, scope: !10541)
+!10548 = !DILocation(line: 1067, column: 22, scope: !10541)
+!10549 = !DILocation(line: 1067, column: 2, scope: !10541)

@@ -3371,6 +3371,7 @@ if.end95:                                         ; preds = %if.then93, %if.end8
   call void @INIT_LIST_HEAD(%struct.list_head* %controls)
   %ctl_files = getelementptr inbounds %struct.snd_card, %struct.snd_card* %0, i32 0, i32 17
   call void @INIT_LIST_HEAD(%struct.list_head* %ctl_files)
+  %files_lock = getelementptr inbounds %struct.snd_card, %struct.snd_card* %0, i32 0, i32 23
   call void @spinlock_check()
   %files_lock103 = getelementptr inbounds %struct.snd_card, %struct.snd_card* %0, i32 0, i32 23
   %11 = getelementptr inbounds %struct.spinlock, %struct.spinlock* %files_lock103, i32 0, i32 0
