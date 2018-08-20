@@ -17,17 +17,6 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 
-/// Compare Values.
-int DifferentialFunctionComparator::cmpValues(const Value *L,
-                                              const Value *R) const {
-    const GEPOperator *GEPL = dyn_cast<GEPOperator>(L);
-    const GEPOperator *GEPR = dyn_cast<GEPOperator>(R);
-    if (GEPL && GEPR)
-        return cmpGEPs(GEPL, GEPR);
-    else
-        return FunctionComparator::cmpValues(L, R);
-}
-
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.

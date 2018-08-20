@@ -31,11 +31,6 @@ class DifferentialFunctionComparator : public FunctionComparator {
             : FunctionComparator(F1, F2, GN) {}
 
   protected:
-    /// Specific comparison of Values.
-    /// Allows comparing GEPOperators the same way as GEP instructions.
-    /// All other values are compared the original way.
-    int cmpValues(const Value *L, const Value *R) const override;
-
     /// Specific comparison of GEP instructions/operators.
     /// Handles situation when there is an offset between matching GEP indices
     /// in the compared modules (when a struct type has different fields).
