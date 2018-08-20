@@ -15,21 +15,36 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
+#include <set>
 
-bool callsTransitively(const Function &Caller, const Function &Callee) {
+bool callsTransitively(const Function &Caller,
+                       const Function &Callee,
+                       std::set<const Function *> &Visited) {
     for (auto &BB : Caller) {
         for (auto &Inst : BB) {
             if (auto Call = dyn_cast<CallInst>(&Inst)) {
                 auto *Called = getCalledFunction(Call);
+                if (Visited.find(Called) != Visited.end())
+                    continue;
+
+                Visited.insert(Called);
+
                 if (Called == &Callee)
                     return true;
-
-                if (Called && callsTransitively(*Called, Callee))
+                if (Called && callsTransitively(*Called, Callee, Visited))
                     return true;
             }
         }
     }
     return false;
+}
+
+/// Check if a function can transitively call another function.
+/// Since there might be recursion in function calls, use a set of visited
+/// functions.
+bool callsTransitively(const Function &Caller, const Function &Callee) {
+    std::set<const Function *> visited;
+    return callsTransitively(Caller, Callee, visited);
 }
 
 /// Get function called by a Call instruction. Handles situation when the called

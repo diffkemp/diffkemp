@@ -55,9 +55,6 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                     if (checkDependency(&Arg))
                         dependent = true;
                 }
-
-                if (CallInstr->getCalledFunction())
-                    addToIncluded(&Instr);
             }
             if (auto PhiInstr = dyn_cast<PHINode>(&Instr)) {
                 // Phi instructions

@@ -41,6 +41,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
     std::vector<Function *> functionsToDelete;
 
     for (Function &Fun : Mod) {
+        if (Fun.getIntrinsicID() != llvm::Intrinsic::not_intrinsic)
+            continue;
+
         if (Fun.getLinkage() != GlobalValue::LinkageTypes::ExternalLinkage)
             continue;
 
