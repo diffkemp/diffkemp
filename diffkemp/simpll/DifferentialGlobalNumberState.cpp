@@ -47,8 +47,8 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
 
                 if (possibleResult != Strings.end()) {
                     // If the string is in the map, set the result to it
-                    result = (*possibleResult).getValue();
-                    GlobalNumbers.insert({value, (*possibleResult).second});
+                    result = possibleResult->getValue();
+                    GlobalNumbers.insert({value, result});
                 } else {
                     // If it isn't, assign it the next number and insert it to
                     // both GlobalNumbers and the string map
@@ -64,8 +64,8 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
 
                 if (possibleResult != Constants.end()) {
                     // If the APInt is in the map, set the result to it
-                    result = (*possibleResult).second;
-                    GlobalNumbers.insert({value, (*possibleResult).second});
+                    result = possibleResult->second;
+                    GlobalNumbers.insert({value, result});
                 } else {
                     // If it isn't, assign it the next number and insert it to
                     // both GlobalNumbers and the APInt map
