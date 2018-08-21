@@ -28,6 +28,18 @@ class DifferentialGlobalNumberState : public GlobalNumberState {
     using ValueNumberMap = ValueMap<GlobalValue *, uint64_t>;
     ValueNumberMap GlobalNumbers;
 
+    // Mapping strings to numbers
+    StringMap<uint64_t> Strings;
+
+    // Mapping APInts to numbers
+    struct cmpConstants {
+        bool operator()(const APInt a, const APInt b) const {
+            return (a - b).isNegative();
+        }
+    };
+    using IntegerMap = std::map<APInt, uint64_t, cmpConstants>;
+    IntegerMap Constants{IntegerMap(cmpConstants())};
+
     Module *First;
     Module *Second;
 
