@@ -34,8 +34,8 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
         // the initializer is either a ConstantDataSequential or a ConstantInt,
         // use a map for comparison by value instead of name
         if (GA && GA->hasGlobalUnnamedAddr() && GA->hasInitializer() &&
-            (dyn_cast<ConstantDataSequential>(GA->getInitializer()) ||
-             dyn_cast<ConstantInt>(GA->getInitializer()))) {
+            (isa<ConstantDataSequential>(GA->getInitializer()) ||
+             isa<ConstantInt>(GA->getInitializer()))) {
             // Value is a constant that can be compared by value
             Constant *I = GA->getInitializer();
 
@@ -45,9 +45,10 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
                 auto possibleResult = Strings.find(
                     CDS->getAsString());
 
-                if(possibleResult != Strings.end()) {
+                if (possibleResult != Strings.end()) {
                     // If the string is in the map, set the result to it
                     result = (*possibleResult).getValue();
+                    GlobalNumbers.insert({value, (*possibleResult).second});
                 } else {
                     // If it isn't, assign it the next number and insert it to
                     // both GlobalNumbers and the string map
@@ -64,6 +65,7 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
                 if (possibleResult != Constants.end()) {
                     // If the APInt is in the map, set the result to it
                     result = (*possibleResult).second;
+                    GlobalNumbers.insert({value, (*possibleResult).second});
                 } else {
                     // If it isn't, assign it the next number and insert it to
                     // both GlobalNumbers and the APInt map

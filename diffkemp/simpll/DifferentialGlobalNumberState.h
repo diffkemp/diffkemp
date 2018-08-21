@@ -33,7 +33,7 @@ class DifferentialGlobalNumberState : public GlobalNumberState {
 
     // Mapping APInts to numbers
     struct cmpConstants {
-        bool operator()(const APInt a, const APInt b) const {
+        bool operator()(const APInt &a, const APInt &b) const {
             return (a - b).isNegative();
         }
     };
