@@ -1,3 +1,4 @@
+disabled: true
 module: i2c-algo-bit
 path: drivers/i2c/algos
 filename: i2c-algo-bit.c
