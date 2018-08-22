@@ -36,6 +36,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// in the compared modules (when a struct type has different fields).
     int cmpGEPs(const GEPOperator *GEPL,
                 const GEPOperator *GEPR) const override;
+    /// Specific comparison of attribute lists.
+    /// Attributes that do not affect the semantics of functions are removed.
+    int cmpAttrs(const AttributeList L, const AttributeList R) const override;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H

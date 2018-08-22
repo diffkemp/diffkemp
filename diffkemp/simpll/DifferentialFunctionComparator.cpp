@@ -16,6 +16,7 @@
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
 
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
@@ -79,4 +80,25 @@ int DifferentialFunctionComparator::cmpGEPs(
     }
 
     return 0;
+}
+
+/// Remove chosen attributes from the attribute set at the given index of
+/// the given attribute list. Since attribute lists are immutable, they must be
+/// copied all over.
+AttributeList cleanAttributes(AttributeList AS, unsigned Idx, LLVMContext &C) {
+    AttributeList result = AS;
+    result = result.removeAttribute(C, Idx, Attribute::AttrKind::AlwaysInline);
+    result = result.removeAttribute(C, Idx, Attribute::AttrKind::InlineHint);
+    return result;
+}
+
+int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
+                                             const AttributeList R) const {
+    AttributeList LNew = L;
+    AttributeList RNew = R;
+    for (unsigned i = L.index_begin(), e = L.index_end(); i != e; ++i) {
+        LNew = cleanAttributes(LNew, i, LNew.getContext());
+        RNew = cleanAttributes(RNew, i, RNew.getContext());
+    }
+    return FunctionComparator::cmpAttrs(LNew, RNew);
 }
