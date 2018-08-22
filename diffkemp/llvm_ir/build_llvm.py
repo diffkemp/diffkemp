@@ -492,9 +492,9 @@ class LlvmKernelBuilder:
                     param.endswith(".o")):
                 continue
 
-            # Output name is given by replacing .c by .bc in source name
+            # Output name is given by replacing .c by .ll in source name
             if param.endswith(".c"):
-                output_file = "{}.bc".format(param[:-2])
+                output_file = "{}.ll".format(param[:-2])
 
             command.append(self._strip_bash_quotes(param))
         command.extend(["-o", output_file])
@@ -509,7 +509,7 @@ class LlvmKernelBuilder:
         command = ["llvm-link", "-S"]
         for param in ld_command.split():
             if param.endswith(".o"):
-                command.append("{}.bc".format(param[:-2]))
+                command.append("{}.ll".format(param[:-2]))
             elif param == "-o":
                 command.append(param)
         return command
@@ -570,9 +570,9 @@ class LlvmKernelBuilder:
                 check_call(command, stderr=stderr)
                 self.opt_llvm(file, command[0])
             except CalledProcessError:
-                # Do not raise exceptions if built-in.bc cannot be built. This
+                # Do not raise exceptions if built-in.ll cannot be built. This
                 # always happens when files are built into modules.
-                if not file.endswith("built-in.bc"):
+                if not file.endswith("built-in.ll"):
                     raise BuildException("Building {} failed".format(file))
 
     def build_llvm_module(self, name, file_name, commands):
@@ -595,7 +595,7 @@ class LlvmKernelBuilder:
                 os.chdir(cwd)
                 raise
 
-        if not os.path.isfile(os.path.join(self.modules_dir, "{}.bc".format(
+        if not os.path.isfile(os.path.join(self.modules_dir, "{}.ll".format(
                                                              file_name))):
             os.chdir(cwd)
             raise BuildException("Building {} did not produce LLVM IR file"
@@ -658,7 +658,7 @@ class LlvmKernelBuilder:
             command = self.kbuild_object_command("{}.o".format(file_name))
             command = self.gcc_to_llvm(command)
             self.build_llvm_file(os.path.join(self.modules_dir,
-                                              "{}.bc".format(file_name)),
+                                              "{}.ll".format(file_name)),
                                  command)
             return LlvmKernelModule(file_name, file_name, self.modules_path)
         except BuildException:
@@ -710,7 +710,7 @@ class LlvmKernelBuilder:
         for mod in modules:
             # Only create modules that have been actually built
             if os.path.isfile(os.path.join(self.modules_dir,
-                                           "{}.bc".format(mod))):
+                                           "{}.ll".format(mod))):
                 # If the module name is "built-in", set it to the directory it
                 # is located in.
                 name = mod

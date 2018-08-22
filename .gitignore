@@ -80,7 +80,7 @@ cmake-build-debug/
 *.swp
 
 # Temporary files from regression tests. Used for debugging purposes only.
-*-sliced*.bc
+*.ll
 *.smt2
 *.pdf
 

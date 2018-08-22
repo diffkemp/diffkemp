@@ -32,7 +32,7 @@ class LlvmKernelModule:
     """
     def __init__(self, name, file_name, module_dir):
         self.name = name
-        self.llvm = os.path.join(module_dir, "{}.bc".format(file_name))
+        self.llvm = os.path.join(module_dir, "{}.ll".format(file_name))
         kernel_object = os.path.join(module_dir, "{}.ko".format(file_name))
         if os.path.isfile(kernel_object):
             self.kernel_object = kernel_object

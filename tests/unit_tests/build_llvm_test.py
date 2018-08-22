@@ -89,7 +89,7 @@ def test_kbuild_module_fail(builder):
 def test_build_file(builder):
     """Building single object into LLVM."""
     mod = builder.build_file("init")
-    assert mod.llvm == "/diffkemp/kernel/linux-3.10/sound/core/init.bc"
+    assert mod.llvm == "/diffkemp/kernel/linux-3.10/sound/core/init.ll"
     assert os.path.isfile(mod.llvm)
     assert mod.kernel_object is None
 
@@ -115,16 +115,16 @@ def test_build_module(builder):
     assert mod.kernel_object == kernel_obj
 
     # Check if LLVM IR file exists and is correct in the module
-    llvm_file = os.path.join(module_path, "snd-pcm-oss.bc")
+    llvm_file = os.path.join(module_path, "snd-pcm-oss.ll")
     assert os.path.isfile(llvm_file)
     assert mod.llvm == llvm_file
 
-    # Check if all sources of the module are built into .o and .bc files
+    # Check if all sources of the module are built into .o and .ll files
     file_names = ["mixer_oss", "pcm_oss", "pcm_plugin", "io", "copy",
                   "linear", "mulaw", "route", "rate"]
     for f in file_names:
         assert os.path.isfile(os.path.join(module_path, "{}.o".format(f)))
-        assert os.path.isfile(os.path.join(module_path, "{}.bc".format(f)))
+        assert os.path.isfile(os.path.join(module_path, "{}.ll".format(f)))
 
 
 def test_build_modules_with_params():

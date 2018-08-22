@@ -92,12 +92,12 @@ class TaskSpec:
 
         # Names of files
         self.task_dir = os.path.join(tasks_path, module)
-        self.old = os.path.join(self.task_dir, module + "_old.bc")
-        self.new = os.path.join(self.task_dir, module + "_new.bc")
+        self.old = os.path.join(self.task_dir, module + "_old.ll")
+        self.new = os.path.join(self.task_dir, module + "_new.ll")
         self.old_simpl = os.path.join(self.task_dir, module + "_old-" +
-                                      spec["param"] + ".bc")
+                                      spec["param"] + ".ll")
         self.new_simpl = os.path.join(self.task_dir, module + "_new-" +
-                                      spec["param"] + ".bc")
+                                      spec["param"] + ".ll")
         self.old_src = os.path.join(self.task_dir, module + "_old.c")
         self.new_src = os.path.join(self.task_dir, module + "_new.c")
 
