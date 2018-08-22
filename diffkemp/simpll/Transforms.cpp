@@ -16,6 +16,7 @@
 #include "DebugInfo.h"
 #include "DifferentialGlobalNumberState.h"
 #include "DifferentialFunctionComparator.h"
+#include "ModuleComparator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include "passes/PrintContentRemovalPass.h"
 #include "passes/RemoveLifetimeCallsPass.h"
@@ -26,6 +27,7 @@
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
 #include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Transforms/Scalar/LowerExpectIntrinsic.h>
 
 /// Preprocessing functions run on each module at the beginning.
 /// The following transformations are applied:
@@ -59,6 +61,7 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
 
     fpm.addPass(PrintContentRemovalPass{});
     fpm.addPass(DCEPass {});
+    fpm.addPass(LowerExpectIntrinsicPass {});
 
     for (auto &Fun : Mod)
         fpm.run(Fun, fam);
@@ -72,17 +75,6 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
     mpmFunctionArg.addPass(RemoveUnusedReturnValuesPass {});
 
     mpmFunctionArg.run(Mod, mam, Main);
-}
-
-/// Delete alias to a function.
-void deleteAliasToFun(Module &Mod, const Function *Fun) {
-    std::vector<GlobalAlias *> toRemove;
-    for (auto &alias : Mod.aliases()) {
-        if (alias.getAliasee() == Fun)
-            toRemove.push_back(&alias);
-    }
-    for (auto &alias : toRemove)
-        alias->eraseFromParent();
 }
 
 /// Simplification of modules to ease the semantic diff.
@@ -108,36 +100,16 @@ void simplifyModulesDiff(Config &config) {
             mam.getResult<FunctionAbstractionsGenerator>(*config.Second,
                                                          config.SecondFun));
 
-    // Compare functions for syntactic equivalence.
-    for (auto &FunFirst : *config.First) {
-        if (FunFirst.isDeclaration() ||
-                !(config.FirstFun && (&FunFirst == config.FirstFun ||
-                        callsTransitively(*config.FirstFun,
-                                          FunFirst))))
-            continue;
-        auto FunSecond = config.Second->getFunction(FunFirst.getName());
-
-        if (!FunSecond)
-            continue;
-
-        if (FunSecond->isDeclaration() ||
-                !(config.SecondFun && (FunSecond == config.SecondFun ||
-                        callsTransitively(*config.SecondFun,
-                                          *FunSecond))))
-            continue;
-
-        DifferentialGlobalNumberState gs(config.First.get(),
-                                         config.Second.get());
-        DifferentialFunctionComparator fComp(&FunFirst, FunSecond, &gs);
-        if (fComp.compare() == 0) {
-#ifdef DEBUG
-            errs() << "Function " << FunFirst.getName()
-                   << " is same in both modules\n";
-#endif
-            FunFirst.deleteBody();
-            deleteAliasToFun(*config.First, &FunFirst);
-            FunSecond->deleteBody();
-            deleteAliasToFun(*config.Second, FunSecond);
+    // Compare functions for syntactical equivalence
+    ModuleComparator modComp(*config.First, *config.Second);
+    if (config.FirstFun && config.SecondFun) {
+        modComp.compareFunctions(config.FirstFun, config.SecondFun);
+    } else {
+        for (auto &FunFirst : *config.First) {
+            if (auto FunSecond =
+                    config.Second->getFunction(FunFirst.getName())) {
+                modComp.compareFunctions(&FunFirst, FunSecond);
+            }
         }
     }
 }
@@ -191,7 +163,4 @@ void postprocessModule(Module &Mod, Function *Main) {
     mpm.addPass(AlwaysInlinerPass {});
     mpm.addPass(RemoveLifetimeCallsPass {});
     mpm.run(Mod, mam);
-
-    errs() << "Function " << Main->getName() << " after inlining:\n";
-    Main->dump();
 }

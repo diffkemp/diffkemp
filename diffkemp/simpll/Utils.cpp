@@ -13,6 +13,7 @@
 
 #include "Utils.h"
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
 #include <set>
@@ -73,4 +74,15 @@ std::string typeName(const Type *Type) {
     std::replace(result.begin(), result.end(), ')', '$');
     std::replace(result.begin(), result.end(), ',', '_');
     return result;
+}
+
+/// Find alias which points to the given function and delete it.
+void deleteAliasToFun(Module &Mod, const Function *Fun) {
+    std::vector<GlobalAlias *> toRemove;
+    for (auto &alias : Mod.aliases()) {
+        if (alias.getAliasee() == Fun)
+            toRemove.push_back(&alias);
+    }
+    for (auto &alias : toRemove)
+        alias->eraseFromParent();
 }

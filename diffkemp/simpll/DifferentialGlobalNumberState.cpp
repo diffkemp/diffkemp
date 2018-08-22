@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DifferentialGlobalNumberState.h"
+#include "ModuleComparator.h"
 #include <llvm/IR/Module.h>
 
 /// Get number for a global value.
@@ -76,8 +77,33 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
                     nextNumber++;
                 }
             }
-        } else {
+        } else if (auto Fun = dyn_cast<Function>(value)) {
+            // If the value is a function, find function in the other module
+            // with the same name. However, functions get the same number only
+            // if they are syntactically equal. Equality can be determined from
+            // the ModuleComparator.
+            Function *OtherFun = otherModule->getFunction(Fun->getName());
+
+            auto FunPair = ModComparator->ComparedFuns.find({Fun, OtherFun});
+            if (FunPair == ModComparator->ComparedFuns.end()) {
+                // If the function was not compared yet, compare it.
+                ModComparator->compareFunctions(Fun, OtherFun);
+                FunPair = ModComparator->ComparedFuns.find({Fun, OtherFun});
+            }
+
             GlobalNumbers.insert({value, nextNumber});
+            result = nextNumber;
+
+            if (FunPair->second == ModuleComparator::Result::NOT_EQUAL)
+                // Non-equal functions must get different numbers.
+                nextNumber++;
+            GlobalNumbers.insert({OtherFun, nextNumber});
+            nextNumber++;
+        } else {
+            // Globals other that constants and functions get the same number
+            // if they have the same name.
+            GlobalNumbers.insert({value, nextNumber});
+            result = nextNumber;
 
             GlobalValue *otherValue = otherModule->getNamedValue(
                     value->getName());

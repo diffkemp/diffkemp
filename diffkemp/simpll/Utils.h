@@ -32,4 +32,7 @@ const Function *getCalledFunction(const CallInst *Call);
 /// Get name of a type.
 std::string typeName(const Type *Type);
 
+/// Delete alias to a function
+void deleteAliasToFun(Module &Mod, const Function *Fun);
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H

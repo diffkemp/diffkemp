@@ -20,6 +20,8 @@
 
 using namespace llvm;
 
+class ModuleComparator;
+
 /// Extension of GlobalNumberState.
 /// Makes sure that matching globals in both compared modules get the same
 /// number.
@@ -44,9 +46,13 @@ class DifferentialGlobalNumberState : public GlobalNumberState {
     Module *Second;
 
     u_int64_t nextNumber = 0;
+
+    ModuleComparator *ModComparator;
   public:
-    DifferentialGlobalNumberState(Module *first, Module *second) :
-            First(first), Second(second) {}
+    DifferentialGlobalNumberState(Module *first,
+                                  Module *second,
+                                  ModuleComparator *ModComparator) :
+            First(first), Second(second), ModComparator(ModComparator) {}
 
     /// Get number of a global symbol. Corresponding symbols in compared modules
     /// get the same number.
