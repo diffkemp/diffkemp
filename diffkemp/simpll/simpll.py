@@ -41,6 +41,9 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         if suffix:
             simpll_command.extend(["--suffix", suffix])
 
+        if verbose:
+            print " ".join(simpll_command)
+
         check_call(simpll_command, stderr=stderr)
         check_call(["opt", "-S", "-deadargelim", "-o", first_out, first_out],
                    stderr=stderr)
