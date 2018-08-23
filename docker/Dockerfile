@@ -7,6 +7,7 @@ RUN dnf update -y && \
       bc \
       bison \
       cmake \
+      cpio \
       curl \
       elfutils-libelf-devel \
       findutils \
