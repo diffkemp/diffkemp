@@ -149,8 +149,8 @@ def functions_diff(first, second, funFirst, funSecond, coupled, timeout,
 
     print result
     if result == Result.EQUAL_UNDER_ASSUMPTIONS:
-        print "  Used assumptions:"
+        print "    Used assumptions:"
         for assume in [a for a in assumptions if a.diff > 0]:
-            print "    Functions {} and {} are same".format(assume.first,
-                                                            assume.second)
+            print "      Functions {} and {} are same".format(assume.first,
+                                                              assume.second)
     return result
