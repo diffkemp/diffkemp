@@ -29,6 +29,7 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("-t", "--timeout", help="timeout in seconds for a single \
                     parameter comparison")
+    ap.add_argument("-s", "--function", help="function to compare")
     return ap
 
 
@@ -108,7 +109,7 @@ def run_from_cli():
                 print "  parameter {}".format(name)
                 # Compare modules
                 stat = modules_diff(first, second, param.varname, timeout,
-                                    args.verbose)
+                                    args.function, args.verbose)
                 print "    {}".format(str(stat.overall_result()).upper())
                 result.log_result(stat.overall_result(), "{}-{}".format(mod,
                                                                         name))
