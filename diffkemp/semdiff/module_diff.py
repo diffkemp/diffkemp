@@ -60,7 +60,7 @@ class Statistics():
         return Result.UNKNOWN
 
 
-def modules_diff(first, second, param, timeout, verbose=False):
+def modules_diff(first, second, param, timeout, function, verbose=False):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
     :param first: File with LLVM IR of the first module
@@ -71,8 +71,10 @@ def modules_diff(first, second, param, timeout, verbose=False):
     stat = Statistics()
     couplings = FunctionCouplings(first.llvm, second.llvm)
     couplings.infer_for_param(param)
-    try:
-        for c in couplings.main:
+    for c in couplings.main:
+        if function and not function == c.first and not function == c.second:
+            continue
+        try:
             # Simplify modules
             first_simpl, second_simpl = simplify_modules_diff(first.llvm,
                                                               second.llvm,
@@ -89,7 +91,7 @@ def modules_diff(first, second, param, timeout, verbose=False):
                                     c.second, called_couplings.called, timeout,
                                     verbose)
             stat.log_result(result, c.first)
-    except SimpLLException:
-        print "    Simplifying has failed"
-        stat.log_result(Result.ERROR, "")
+        except SimpLLException:
+            print "    Simplifying has failed"
+            stat.log_result(Result.ERROR, "")
     return stat
