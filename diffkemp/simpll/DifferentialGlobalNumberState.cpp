@@ -91,14 +91,22 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
                 FunPair = ModComparator->ComparedFuns.find({Fun, OtherFun});
             }
 
-            GlobalNumbers.insert({value, nextNumber});
-            result = nextNumber;
+            // Search for a global number of the function since it might have
+            // been inserted already if the function recursively called itself.
+            // If it is not found, insert a new number.
+            auto GlobalNum = GlobalNumbers.find(value);
+            if (GlobalNum == GlobalNumbers.end()) {
+                GlobalNumbers.insert({value, nextNumber});
+                result = nextNumber;
 
-            if (FunPair->second == ModuleComparator::Result::NOT_EQUAL)
-                // Non-equal functions must get different numbers.
+                if (FunPair->second == ModuleComparator::Result::NOT_EQUAL)
+                    // Non-equal functions must get different numbers.
+                    nextNumber++;
+                GlobalNumbers.insert({OtherFun, nextNumber});
                 nextNumber++;
-            GlobalNumbers.insert({OtherFun, nextNumber});
-            nextNumber++;
+            } else {
+                result = GlobalNum->second;
+            }
         } else {
             // Globals other that constants and functions get the same number
             // if they have the same name.
