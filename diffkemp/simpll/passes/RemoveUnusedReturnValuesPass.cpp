@@ -11,13 +11,14 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "CalledFunctionsAnalysis.h"
 #include "RemoveUnusedReturnValuesPass.h"
 #include "Utils.h"
 #include <llvm/IR/Instructions.h>
 
 PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Module &Mod,
-        ModuleAnalysisManager &mam,
+        AnalysisManager<Module, Function *> &mam,
         Function *Main) {
 
     // These attributes are invalid for void functions
@@ -37,6 +38,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             Attribute::AttrKind::DereferenceableOrNull
     };
 
+    auto &CalledFuns = mam.getResult<CalledFunctionsAnalysis>(Mod, Main);
+
     // Old functions ought to be deleted after iteration
     std::vector<Function *> functionsToDelete;
 
@@ -50,7 +53,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         if (Fun.getReturnType()->isVoidTy())
             continue;
 
-        if (Main && !callsTransitively(*Main, Fun))
+        if (CalledFuns.find(&Fun) == CalledFuns.end())
             continue;
 
         bool can_replace = true;

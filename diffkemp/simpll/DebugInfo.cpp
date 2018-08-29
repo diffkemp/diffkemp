@@ -78,7 +78,7 @@ void DebugInfo::calculateGEPIndexAlignments() {
         return;
 
     for (auto &Fun : ModFirst) {
-        if (&Fun != FunFirst && !callsTransitively(*FunFirst, Fun))
+        if (CalledFirst.find(&Fun) == CalledFirst.end())
             continue;
 
         for (auto &BB : Fun) {

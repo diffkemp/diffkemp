@@ -12,6 +12,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "CalledFunctionsAnalysis.h"
 #include "FunctionAbstractionsGenerator.h"
 #include "Utils.h"
 #include <llvm/IR/InlineAsm.h>
@@ -29,13 +30,16 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
     int i = 0;
     std::vector<Instruction *> toErase;
 
+    auto &CalledFuns = mam.getResult<CalledFunctionsAnalysis>(Mod, Main);
+
     for (auto &Fun : Mod) {
-        if (!(Main && (&Fun == Main || callsTransitively(*Main, Fun))))
+        if (CalledFuns.find(&Fun) == CalledFuns.end())
             continue;
         for (auto &BB : Fun) {
             for (auto &Instr : BB) {
                 if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
-                    auto funCalled = getCalledFunction(CallInstr);
+                    auto funCalled =
+                            getCalledFunction(CallInstr->getCalledValue());
                     if (funCalled)
                         continue;
                     auto CalledType = CallInstr->getCalledValue()->getType();
@@ -81,7 +85,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     if (!CallInstr->isInlineAsm())
                         args.push_back(CallInstr->getCalledValue());
                     auto newCall = CallInst::Create(newFun, args, "",
-                                                          CallInstr);
+                                                    CallInstr);
                     newCall->dump();
                     CallInstr->replaceAllUsesWith(newCall);
                     toErase.push_back(&Instr);

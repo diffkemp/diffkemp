@@ -23,11 +23,8 @@ enum Program {
     First, Second
 };
 
-/// Check if a function can transitively call another function.
-bool callsTransitively(const Function &Caller, const Function &Callee);
-
-/// Get function called by a Call instruction.
-const Function *getCalledFunction(const CallInst *Call);
+/// Extract called function from a called value
+const Function *getCalledFunction(const Value *CalledValue);
 
 /// Get name of a type.
 std::string typeName(const Type *Type);

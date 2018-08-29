@@ -18,43 +18,12 @@
 #include <llvm/Support/raw_ostream.h>
 #include <set>
 
-bool callsTransitively(const Function &Caller,
-                       const Function &Callee,
-                       std::set<const Function *> &Visited) {
-    for (auto &BB : Caller) {
-        for (auto &Inst : BB) {
-            if (auto Call = dyn_cast<CallInst>(&Inst)) {
-                auto *Called = getCalledFunction(Call);
-                if (Visited.find(Called) != Visited.end())
-                    continue;
-
-                Visited.insert(Called);
-
-                if (Called == &Callee)
-                    return true;
-                if (Called && callsTransitively(*Called, Callee, Visited))
-                    return true;
-            }
-        }
-    }
-    return false;
-}
-
-/// Check if a function can transitively call another function.
-/// Since there might be recursion in function calls, use a set of visited
-/// functions.
-bool callsTransitively(const Function &Caller, const Function &Callee) {
-    std::set<const Function *> visited;
-    return callsTransitively(Caller, Callee, visited);
-}
-
-/// Get function called by a Call instruction. Handles situation when the called
-/// value is a bitcast of an actual function call.
-const Function *getCalledFunction(const CallInst *Call) {
-    const Function *fun = Call->getCalledFunction();
+/// Extract called function from a called value Handles situation when the
+/// called value is a bitcast.
+const Function *getCalledFunction(const Value *CalledValue) {
+    const Function *fun = dyn_cast<Function>(CalledValue);
     if (!fun) {
-        const Value *val = Call->getCalledValue();
-        if (auto BitCast = dyn_cast<BitCastOperator>(val)) {
+        if (auto BitCast = dyn_cast<BitCastOperator>(CalledValue)) {
             fun = dyn_cast<Function>(BitCast->getOperand(0));
         }
     }

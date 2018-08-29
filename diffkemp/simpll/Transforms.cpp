@@ -17,6 +17,7 @@
 #include "DifferentialGlobalNumberState.h"
 #include "DifferentialFunctionComparator.h"
 #include "ModuleComparator.h"
+#include "passes/CalledFunctionsAnalysis.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include "passes/PrintContentRemovalPass.h"
 #include "passes/RemoveLifetimeCallsPass.h"
@@ -39,8 +40,7 @@
 ///    These arguments do not affect the code functionallity.
 ///    TODO: this should be switchable by a CLI option.
 /// 3. Dead code elimination.
-/// 4. Transformation of functions returning a value into void functions in case
-///    the return value is never used within the module.
+/// 4. Removing calls to llvm.expect.
 void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
     if (Var) {
         // Slicing of the program w.r.t. the value of a global variable
@@ -65,40 +65,42 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
 
     for (auto &Fun : Mod)
         fpm.run(Fun, fam);
-
-    // Module passes
-    PassManager<Module, ModuleAnalysisManager, Function *> mpmFunctionArg;
-    ModuleAnalysisManager mam(false);
-    pb.registerModuleAnalyses(mam);
-
-    // Register passes here
-    mpmFunctionArg.addPass(RemoveUnusedReturnValuesPass {});
-
-    mpmFunctionArg.run(Mod, mam, Main);
 }
 
 /// Simplification of modules to ease the semantic diff.
 /// Removes all the code that is syntactically same between modules (hence it
 /// must not be checked for semantic equivalence).
 /// The following transformations are applied:
-/// 1. Using debug information to compute offsets of the corresponding GEP
-///    indices. Offsets are stored inside LLVM metadata.
-/// 2. Replacing indirect function calls and inline assemblies by abstraction
+/// 1. Replacing indirect function calls and inline assemblies by abstraction
 ///    functions.
-/// 3. Removing bodies of functions that are syntactically equivalent.
+/// 2. Transformation of functions returning a value into void functions in case
+///    the return value is never used within the module.
+/// 3. Using debug information to compute offsets of the corresponding GEP
+///    indices. Offsets are stored inside LLVM metadata.
+/// 4. Removing bodies of functions that are syntactically equivalent.
 void simplifyModulesDiff(Config &config) {
-    DebugInfo(*config.First, *config.Second, config.FirstFun, config.SecondFun);
-
     // Generate abstractions of indirect function calls and for inline
     // assemblies. Then, unify the abstractions between the modules so that
     // the corresponding abstractions get the same name.
     AnalysisManager<Module, Function *> mam(false);
+    mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
     unifyFunctionAbstractions(
             mam.getResult<FunctionAbstractionsGenerator>(*config.First,
                                                          config.FirstFun),
             mam.getResult<FunctionAbstractionsGenerator>(*config.Second,
                                                          config.SecondFun));
+
+    // Module passes
+    PassManager<Module, AnalysisManager<Module, Function *>, Function *> mpm;
+    mpm.addPass(RemoveUnusedReturnValuesPass {});
+    mpm.run(*config.First, mam, config.FirstFun);
+    mpm.run(*config.Second, mam, config.SecondFun);
+
+    DebugInfo(*config.First, *config.Second,
+              config.FirstFun, config.SecondFun,
+              mam.getResult<CalledFunctionsAnalysis>(*config.First,
+                                                     config.FirstFun));
 
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First, *config.Second);
@@ -120,8 +122,8 @@ void markCalleesAlwaysInline(Function &Fun) {
         for (auto &Instr : BB) {
             if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
                 auto CalledFun = CallInstr->getCalledFunction();
-                CallInstr->dump();
-                if (!CalledFun || CalledFun->isDeclaration())
+                if (!CalledFun || CalledFun->isDeclaration() ||
+                        CalledFun->isIntrinsic())
                     continue;
 
                 if (!CalledFun->hasFnAttribute(

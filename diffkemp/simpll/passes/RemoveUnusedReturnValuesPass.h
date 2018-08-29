@@ -23,7 +23,7 @@ using namespace llvm;
 class RemoveUnusedReturnValuesPass
         : public PassInfoMixin<RemoveUnusedReturnValuesPass> {
   public:
-    PreservedAnalyses run(Module &Mod, ModuleAnalysisManager &mam,
+    PreservedAnalyses run(Module &Mod, AnalysisManager<Module, Function *> &mam,
                           Function *Main);
 };
 

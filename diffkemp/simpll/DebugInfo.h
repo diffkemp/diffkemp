@@ -33,9 +33,12 @@ using namespace llvm;
 ///    the index offset into the metadata of a GEP instruction.
 class DebugInfo {
   public:
-    DebugInfo(Module &modFirst, Module &modSecond, Function *funFirst,
-              Function *funSecond) : FunFirst(funFirst), FunSecond(funSecond),
-                                     ModFirst(modFirst), ModSecond(modSecond) {
+    DebugInfo(Module &modFirst, Module &modSecond,
+              Function *funFirst, Function *funSecond,
+              std::set<const Function *> &CalledFirst) :
+            FunFirst(funFirst), FunSecond(funSecond),
+            ModFirst(modFirst), ModSecond(modSecond),
+            CalledFirst(CalledFirst) {
         DebugInfoFirst.processModule(ModFirst);
         DebugInfoSecond.processModule(ModSecond);
         calculateGEPIndexAlignments();
@@ -48,6 +51,7 @@ class DebugInfo {
     Module &ModSecond;
     DebugInfoFinder DebugInfoFirst;
     DebugInfoFinder DebugInfoSecond;
+    std::set<const Function *> &CalledFirst;
 
     /// Calculate alignments of the corresponding indices of GEP instructions.
     void calculateGEPIndexAlignments();
