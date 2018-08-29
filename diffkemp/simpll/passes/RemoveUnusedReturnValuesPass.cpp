@@ -47,13 +47,13 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         if (Fun.getIntrinsicID() != llvm::Intrinsic::not_intrinsic)
             continue;
 
-        if (Fun.getLinkage() != GlobalValue::LinkageTypes::ExternalLinkage)
+        if (!Fun.isDeclaration())
             continue;
 
         if (Fun.getReturnType()->isVoidTy())
             continue;
 
-        if (CalledFuns.find(&Fun) == CalledFuns.end())
+        if (&Fun == Main || CalledFuns.find(&Fun) == CalledFuns.end())
             continue;
 
         bool can_replace = true;
