@@ -12,8 +12,9 @@ The analysis is composed of multiple steps:
   internal representation (LLVM IR). 
 * All code that is not influenced by the chosen parameter is removed (i.e.
   program is sliced). 
+* Relevant functions are compared syntactically using the SimpLL tool.
 * The llreve tool is used to generate a first order logic formula expressing the
-  fact that the remaining programs are semantically equal
+  fact that the remaining programs are semantically equal.
 * The generated formula is solved using an automatic SMT solver Z3 and the
   result determines whether programs are semantically equal or not.
 
@@ -30,8 +31,11 @@ Currently, the main goal is a proof of concept.
         git submodule init
         git submodule update
 
-* slicer: Slicing of programs to remove the code that is not affected by the
-  analysed parameter.
+* SimpLL: Simplification of the compared programs for a subsequent comparison of
+  their semantical equivalence. Slices out code w.r.t. the value of a given
+  variable. Also, removes bodies of functions that are syntactically equal. The
+  syntactic comparison is based on LLVM's FunctionComparator with multiple
+  custom modifications and enhancements.
 
 ## Running environment
 
@@ -54,7 +58,7 @@ After that, the container can be run using
 ## Run
     bin/diffkemp modules-dir [-m module] [-p param] old-version new-version
 
-Check semantic equivalence of all parameters of all modules in the given
+Checks semantic equivalence of all parameters of all modules in the given
 directory between the two kernel versions. Optionally, single module or single
 parameter can be chosen.
 The modules-dir is given relatively to the kernel directory.
