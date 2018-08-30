@@ -92,10 +92,11 @@ void simplifyModulesDiff(Config &config) {
                                                          config.SecondFun));
 
     // Module passes
-    PassManager<Module, AnalysisManager<Module, Function *>, Function *> mpm;
+    PassManager<Module, AnalysisManager<Module, Function *>, Function *,
+        Module *> mpm;
     mpm.addPass(RemoveUnusedReturnValuesPass {});
-    mpm.run(*config.First, mam, config.FirstFun);
-    mpm.run(*config.Second, mam, config.SecondFun);
+    mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
+    mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
     DebugInfo(*config.First, *config.Second,
               config.FirstFun, config.SecondFun,

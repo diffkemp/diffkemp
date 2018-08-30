@@ -24,7 +24,7 @@ class RemoveUnusedReturnValuesPass
         : public PassInfoMixin<RemoveUnusedReturnValuesPass> {
   public:
     PreservedAnalyses run(Module &Mod, AnalysisManager<Module, Function *> &mam,
-                          Function *Main);
+                          Function *Main, Module *ModOther);
 };
 
 #endif //DIFFKEMP_SIMPLL_REMOVEUNUSEDRETURNVALUESPASS_H
