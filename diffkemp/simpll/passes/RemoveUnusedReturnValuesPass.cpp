@@ -19,7 +19,8 @@
 PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Module &Mod,
         AnalysisManager<Module, Function *> &mam,
-        Function *Main) {
+        Function *Main,
+        Module *ModOther) {
 
     // These attributes are invalid for void functions
     Attribute::AttrKind badAttributes[] = {
@@ -51,6 +52,12 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             continue;
 
         if (Fun.getReturnType()->isVoidTy())
+            continue;
+
+        if (!ModOther->getFunction(Fun.getName()))
+            continue;
+
+        if (!ModOther->getFunction(Fun.getName())->getReturnType()->isVoidTy())
             continue;
 
         if (&Fun == Main || CalledFuns.find(&Fun) == CalledFuns.end())
