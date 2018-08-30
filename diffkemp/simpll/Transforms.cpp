@@ -98,13 +98,16 @@ void simplifyModulesDiff(Config &config) {
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
-    DebugInfo(*config.First, *config.Second,
+    DebugInfo DI(*config.First, *config.Second,
               config.FirstFun, config.SecondFun,
               mam.getResult<CalledFunctionsAnalysis>(*config.First,
                                                      config.FirstFun));
+#ifdef DEBUG
+    llvm::errs() << "EINM size: " << DI.EINM.size() << '\n';
+#endif
 
     // Compare functions for syntactical equivalence
-    ModuleComparator modComp(*config.First, *config.Second);
+    ModuleComparator modComp(*config.First, *config.Second, &DI);
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
     } else {
@@ -167,3 +170,4 @@ void postprocessModule(Module &Mod, Function *Main) {
     mpm.addPass(RemoveLifetimeCallsPass {});
     mpm.run(Mod, mam);
 }
+

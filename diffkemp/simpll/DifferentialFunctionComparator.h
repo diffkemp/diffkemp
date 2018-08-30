@@ -23,12 +23,17 @@ using namespace llvm;
 /// Extension of FunctionComparator from LLVM designed to compare functions in
 /// different modules (original FunctionComparator assumes that both functions
 /// are in a single module).
+
+using ElementIndexToNameMap = std::map<std::pair<StructType *, uint64_t>,
+                                StringRef>;
+
 class DifferentialFunctionComparator : public FunctionComparator {
   public:
     DifferentialFunctionComparator(const Function *F1,
                                    const Function *F2,
-                                   GlobalNumberState *GN)
-            : FunctionComparator(F1, F2, GN) {}
+                                   GlobalNumberState *GN,
+                                   const ElementIndexToNameMap *EINM)
+            : FunctionComparator(F1, F2, GN), EINM(EINM) {};
 
   protected:
     /// Specific comparison of GEP instructions/operators.
@@ -39,6 +44,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Specific comparison of attribute lists.
     /// Attributes that do not affect the semantics of functions are removed.
     int cmpAttrs(const AttributeList L, const AttributeList R) const override;
+
+  private:
+    const ElementIndexToNameMap *EINM;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H

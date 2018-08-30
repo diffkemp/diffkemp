@@ -59,6 +59,7 @@ DICompositeType *DebugInfo::getStructTypeInfo(const StringRef name,
                                               const Program prog) const {
     auto types = prog == Program::First ? DebugInfoFirst.types()
                                         : DebugInfoSecond.types();
+
     for (auto Type : types) {
         if (auto StructType = dyn_cast<DICompositeType>(Type)) {
             if (StructType->getName() == name)
@@ -160,7 +161,16 @@ void DebugInfo::calculateGEPIndexAlignments() {
                                         (unsigned) indexSecond,
                                         IndexConstant->getBitWidth(),
                                         ModFirst.getContext());
+
                                 GEP->dump();
+
+                                EINM.insert(
+                                    {{dyn_cast<StructType>(indexedType), indexFirst},
+                                                                elementName});
+                                EINM.insert(
+                                    {{ModSecond.getTypeByName(indexedType->getStructName()), indexSecond},
+                                                                elementName});
+
                                 errs() << "New index: " << indexSecond << "\n";
                             }
                         }
