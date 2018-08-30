@@ -17,8 +17,6 @@
 #include "Utils.h"
 #include <llvm/Support/raw_ostream.h>
 
-#define DEBUG
-
 /// Syntactical comparison of functions.
 /// Function declarations are equal if they have the same name.
 /// Functions with body are compared using custom FunctionComparator that
@@ -43,7 +41,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     }
 
     // Comparing functions with bodies using custom FunctionComparator.
-    DifferentialFunctionComparator fComp(FirstFun, SecondFun, &GS);
+    DifferentialFunctionComparator fComp(FirstFun, SecondFun, &GS, &DI->EINM);
     if (fComp.compare() == 0) {
 #ifdef DEBUG
         errs() << "Function " << FirstFun->getName()

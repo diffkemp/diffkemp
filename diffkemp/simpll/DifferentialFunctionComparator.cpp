@@ -32,55 +32,80 @@ int DifferentialFunctionComparator::cmpGEPs(
     if (int Res = cmpNumbers(ASL, ASR))
         return Res;
 
-    // When we have target data, we can reduce the GEP down to the value in
-    // bytes added to the address.
-    const DataLayout &DL = FnL->getParent()->getDataLayout();
-    unsigned BitWidth = DL.getPointerSizeInBits(ASL);
-    APInt OffsetL(BitWidth, 0), OffsetR(BitWidth, 0);
-    if (GEPL->accumulateConstantOffset(DL, OffsetL) &&
-            GEPR->accumulateConstantOffset(DL, OffsetR)) {
-        if (auto GEPLInstr = dyn_cast<GetElementPtrInst>(GEPL)) {
-            auto GEPRInstr = dyn_cast<GetElementPtrInst>(GEPR);
-            auto TypeItL = gep_type_begin(GEPLInstr);
-            auto TypeItR = gep_type_begin(GEPRInstr);
-            auto ix = GEPL->idx_begin();
-            for (unsigned i = 0; i < GEPL->getNumIndices();
-                 ++i, ++ix, TypeItL++, TypeItR++) {
-                if (auto idxMD = GEPLInstr->getMetadata(
-                        "idx_align_" + std::to_string(i))) {
-                    // Add alignment of the offset computed from debug info
-                    auto *ixAlign = dyn_cast<ConstantInt>(
-                            dyn_cast<ConstantAsMetadata>(
-                                    idxMD->getOperand(0))->getValue());
+    if (int Res = cmpNumbers(GEPL->getNumIndices(), GEPR->getNumIndices()))
+        return Res;
 
-                    // Get value of the old offset from the current index
-                    auto oldOffset = DL.getStructLayout(
-                            TypeItL.getStructType())->getElementOffset(
-                            dyn_cast<ConstantInt>(ix)->getZExtValue());
-                    // Get value of the new offset (from metadata)
-                    auto newOffset = DL.getStructLayout(
-                            TypeItR.getStructType())->getElementOffset(
-                            ixAlign->getValue().getZExtValue());
-                    OffsetL += APInt(BitWidth, newOffset - oldOffset, true);
-                }
+    bool allIndicesSame = true;
+
+    // Check whether the indices are identical
+    for (auto idxL = GEPL->idx_begin(), idxR = GEPR->idx_begin();
+         idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
+         ++idxL, ++idxR)
+        if (cmpValues(idxL->get(), idxR->get()))
+            allIndicesSame = false;
+
+    if (!allIndicesSame &&
+        GEPL->hasAllConstantIndices() && GEPR->hasAllConstantIndices()) {
+        allIndicesSame = true;
+
+        std::vector<Value *> IndicesL;
+        std::vector<Value *> IndicesR;
+
+        const GetElementPtrInst *GEPiL = dyn_cast<GetElementPtrInst>(GEPL);
+        const GetElementPtrInst *GEPiR = dyn_cast<GetElementPtrInst>(GEPR);
+
+        if (!GEPiL || !GEPiR)
+            return FunctionComparator::cmpGEPs(GEPL, GEPR);
+
+        for (auto idxL = GEPL->idx_begin(), idxR = GEPR->idx_begin();
+         idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
+         ++idxL, ++idxR) {
+            auto ValueTypeL = GEPiL->getIndexedType(GEPiL->getSourceElementType(),
+                                                    ArrayRef<Value *>(
+                                                            IndicesL));
+
+            auto ValueTypeR = GEPiR->getIndexedType(GEPiR->getSourceElementType(),
+                                                    ArrayRef<Value *>(
+                                                            IndicesR));
+
+            auto NumericIndexL = dyn_cast<ConstantInt>(idxL->get())->getValue();
+            auto NumericIndexR = dyn_cast<ConstantInt>(idxR->get())->getValue();
+
+            if (!ValueTypeL->isStructTy() || !ValueTypeR->isStructTy()) {
+                // If the indexed type is not a structure type, the indices have
+                // to match in order for the instructions to be equivalent
+                if (!cmpValues(idxL->get(), idxR->get()))
+                    allIndicesSame = false;
+
+                IndicesL.push_back(*idxL);
+                IndicesR.push_back(*idxR);
+                continue;
             }
+
+            // The indexed type is a structure type - compare the names of the
+            // structure members from the ElementIndexToNameMap
+            auto MemberNameL = EINM->find({dyn_cast<StructType>(ValueTypeL),
+                NumericIndexL.getZExtValue()});
+
+            auto MemberNameR = EINM->find({dyn_cast<StructType>(ValueTypeR),
+                NumericIndexR.getZExtValue()});
+
+            if (MemberNameL == EINM->end() || MemberNameL == EINM->end() ||
+               !MemberNameL->second.equals(MemberNameR->second))
+                if (cmpValues(idxL->get(), idxR->get()))
+                    allIndicesSame = false;
+
+            IndicesL.push_back(*idxL);
+            IndicesR.push_back(*idxR);
         }
-        return cmpAPInts(OffsetL, OffsetR);
     }
-    if (int Res = cmpTypes(GEPL->getSourceElementType(),
-                           GEPR->getSourceElementType()))
-        return Res;
 
-    if (int Res = cmpNumbers(GEPL->getNumOperands(), GEPR->getNumOperands()))
-        return Res;
-
-    for (unsigned i = 0, e = GEPL->getNumOperands(); i != e; ++i) {
-        if (int Res = cmpValues(GEPL->getOperand(i), GEPR->getOperand(i)))
-            return Res;
-    }
+    if (!allIndicesSame)
+        return FunctionComparator::cmpGEPs(GEPL, GEPR);
 
     return 0;
 }
+
 
 /// Remove chosen attributes from the attribute set at the given index of
 /// the given attribute list. Since attribute lists are immutable, they must be

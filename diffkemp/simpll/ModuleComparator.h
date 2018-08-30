@@ -16,12 +16,16 @@
 #define DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
 
 #include "DifferentialGlobalNumberState.h"
+#include "DebugInfo.h"
 #include <llvm/IR/Module.h>
 #include <set>
 
 using namespace llvm;
 
 class ModuleComparator {
+    using ElementIndexToNameMap =
+        std::map<std::pair<StructType *, uint64_t>, StringRef>;
+
     Module &First;
     Module &Second;
 
@@ -32,8 +36,13 @@ class ModuleComparator {
     using FunPair = std::pair<Function *, Function *>;
     std::map<FunPair, Result> ComparedFuns;
 
-    ModuleComparator(Module &First, Module &Second)
-            : First(First), Second(Second), GS(&First, &Second, this) {}
+    /// DebugInfo class storing results from analysing debug information
+    const DebugInfo *DI;
+
+    ModuleComparator(Module &First, Module &Second,
+                     const DebugInfo *DI)
+            : First(First), Second(Second), GS(&First, &Second, this),
+            DI(DI) {}
 
     /// Syntactically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.
