@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
+from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.semdiff.module_diff import modules_diff, Statistics
 import sys
 
@@ -121,6 +122,7 @@ def run_from_cli():
             # Clean LLVM modules (allow GC to collect the occupied memory)
             first.clean_module()
             second.clean_module()
+            LlvmKernelModule.clean_all()
         if args.report_stat:
             print ""
             print "Statistics"

@@ -63,6 +63,11 @@ class LlvmKernelModule:
         """Free the parsed LLVM module."""
         self.llvm_module.dispose()
 
+    @staticmethod
+    def clean_all():
+        """Clean all statically managed LLVM memory."""
+        shutdown()
+
     def _update_module_file(self):
         """Update module file with changes done to parsed LLVM IR"""
         self.llvm_module.write_bitcode_to_file(self.llvm)
