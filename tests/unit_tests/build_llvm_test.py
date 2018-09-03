@@ -163,6 +163,7 @@ def test_link_modules():
     builder = LlvmKernelBuilder("3.10", "sound/core/seq")
     modules = builder.build_all_modules(True)
     builder.link_modules(modules)
+    modules["snd-seq-virmidi"].parse_module()
 
     for f in ["snd_midi_event_encode", "snd_midi_event_reset_encode",
               "snd_midi_event_free", "snd_midi_event_new",
