@@ -25,6 +25,7 @@ void writeIRToFile(Module &Mod, StringRef FileName) {
     std::error_code errorCode;
     raw_fd_ostream stream(FileName, errorCode, sys::fs::F_None);
     Mod.print(stream, nullptr);
+    stream.close();
 }
 
 int main(int argc, const char **argv) {
@@ -43,5 +44,6 @@ int main(int argc, const char **argv) {
     writeIRToFile(*config.First, config.FirstOutFile);
     writeIRToFile(*config.Second, config.SecondOutFile);
 
+    llvm_shutdown();
     return 0;
 }
