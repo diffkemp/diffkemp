@@ -79,6 +79,12 @@ class FunctionCouplings():
         self.uncoupled_first = set()
         self.uncoupled_second = set()
 
+    def clean(self):
+        """Free parsed LLVM modules."""
+        # Free modules in function collectors
+        self._fun_collector_first.clean()
+        self._fun_collector_second.clean()
+
     def _infer_from_sets(self, functions_first, functions_second):
         """
         Find pairs of functions that correspond to each other between given

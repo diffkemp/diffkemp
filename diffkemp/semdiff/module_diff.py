@@ -86,6 +86,7 @@ def modules_diff(first, second, param, timeout, function, verbose=False):
             # Find couplings of funcions called by the compared functions
             called_couplings = FunctionCouplings(first_simpl, second_simpl)
             called_couplings.infer_called_by(c.first, c.second)
+            called_couplings.clean()
             # Do semantic difference of modules
             result = functions_diff(first_simpl, second_simpl, c.first,
                                     c.second, called_couplings.called, timeout,

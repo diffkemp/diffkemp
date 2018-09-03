@@ -13,6 +13,10 @@ class FunctionCollector():
         context = get_global_context()
         self._module = context.parse_ir(buffer)
 
+    def clean(self):
+        """Free the inner LLVM module."""
+        self._module.dispose()
+
     # List of standard functions that are supported, so they should not be
     # included in function collecting.
     # Some functions have multiple variants so we need to check for prefix

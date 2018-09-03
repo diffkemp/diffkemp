@@ -41,7 +41,6 @@ class LlvmKernelModule:
             self.kernel_object = None
             self.depends = None
         self.params = dict()
-        self._parse_module()
 
     def get_depends(self):
         """
@@ -54,11 +53,15 @@ class LlvmKernelModule:
                                    self.kernel_object], stderr=stderr)
             self.depends = modinfo.rstrip().split(",")
 
-    def _parse_module(self):
+    def parse_module(self):
         """Parse module file into LLVM module using llvmcpy library"""
         buffer = create_memory_buffer_with_contents_of_file(self.llvm)
         context = get_global_context()
         self.llvm_module = context.parse_ir(buffer)
+
+    def clean_module(self):
+        """Free the parsed LLVM module."""
+        self.llvm_module.dispose()
 
     def _update_module_file(self):
         """Update module file with changes done to parsed LLVM IR"""
@@ -76,10 +79,11 @@ class LlvmKernelModule:
 
             # Remove 'init_module' and 'cleanup_module' globals from the linked
             # module since they would cause a conflict when linking.
-            tmp_mod._parse_module()
+            tmp_mod.parse_module()
             tmp_mod._remove_global("init_module")
             tmp_mod._remove_global("cleanup_module")
             tmp_mod._update_module_file()
+            tmp_mod.clean_module()
 
         link_command = ["llvm-link", "-S", self.llvm]
         link_command.extend([m.llvm for m in link_llvm_modules])
@@ -89,7 +93,6 @@ class LlvmKernelModule:
             try:
                 check_call(link_command, stdout=devnull, stderr=devnull)
                 check_call(opt_command, stdout=devnull, stderr=devnull)
-                self._parse_module()
             except CalledProcessError:
                 pass
             finally:

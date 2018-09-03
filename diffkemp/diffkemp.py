@@ -95,6 +95,10 @@ def run_from_cli():
                 continue
             second = second_mods[mod]
 
+            # Parse LLVM modules
+            first.parse_module()
+            second.parse_module()
+
             if args.param:
                 first.set_param(args.param)
                 second.set_param(args.param)
@@ -113,6 +117,10 @@ def run_from_cli():
                 print "    {}".format(str(stat.overall_result()).upper())
                 result.log_result(stat.overall_result(), "{}-{}".format(mod,
                                                                         name))
+
+            # Clean LLVM modules (allow GC to collect the occupied memory)
+            first.clean_module()
+            second.clean_module()
         if args.report_stat:
             print ""
             print "Statistics"
