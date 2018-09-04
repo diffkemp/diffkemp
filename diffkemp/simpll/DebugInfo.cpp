@@ -84,11 +84,11 @@ void DebugInfo::calculateGEPIndexAlignments() {
         for (auto &BB : Fun) {
             for (auto &Instr : BB) {
                 if (auto GEP = dyn_cast<GetElementPtrInst>(&Instr)) {
-                    GEP->dump();
                     std::vector<Value *> indices;
                     // Iterate all indices
                     for (auto idx = GEP->idx_begin();
-                         idx != GEP->idx_end(); ++idx) {
+                         idx != GEP->idx_end();
+                         ++idx, indices.push_back(*idx)) {
                         auto indexedType =
                                 GEP->getIndexedType(GEP->getSourceElementType(),
                                                     ArrayRef<Value *>(
@@ -98,9 +98,26 @@ void DebugInfo::calculateGEPIndexAlignments() {
                             continue;
                         }
 
+                        auto &indexMap =
+                                IndexMaps[dyn_cast<StructType>(indexedType)];
+
                         if (auto IndexConstant = dyn_cast<ConstantInt>(*idx)) {
                             // Numeric value of the current index
                             uint64_t indexFirst = IndexConstant->getZExtValue();
+
+                            // Check if the corresponding index already exists
+                            auto otherIndex = indexMap.find(indexFirst);
+                            if (otherIndex != indexMap.end()) {
+                                setNewAlignmentOfIndex(
+                                        *GEP,
+                                        indices.size(),
+                                        otherIndex->second,
+                                        IndexConstant->getBitWidth(),
+                                        ModFirst.getContext());
+                                continue;
+                            }
+
+                            indexMap.emplace(indexFirst, indexFirst);
 
                             // Name of the current type (type being indexed)
                             if (!dyn_cast<StructType>(indexedType)->hasName())
@@ -134,15 +151,17 @@ void DebugInfo::calculateGEPIndexAlignments() {
                             // If indices do not match, align the first one to
                             // be the same as the second one
                             if (indexSecond > 0 && indexFirst != indexSecond) {
+                                indexMap.at(indexFirst) =
+                                        (unsigned) indexSecond;
                                 setNewAlignmentOfIndex(
                                         *GEP, indices.size(),
                                         (unsigned) indexSecond,
                                         IndexConstant->getBitWidth(),
                                         ModFirst.getContext());
+                                GEP->dump();
                                 errs() << "New index: " << indexSecond << "\n";
                             }
                         }
-                        indices.push_back(*idx);
                     }
                 }
             }

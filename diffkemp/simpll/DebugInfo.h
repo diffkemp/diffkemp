@@ -21,6 +21,7 @@
 #include <llvm/IR/PassManager.h>
 #include <llvm/IR/TypeFinder.h>
 #include <set>
+#include <llvm/IR/ValueMap.h>
 
 using namespace llvm;
 
@@ -52,6 +53,10 @@ class DebugInfo {
     DebugInfoFinder DebugInfoFirst;
     DebugInfoFinder DebugInfoSecond;
     std::set<const Function *> &CalledFirst;
+
+    /// Mapping struct types to index maps that contain pairs of corresponding
+    /// indices.
+    std::map<StructType *, std::map<uint64_t, uint64_t>> IndexMaps;
 
     /// Calculate alignments of the corresponding indices of GEP instructions.
     void calculateGEPIndexAlignments();
