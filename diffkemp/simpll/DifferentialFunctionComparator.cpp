@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DifferentialFunctionComparator.h"
+#include "DebugInfo.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -21,11 +22,30 @@
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
-/// Assumes that the offset alignment is stored inside the GEP instruction as
-/// metadata.
+/// Uses data saved in ElementIndexToNameMap.
 int DifferentialFunctionComparator::cmpGEPs(
         const GEPOperator *GEPL,
         const GEPOperator *GEPR) const {
+    int OldFunctionResult = FunctionComparator::cmpGEPs(GEPL, GEPR);
+
+    if(OldFunctionResult == 0)
+        // The original function says the GEPs are equal - return the value
+        return OldFunctionResult;
+
+    if (!isa<StructType>(GEPL->getSourceElementType()) ||
+        !isa<StructType>(GEPR->getSourceElementType()))
+       // One of the types in not a structure - the original function is
+       // sufficient for correct comparison
+       return OldFunctionResult;
+
+    if (getStructTypeName(dyn_cast<StructType>(
+                GEPL->getSourceElementType())) !=
+            getStructTypeName(dyn_cast<StructType>(
+                GEPR->getSourceElementType())))
+        // Different structure names - the indices may be same by coincidence,
+        // therefore index comparison can't be used
+        return OldFunctionResult;
+
     unsigned int ASL = GEPL->getPointerAddressSpace();
     unsigned int ASR = GEPR->getPointerAddressSpace();
 
@@ -37,17 +57,7 @@ int DifferentialFunctionComparator::cmpGEPs(
 
     bool allIndicesSame = true;
 
-    // Check whether the indices are identical
-    for (auto idxL = GEPL->idx_begin(), idxR = GEPR->idx_begin();
-         idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
-         ++idxL, ++idxR)
-        if (cmpValues(idxL->get(), idxR->get()))
-            allIndicesSame = false;
-
-    if (!allIndicesSame &&
-        GEPL->hasAllConstantIndices() && GEPR->hasAllConstantIndices()) {
-        allIndicesSame = true;
-
+    if (GEPL->hasAllConstantIndices() && GEPR->hasAllConstantIndices()) {
         std::vector<Value *> IndicesL;
         std::vector<Value *> IndicesR;
 
@@ -55,7 +65,7 @@ int DifferentialFunctionComparator::cmpGEPs(
         const GetElementPtrInst *GEPiR = dyn_cast<GetElementPtrInst>(GEPR);
 
         if (!GEPiL || !GEPiR)
-            return FunctionComparator::cmpGEPs(GEPL, GEPR);
+            return OldFunctionResult;
 
         for (auto idxL = GEPL->idx_begin(), idxR = GEPR->idx_begin();
          idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
@@ -79,7 +89,7 @@ int DifferentialFunctionComparator::cmpGEPs(
 
                 IndicesL.push_back(*idxL);
                 IndicesR.push_back(*idxR);
-                continue;
+                break;
             }
 
             // The indexed type is a structure type - compare the names of the
@@ -98,12 +108,11 @@ int DifferentialFunctionComparator::cmpGEPs(
             IndicesL.push_back(*idxL);
             IndicesR.push_back(*idxR);
         }
-    }
+    } else
+        // Indicies can't be compared by name, because they are not constant
+        return OldFunctionResult;
 
-    if (!allIndicesSame)
-        return FunctionComparator::cmpGEPs(GEPL, GEPR);
-
-    return 0;
+    return !allIndicesSame;
 }
 
 
