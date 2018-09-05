@@ -24,6 +24,7 @@
 #include "passes/RemoveUnusedReturnValuesPass.h"
 #include "passes/VarDependencySlicer.h"
 #include "Utils.h"
+#include "passes/UnifyMemcpyPass.h"
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
@@ -39,8 +40,9 @@
 /// 2. Removal of the arguments of calls to printing functions.
 ///    These arguments do not affect the code functionallity.
 ///    TODO: this should be switchable by a CLI option.
-/// 3. Dead code elimination.
-/// 4. Removing calls to llvm.expect.
+/// 3. Unification of memcpy variants so that all use the llvm.memcpy intrinsic.
+/// 4. Dead code elimination.
+/// 5. Removing calls to llvm.expect.
 void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
     if (Var) {
         // Slicing of the program w.r.t. the value of a global variable
@@ -60,6 +62,7 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
     pb.registerFunctionAnalyses(fam);
 
     fpm.addPass(PrintContentRemovalPass{});
+    fpm.addPass(UnifyMemcpyPass {});
     fpm.addPass(DCEPass {});
     fpm.addPass(LowerExpectIntrinsicPass {});
 
