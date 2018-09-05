@@ -108,12 +108,14 @@ void DebugInfo::calculateGEPIndexAlignments() {
                             // Check if the corresponding index already exists
                             auto otherIndex = indexMap.find(indexFirst);
                             if (otherIndex != indexMap.end()) {
-                                setNewAlignmentOfIndex(
-                                        *GEP,
-                                        indices.size(),
-                                        otherIndex->second,
-                                        IndexConstant->getBitWidth(),
-                                        ModFirst.getContext());
+                                if (indexFirst != otherIndex->second) {
+                                    setNewAlignmentOfIndex(
+                                            *GEP,
+                                            indices.size(),
+                                            otherIndex->second,
+                                            IndexConstant->getBitWidth(),
+                                            ModFirst.getContext());
+                                }
                                 continue;
                             }
 
@@ -214,11 +216,11 @@ StringRef DebugInfo::getElementNameAtIndex(const DICompositeType &type,
     unsigned currentIndex = 0;
     for (auto Elem : type.getElements()) {
         if (auto TypeElem = dyn_cast<DIDerivedType>(Elem)) {
+            if (TypeElem->getOffsetInBits() > 0 && !isSameElemIndex(TypeElem))
+                currentIndex++;
+
             if (currentIndex == index)
                 return TypeElem->getName();
-
-            if (!isSameElemIndex(TypeElem))
-                currentIndex++;
         }
     }
     return "";
