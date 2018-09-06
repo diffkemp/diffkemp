@@ -168,39 +168,26 @@ class TestClass(object):
 
     def test_simpll(self, task_spec):
         """
-        Test simplifying modules with the SimpLL tool. Simplification must
-        not fail and produce a valid LLVM IR file.
-        """
-        # First, copy LLVM IR files (simplification for all functions will be
-        # done on task_spec.old_simpl and task_spec.new_simpl).
-        shutil.copyfile(task_spec.old, task_spec.old_simpl)
-        shutil.copyfile(task_spec.new, task_spec.new_simpl)
-        # Calculate couplings and run simplification
-        couplings = FunctionCouplings(task_spec.old, task_spec.new)
-        couplings.infer_for_param(task_spec.param)
-        for fun_pair, expected in task_spec.functions.iteritems():
-            if expected != Result.TIMEOUT:
-                simplify_modules_diff(task_spec.old_simpl, task_spec.new_simpl,
-                                      fun_pair[0], fun_pair[1],
-                                      task_spec.param)
-
-    def test_function_comparison(self, task_spec):
-        """
-        Test the actual comparison of semantic difference of modules w.r.t. a
-        parameter. Runs the analysis for each function couple and compares the
+        Test comparison of semantic difference of modules w.r.t. a parameter.
+        For each compared function, the module is first simplified using the
+        SimpLL tool and then the actual analysis is run. Compares the obtained
         result with the expected one.
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        couplings = FunctionCouplings(task_spec.old_simpl,
-                                      task_spec.new_simpl)
+        couplings = FunctionCouplings(task_spec.old, task_spec.new)
         couplings.infer_for_param(task_spec.param)
         for fun_pair, expected in task_spec.functions.iteritems():
             if expected != Result.TIMEOUT:
-                couplings.infer_called_by(fun_pair[0], fun_pair[1])
+                simplify_modules_diff(task_spec.old, task_spec.new,
+                                      fun_pair[0], fun_pair[1],
+                                      task_spec.param, task_spec.param)
+                called_couplings = FunctionCouplings(task_spec.old_simpl,
+                                                     task_spec.new_simpl)
+                called_couplings.infer_called_by(fun_pair[0], fun_pair[1])
                 result = functions_diff(task_spec.old_simpl,
                                         task_spec.new_simpl,
                                         fun_pair[0], fun_pair[1],
-                                        couplings.called,
+                                        called_couplings.called,
                                         timeout=120)
                 assert result == expected
