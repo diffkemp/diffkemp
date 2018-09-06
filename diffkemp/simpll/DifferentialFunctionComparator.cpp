@@ -21,7 +21,7 @@
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
-/// Uses data saved in ElementIndexToNameMap.
+/// Uses data saved in StructFieldNames.
 int DifferentialFunctionComparator::cmpGEPs(
         const GEPOperator *GEPL,
         const GEPOperator *GEPR) const {
@@ -91,7 +91,7 @@ int DifferentialFunctionComparator::cmpGEPs(
             }
 
             // The indexed type is a structure type - compare the names of the
-            // structure members from the ElementIndexToNameMap
+            // structure members from StructFieldNames.
             auto MemberNameL = DI->StructFieldNames.find(
                 {dyn_cast<StructType>(ValueTypeL),
                 NumericIndexL.getZExtValue()});
