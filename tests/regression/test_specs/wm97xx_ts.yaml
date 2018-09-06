@@ -9,5 +9,5 @@ params:
     functions:
       wm9705_phy_init: equal
       wm9705_poll_touch: timeout
-      wm9705_acc_enable: equal
+      wm9705_acc_enable: timeout
 
