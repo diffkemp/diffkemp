@@ -102,11 +102,11 @@ void simplifyModulesDiff(Config &config) {
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
     DebugInfo DI(*config.First, *config.Second,
-              config.FirstFun, config.SecondFun,
-              mam.getResult<CalledFunctionsAnalysis>(*config.First,
-                                                     config.FirstFun));
+                 config.FirstFun, config.SecondFun,
+                 mam.getResult<CalledFunctionsAnalysis>(*config.First,
+                                                        config.FirstFun));
 #ifdef DEBUG
-    llvm::errs() << "EINM size: " << DI.EINM.size() << '\n';
+    llvm::errs() << "StructFieldNames size: " << DI.StructFieldNames.size() << '\n';
 #endif
 
     // Compare functions for syntactical equivalence
@@ -173,4 +173,3 @@ void postprocessModule(Module &Mod, Function *Main) {
     mpm.addPass(RemoveLifetimeCallsPass {});
     mpm.run(Mod, mam);
 }
-

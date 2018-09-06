@@ -41,7 +41,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     }
 
     // Comparing functions with bodies using custom FunctionComparator.
-    DifferentialFunctionComparator fComp(FirstFun, SecondFun, &GS, &DI->EINM);
+    DifferentialFunctionComparator fComp(FirstFun, SecondFun, &GS, DI);
     if (fComp.compare() == 0) {
 #ifdef DEBUG
         errs() << "Function " << FirstFun->getName()
