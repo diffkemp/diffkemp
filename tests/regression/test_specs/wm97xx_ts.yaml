@@ -8,6 +8,5 @@ params:
   - param: pil
     functions:
       wm9705_phy_init: equal
-      wm9705_poll_touch: timeout
-      wm9705_acc_enable: timeout
-
+      wm9705_poll_touch: equal
+      wm9705_acc_enable: equal
