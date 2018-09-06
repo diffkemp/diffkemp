@@ -91,6 +91,10 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
     bool canRemoveFirstBlock(const BasicBlock *bb);
 
     bool isIncludedDebugInfo(const Instruction &Inst);
+
+    /// Delete all blocks that are not reachable from the entry block
+    /// \param Fun
+    void deleteUnreachableBlocks(Function &Fun);
 };
 
 #endif //PROJECT_VARDEPENDENCYSLICER_H

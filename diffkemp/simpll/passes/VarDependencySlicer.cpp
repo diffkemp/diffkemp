@@ -207,13 +207,11 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
         // Erase entry block if possible
         DeleteDeadBlock(&Fun.getEntryBlock());
     }
-    // Remove unreachable BBs (BBs with no incoming edges, except the first one)
-    for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
-        BasicBlock *BB = &*BB_it++;
-        if (pred_begin(BB) == pred_end(BB)) {
-            DeleteDeadBlock(BB);
-        }
-    }
+
+    // Remove unreachable BBs
+    // @TODO There is a pass in LLVM for this but it fails. It might be fixed
+    //       in a newer version of LLVM.
+    deleteUnreachableBlocks(Fun);
 
 #ifdef DEBUG
     errs() << "Function " << Fun.getName().str() << " after cleanup:\n";
@@ -669,4 +667,45 @@ bool VarDependencySlicer::addStoresToIncluded(const Instruction *Alloca,
         visited.insert(Current);
     }
     return added;
+}
+
+/// Recursively calculate the set of all blocks reachable from BB.
+/// \param BB Block to search from
+/// \param Reachable Set of reachale blocks (new found blocks will be added).
+/// \param Visited Set of visited blocks.
+void calculateReachableBlocksRecursive(BasicBlock *BB,
+                                       std::set<BasicBlock *> &Reachable,
+                                       std::set<BasicBlock *> &Visited) {
+    if (Visited.find(BB) != Visited.end())
+        return;
+    Visited.insert(BB);
+
+    for (auto Succ : successors(BB)) {
+        Reachable.insert(Succ);
+        calculateReachableBlocksRecursive(Succ, Reachable, Visited);
+    }
+}
+
+/// Deleting unreachable blocks.
+void VarDependencySlicer::deleteUnreachableBlocks(Function &Fun) {
+    std::set<BasicBlock *> Reachable = {&Fun.getEntryBlock()};
+    std::set<BasicBlock *> Visited;
+    calculateReachableBlocksRecursive(&Fun.getEntryBlock(), Reachable, Visited);
+
+    std::vector<BasicBlock *> toRemove;
+    for (auto &BB : Fun) {
+        if (Reachable.find(&BB) == Reachable.end()) {
+            // Replace uses of instructions that will be deleted
+            for (auto &Instr : BB)
+                Instr.replaceAllUsesWith(UndefValue::get(Instr.getType()));
+            // Notify successors about deletion of the block
+            for (auto SI = succ_begin(&BB), E = succ_end(&BB); SI != E; ++SI)
+                (*SI)->removePredecessor(&BB);
+            BB.dropAllReferences();
+            toRemove.push_back(&BB);
+        }
+    }
+    // Actually delete unreachable blocks
+    for (auto BB : toRemove)
+        BB->eraseFromParent();
 }
