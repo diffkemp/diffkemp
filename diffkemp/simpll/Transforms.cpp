@@ -106,7 +106,8 @@ void simplifyModulesDiff(Config &config) {
                  mam.getResult<CalledFunctionsAnalysis>(*config.First,
                                                         config.FirstFun));
 #ifdef DEBUG
-    llvm::errs() << "StructFieldNames size: " << DI.StructFieldNames.size() << '\n';
+    llvm::errs() << "StructFieldNames size: " <<
+        DI.StructFieldNames.size() << '\n';
 #endif
 
     // Compare functions for syntactical equivalence
