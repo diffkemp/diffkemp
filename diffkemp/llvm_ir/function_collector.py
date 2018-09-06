@@ -81,14 +81,16 @@ class FunctionCollector():
                 # Use is an Instruction
                 bb = use.user.instruction_parent
                 func = bb.parent
-                result.add(func.name)
+                if ".old" not in func.name:
+                    result.add(func.name)
             elif use.user.get_kind() == ConstantExprValueKind:
                 # Use is an Operator (typicalluy GEP)
                 for inner_use in use.user.iter_uses():
                     if inner_use.user.get_kind() == InstructionValueKind:
                         bb = inner_use.user.instruction_parent
                         func = bb.parent
-                        result.add(func.name)
+                        if ".old" not in func.name:
+                            result.add(func.name)
         return result
 
     def called_by(self, function_names):

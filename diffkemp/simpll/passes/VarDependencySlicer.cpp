@@ -20,6 +20,7 @@
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Local.h>
 #include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 
 PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                                            FunctionAnalysisManager &fam,
@@ -125,13 +126,6 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     }
     IncludedInstrs.insert(DependentInstrs.begin(), DependentInstrs.end());
 
-    // If the return instruction is to be removed, we need to mock it
-    if (RetBB) {
-        if (!isIncluded(RetBB->getTerminator()))
-            mockReturn(Fun.getReturnType());
-        addToIncluded(RetBB->getTerminator());
-    }
-
     // Add needed instructions coming to Phis to included
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
@@ -212,6 +206,14 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     // @TODO There is a pass in LLVM for this but it fails. It might be fixed
     //       in a newer version of LLVM.
     deleteUnreachableBlocks(Fun);
+
+    // If the return instruction is not included, we can transform the function
+    // to return void
+    if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
+              && !Fun.getReturnType()->isVoidTy()) {
+        errs() << "Changing return type of " << Fun.getName() << " to void.\n";
+        changeToVoid(Fun);
+    }
 
 #ifdef DEBUG
     errs() << "Function " << Fun.getName().str() << " after cleanup:\n";
@@ -708,4 +710,50 @@ void VarDependencySlicer::deleteUnreachableBlocks(Function &Fun) {
     // Actually delete unreachable blocks
     for (auto BB : toRemove)
         BB->eraseFromParent();
+}
+
+/// Change return type of the function to void.
+/// This can be done only if the function is not called.
+/// The function is cloned, the original function is kept with a new name having
+/// ".old" suffix.
+void VarDependencySlicer::changeToVoid(Function &Fun) {
+    // Check if function is called from other function
+    for (auto &Use : Fun.uses())
+        if (isa<Instruction>(Use.getUser()))
+            return;
+
+    // Crete new function declaration
+    auto NewType = FunctionType::get(
+            Type::getVoidTy(Fun.getContext()),
+            std::vector<Type *>(Fun.getFunctionType()->param_begin(),
+                                Fun.getFunctionType()->param_end()),
+            Fun.isVarArg());
+    auto NewFun = Function::Create(NewType,
+                                   Fun.getLinkage(),
+                                   Fun.getName(),
+                                   Fun.getParent());
+
+    // Map function arguments
+    ValueToValueMapTy ArgMap;
+    for (auto AI = Fun.arg_begin(), NAI = NewFun->arg_begin(),
+                 E = Fun.arg_end(); AI != E; ++AI, ++NAI) {
+        ArgMap.insert({&*AI, &*NAI});
+    }
+
+    // Clone function
+    SmallVector<ReturnInst *, 8> Returns;
+    CloneFunctionInto(NewFun, &Fun, ArgMap, true, Returns);
+
+    // Change return instructions to return void
+    for (auto *Ret : Returns) {
+        BasicBlock *RetBB = Ret->getParent();
+        Ret->eraseFromParent();
+        Ret = ReturnInst::Create(Fun.getContext(), RetBB);
+    }
+
+    // Rename functions
+    // New function gets original name. Old functions gets ".old" suffix.
+    auto Name = Fun.getName();
+    Fun.setName(Name + ".old");
+    NewFun->setName(Name);
 }

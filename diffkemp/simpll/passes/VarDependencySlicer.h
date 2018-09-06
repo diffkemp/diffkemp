@@ -95,6 +95,9 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
     /// Delete all blocks that are not reachable from the entry block
     /// \param Fun
     void deleteUnreachableBlocks(Function &Fun);
+
+    /// Change return type of the function to void if possible.
+    void changeToVoid(Function &Fun);
 };
 
 #endif //PROJECT_VARDEPENDENCYSLICER_H
