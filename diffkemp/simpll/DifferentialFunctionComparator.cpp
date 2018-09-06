@@ -13,7 +13,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "DifferentialFunctionComparator.h"
-#include "DebugInfo.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -26,17 +25,17 @@
 int DifferentialFunctionComparator::cmpGEPs(
         const GEPOperator *GEPL,
         const GEPOperator *GEPR) const {
-    int OldFunctionResult = FunctionComparator::cmpGEPs(GEPL, GEPR);
+    int OriginalResult = FunctionComparator::cmpGEPs(GEPL, GEPR);
 
-    if(OldFunctionResult == 0)
+    if(OriginalResult == 0)
         // The original function says the GEPs are equal - return the value
-        return OldFunctionResult;
+        return OriginalResult;
 
     if (!isa<StructType>(GEPL->getSourceElementType()) ||
         !isa<StructType>(GEPR->getSourceElementType()))
        // One of the types in not a structure - the original function is
        // sufficient for correct comparison
-       return OldFunctionResult;
+       return OriginalResult;
 
     if (getStructTypeName(dyn_cast<StructType>(
                 GEPL->getSourceElementType())) !=
@@ -44,7 +43,7 @@ int DifferentialFunctionComparator::cmpGEPs(
                 GEPR->getSourceElementType())))
         // Different structure names - the indices may be same by coincidence,
         // therefore index comparison can't be used
-        return OldFunctionResult;
+        return OriginalResult;
 
     unsigned int ASL = GEPL->getPointerAddressSpace();
     unsigned int ASR = GEPR->getPointerAddressSpace();
@@ -55,8 +54,6 @@ int DifferentialFunctionComparator::cmpGEPs(
     if (int Res = cmpNumbers(GEPL->getNumIndices(), GEPR->getNumIndices()))
         return Res;
 
-    bool allIndicesSame = true;
-
     if (GEPL->hasAllConstantIndices() && GEPR->hasAllConstantIndices()) {
         std::vector<Value *> IndicesL;
         std::vector<Value *> IndicesR;
@@ -65,7 +62,7 @@ int DifferentialFunctionComparator::cmpGEPs(
         const GetElementPtrInst *GEPiR = dyn_cast<GetElementPtrInst>(GEPR);
 
         if (!GEPiL || !GEPiR)
-            return OldFunctionResult;
+            return OriginalResult;
 
         for (auto idxL = GEPL->idx_begin(), idxR = GEPR->idx_begin();
          idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
@@ -84,35 +81,39 @@ int DifferentialFunctionComparator::cmpGEPs(
             if (!ValueTypeL->isStructTy() || !ValueTypeR->isStructTy()) {
                 // If the indexed type is not a structure type, the indices have
                 // to match in order for the instructions to be equivalent
-                if (!cmpValues(idxL->get(), idxR->get()))
-                    allIndicesSame = false;
+                if (int Res = cmpValues(idxL->get(), idxR->get()))
+                    return Res;
 
                 IndicesL.push_back(*idxL);
                 IndicesR.push_back(*idxR);
-                break;
+
+                continue;
             }
 
             // The indexed type is a structure type - compare the names of the
             // structure members from the ElementIndexToNameMap
-            auto MemberNameL = EINM->find({dyn_cast<StructType>(ValueTypeL),
+            auto MemberNameL = DI->StructFieldNames.find(
+                {dyn_cast<StructType>(ValueTypeL),
                 NumericIndexL.getZExtValue()});
 
-            auto MemberNameR = EINM->find({dyn_cast<StructType>(ValueTypeR),
+            auto MemberNameR = DI->StructFieldNames.find(
+                {dyn_cast<StructType>(ValueTypeR),
                 NumericIndexR.getZExtValue()});
 
-            if (MemberNameL == EINM->end() || MemberNameL == EINM->end() ||
-               !MemberNameL->second.equals(MemberNameR->second))
-                if (cmpValues(idxL->get(), idxR->get()))
-                    allIndicesSame = false;
+            if (MemberNameL == DI->StructFieldNames.end() ||
+                MemberNameR == DI->StructFieldNames.end() ||
+                !MemberNameL->second.equals(MemberNameR->second))
+                if (int Res = cmpValues(idxL->get(), idxR->get()))
+                    return Res;
 
             IndicesL.push_back(*idxL);
             IndicesR.push_back(*idxR);
         }
     } else
         // Indicies can't be compared by name, because they are not constant
-        return OldFunctionResult;
+        return OriginalResult;
 
-    return !allIndicesSame;
+    return 0;
 }
 
 

@@ -164,12 +164,13 @@ void DebugInfo::calculateGEPIndexAlignments() {
 
                                 GEP->dump();
 
-                                EINM.insert(
-                                    {{dyn_cast<StructType>(indexedType), indexFirst},
-                                                                elementName});
-                                EINM.insert(
-                                    {{ModSecond.getTypeByName(indexedType->getStructName()), indexSecond},
-                                                                elementName});
+                                StructFieldNames.insert(
+                                    {{dyn_cast<StructType>(indexedType),
+                                        indexFirst}, elementName});
+                                StructFieldNames.insert(
+                                    {{ModSecond.getTypeByName(
+                                            indexedType->getStructName()),
+                                        indexSecond}, elementName});
 
                                 errs() << "New index: " << indexSecond << "\n";
                             }

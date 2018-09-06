@@ -33,7 +33,7 @@ using namespace llvm;
 ///    different indices. This analysis matches fields with same name and saves
 ///    the index offset into the metadata of a GEP instruction.
 class DebugInfo {
-  using ElementIndexToNameMap = std::map<std::pair<StructType *, uint64_t>,
+  using StructFieldNamesMap = std::map<std::pair<StructType *, uint64_t>,
                                     StringRef>;
 
   public:
@@ -49,7 +49,7 @@ class DebugInfo {
     };
 
     /// Maps structure type and index to struct member names
-    ElementIndexToNameMap EINM;
+    StructFieldNamesMap StructFieldNames;
 
   private:
     Function *FunFirst;

@@ -15,17 +15,14 @@
 #ifndef DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
 #define DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
 
-#include "DifferentialGlobalNumberState.h"
 #include "DebugInfo.h"
+#include "DifferentialGlobalNumberState.h"
 #include <llvm/IR/Module.h>
 #include <set>
 
 using namespace llvm;
 
 class ModuleComparator {
-    using ElementIndexToNameMap =
-        std::map<std::pair<StructType *, uint64_t>, StringRef>;
-
     Module &First;
     Module &Second;
 

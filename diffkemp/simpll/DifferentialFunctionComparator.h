@@ -16,6 +16,7 @@
 #ifndef DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
 #define DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
 
+#include "DebugInfo.h"
 #include <llvm/Transforms/Utils/FunctionComparator.h>
 
 using namespace llvm;
@@ -24,16 +25,13 @@ using namespace llvm;
 /// different modules (original FunctionComparator assumes that both functions
 /// are in a single module).
 
-using ElementIndexToNameMap = std::map<std::pair<StructType *, uint64_t>,
-                                StringRef>;
-
 class DifferentialFunctionComparator : public FunctionComparator {
   public:
     DifferentialFunctionComparator(const Function *F1,
                                    const Function *F2,
                                    GlobalNumberState *GN,
-                                   const ElementIndexToNameMap *EINM)
-            : FunctionComparator(F1, F2, GN), EINM(EINM) {};
+                                   const DebugInfo *DI)
+            : FunctionComparator(F1, F2, GN), DI(DI) {};
 
   protected:
     /// Specific comparison of GEP instructions/operators.
@@ -46,7 +44,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     int cmpAttrs(const AttributeList L, const AttributeList R) const override;
 
   private:
-    const ElementIndexToNameMap *EINM;
+    const DebugInfo *DI;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
