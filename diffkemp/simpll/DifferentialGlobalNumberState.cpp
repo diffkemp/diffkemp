@@ -85,7 +85,7 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
             Function *OtherFun = otherModule->getFunction(Fun->getName());
 
             auto FunPair = ModComparator->ComparedFuns.find({Fun, OtherFun});
-            if (FunPair == ModComparator->ComparedFuns.end()) {
+            if (OtherFun && FunPair == ModComparator->ComparedFuns.end()) {
                 // If the function was not compared yet, compare it.
                 ModComparator->compareFunctions(Fun, OtherFun);
                 FunPair = ModComparator->ComparedFuns.find({Fun, OtherFun});
@@ -99,10 +99,12 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
                 GlobalNumbers.insert({value, nextNumber});
                 result = nextNumber;
 
-                if (FunPair->second == ModuleComparator::Result::NOT_EQUAL)
-                    // Non-equal functions must get different numbers.
-                    nextNumber++;
-                GlobalNumbers.insert({OtherFun, nextNumber});
+                if (OtherFun) {
+                    if (FunPair->second == ModuleComparator::Result::NOT_EQUAL)
+                        // Non-equal functions must get different numbers.
+                        nextNumber++;
+                    GlobalNumbers.insert({OtherFun, nextNumber});
+                }
                 nextNumber++;
             } else {
                 result = GlobalNum->second;
