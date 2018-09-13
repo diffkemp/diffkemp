@@ -10,6 +10,7 @@ class Result(Enum):
     EQUAL = 0
     NOT_EQUAL = 1
     EQUAL_UNDER_ASSUMPTIONS = 2
+    EQUAL_SYNTAX = 3
     UNKNOWN = 5
     ERROR = -1
     TIMEOUT = -2

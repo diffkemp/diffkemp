@@ -33,6 +33,7 @@ class LlvmKernelModule:
     def __init__(self, name, file_name, module_dir):
         self.name = name
         self.llvm = os.path.join(module_dir, "{}.ll".format(file_name))
+        self.llvm_module = None
         kernel_object = os.path.join(module_dir, "{}.ko".format(file_name))
         if os.path.isfile(kernel_object):
             self.kernel_object = kernel_object
@@ -212,3 +213,11 @@ class LlvmKernelModule:
         collector = FunctionCollector(self.llvm)
         self.main_functions = collector.using_param(self.param)
         self.called_functions = collector.called_by(self.main_functions)
+
+    def is_declaration(self, fun):
+        """
+        Check if the given function is a declaration (does not have body).
+        """
+        llvm_fun = self.llvm_module.get_named_function(fun)
+        return (llvm_fun.get_kind() == FunctionValueKind and
+                llvm_fun.is_declaration())
