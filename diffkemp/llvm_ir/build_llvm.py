@@ -9,6 +9,7 @@ from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.module_analyser import *
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
+import shutil
 from subprocess import CalledProcessError, call, check_call, check_output
 from subprocess import Popen, PIPE
 from urllib import urlretrieve
@@ -50,6 +51,9 @@ class LlvmKernelBuilder:
     # Base path to kernel sources
     kernel_base_dir = "kernel"
 
+    # Name of the kabi whitelist file
+    kabi_whitelist_file = "kabi_whitelist_x86_64"
+
     def __init__(self, kernel_version, modules_dir, debug=False):
         self.kernel_base_path = os.path.abspath(self.kernel_base_dir)
         if not os.path.isdir(self.kernel_base_path):
@@ -57,9 +61,12 @@ class LlvmKernelBuilder:
         self.kernel_version = kernel_version
         self.kernel_path = os.path.join(self.kernel_base_path,
                                         "linux-{}".format(self.kernel_version))
-        self.modules_dir = modules_dir
+        self.modules_dir = modules_dir or "."
         self.modules_path = os.path.join(self.kernel_path, self.modules_dir)
         self.debug = debug
+        self.kabi_tarname = None
+        self.kabi_whitelist = os.path.join(self.kernel_path,
+                                           self.kabi_whitelist_file)
 
         # Deduce source where kernel will be downloaded from.
         # The choice is done based on version string, if it has release part
@@ -141,13 +148,17 @@ class LlvmKernelBuilder:
             check_call(["cpio", "-idmv"], stdin=rpm_cpio.stdout,
                        stderr=devnull)
 
-        # Delete all files but the tar.xz file (keep the directories since
-        # these are other kernels - RPM does not contain dirs)
+        # Delete all files except kernel sources tar, config file, and kabi
+        # whitelists tar if required (keep the directories since these are
+        # other kernels - RPM does not contain dirs).
         tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
         self.configfile = "kernel-{}-x86_64.config".format(
             self.kernel_version.split("-")[0])
+        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
+            self.kernel_version.split("-")[1])
         for f in os.listdir("."):
-            if os.path.isfile(f) and f != tarname and f != self.configfile:
+            if (os.path.isfile(f) and f != tarname and f != self.configfile and
+                    f != self.kabi_tarname):
                 os.remove(f)
         self.configfile = os.path.abspath(self.configfile)
         os.chdir(cwd)
@@ -207,6 +218,30 @@ class LlvmKernelBuilder:
             self._call_and_print(["make", "modules_prepare"], null, null)
         os.chdir(cwd)
 
+    def _extract_kabi_whitelist(self):
+        """
+        Extract kernel abi whitelist from the downloaded tar and store it
+        inside the kernel source dir.
+        The file is named kabi_whitelist_x86_64.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_base_path)
+
+        # Create temp dir and extract the files there
+        os.mkdir("kabi")
+        os.rename(self.kabi_tarname, "kabi/{}".format(self.kabi_tarname))
+        os.chdir("kabi")
+        check_call(["tar", "-xjf", self.kabi_tarname])
+
+        # Copy the desired whitelist
+        shutil.copyfile(os.path.join("kabi-current", self.kabi_whitelist_file),
+                        self.kabi_whitelist)
+
+        # Cleanup
+        os.chdir(self.kernel_base_path)
+        shutil.rmtree("kabi")
+        os.chdir(cwd)
+
     def _prepare_kernel(self):
         """
         Download and configure kernel if kernel directory does not exist.
@@ -217,6 +252,8 @@ class LlvmKernelBuilder:
             self._get_kernel_source()
             self._symlink_gcc_header(7)
             self._configure_kernel()
+            if self.kabi_tarname:
+                self._extract_kabi_whitelist()
 
     def _symlink_gcc_header(self, major_version):
         """
@@ -655,12 +692,13 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         try:
-            command = self.kbuild_object_command("{}.o".format(file_name))
+            name = file_name[:-2] if file_name.endswith(".c") else file_name
+            command = self.kbuild_object_command("{}.o".format(name))
             command = self.gcc_to_llvm(command)
             self.build_llvm_file(os.path.join(self.modules_dir,
-                                              "{}.ll".format(file_name)),
+                                              "{}.ll".format(name)),
                                  command)
-            return LlvmKernelModule(file_name, file_name, self.modules_path)
+            return LlvmKernelModule(name, name, self.modules_path)
         except BuildException:
             raise
         finally:
@@ -765,3 +803,62 @@ class LlvmKernelBuilder:
         print ""
         self.link_modules(llvm_modules)
         return llvm_modules
+
+    def get_kabi_whitelist(self):
+        """Get a list of functions on the kernel abi whitelist."""
+        with open(self.kabi_whitelist) as whitelist_file:
+            funs = whitelist_file.readlines()
+            # Strip whitespaces and skip the first line (whitelist header)
+            return [f.lstrip().strip() for f in funs][1:]
+
+    def build_cscope_database(self):
+        """
+        Build a database for the cscope tool. It will be later used to find
+        source files with symbol definitions.
+        """
+        if "cscope.files" in os.listdir(self.kernel_path):
+            return
+
+        # Write all files that need to be scanned into cscope.files
+        with open(os.path.join(self.kernel_path, "cscope.files"), "w") \
+                as cscope_file:
+            for root, dirs, files in os.walk(self.kernel_path):
+                if ("/Documentation/" in root or
+                        "/scripts/" in root or
+                        "/tmp" in root):
+                    continue
+
+                for f in files:
+                    if (f.endswith((".c", ".h", ".x", ".s", ".S"))):
+                        cscope_file.write("{}\n".format(os.path.join(root, f)))
+
+        # Build cscope database
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        check_call(["cscope", "-b", "-q", "-k"])
+        os.chdir(cwd)
+
+    def find_src_for_function(self, fun):
+        """
+        Find .c source file that contains the definition of the given function.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        try:
+            cscope_output = check_output(["cscope", "-d", "-L", "-1", fun])
+        except CalledProcessError:
+            raise BuildException("Source for {} not found".format(fun))
+        finally:
+            os.chdir(cwd)
+
+        file = None
+        for line in cscope_output.splitlines():
+            if line.split()[0].endswith(".c"):
+                file = line.split()[0]
+                break
+            elif line.split()[0].endswith(".h"):
+                file = line.split()[0]
+        if file:
+            return os.path.relpath(file, self.kernel_path)
+        else:
+            raise BuildException("Source for {} not found".format(fun))

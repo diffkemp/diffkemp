@@ -135,3 +135,7 @@ class FunctionCouplings():
         called_first = self._fun_collector_first.called_by([fun_first])
         called_second = self._fun_collector_second.called_by([fun_second])
         self.called = self._infer_from_sets(called_first, called_second)
+
+    def set_main(self, main_first, main_second):
+        """Manually set main functions."""
+        self.main = [FunCouple(main_first, main_second, 0)]

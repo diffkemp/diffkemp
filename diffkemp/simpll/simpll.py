@@ -36,7 +36,8 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         else:
             simpll_command.append(fun_first)
         # Analysed variable
-        simpll_command.extend(["--var", var])
+        if var:
+            simpll_command.extend(["--var", var])
         # Suffix for output files
         if suffix:
             simpll_command.extend(["--suffix", suffix])
