@@ -69,6 +69,135 @@ DICompositeType *DebugInfo::getStructTypeInfo(const StringRef name,
     return nullptr;
 }
 
+/// Calculate alignments of the corresponding indices for one GEP
+/// instruction.
+void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
+                                                 GetElementPtrInst *OtherGEP) {
+    if (GEP) {
+        std::vector<Value *> indices;
+        std::vector<Value *> indicesOther;
+
+        User::op_iterator idx_other;
+        if (OtherGEP)
+             // If we have the other GEP, iterate over its indices, too
+             idx_other = OtherGEP->idx_begin();
+
+        // Iterate all indices
+        for (auto idx = GEP->idx_begin();
+                idx != GEP->idx_end();
+                ++idx, indices.push_back(*idx)) {
+            auto indexedType =
+                    GEP->getIndexedType(GEP->getSourceElementType(),
+                                        ArrayRef<Value *>(
+                                                indices));
+
+            Type *indexedTypeOther = nullptr;
+            if (OtherGEP)
+                    indexedTypeOther = OtherGEP->getIndexedType(
+                                        OtherGEP->getSourceElementType(),
+                                        ArrayRef<Value *>(
+                                                indicesOther));
+
+            if (!indexedType->isStructTy()) {
+                indices.push_back(*idx);
+                continue;
+            }
+
+            if (indexedTypeOther && idx_other != OtherGEP->idx_end() &&
+                !indexedTypeOther->isStructTy()) {
+                indices.push_back(*idx_other);
+                continue;
+            }
+
+            auto &indexMap =
+                    IndexMaps[dyn_cast<StructType>(indexedType)];
+
+            if (auto IndexConstant = dyn_cast<ConstantInt>(*idx)) {
+                // Numeric value of the current index
+                uint64_t indexFirst = IndexConstant->getZExtValue();
+
+                // Check if the corresponding index already exists
+                auto otherIndex = indexMap.find(indexFirst);
+                if (otherIndex != indexMap.end()) {
+                    if (indexFirst != otherIndex->second) {
+                        setNewAlignmentOfIndex(
+                                *GEP,
+                                indices.size(),
+                                otherIndex->second,
+                                IndexConstant->getBitWidth(),
+                                ModFirst.getContext());
+                    }
+                    continue;
+                }
+
+                indexMap.emplace(indexFirst, indexFirst);
+
+                // Name of the current type (type being indexed)
+                if (!dyn_cast<StructType>(indexedType)->hasName())
+                    continue;
+                std::string typeName = getStructTypeName(
+                        dyn_cast<StructType>(indexedType));
+
+                // Get name of the element at the current index in
+                // the first module
+                auto TypeDIFirst =
+                        getStructTypeInfo(typeName, Program::First);
+                if (!TypeDIFirst)
+                    continue;
+
+                StringRef elementName =
+                        getElementNameAtIndex(*TypeDIFirst,
+                                                indexFirst);
+
+                // Find index of the element with the same name in
+                // the second module
+                auto TypeDISecond =
+                        getStructTypeInfo(typeName,
+                                            Program::Second);
+                if (!TypeDISecond)
+                    continue;
+
+                int indexSecond =
+                        getTypeMemberIndex(*TypeDISecond,
+                                            elementName);
+
+                // If indices do not match, align the first one to
+                // be the same as the second one
+                if (indexSecond > 0 && indexFirst != indexSecond) {
+                    indexMap.at(indexFirst) =
+                            (unsigned) indexSecond;
+                    setNewAlignmentOfIndex(
+                            *GEP, indices.size(),
+                            (unsigned) indexSecond,
+                            IndexConstant->getBitWidth(),
+                            ModFirst.getContext());
+
+                    GEP->dump();
+
+                    StructFieldNames.insert(
+                        {{dyn_cast<StructType>(indexedType),
+                            indexFirst}, elementName});
+
+                    if(indexedTypeOther)
+                        StructFieldNames.insert(
+                            {{dyn_cast<StructType>(indexedTypeOther),
+                                indexSecond}, elementName});
+                    else
+                        StructFieldNames.insert(
+                            {{ModSecond.getTypeByName(
+                                    indexedType->getStructName()),
+                        indexSecond}, elementName});
+                        
+                    errs() << "New index: " << indexSecond << "\n";
+                }
+            }
+
+            if (idx_other != OtherGEP->idx_end())
+                ++idx_other;
+        }
+    }
+}
+
 /// For each GEP instruction, check if the accessed struct members of
 /// the same name have the same alignment in both modules. If not, add
 /// metadata to the instruction of one module containing new value of
@@ -86,131 +215,40 @@ void DebugInfo::calculateGEPIndexAlignments() {
 
         auto OtherBB = OtherFun->begin();
         for (auto &BB : Fun) {
-            if(OtherBB == OtherFun->end())
-                // The end of the other function has been reached
-                break;
+            if (OtherBB != OtherFun->end()) {
+                // The other basic block is available; iterate over its
+                // instructions and try to find the corresponding GEP
+                // instructions
+                auto OtherInstr = OtherBB->begin();
 
-            auto OtherInstr = OtherBB->begin();
-            for (auto &Instr : BB) {
-                if(OtherInstr == OtherBB->end())
-                    // The end of the other basic block has been reached
-                    break;
+                for (auto &Instr : BB) {
+                    auto GEP = dyn_cast<GetElementPtrInst>(&Instr);
 
-                auto GEP = dyn_cast<GetElementPtrInst>(&Instr);
-                auto OtherGEP = dyn_cast<GetElementPtrInst>(&*OtherInstr);
+                    if (OtherInstr != OtherBB->end()) {
+                        // The other instruction is available; try to get the
+                        // corresponding GEP instruction
+                        auto OtherGEP = dyn_cast<GetElementPtrInst>(
+                            &*OtherInstr);
 
-                if (GEP && OtherGEP) {
-                    std::vector<Value *> indices;
+                        extractAlignmentFromInstructions(GEP, OtherGEP);
 
-                    std::vector<Value *> indicesOther;
-
-                    auto idx_other = OtherGEP->idx_begin();
-                    // Iterate all indices
-                    for (auto idx = GEP->idx_begin();
-                         idx != GEP->idx_end();
-                         ++idx, indices.push_back(*idx)) {
-                        if(idx_other == OtherGEP->idx_end())
-                            break;
-
-                        auto indexedType =
-                                GEP->getIndexedType(GEP->getSourceElementType(),
-                                                    ArrayRef<Value *>(
-                                                            indices));
-                        auto indexedTypeOther =
-                                OtherGEP->getIndexedType(OtherGEP->getSourceElementType(),
-                                                    ArrayRef<Value *>(
-                                                            indicesOther));
-                        if (!indexedType->isStructTy()) {
-                            indices.push_back(*idx);
-                            continue;
-                        }
-
-                        if (!indexedTypeOther->isStructTy()) {
-                            indices.push_back(*idx_other);
-                            continue;
-                        }
-
-                        auto &indexMap =
-                                IndexMaps[dyn_cast<StructType>(indexedType)];
-
-                        if (auto IndexConstant = dyn_cast<ConstantInt>(*idx)) {
-                            // Numeric value of the current index
-                            uint64_t indexFirst = IndexConstant->getZExtValue();
-
-                            // Check if the corresponding index already exists
-                            auto otherIndex = indexMap.find(indexFirst);
-                            if (otherIndex != indexMap.end()) {
-                                if (indexFirst != otherIndex->second) {
-                                    setNewAlignmentOfIndex(
-                                            *GEP,
-                                            indices.size(),
-                                            otherIndex->second,
-                                            IndexConstant->getBitWidth(),
-                                            ModFirst.getContext());
-                                }
-                                continue;
-                            }
-
-                            indexMap.emplace(indexFirst, indexFirst);
-
-                            // Name of the current type (type being indexed)
-                            if (!dyn_cast<StructType>(indexedType)->hasName())
-                                continue;
-                            std::string typeName = getStructTypeName(
-                                    dyn_cast<StructType>(indexedType));
-
-                            // Get name of the element at the current index in
-                            // the first module
-                            auto TypeDIFirst =
-                                    getStructTypeInfo(typeName, Program::First);
-                            if (!TypeDIFirst)
-                                continue;
-
-                            StringRef elementName =
-                                    getElementNameAtIndex(*TypeDIFirst,
-                                                          indexFirst);
-
-                            // Find index of the element with the same name in
-                            // the second module
-                            auto TypeDISecond =
-                                    getStructTypeInfo(typeName,
-                                                      Program::Second);
-                            if (!TypeDISecond)
-                                continue;
-
-                            int indexSecond =
-                                    getTypeMemberIndex(*TypeDISecond,
-                                                       elementName);
-
-                            // If indices do not match, align the first one to
-                            // be the same as the second one
-                            if (indexSecond > 0 && indexFirst != indexSecond) {
-                                indexMap.at(indexFirst) =
-                                        (unsigned) indexSecond;
-                                setNewAlignmentOfIndex(
-                                        *GEP, indices.size(),
-                                        (unsigned) indexSecond,
-                                        IndexConstant->getBitWidth(),
-                                        ModFirst.getContext());
-
-                                GEP->dump();
-
-                                StructFieldNames.insert(
-                                    {{dyn_cast<StructType>(indexedType),
-                                        indexFirst}, elementName});
-
-                                StructFieldNames.insert(
-                                    {{dyn_cast<StructType>(indexedTypeOther),
-                                        indexSecond}, elementName});
-                            }
-                        }
-                        ++idx_other;
-                    }
+                        ++OtherInstr;
+                    } else
+                        // The end of the basic block has been reached in the
+                        // other module, so the other GEP parameter can't be
+                        // used
+                        extractAlignmentFromInstructions(GEP, nullptr);
                 }
-                ++OtherInstr;
-            }
 
-            ++OtherBB;
+                ++OtherBB;
+            } else {
+                // The other basic block is not available - iterate the
+                // standard way without instructions in the other module
+                for (auto &Instr : BB) {
+                    auto GEP = dyn_cast<GetElementPtrInst>(&Instr);
+                    extractAlignmentFromInstructions(GEP, nullptr);
+                }
+            }
         }
     }
 }

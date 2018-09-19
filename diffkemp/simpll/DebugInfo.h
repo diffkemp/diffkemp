@@ -64,6 +64,11 @@ class DebugInfo {
     /// indices.
     std::map<StructType *, std::map<uint64_t, uint64_t>> IndexMaps;
 
+    /// Calculate alignments of the corresponding indices for one GEP
+    /// instruction.
+    void extractAlignmentFromInstructions(GetElementPtrInst *GEPL,
+                                          GetElementPtrInst *GEPR);
+
     /// Calculate alignments of the corresponding indices of GEP instructions.
     void calculateGEPIndexAlignments();
 
