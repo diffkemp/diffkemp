@@ -61,5 +61,9 @@ RUN pip install \
       progressbar \
 	  pytest \
 	  pyyaml
+# Install additional dnf packages (this should go up in future)
+RUN dnf install -y \
+    bzip2 \
+    cscope
 ENV PYTHONPATH /diffkemp:/usr/lib/python2.7:/usr/lib/python3.6
 
