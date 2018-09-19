@@ -79,23 +79,54 @@ void DebugInfo::calculateGEPIndexAlignments() {
         return;
 
     for (auto &Fun : ModFirst) {
+        auto OtherFun = ModSecond.getFunction(Fun.getName());
+
         if (CalledFirst.find(&Fun) == CalledFirst.end())
             continue;
 
+        auto OtherBB = OtherFun->begin();
         for (auto &BB : Fun) {
+            if(OtherBB == OtherFun->end())
+                // The end of the other function has been reached
+                break;
+
+            auto OtherInstr = OtherBB->begin();
             for (auto &Instr : BB) {
-                if (auto GEP = dyn_cast<GetElementPtrInst>(&Instr)) {
+                if(OtherInstr == OtherBB->end())
+                    // The end of the other basic block has been reached
+                    break;
+
+                auto GEP = dyn_cast<GetElementPtrInst>(&Instr);
+                auto OtherGEP = dyn_cast<GetElementPtrInst>(&*OtherInstr);
+
+                if (GEP && OtherGEP) {
                     std::vector<Value *> indices;
+
+                    std::vector<Value *> indicesOther;
+
+                    auto idx_other = OtherGEP->idx_begin();
                     // Iterate all indices
                     for (auto idx = GEP->idx_begin();
                          idx != GEP->idx_end();
                          ++idx, indices.push_back(*idx)) {
+                        if(idx_other == OtherGEP->idx_end())
+                            break;
+
                         auto indexedType =
                                 GEP->getIndexedType(GEP->getSourceElementType(),
                                                     ArrayRef<Value *>(
                                                             indices));
+                        auto indexedTypeOther =
+                                OtherGEP->getIndexedType(OtherGEP->getSourceElementType(),
+                                                    ArrayRef<Value *>(
+                                                            indicesOther));
                         if (!indexedType->isStructTy()) {
                             indices.push_back(*idx);
+                            continue;
+                        }
+
+                        if (!indexedTypeOther->isStructTy()) {
+                            indices.push_back(*idx_other);
                             continue;
                         }
 
@@ -167,17 +198,19 @@ void DebugInfo::calculateGEPIndexAlignments() {
                                 StructFieldNames.insert(
                                     {{dyn_cast<StructType>(indexedType),
                                         indexFirst}, elementName});
-                                StructFieldNames.insert(
-                                    {{ModSecond.getTypeByName(
-                                            indexedType->getStructName()),
-                                        indexSecond}, elementName});
 
-                                errs() << "New index: " << indexSecond << "\n";
+                                StructFieldNames.insert(
+                                    {{dyn_cast<StructType>(indexedTypeOther),
+                                        indexSecond}, elementName});
                             }
                         }
+                        ++idx_other;
                     }
                 }
+                ++OtherInstr;
             }
+
+            ++OtherBB;
         }
     }
 }
