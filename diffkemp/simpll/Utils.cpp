@@ -46,14 +46,16 @@ std::string typeName(const Type *Type) {
 }
 
 /// Find alias which points to the given function and delete it.
-void deleteAliasToFun(Module &Mod, const Function *Fun) {
+void deleteAliasToFun(Module &Mod, Function *Fun) {
     std::vector<GlobalAlias *> toRemove;
     for (auto &alias : Mod.aliases()) {
         if (alias.getAliasee() == Fun)
             toRemove.push_back(&alias);
     }
-    for (auto &alias : toRemove)
+    for (auto &alias : toRemove) {
+        alias->replaceAllUsesWith(Fun);
         alias->eraseFromParent();
+    }
 }
 
 /// Check if the substring behind the last dot ('.') contains only numbers.
