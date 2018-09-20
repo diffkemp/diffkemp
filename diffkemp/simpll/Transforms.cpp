@@ -19,9 +19,9 @@
 #include "ModuleComparator.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/FunctionAbstractionsGenerator.h"
-#include "passes/PrintContentRemovalPass.h"
 #include "passes/RemoveLifetimeCallsPass.h"
 #include "passes/RemoveUnusedReturnValuesPass.h"
+#include "passes/SimplifyKernelFunctionCallsPass.h"
 #include "passes/VarDependencySlicer.h"
 #include "Utils.h"
 #include "passes/UnifyMemcpyPass.h"
@@ -61,7 +61,7 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
 
-    fpm.addPass(PrintContentRemovalPass{});
+    fpm.addPass(SimplifyKernelFunctionCallsPass{});
     fpm.addPass(UnifyMemcpyPass {});
     fpm.addPass(DCEPass {});
     fpm.addPass(LowerExpectIntrinsicPass {});
