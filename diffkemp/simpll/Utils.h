@@ -32,6 +32,12 @@ const Function *getCalledFunction(const Value *CalledValue);
 std::string typeName(const Type *Type);
 
 /// Delete alias to a function
-void deleteAliasToFun(Module &Mod, const Function *Fun);
+void deleteAliasToFun(Module &Mod, Function *Fun);
+
+/// Check if an LLVM name has a .<NUMBER> suffix.
+bool hasSuffix(std::string Name);
+
+/// Drop the .<NUMBER> suffix from the LLVM name.
+std::string dropSuffix(std::string Name);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H

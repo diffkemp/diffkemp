@@ -22,6 +22,7 @@
 #include "passes/RemoveLifetimeCallsPass.h"
 #include "passes/RemoveUnusedReturnValuesPass.h"
 #include "passes/SimplifyKernelFunctionCallsPass.h"
+#include "passes/SimplifyKernelGlobalsPass.h"
 #include "passes/VarDependencySlicer.h"
 #include "Utils.h"
 #include "passes/UnifyMemcpyPass.h"
@@ -68,6 +69,15 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
 
     for (auto &Fun : Mod)
         fpm.run(Fun, fam);
+
+    // Module passes
+    ModulePassManager mpm(false);
+    ModuleAnalysisManager mam(false);
+    pb.registerModuleAnalyses(mam);
+
+    mpm.addPass(SimplifyKernelGlobalsPass {});
+
+    mpm.run(Mod, mam);
 }
 
 /// Simplification of modules to ease the semantic diff.

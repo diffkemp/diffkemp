@@ -55,3 +55,14 @@ void deleteAliasToFun(Module &Mod, const Function *Fun) {
     for (auto &alias : toRemove)
         alias->eraseFromParent();
 }
+
+/// Check if the substring behind the last dot ('.') contains only numbers.
+bool hasSuffix(std::string Name) {
+    return Name.find_last_not_of("0123456789.") < Name.find_last_of(".");
+}
+
+/// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned
+/// true for the name.
+std::string dropSuffix(std::string Name) {
+    return Name.substr(0, Name.find_last_of('.'));
+}
