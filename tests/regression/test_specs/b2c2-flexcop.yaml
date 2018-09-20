@@ -1,0 +1,25 @@
+module: b2c2-flexcop
+path: drivers/media/common/b2c2
+filename: flexcop.c
+old_kernel: "3.10"
+new_kernel: "4.11"
+debug: true
+
+params:
+  - param: b2c2_flexcop_debug
+    functions:
+      flexcop_pid_control: equal
+      flexcop_set_tone: equal
+      flexcop_dvb_exit: equal
+      flexcop_determine_revision: equal
+      flexcop_master_xfer: equal
+      flexcop_i2c_request: equal
+      flexcop_reset_block_300: equal
+      flexcop_rcv_data_ctrl: equal
+      flexcop_dump_reg: equal
+      flexcop_i2c_operation: equal
+      flexcop_i2c_read4: equal
+      flexcop_toggle_fullts_streaming: equal
+      flexcop_set_voltage: equal
+      flexcop_i2c_write4: equal
+      flexcop_sram_set_dest: equal
