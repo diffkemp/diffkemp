@@ -60,7 +60,9 @@ void deleteAliasToFun(Module &Mod, Function *Fun) {
 
 /// Check if the substring behind the last dot ('.') contains only numbers.
 bool hasSuffix(std::string Name) {
-    return Name.find_last_not_of("0123456789.") < Name.find_last_of(".");
+    size_t dotPos = Name.find_last_of('.');
+    return dotPos != std::string::npos
+            && Name.find_last_not_of("0123456789.") < dotPos;
 }
 
 /// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned

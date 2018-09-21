@@ -64,6 +64,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                             CalledFun,
                             {ConstantPointerNull::get(OpType)},
                             "", &Instr);
+                    newCall->setDebugLoc(CallInstr->getDebugLoc());
                     CallInstr->replaceAllUsesWith(newCall);
                     toRemove.push_back(&Instr);
                 } else if (CalledFun->getName() == "_dev_info" ||
@@ -88,7 +89,8 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                 // Replace the second argument of a call to warn_slowpath_null
                 // by 0.
                 if (CalledFun->getName() == "warn_slowpath_null" ||
-                        CalledFun->getName() == "warn_slowpath_fmt") {
+                        CalledFun->getName() == "warn_slowpath_fmt" ||
+                        CalledFun->getName() == "__might_sleep") {
                     replaceSecondArgByZero(CallInstr);
                 }
 
