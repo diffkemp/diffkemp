@@ -86,31 +86,32 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
         for (auto idx = GEP->idx_begin();
                 idx != GEP->idx_end();
                 ++idx, indices.push_back(*idx)) {
-            auto indexedType =
-                    GEP->getIndexedType(GEP->getSourceElementType(),
+            auto indexedType = GEP->getIndexedType(GEP->getSourceElementType(),
                                         ArrayRef<Value *>(
                                                 indices));
 
             Type *indexedTypeOther = nullptr;
             if (OtherGEP)
-                    indexedTypeOther = OtherGEP->getIndexedType(
+                indexedTypeOther = OtherGEP->getIndexedType(
                                         OtherGEP->getSourceElementType(),
                                         ArrayRef<Value *>(
-                                                indicesOther));
+                                            indicesOther));
 
-            if (!indexedType->isStructTy()) {
-                indices.push_back(*idx);
+            if (!indexedType->isStructTy())
                 continue;
+
+            if (indexedTypeOther && !indexedTypeOther->isStructTy()) {
+                // The pushing of idx_other is done at the end of the cycle, not
+                // in the for header, therefore it has to be pushed here
+                if (idx_other != OtherGEP->idx_end())
+                    indicesOther.push_back(*idx_other);
+
+                // The type in the corresponding GEP instruction is different,
+                // therefore it cannot be used
+                indexedTypeOther = nullptr;
             }
 
-            if (indexedTypeOther && idx_other != OtherGEP->idx_end() &&
-                !indexedTypeOther->isStructTy()) {
-                indices.push_back(*idx_other);
-                continue;
-            }
-
-            auto &indexMap =
-                    IndexMaps[dyn_cast<StructType>(indexedType)];
+            auto &indexMap = IndexMaps[dyn_cast<StructType>(indexedType)];
 
             if (auto IndexConstant = dyn_cast<ConstantInt>(*idx)) {
                 // Numeric value of the current index
@@ -140,26 +141,22 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
 
                 // Get name of the element at the current index in
                 // the first module
-                auto TypeDIFirst =
-                        getStructTypeInfo(typeName, Program::First);
+                auto TypeDIFirst = getStructTypeInfo(typeName, Program::First);
                 if (!TypeDIFirst)
                     continue;
 
-                StringRef elementName =
-                        getElementNameAtIndex(*TypeDIFirst,
-                                                indexFirst);
+                StringRef elementName = getElementNameAtIndex(*TypeDIFirst,
+                                                              indexFirst);
 
                 // Find index of the element with the same name in
                 // the second module
-                auto TypeDISecond =
-                        getStructTypeInfo(typeName,
-                                            Program::Second);
+                auto TypeDISecond = getStructTypeInfo(typeName,
+                                                      Program::Second);
                 if (!TypeDISecond)
                     continue;
 
-                int indexSecond =
-                        getTypeMemberIndex(*TypeDISecond,
-                                            elementName);
+                int indexSecond = getTypeMemberIndex(*TypeDISecond,
+                                                     elementName);
 
                 // If indices do not match, align the first one to
                 // be the same as the second one
@@ -187,13 +184,15 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                             {{ModSecond.getTypeByName(
                                     indexedType->getStructName()),
                         indexSecond}, elementName});
-                        
+
                     errs() << "New index: " << indexSecond << "\n";
                 }
             }
 
-            if (idx_other != OtherGEP->idx_end())
+            if (OtherGEP && idx_other != OtherGEP->idx_end()) {
+                indicesOther.push_back(*idx_other);
                 ++idx_other;
+            }
         }
     }
 }
