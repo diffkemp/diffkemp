@@ -31,7 +31,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    GlobalNumberState *GN,
                                    const DebugInfo *DI)
-            : FunctionComparator(F1, F2, GN), DI(DI) {};
+            : FunctionComparator(F1, F2, GN), DI(DI) {
+        LayoutL = new DataLayout(F1->getParent());
+        LayoutR = new DataLayout(F2->getParent());
+   };
 
   protected:
     /// Specific comparison of GEP instructions/operators.
@@ -42,9 +45,15 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Specific comparison of attribute lists.
     /// Attributes that do not affect the semantics of functions are removed.
     int cmpAttrs(const AttributeList L, const AttributeList R) const override;
+    /// Handle comparing of memory allocation function in cases where the size
+    /// of the composite type is different
+    int cmpOperations(const Instruction *L, const Instruction *R,
+                    bool &needToCmpOperands) const override;
 
   private:
     const DebugInfo *DI;
+
+    DataLayout *LayoutL, *LayoutR;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
