@@ -137,3 +137,56 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
     }
     return FunctionComparator::cmpAttrs(LNew, RNew);
 }
+
+/// Handle comparing of memory allocation function in cases where the size
+/// of the composite type is different
+int DifferentialFunctionComparator::cmpOperations(
+    const Instruction *L, const Instruction *R, bool &needToCmpOperands) const {
+    int Result = FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+
+    // Check whether the instruction is a CallInst calling the function kzalloc.
+    if (!isa<CallInst>(L) || !isa<CallInst>(R))
+        return Result;
+
+    const CallInst *CL = dyn_cast<CallInst>(L);
+    const CallInst *CR = dyn_cast<CallInst>(R);
+
+    if (!CL->getCalledFunction() || !CR->getCalledFunction() ||
+        CL->getCalledFunction()->getName() != "kzalloc" ||
+        CR->getCalledFunction()->getName() != "kzalloc")
+        return Result;
+
+    // The instruction is a call instrution calling the function kzalloc. Now
+    // look whether the next instruction is a BitCastInst casting to a structure
+    // type.
+    if (!isa<BitCastInst>(CL->getNextNode()) ||
+        !isa<BitCastInst>(CR->getNextNode()))
+        return Result;
+
+    const BitCastInst *NextInstL = dyn_cast<BitCastInst>(CL->getNextNode());
+    const BitCastInst *NextInstR = dyn_cast<BitCastInst>(CR->getNextNode());
+
+    // The kzalloc instruction is followed by a bitcast instruction,
+    // therefore it is possible to compare the structure type itself
+    PointerType *PTyL =
+        dyn_cast<PointerType>(dyn_cast<BitCastInst>(NextInstL)->getDestTy());
+    PointerType *PTyR =
+        dyn_cast<PointerType>(dyn_cast<BitCastInst>(NextInstR)->getDestTy());
+
+    if (!isa<StructType>(PTyL->getElementType()) ||
+        !isa<StructType>(PTyR->getElementType()))
+        return FunctionComparator::cmpValues(L, R);
+
+    StructType *STyL = dyn_cast<StructType>(PTyL->getElementType());
+    StructType *STyR = dyn_cast<StructType>(PTyR->getElementType());
+
+    // Look whether the types the memory is allocated for are the same.
+    if (STyL->getName() != STyR->getName())
+        return Result;
+
+    // As of now this function ignores kzalloc flags, therefore the argument
+    // comparison is complete.
+    needToCmpOperands = false;
+
+    return Result;
+}
