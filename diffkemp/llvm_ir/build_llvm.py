@@ -513,6 +513,7 @@ class LlvmKernelBuilder:
         into LLVM IR.
         :param gcc_command: Command to convert
         """
+        output_file = None
         command = ["clang", "-S", "-emit-llvm", "-O1", "-Xclang",
                    "-disable-llvm-passes"]
         if self.debug:
@@ -534,6 +535,9 @@ class LlvmKernelBuilder:
                 output_file = "{}.ll".format(param[:-2])
 
             command.append(self._strip_bash_quotes(param))
+        if output_file is None:
+            raise BuildException("Build error: gcc command not compiling C \
+                                 source found")
         command.extend(["-o", output_file])
         return command
 
