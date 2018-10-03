@@ -838,7 +838,7 @@ class LlvmKernelBuilder:
         check_call(["cscope", "-b", "-q", "-k"])
         os.chdir(cwd)
 
-    def find_src_for_function(self, fun):
+    def find_srcs_for_function(self, fun):
         """
         Find .c source file that contains the definition of the given function.
         """
@@ -851,14 +851,17 @@ class LlvmKernelBuilder:
         finally:
             os.chdir(cwd)
 
-        file = None
+        files = []
         for line in cscope_output.splitlines():
-            if line.split()[0].endswith(".c"):
-                file = line.split()[0]
-                break
-            elif line.split()[0].endswith(".h"):
-                file = line.split()[0]
-        if file:
-            return os.path.relpath(file, self.kernel_path)
-        else:
+            file = os.path.relpath(line.split()[0], self.kernel_path)
+            if file.endswith(".c"):
+                # .c files have higher priority - put them to the beginning of
+                # the list
+                files.insert(0, file)
+            elif file.endswith(".h"):
+                # .h files have lower priority - append them to the end of
+                # the list
+                files.append(file)
+        if len(files) == 0:
             raise BuildException("Source for {} not found".format(fun))
+        return files

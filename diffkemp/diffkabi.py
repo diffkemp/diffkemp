@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
 from argparse import ArgumentParser
-from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
+from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule, \
+    BuildException
 from diffkemp.semdiff.function_diff import Result
 from diffkemp.semdiff.module_diff import modules_diff, Statistics
 import sys
@@ -56,11 +57,27 @@ def run_from_cli():
 
             try:
                 # Find source files with function definitions and build them
-                src_first = first_builder.find_src_for_function(f)
-                mod_first = first_builder.build_file(src_first)
+                srcs_first = first_builder.find_srcs_for_function(f)
+                mod_first = None
+                for src in srcs_first:
+                    try:
+                        mod_first = first_builder.build_file(src)
+                        break
+                    except BuildException:
+                        mod_first = None
+                if not mod_first:
+                    raise BuildException("Source for {} not found".format(f))
 
-                src_second = second_builder.find_src_for_function(f)
-                mod_second = second_builder.build_file(src_second)
+                srcs_second = second_builder.find_srcs_for_function(f)
+                mod_second = None
+                for src in srcs_second:
+                    try:
+                        mod_second = second_builder.build_file(src)
+                        break
+                    except BuildException:
+                        mod_second = None
+                if not mod_second:
+                    raise BuildException("Source for {} not found".format(f))
 
                 mod_first.parse_module()
                 mod_second.parse_module()
