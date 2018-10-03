@@ -87,8 +87,7 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                 idx != GEP->idx_end();
                 ++idx, indices.push_back(*idx)) {
             auto indexedType = GEP->getIndexedType(GEP->getSourceElementType(),
-                                        ArrayRef<Value *>(
-                                                indices));
+                                                   ArrayRef<Value *>(indices));
 
             Type *indexedTypeOther = nullptr;
             if (OtherGEP)
@@ -101,11 +100,6 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                 continue;
 
             if (indexedTypeOther && !indexedTypeOther->isStructTy()) {
-                // The pushing of idx_other is done at the end of the cycle, not
-                // in the for header, therefore it has to be pushed here
-                if (idx_other != OtherGEP->idx_end())
-                    indicesOther.push_back(*idx_other);
-
                 // The type in the corresponding GEP instruction is different,
                 // therefore it cannot be used
                 indexedTypeOther = nullptr;
@@ -175,7 +169,7 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                         {{dyn_cast<StructType>(indexedType),
                             indexFirst}, elementName});
 
-                    if(indexedTypeOther)
+                    if (indexedTypeOther)
                         StructFieldNames.insert(
                             {{dyn_cast<StructType>(indexedTypeOther),
                                 indexSecond}, elementName});
