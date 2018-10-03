@@ -62,7 +62,12 @@ def run_from_cli():
                 for src in srcs_first:
                     try:
                         mod_first = first_builder.build_file(src)
-                        break
+                        mod_first.parse_module()
+                        if not mod_first.has_function(f):
+                            mod_first.clean_module()
+                            mod_first = None
+                        else:
+                            break
                     except BuildException:
                         mod_first = None
                 if not mod_first:
@@ -73,14 +78,16 @@ def run_from_cli():
                 for src in srcs_second:
                     try:
                         mod_second = second_builder.build_file(src)
-                        break
+                        mod_second.parse_module()
+                        if not mod_second.has_function(f):
+                            mod_second.clean_module()
+                            mod_second = None
+                        else:
+                            break
                     except BuildException:
                         mod_second = None
                 if not mod_second:
                     raise BuildException("Source for {} not found".format(f))
-
-                mod_first.parse_module()
-                mod_second.parse_module()
 
                 # Compare functions semantics
                 stat = modules_diff(mod_first, mod_second, None, timeout, f,

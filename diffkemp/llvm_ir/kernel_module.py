@@ -214,6 +214,10 @@ class LlvmKernelModule:
         self.main_functions = collector.using_param(self.param)
         self.called_functions = collector.called_by(self.main_functions)
 
+    def has_function(self, fun):
+        """Check if module contains a function."""
+        return self.llvm_module.get_named_function(fun) is not None
+
     def is_declaration(self, fun):
         """
         Check if the given function is a declaration (does not have body).
