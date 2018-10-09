@@ -175,10 +175,18 @@ int DifferentialFunctionComparator::cmpOperations(
 
     if (!isa<StructType>(PTyL->getElementType()) ||
         !isa<StructType>(PTyR->getElementType()))
-        return FunctionComparator::cmpValues(L, R);
+        return Result;
 
     StructType *STyL = dyn_cast<StructType>(PTyL->getElementType());
     StructType *STyR = dyn_cast<StructType>(PTyR->getElementType());
+
+    // Look whether the first argument of kzalloc corresponds to the type size.
+    int TypeSizeL = dyn_cast<ConstantInt>(L->getOperand(0))->getZExtValue();
+    int TypeSizeR = dyn_cast<ConstantInt>(R->getOperand(0))->getZExtValue();
+
+    if (TypeSizeL != LayoutL->getTypeStoreSize(STyL) ||
+        TypeSizeR != LayoutR->getTypeStoreSize(STyR))
+        return Result;
 
     // Look whether the types the memory is allocated for are the same.
     if (STyL->getName() != STyR->getName())
