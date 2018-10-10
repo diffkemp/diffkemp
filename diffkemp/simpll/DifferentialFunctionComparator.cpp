@@ -142,11 +142,9 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
 /// of the composite type is different
 int DifferentialFunctionComparator::cmpOperations(
     const Instruction *L, const Instruction *R, bool &needToCmpOperands) const {
-    int Result = FunctionComparator::cmpOperations(L, R, needToCmpOperands);
-
     // Check whether the instruction is a CallInst calling the function kzalloc.
     if (!isa<CallInst>(L) || !isa<CallInst>(R))
-        return Result;
+        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     const CallInst *CL = dyn_cast<CallInst>(L);
     const CallInst *CR = dyn_cast<CallInst>(R);
@@ -154,14 +152,14 @@ int DifferentialFunctionComparator::cmpOperations(
     if (!CL->getCalledFunction() || !CR->getCalledFunction() ||
         CL->getCalledFunction()->getName() != "kzalloc" ||
         CR->getCalledFunction()->getName() != "kzalloc")
-        return Result;
+        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     // The instruction is a call instrution calling the function kzalloc. Now
     // look whether the next instruction is a BitCastInst casting to a structure
     // type.
     if (!isa<BitCastInst>(CL->getNextNode()) ||
         !isa<BitCastInst>(CR->getNextNode()))
-        return Result;
+        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     const BitCastInst *NextInstL = dyn_cast<BitCastInst>(CL->getNextNode());
     const BitCastInst *NextInstR = dyn_cast<BitCastInst>(CR->getNextNode());
@@ -175,7 +173,7 @@ int DifferentialFunctionComparator::cmpOperations(
 
     if (!isa<StructType>(PTyL->getElementType()) ||
         !isa<StructType>(PTyR->getElementType()))
-        return Result;
+        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     StructType *STyL = dyn_cast<StructType>(PTyL->getElementType());
     StructType *STyR = dyn_cast<StructType>(PTyR->getElementType());
@@ -184,16 +182,17 @@ int DifferentialFunctionComparator::cmpOperations(
     int TypeSizeL = dyn_cast<ConstantInt>(L->getOperand(0))->getZExtValue();
     int TypeSizeR = dyn_cast<ConstantInt>(R->getOperand(0))->getZExtValue();
 
-    if (TypeSizeL != LayoutL->getTypeStoreSize(STyL) ||
-        TypeSizeR != LayoutR->getTypeStoreSize(STyR))
-        return Result;
+    if (TypeSizeL != LayoutL.getTypeStoreSize(STyL) ||
+        TypeSizeR != LayoutR.getTypeStoreSize(STyR))
+        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     // Look whether the types the memory is allocated for are the same.
     if (STyL->getName() != STyR->getName())
-        return Result;
+        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     // As of now this function ignores kzalloc flags, therefore the argument
     // comparison is complete.
+    int Result = FunctionComparator::cmpOperations(L, R, needToCmpOperands);
     needToCmpOperands = false;
 
     return Result;
