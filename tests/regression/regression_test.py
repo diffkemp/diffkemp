@@ -12,7 +12,6 @@ pytest.
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
-from diffkemp.simpll.simpll import simplify_modules_diff
 import glob
 import os
 import pytest
@@ -175,19 +174,9 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        couplings = FunctionCouplings(task_spec.old, task_spec.new)
-        couplings.infer_for_param(task_spec.param)
         for fun_pair, expected in task_spec.functions.iteritems():
             if expected != Result.TIMEOUT:
-                simplify_modules_diff(task_spec.old, task_spec.new,
-                                      fun_pair[0], fun_pair[1],
-                                      task_spec.param, task_spec.param)
-                called_couplings = FunctionCouplings(task_spec.old_simpl,
-                                                     task_spec.new_simpl)
-                called_couplings.infer_called_by(fun_pair[0], fun_pair[1])
-                result = functions_diff(task_spec.old_simpl,
-                                        task_spec.new_simpl,
+                result = functions_diff(task_spec.old, task_spec.new,
                                         fun_pair[0], fun_pair[1],
-                                        called_couplings.called,
-                                        timeout=120)
+                                        task_spec.param, 120)
                 assert result == expected
