@@ -202,6 +202,8 @@ void DebugInfo::calculateGEPIndexAlignments() {
 
     for (auto &Fun : ModFirst) {
         auto OtherFun = ModSecond.getFunction(Fun.getName());
+        if (!OtherFun)
+            continue;
 
         if (CalledFirst.find(&Fun) == CalledFirst.end())
             continue;

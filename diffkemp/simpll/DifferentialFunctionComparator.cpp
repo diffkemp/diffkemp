@@ -161,6 +161,11 @@ int DifferentialFunctionComparator::cmpOperations(
         !isa<BitCastInst>(CR->getNextNode()))
         return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
+    // Check if kzalloc has constant size of the allocated memory
+    if (!isa<ConstantInt>(L->getOperand(0)) ||
+        !isa<ConstantInt>(R->getOperand(0)))
+        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+
     const BitCastInst *NextInstL = dyn_cast<BitCastInst>(CL->getNextNode());
     const BitCastInst *NextInstR = dyn_cast<BitCastInst>(CR->getNextNode());
 
@@ -179,8 +184,10 @@ int DifferentialFunctionComparator::cmpOperations(
     StructType *STyR = dyn_cast<StructType>(PTyR->getElementType());
 
     // Look whether the first argument of kzalloc corresponds to the type size.
-    int TypeSizeL = dyn_cast<ConstantInt>(L->getOperand(0))->getZExtValue();
-    int TypeSizeR = dyn_cast<ConstantInt>(R->getOperand(0))->getZExtValue();
+    uint64_t TypeSizeL =
+            dyn_cast<ConstantInt>(L->getOperand(0))->getZExtValue();
+    uint64_t TypeSizeR =
+            dyn_cast<ConstantInt>(R->getOperand(0))->getZExtValue();
 
     if (TypeSizeL != LayoutL.getTypeStoreSize(STyL) ||
         TypeSizeR != LayoutR.getTypeStoreSize(STyR))
