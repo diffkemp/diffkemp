@@ -842,21 +842,32 @@ class LlvmKernelBuilder:
         check_call(["cscope", "-b", "-q", "-k"])
         os.chdir(cwd)
 
-    def find_srcs_for_function(self, fun):
+    def _cscope_find_symbol(self, fun, glob_def):
         """
-        Find .c source file that contains the definition of the given function.
+        Use cscope to find a definition of the given symbol.
+        :param fun: Function to find.
+        :param glob_def: True if only global definitions should be searched by
+                         cscope.
+        :return List of source files potentially containing the definition.
         """
-        cwd = os.getcwd()
-        os.chdir(self.kernel_path)
         try:
-            cscope_output = check_output(["cscope", "-d", "-L", "-1", fun])
+            command = ["cscope", "-d", "-L"]
+            if glob_def:
+                command.append("-1")
+            else:
+                command.append("-0")
+            command.append(fun)
+            cscope_output = check_output(command)
         except CalledProcessError:
             raise BuildException("Source for {} not found".format(fun))
-        finally:
-            os.chdir(cwd)
 
         files = []
         for line in cscope_output.splitlines():
+            # If all usages of the symbol are searched, filter only those that
+            # are of <global> kind.
+            if not glob_def and not line.split()[1] == "<global>":
+                continue
+
             file = os.path.relpath(line.split()[0], self.kernel_path)
             if file.endswith(".c"):
                 # .c files have higher priority - put them to the beginning of
@@ -866,6 +877,27 @@ class LlvmKernelBuilder:
                 # .h files have lower priority - append them to the end of
                 # the list
                 files.append(file)
+        return files
+
+    def find_srcs_for_function(self, fun):
+        """
+        Find .c source file that contains the definition of the given function.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        try:
+            files = self._cscope_find_symbol(fun, True)
+            if len(files) == 0:
+                # There is a bug in cscope - it cannot find definitions
+                # containing function pointers as parameters. If no source was
+                # found, try to search all occurences of the symbol.
+                files = self._cscope_find_symbol(fun, False)
+        except BuildException:
+            raise
+        finally:
+            os.chdir(cwd)
+
         if len(files) == 0:
             raise BuildException("Source for {} not found".format(fun))
+
         return files
