@@ -5,7 +5,6 @@ using the given parameter is compared individually.
 """
 from __future__ import absolute_import
 
-from __future__ import division
 from diffkemp.semdiff.function_diff import functions_diff, Result, Statistics
 from diffkemp.semdiff.function_coupling import FunctionCouplings
 
