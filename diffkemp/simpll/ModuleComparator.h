@@ -17,6 +17,7 @@
 
 #include "DebugInfo.h"
 #include "DifferentialGlobalNumberState.h"
+#include "Utils.h"
 #include <llvm/IR/Module.h>
 #include <set>
 
@@ -30,7 +31,6 @@ class ModuleComparator {
     /// Possible results of syntactical function comparison.
     enum Result { EQUAL, NOT_EQUAL, UNKNOWN };
     /// Storing results of function comparisons.
-    using FunPair = std::pair<Function *, Function *>;
     std::map<FunPair, Result> ComparedFuns;
 
     /// DebugInfo class storing results from analysing debug information

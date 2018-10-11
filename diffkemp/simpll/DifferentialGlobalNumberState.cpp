@@ -96,16 +96,12 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
             // If it is not found, insert a new number.
             auto GlobalNum = GlobalNumbers.find(value);
             if (GlobalNum == GlobalNumbers.end()) {
+                // Always treat corresponding functions as equal when assigning
+                // them a global number.
                 GlobalNumbers.insert({value, nextNumber});
-                result = nextNumber;
-
-                if (OtherFun) {
-                    if (FunPair->second == ModuleComparator::Result::NOT_EQUAL)
-                        // Non-equal functions must get different numbers.
-                        nextNumber++;
+                if (OtherFun)
                     GlobalNumbers.insert({OtherFun, nextNumber});
-                }
-                nextNumber++;
+                result = nextNumber++;
             } else {
                 result = GlobalNum->second;
             }

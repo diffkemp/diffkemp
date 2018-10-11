@@ -47,11 +47,6 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         errs() << "Function " << FirstFun->getName()
                << " is same in both modules\n";
 #endif
-        FirstFun->deleteBody();
-        SecondFun->deleteBody();
-        deleteAliasToFun(First, FirstFun);
-        deleteAliasToFun(Second, SecondFun);
-
         ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
     } else {
         ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;

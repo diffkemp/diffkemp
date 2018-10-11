@@ -17,6 +17,7 @@
 #define DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H
 
 #include "Config.h"
+#include "Utils.h"
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
 
@@ -36,7 +37,7 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var);
 /// semantic difference analysis. Tries to remove all the code that is
 /// syntactically equal between the modules which should decrease the complexity
 /// of the semantic diff.
-void simplifyModulesDiff(Config &config);
+std::vector<FunPair> simplifyModulesDiff(Config &config);
 
 /// Preprocessing transformations - run independently on each module at the
 /// end.

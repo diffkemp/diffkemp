@@ -36,7 +36,21 @@ int main(int argc, const char **argv) {
     // Run transformations
     preprocessModule(*config.First, config.FirstFun, config.FirstVar);
     preprocessModule(*config.Second, config.SecondFun, config.SecondVar);
-    simplifyModulesDiff(config);
+    config.refreshFunctions();
+
+    auto nonequalFuns = simplifyModulesDiff(config);
+
+    std::set<Function *> MainFunsFirst;
+    std::set<Function *> MainFunsSecond;
+    for (auto &funPair : nonequalFuns) {
+        MainFunsFirst.insert(funPair.first);
+        MainFunsSecond.insert(funPair.second);
+        // Write non-equal functions to stdout: these need to be compared for
+        // semantic equivalence.
+        outs() << funPair.first->getName() << ","
+               << funPair.second->getName() << "\n";
+    }
+
     postprocessModule(*config.First, config.FirstFun);
     postprocessModule(*config.Second, config.SecondFun);
 

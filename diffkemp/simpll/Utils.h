@@ -23,6 +23,8 @@ enum Program {
     First, Second
 };
 
+typedef std::pair<Function *, Function *> FunPair;
+
 /// Extract called function from a called value
 const Function *getCalledFunction(const Value *CalledValue);
 

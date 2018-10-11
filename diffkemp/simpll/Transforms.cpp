@@ -81,7 +81,7 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
 /// 3. Using debug information to compute offsets of the corresponding GEP
 ///    indices. Offsets are stored inside LLVM metadata.
 /// 4. Removing bodies of functions that are syntactically equivalent.
-void simplifyModulesDiff(Config &config) {
+std::vector<FunPair> simplifyModulesDiff(Config &config) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies. Then, unify the abstractions between the modules so that
     // the corresponding abstractions get the same name.
@@ -110,10 +110,38 @@ void simplifyModulesDiff(Config &config) {
         DI.StructFieldNames.size() << '\n';
 #endif
 
+    std::vector<FunPair> result;
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First, *config.Second, &DI);
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
+
+#ifdef DEBUG
+        errs() << "Syntactic comparison results:\n";
+#endif
+        bool allEqual = true;
+        for (auto &funPair : modComp.ComparedFuns) {
+            if (funPair.second == ModuleComparator::NOT_EQUAL) {
+                allEqual = false;
+                result.emplace_back(funPair.first.first, funPair.first.second);
+#ifdef DEBUG
+                errs() << funPair.first.first->getName()
+                       << " are syntactically different\n";
+#endif
+            }
+        }
+        if (allEqual) {
+            // Functions are equal iff all functions that were compared by
+            // module comparator(i.e. those that are recursively called by the
+            // main functions) are equal.
+#ifdef DEBUG
+            errs() << "All functions are syntactically equal\n";
+#endif
+            config.FirstFun->deleteBody();
+            config.SecondFun->deleteBody();
+            deleteAliasToFun(*config.First, config.FirstFun);
+            deleteAliasToFun(*config.Second, config.SecondFun);
+        }
     } else {
         for (auto &FunFirst : *config.First) {
             if (auto FunSecond =
@@ -122,6 +150,7 @@ void simplifyModulesDiff(Config &config) {
             }
         }
     }
+    return result;
 }
 
 /// Recursively mark callees of a function with 'alwaysinline' attribute.
