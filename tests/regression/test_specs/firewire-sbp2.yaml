@@ -7,4 +7,5 @@ new_kernel: "4.11"
 params: 
   - param: sbp2_param_workarounds
     functions:
-      sbp2_init_workarounds: equal
+      sbp2_init_workarounds: equal_syntax
+

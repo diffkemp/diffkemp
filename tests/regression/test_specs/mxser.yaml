@@ -8,5 +8,5 @@ params:
   - param: ttymajor
     functions:
       mxser_ioctl_special: equal
-      mxser_module_init: equal
+      mxser_module_init: equal_syntax
 

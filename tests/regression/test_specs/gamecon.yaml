@@ -7,6 +7,6 @@ new_kernel: "4.11"
 params:
   - param: gc_psx_delay
     functions:
-      gc_psx_read_packet: equal
-      gc_psx_command: equal
+      gc_psx_read_packet: equal_syntax
+      gc_psx_command: equal_syntax
 

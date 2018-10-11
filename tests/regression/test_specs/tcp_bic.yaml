@@ -8,6 +8,6 @@ debug: true
 params:
   - param: low_window
     functions:
-      bictcp_update: equal
-      bictcp_recalc_ssthresh: equal
+      bictcp_update: equal_syntax
+      bictcp_recalc_ssthresh: equal_syntax
 

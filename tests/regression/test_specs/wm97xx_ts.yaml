@@ -7,6 +7,7 @@ new_kernel: "4.11"
 params:
   - param: pil
     functions:
-      wm9705_phy_init: equal
-      wm9705_poll_touch: equal
-      wm9705_acc_enable: equal
+      wm9705_phy_init: equal_syntax
+      wm9705_poll_touch: equal_syntax
+      wm9705_acc_enable: equal_syntax
+

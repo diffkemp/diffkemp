@@ -7,9 +7,9 @@ new_kernel: "4.11"
 params:
   - param: pal
     functions:
-      ivtv_parse_std: equal
+      ivtv_parse_std: equal_syntax
 
   - param: secam
     functions:
-      ivtv_parse_std: equal
+      ivtv_parse_std: equal_syntax
 

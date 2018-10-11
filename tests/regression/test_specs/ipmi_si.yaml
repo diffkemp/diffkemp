@@ -3,9 +3,10 @@ path: drivers/char/ipmi
 filename: ipmi_si_intf.c
 old_kernel: "3.10"
 new_kernel: "4.11"
+debug: true
 
 params:
   - param: irqs
     functions:
-      hardcode_find_bmc: equal
+      hardcode_find_bmc: equal_syntax
 

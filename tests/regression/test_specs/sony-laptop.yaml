@@ -7,6 +7,5 @@ new_kernel: "4.11"
 params:
   - param: no_spic
     functions:
-      sony_laptop_init: equal
-
+      sony_laptop_init: equal_syntax
 

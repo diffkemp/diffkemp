@@ -7,14 +7,14 @@ new_kernel: "4.11"
 params:
   - param: buggy_irq
     functions:
-      snd_intel8x0_probe: equal
-      snd_intel8x0_create: equal
+      snd_intel8x0_probe: equal_syntax
+      snd_intel8x0_create: equal_syntax
 
   - param: buggy_semaphore
     functions:
-      snd_intel8x0_create: equal
+      snd_intel8x0_create: equal_syntax
 
   - param: xbox
     functions:
-      snd_intel8x0_create: equal
+      snd_intel8x0_create: equal_syntax
 

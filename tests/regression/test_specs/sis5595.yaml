@@ -7,5 +7,5 @@ new_kernel: "4.11"
 params:
   - param: force_addr
     functions:
-      sis5595_pci_probe: equal
+      sis5595_pci_probe: equal_syntax
 

@@ -7,5 +7,5 @@ new_kernel:  "4.11"
 params: 
   - param:  uvc_quirks_param
     functions: 
-      uvc_probe:  equal
+      uvc_probe:  equal_syntax
 

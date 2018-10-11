@@ -7,16 +7,16 @@ new_kernel:  "4.11"
 params:
   - param:  bufsize
     functions:
-      tcp_probe_avail: equal
-      tcp_probe_used: equal
+      tcp_probe_avail: equal_syntax
+      tcp_probe_used: equal_syntax
       tcpprobe_init: not_equal
-      jtcp_rcv_established: equal
-      tcpprobe_read: equal
+      jtcp_rcv_established: equal_syntax
+      tcpprobe_read: equal_syntax
 
   - param: port
     functions:
       jtcp_rcv_established: equal
-      tcpprobe_init: equal
+      tcpprobe_init: equal_syntax
 
   - param: full
     functions:
