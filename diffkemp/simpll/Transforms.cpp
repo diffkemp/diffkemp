@@ -154,19 +154,22 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
 }
 
 /// Recursively mark callees of a function with 'alwaysinline' attribute.
-void markCalleesAlwaysInline(Function &Fun) {
+void markCalleesAlwaysInline(Function &Fun,
+                             const std::set<Function *> IgnoreFuns) {
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
             if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
                 auto CalledFun = CallInstr->getCalledFunction();
                 if (!CalledFun || CalledFun->isDeclaration() ||
-                        CalledFun->isIntrinsic())
+                        CalledFun->isIntrinsic() ||
+                        IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
                     continue;
 
                 if (!CalledFun->hasFnAttribute(
                         Attribute::AttrKind::AlwaysInline)) {
                     CalledFun->addFnAttr(Attribute::AttrKind::AlwaysInline);
-                    markCalleesAlwaysInline(*CalledFun);
+                    errs() << "Inlining: " << CalledFun->getName() << "\n";
+                    markCalleesAlwaysInline(*CalledFun, IgnoreFuns);
                 }
             }
         }
@@ -178,13 +181,20 @@ void markCalleesAlwaysInline(Function &Fun) {
 /// 1. Removing debugging information.
 ///    TODO this should be configurable via CLI option.
 /// 2. Inlining all functions called by the analysed function (if possible).
-void postprocessModule(Module &Mod, Function *Main) {
-    if (!Main)
+void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns) {
+    if (MainFuns.empty())
         return;
 
     errs() << "Postprocess\n";
 
-    markCalleesAlwaysInline(*Main);
+    for (auto *Main : MainFuns) {
+        errs() << "  " << Main->getName() << "\n";
+        // Do not inline function that will be compared
+        if (Main->hasFnAttribute(Attribute::AttrKind::AlwaysInline))
+            Main->removeFnAttr(Attribute::AttrKind::AlwaysInline);
+        // Inline all other functions
+        markCalleesAlwaysInline(*Main, MainFuns);
+    }
 
     // Function passes
     PassBuilder pb;

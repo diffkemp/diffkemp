@@ -51,8 +51,8 @@ int main(int argc, const char **argv) {
                << funPair.second->getName() << "\n";
     }
 
-    postprocessModule(*config.First, config.FirstFun);
-    postprocessModule(*config.Second, config.SecondFun);
+    postprocessModule(*config.First, MainFunsFirst);
+    postprocessModule(*config.Second, MainFunsSecond);
 
     // Write LLVM IR to output files
     writeIRToFile(*config.First, config.FirstOutFile);

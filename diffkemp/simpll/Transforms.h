@@ -20,6 +20,7 @@
 #include "Utils.h"
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
+#include <set>
 
 using namespace llvm;
 
@@ -44,6 +45,6 @@ std::vector<FunPair> simplifyModulesDiff(Config &config);
 /// \param Mod Module to simplify.
 /// \param Main Function that is to be compared in the module. Can be set to
 ///             NULL, but specifying this optimizes the transformations.
-void postprocessModule(Module &Mod, Function *Main = nullptr);
+void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns);
 
 #endif //DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H
