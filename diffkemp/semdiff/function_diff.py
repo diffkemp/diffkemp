@@ -1,7 +1,11 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
+from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
+from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
+from diffkemp.semdiff.function_coupling import FunctionCouplings
 from subprocess import Popen, PIPE
 from threading import Timer
 from enum import Enum
+import os
 import sys
 
 
@@ -17,6 +21,62 @@ class Result(Enum):
 
     def __str__(self):
         return self.name.lower().replace("_", " ")
+
+
+class Statistics():
+    """
+    Statistics of the analysis.
+    Captures numbers of equal and not equal functions, as well as number of
+    uncertain or error results.
+    """
+    def __init__(self):
+        self.equal = list()
+        self.equal_syntax = list()
+        self.not_equal = list()
+        self.unknown = list()
+        self.errors = list()
+
+    def log_result(self, result, function):
+        """Add result of analysis (comparison) of some function."""
+        if result == Result.EQUAL or result == Result.EQUAL_UNDER_ASSUMPTIONS:
+            self.equal.append(function)
+        elif result == Result.EQUAL_SYNTAX:
+            self.equal_syntax.append(function)
+        elif result == Result.NOT_EQUAL:
+            self.not_equal.append(function)
+        elif result == Result.UNKNOWN:
+            self.unknown.append(function)
+        else:
+            self.errors.append(function)
+
+    def report(self):
+        """Report results."""
+        eq_syn = len(self.equal_syntax)
+        eq = len(self.equal) + eq_syn
+        neq = len(self.not_equal)
+        unkwn = len(self.unknown)
+        errs = len(self.errors)
+        total = eq + neq + unkwn + errs
+        print "Total params: {}".format(total)
+        print "Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100)
+        print " same syntax: {0}".format(eq_syn)
+        print "Not equal:    {0} ({1:.0f}%)".format(neq, neq / total * 100)
+        print "Unknown:      {0} ({1:.0f}%)".format(unkwn, unkwn / total * 100)
+        print "Errors:       {0} ({1:.0f}%)".format(errs, errs / total * 100)
+
+    def overall_result(self):
+        """Aggregate results for individual functions into one result."""
+        if len(self.errors) > 0:
+            return Result.ERROR
+        if len(self.not_equal) > 0:
+            return Result.NOT_EQUAL
+        if len(self.unknown) > 0:
+            return Result.UNKNOWN
+        if len(self.equal_syntax) > 0:
+            return Result.EQUAL_SYNTAX
+        if len(self.equal) > 0:
+            return Result.EQUAL
+        return Result.UNKNOWN
 
 
 def _kill(processes):
@@ -96,8 +156,8 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
     return result
 
 
-def functions_diff(first, second, funFirst, funSecond, coupled, timeout,
-                   verbose=False):
+def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
+                      verbose=False):
     """
     Compare two functions for semantic equality.
 
@@ -117,11 +177,11 @@ def functions_diff(first, second, funFirst, funSecond, coupled, timeout,
     :param timeout: Timeout for analysis of a function pair (default is 40s)
     :param verbose: Verbosity option
     """
-    if funFirst != funSecond:
-        sys.stdout.write("    Comparing functions {} and {}".format(funFirst,
-                                                                    funSecond))
+    if funFirst == funSecond:
+        fun_str = funFirst
     else:
-        sys.stdout.write("    Comparing function {}".format(funFirst))
+        fun_str = funSecond
+    sys.stdout.write("      Semantic diff of {}".format(fun_str))
     sys.stdout.write("...")
     sys.stdout.flush()
 
@@ -154,4 +214,81 @@ def functions_diff(first, second, funFirst, funSecond, coupled, timeout,
         for assume in [a for a in assumptions if a.diff > 0]:
             print "      Functions {} and {} are same".format(assume.first,
                                                               assume.second)
+    return result
+
+
+def syntactically_equal(mod_first, mod_second, fun_first, fun_second):
+    """
+    Check if the given functions in the given modules are syntactically equal.
+    """
+    # Functions are syntactically equal if they were simplified into
+    # declarations by SimpLL.
+    first_dir, first_file = os.path.split(mod_first)
+    first = LlvmKernelModule("tmp_first", first_file[:-3], first_dir)
+    first.parse_module()
+    second_dir, second_file = os.path.split(mod_second)
+    second = LlvmKernelModule("tmp_second", second_file[:-3], second_dir)
+    second.parse_module()
+    result = (first.is_declaration(fun_first) and
+              second.is_declaration(fun_second))
+    first.clean_module()
+    second.clean_module()
+    return result
+
+
+def functions_diff(first, second, funFirst, funSecond, param, timeout,
+                   verbose=False):
+    """
+    Compare two functions for equality.
+
+    First, functions are simplified and compared for syntactic equality using
+    the SimpLL tool. If they are not syntactically equal, SimpLL prints a list
+    of functions that the syntactic equality depends on. These are then
+    compared for semantic equality.
+    :param first: File with the first LLVM module
+    :param second: File with the second LLVM module
+    :param funFirst: Function from the first module to be compared
+    :param funSecond: Function from the second module to be compared
+    :param timeout: Timeout for analysis of a function pair (default is 40s)
+    :param verbose: Verbosity option
+    """
+    try:
+        if funFirst == funSecond:
+            fun_str = funFirst
+        else:
+            fun_str = "{} and {}".format(funFirst, funSecond)
+        print "    Syntactic diff of {}".format(fun_str)
+
+        # Simplify modules
+        first_simpl, second_simpl, funs_to_compare = \
+            simplify_modules_diff(first, second,
+                                  funFirst, funSecond,
+                                  param, param if param else "simpl",
+                                  verbose)
+        if syntactically_equal(first_simpl, second_simpl, funFirst, funSecond):
+            result = Result.EQUAL_SYNTAX
+        else:
+            # If the functions are not syntactically equal, funs_to_compare
+            # contains a list of functions that need to be compared
+            # semantically. If these are all equal, then the originally
+            # compared functions are equal as well.
+            stat = Statistics()
+            for fun_pair in funs_to_compare:
+                # Find couplings of funcions called by the compared
+                # functions
+                called_couplings = FunctionCouplings(first_simpl,
+                                                     second_simpl)
+                called_couplings.infer_called_by(fun_pair[0], fun_pair[1])
+                called_couplings.clean()
+                # Do semantic difference of functions
+                result = functions_semdiff(first_simpl, second_simpl,
+                                           fun_pair[0], fun_pair[1],
+                                           called_couplings.called, timeout,
+                                           verbose)
+                stat.log_result(result, fun_pair[0])
+            result = stat.overall_result()
+        print "      {}".format(result)
+    except SimpLLException:
+        print "    Simplifying has failed"
+        result = Result.ERROR
     return result

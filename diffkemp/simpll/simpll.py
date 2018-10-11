@@ -2,7 +2,7 @@
 Simplifying LLVM modules with the SimpLL tool.
 """
 import os
-from subprocess import check_call, CalledProcessError
+from subprocess import check_call, check_output, CalledProcessError
 
 
 class SimpLLException(Exception):
@@ -44,12 +44,14 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         if verbose:
             print " ".join(simpll_command)
 
-        check_call(simpll_command, stderr=stderr)
+        simpll_out = check_output(simpll_command, stderr=stderr)
         check_call(["opt", "-S", "-deadargelim", "-o", first_out, first_out],
                    stderr=stderr)
         check_call(["opt", "-S", "-deadargelim", "-o", second_out, second_out],
                    stderr=stderr)
 
-        return first_out, second_out
+        funs_to_compare = [line.split(",") for line in simpll_out.splitlines()]
+
+        return first_out, second_out, funs_to_compare
     except CalledProcessError:
         raise SimpLLException("Simplifying files failed")
