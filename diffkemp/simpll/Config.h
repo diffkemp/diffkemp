@@ -36,6 +36,9 @@ class Config {
     LLVMContext context_first;
     LLVMContext context_second;
 
+    std::string FirstFunName;
+    std::string SecondFunName;
+
   public:
     // Parsed LLVM modules
     std::unique_ptr<Module> First;
@@ -51,6 +54,8 @@ class Config {
     std::string SecondOutFile;
 
     Config();
+
+    void refreshFunctions();
 };
 
 #endif //DIFFKEMP_SIMPLL_CONFIG_H

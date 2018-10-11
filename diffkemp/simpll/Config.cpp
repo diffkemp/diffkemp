@@ -54,8 +54,9 @@ Config::Config() : First(parseIRFile(FirstFileOpt, err, context_first)),
             first_name = FunctionOpt.substr(0, commaPos);
             second_name = FunctionOpt.substr(commaPos + 1);
         }
-        FirstFun = First->getFunction(first_name);
-        SecondFun = Second->getFunction(second_name);
+        FirstFunName = first_name;
+        SecondFunName = second_name;
+        refreshFunctions();
     }
     if (!VariableOpt.empty()) {
         // Parse --var option - find global variables with given name.
@@ -67,4 +68,9 @@ Config::Config() : First(parseIRFile(FirstFileOpt, err, context_first)),
         FirstOutFile = addSuffix(FirstOutFile, SuffixOpt);
         SecondOutFile = addSuffix(SecondOutFile, SuffixOpt);
     }
+}
+
+void Config::refreshFunctions() {
+    FirstFun = First->getFunction(FirstFunName);
+    SecondFun = Second->getFunction(SecondFunName);
 }
