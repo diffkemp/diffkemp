@@ -8,8 +8,8 @@
 ///
 /// \file
 /// This file contains the declaration of the SimplifyKernelGlobalsPass that
-/// simplifies kernel-specific global variables that do not affect semantics
-/// of the program.
+/// simplifies kernel-specific global variables and functions that do not affect
+/// semantics of the program.
 ///
 //===----------------------------------------------------------------------===//
 

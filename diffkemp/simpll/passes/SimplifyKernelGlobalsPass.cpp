@@ -14,6 +14,9 @@
 ///    Supported globals are:
 ///    - containing ".__warned" created by WARN_ON* macros
 ///    - containing ".descriptor" created by netdev_dbg
+/// 2. Same applies for functions.
+///    Supported functions are:
+///    - __compiletime_assert_<NUMBER>()
 ///
 //===----------------------------------------------------------------------===//
 
@@ -38,6 +41,19 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
                 Glob.replaceAllUsesWith(GlobalOrig);
             else
                 Glob.setName(OrigName);
+        }
+    }
+
+    for (auto &Fun : Mod) {
+        std::string Name = Fun.getName();
+        if (Name.find("__compiletime_assert") != std::string::npos &&
+            Name != "__compiletime_assert") {
+            std::string OrigName = "__compiletime_assert";
+            auto *FunOrig = Mod.getFunction(OrigName);
+            if (FunOrig)
+                Fun.replaceAllUsesWith(FunOrig);
+            else
+                Fun.setName(OrigName);
         }
     }
     return PreservedAnalyses();
