@@ -3,6 +3,7 @@ from __future__ import division
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
 from diffkemp.semdiff.function_coupling import FunctionCouplings
+from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
 from threading import Timer
 from enum import Enum
@@ -238,7 +239,7 @@ def syntactically_equal(mod_first, mod_second, fun_first, fun_second):
 
 
 def functions_diff(first, second, funFirst, funSecond, param, timeout,
-                   verbose=False):
+                   syntax_only=False, verbose=False):
     """
     Compare two functions for equality.
 
@@ -254,11 +255,12 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
     :param verbose: Verbosity option
     """
     try:
-        if funFirst == funSecond:
-            fun_str = funFirst
-        else:
-            fun_str = "{} and {}".format(funFirst, funSecond)
-        print "    Syntactic diff of {}".format(fun_str)
+        if not syntax_only:
+            if funFirst == funSecond:
+                fun_str = funFirst
+            else:
+                fun_str = "{} and {}".format(funFirst, funSecond)
+            print "    Syntactic diff of {}".format(fun_str)
 
         # Simplify modules
         first_simpl, second_simpl, funs_to_compare = \
@@ -268,6 +270,18 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
                                   verbose)
         if syntactically_equal(first_simpl, second_simpl, funFirst, funSecond):
             result = Result.EQUAL_SYNTAX
+        elif syntax_only:
+            # Only display the syntax diff of the functions that are
+            # syntactically different.
+            result = Result.NOT_EQUAL
+            print "{}:".format(funFirst)
+            for fun_pair in funs_to_compare:
+                src_first = first[:-2] + "c"
+                src_second = second[:-2] + "c"
+                diff = syntax_diff(src_first, src_second, fun_pair[0])
+                print "  {} diff:".format(fun_pair[0])
+                print diff
+            return result
         else:
             # If the functions are not syntactically equal, funs_to_compare
             # contains a list of functions that need to be compared

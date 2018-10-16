@@ -20,6 +20,9 @@ def __make_argument_parser():
                     function comparison")
     ap.add_argument("--report-stat", help="report statistics of the analysis",
                     action="store_true")
+    ap.add_argument("--syntax-diff", help="for functions that are \
+                    syntactically different, show result of diff",
+                    action="store_true")
     return ap
 
 
@@ -30,14 +33,16 @@ def run_from_cli():
 
     try:
         # Prepare kernels
-        first_builder = LlvmKernelBuilder(args.src_version, None, True)
+        first_builder = LlvmKernelBuilder(args.src_version, None, debug=True,
+                                          verbose=not args.syntax_diff)
         first_builder.build_cscope_database()
         if args.function:
             kabi_funs_first = [args.function]
         else:
             kabi_funs_first = first_builder.get_kabi_whitelist()
 
-        second_builder = LlvmKernelBuilder(args.dest_version, None, True)
+        second_builder = LlvmKernelBuilder(args.dest_version, None, debug=True,
+                                           verbose=not args.syntax_diff)
         second_builder.build_cscope_database()
         if args.function:
             kabi_funs_second = [args.function]
@@ -53,7 +58,8 @@ def run_from_cli():
             if f not in kabi_funs_second:
                 continue
 
-            print f
+            if not args.syntax_diff:
+                print f
 
             try:
                 # Find source files with function definitions and build them
@@ -91,9 +97,12 @@ def run_from_cli():
 
                 # Compare functions semantics
                 stat = modules_diff(mod_first, mod_second, None, timeout, f,
-                                    args.verbose)
-                print "  {}".format(str(stat.overall_result()).upper())
-                result.log_result(stat.overall_result(), f)
+                                    args.syntax_diff, args.verbose)
+                res = stat.overall_result()
+                result.log_result(res, f)
+
+                if not args.syntax_diff:
+                    print "  {}".format(str(stat.overall_result()).upper())
 
                 # Clean LLVM modules (allow GC to collect the occupied memory)
                 mod_first.clean_module()
