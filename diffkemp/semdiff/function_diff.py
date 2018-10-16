@@ -281,7 +281,6 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
                 diff = syntax_diff(src_first, src_second, fun_pair[0])
                 print "  {} diff:".format(fun_pair[0])
                 print diff
-            return result
         else:
             # If the functions are not syntactically equal, funs_to_compare
             # contains a list of functions that need to be compared
@@ -302,7 +301,8 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
                                            verbose)
                 stat.log_result(result, fun_pair[0])
             result = stat.overall_result()
-        print "      {}".format(result)
+        if not syntax_only:
+            print "      {}".format(result)
     except SimpLLException:
         print "    Simplifying has failed"
         result = Result.ERROR

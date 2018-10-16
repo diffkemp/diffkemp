@@ -109,7 +109,8 @@ def run_from_cli():
                 mod_second.clean_module()
                 LlvmKernelModule.clean_all()
             except Exception as e:
-                sys.stderr.write("  Error: {}\n".format(str(e)))
+                if not args.syntax_diff:
+                    sys.stderr.write("  Error: {}\n".format(str(e)))
                 result.log_result(Result.ERROR, f)
 
         print ""
