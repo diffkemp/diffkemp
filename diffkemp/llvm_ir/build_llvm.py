@@ -54,7 +54,8 @@ class LlvmKernelBuilder:
     # Name of the kabi whitelist file
     kabi_whitelist_file = "kabi_whitelist_x86_64"
 
-    def __init__(self, kernel_version, modules_dir, debug=False):
+    def __init__(self, kernel_version, modules_dir, debug=False,
+                 verbose=True):
         self.kernel_base_path = os.path.abspath(self.kernel_base_dir)
         if not os.path.isdir(self.kernel_base_path):
             os.mkdir(self.kernel_base_path)
@@ -67,6 +68,7 @@ class LlvmKernelBuilder:
         self.kabi_tarname = None
         self.kabi_whitelist = os.path.join(self.kernel_path,
                                            self.kabi_whitelist_file)
+        self.verbose = verbose
 
         # Deduce source where kernel will be downloaded from.
         # The choice is done based on version string, if it has release part
@@ -605,7 +607,8 @@ class LlvmKernelBuilder:
         :param file: Name of the result file
         :param command: Command to be executed
         """
-        print "    [{}] {}".format(command[0], file)
+        if self.verbose:
+            print "    [{}] {}".format(command[0], file)
         with open(os.devnull, "w") as stderr:
             try:
                 check_call(command, stderr=stderr)
@@ -651,7 +654,8 @@ class LlvmKernelBuilder:
         Some modules depend on other modules, link those to them.
         :param modules: Dict of form name -> LlvmKernelModule.
         """
-        print "Linking dependent modules"
+        if self.verbose:
+            print "Linking dependent modules"
         linked = set()
         for name, mod in modules.iteritems():
             if mod.depends is None:
@@ -679,8 +683,9 @@ class LlvmKernelBuilder:
 
             if depmods:
                 to_link = [d for d in depmods if d.name not in do_not_link]
-                print "  [llvm-link] {}".format(
-                    os.path.relpath(mod.llvm, self.kernel_path))
+                if self.verbose:
+                    print "  [llvm-link] {}".format(
+                        os.path.relpath(mod.llvm, self.kernel_path))
                 mod.link_modules(to_link)
                 linked.add(name)
 
@@ -735,7 +740,8 @@ class LlvmKernelBuilder:
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
-        print "Building all modules"
+        if self.verbose:
+            print "Building all modules"
         if clean:
             self._clean_all_modules()
 
@@ -773,8 +779,9 @@ class LlvmKernelBuilder:
         parameters.
         :return Dictionary of modules in form name -> module
         """
-        print "Building all kernel modules having parameters"
-        print "  Collecting modules"
+        if self.verbose:
+            print "Building all kernel modules having parameters"
+            print "  Collecting modules"
         if clean:
             self._clean_all_modules()
         sources = self._get_sources_with_params(self.modules_path)
@@ -798,13 +805,16 @@ class LlvmKernelBuilder:
         # IR of modules
         llvm_modules = dict()
         for mod in modules:
-            print "  {}".format(mod)
+            if self.verbose:
+                print "  {}".format(mod)
             try:
                 llvm_mod = self.build_module(mod, False)
                 llvm_modules[llvm_mod.name] = llvm_mod
             except BuildException as e:
-                print "    {}".format(str(e))
-        print ""
+                if self.verbose:
+                    print "    {}".format(str(e))
+        if self.verbose:
+            print ""
         self.link_modules(llvm_modules)
         return llvm_modules
 
