@@ -279,8 +279,10 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
                 src_first = first[:-2] + "c"
                 src_second = second[:-2] + "c"
                 diff = syntax_diff(src_first, src_second, fun_pair[0])
-                print "  {} diff:".format(fun_pair[0])
+                print "  {} differs:".format(fun_pair[0])
+                print "  {{{"
                 print diff
+                print "  }}}"
         else:
             # If the functions are not syntactically equal, funs_to_compare
             # contains a list of functions that need to be compared
