@@ -17,6 +17,7 @@
 #include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
 #include <set>
+#include <iostream>
 
 /// Extract called function from a called value Handles situation when the
 /// called value is a bitcast.
@@ -69,4 +70,14 @@ bool hasSuffix(std::string Name) {
 /// true for the name.
 std::string dropSuffix(std::string Name) {
     return Name.substr(0, Name.find_last_of('.'));
+}
+
+/// Extracts file name and directory name from the DebugInfo
+std::string getFileForFun(Function *Fun) {
+    if (auto *SubProgram = Fun->getSubprogram()) {
+        if (auto *File = SubProgram->getFile()) {
+            return File->getDirectory().str() + "/" + File->getFilename().str();
+        }
+    }
+    return "";
 }

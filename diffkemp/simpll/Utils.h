@@ -14,6 +14,7 @@
 #ifndef DIFFKEMP_SIMPLL_UTILS_H
 #define DIFFKEMP_SIMPLL_UTILS_H
 
+#include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Function.h>
 
 using namespace llvm;
@@ -39,5 +40,9 @@ bool hasSuffix(std::string Name);
 
 /// Drop the .<NUMBER> suffix from the LLVM name.
 std::string dropSuffix(std::string Name);
+
+/// Get absolute path to a file in which the given function is defined.
+/// Requires debug info to work correctly.
+std::string getFileForFun(Function *Fun);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H

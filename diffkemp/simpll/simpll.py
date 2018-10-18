@@ -51,7 +51,15 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         check_call(["opt", "-S", "-deadargelim", "-o", second_out, second_out],
                    stderr=stderr)
 
-        funs_to_compare = [line.split(",") for line in simpll_out.splitlines()]
+        funs_to_compare = []
+        for line in simpll_out.splitlines():
+            # Each pair of functions is stored as a 2-element list, each 
+            # function is a dictionary containing the function name and the
+            # file that it is defined in.
+            # [{"fun": fun1_name, "file": fun1_file}, 
+            #  {"fun": fun2_name, "file": fun2_file}]
+            funs_to_compare.append([dict(zip(["fun", "file"], fun.split(":")))
+                                    for fun in line.split(",")])
 
         return first_out, second_out, funs_to_compare
     except CalledProcessError:

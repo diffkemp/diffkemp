@@ -13,6 +13,7 @@
 
 #include "Config.h"
 #include "Transforms.h"
+#include "Utils.h"
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -47,8 +48,12 @@ int main(int argc, const char **argv) {
         MainFunsSecond.insert(funPair.second);
         // Write non-equal functions to stdout: these need to be compared for
         // semantic equivalence.
-        outs() << funPair.first->getName() << ","
-               << funPair.second->getName() << "\n";
+        // Functions are written in the form:
+        // first_function:first_file,second_function:second_file
+        outs() << funPair.first->getName()
+               << ":" << getFileForFun(funPair.first) << ","
+               << funPair.second->getName()
+               << ":" << getFileForFun(funPair.second) << "\n";
     }
 
     postprocessModule(*config.First, MainFunsFirst);

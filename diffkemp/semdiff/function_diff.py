@@ -276,10 +276,9 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
             result = Result.NOT_EQUAL
             print "{}:".format(funFirst)
             for fun_pair in funs_to_compare:
-                src_first = first[:-2] + "c"
-                src_second = second[:-2] + "c"
-                diff = syntax_diff(src_first, src_second, fun_pair[0])
-                print "  {} differs:".format(fun_pair[0])
+                diff = syntax_diff(fun_pair[0]["file"], fun_pair[1]["file"],
+                                   fun_pair[0]["fun"])
+                print "  {} differs:".format(fun_pair[0]["fun"])
                 print "  {{{"
                 print diff
                 print "  }}}"
@@ -294,14 +293,16 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
                 # functions
                 called_couplings = FunctionCouplings(first_simpl,
                                                      second_simpl)
-                called_couplings.infer_called_by(fun_pair[0], fun_pair[1])
+                called_couplings.infer_called_by(fun_pair[0]["fun"],
+                                                 fun_pair[1]["fun"])
                 called_couplings.clean()
                 # Do semantic difference of functions
                 result = functions_semdiff(first_simpl, second_simpl,
-                                           fun_pair[0], fun_pair[1],
+                                           fun_pair[0]["fun"],
+                                           fun_pair[1]["fun"],
                                            called_couplings.called, timeout,
                                            verbose)
-                stat.log_result(result, fun_pair[0])
+                stat.log_result(result, fun_pair[0]["fun"])
             result = stat.overall_result()
         if not syntax_only:
             print "      {}".format(result)
