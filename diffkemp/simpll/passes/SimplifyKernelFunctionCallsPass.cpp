@@ -60,9 +60,13 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                     // Functions with 1 mandatory argument
                     auto OpType = dyn_cast<PointerType>(
                             CallInstr->getOperand(0)->getType());
+                    // An additional void pointer is added to the operand list
+                    // so the instruction can be compared as equal even when the
+                    // other one is one of the functions listed in the other if
                     auto newCall = CallInst::Create(
                             CalledFun,
-                            {ConstantPointerNull::get(OpType)},
+                            {ConstantPointerNull::get(OpType),
+                             ConstantPointerNull::get(OpType)},
                             "", &Instr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
                     CallInstr->replaceAllUsesWith(newCall);

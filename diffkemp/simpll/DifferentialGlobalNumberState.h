@@ -17,6 +17,7 @@
 #define DIFFKEMP_SIMPLL_DIFFERENTIALGLOBALNUMBERSTATE_H
 
 #include <llvm/Transforms/Utils/FunctionComparator.h>
+#include <llvm/IR/Module.h>
 
 using namespace llvm;
 
@@ -42,6 +43,9 @@ class DifferentialGlobalNumberState : public GlobalNumberState {
     using IntegerMap = std::map<APInt, uint64_t, cmpConstants>;
     IntegerMap Constants{IntegerMap(cmpConstants())};
 
+    StringRef PrintFunctionList[5] = {"printk", "dev_warn", "dev_err",
+        "_dev_info", "sprintf"};
+
     Module *First;
     Module *Second;
 
@@ -52,7 +56,19 @@ class DifferentialGlobalNumberState : public GlobalNumberState {
     DifferentialGlobalNumberState(Module *first,
                                   Module *second,
                                   ModuleComparator *ModComparator) :
-            First(first), Second(second), ModComparator(ModComparator) {}
+            First(first), Second(second), ModComparator(ModComparator) {
+        // Add an entry for all print functions mapping them all to index 0
+        for (StringRef Name : PrintFunctionList) {
+            if (Function *F = first->getFunction(Name))
+                GlobalNumbers.insert({F, 0});
+
+            if (Function *F = second->getFunction(Name))
+                GlobalNumbers.insert({F, 0});
+        }
+
+        // Index 0 is reserved for print functions
+        ++nextNumber;
+    }
 
     /// Get number of a global symbol. Corresponding symbols in compared modules
     /// get the same number.
