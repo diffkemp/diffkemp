@@ -23,6 +23,6 @@ jobs:
     
     - stage: linter
       script:
-        - flake8 diffkemp --exclude=llreve --ignore=F403,F405
+        - flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
         - flake8 tests
 

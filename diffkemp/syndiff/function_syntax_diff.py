@@ -7,7 +7,7 @@ def syntax_diff(first_file, second_file, fun):
     """Get diff of a C function fun between first_file and second_file"""
     # Run diff with showing lines with function headers for each chunk
     command = ["diff", first_file, second_file, "-C", "1", "-F",
-               "^[[:alpha:]\$_][^:]*$"]
+               br"^[[:alpha:]\$_][^:]*$"]
     try:
         diff = check_output(command)
     except CalledProcessError as e:
