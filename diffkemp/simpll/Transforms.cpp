@@ -17,15 +17,16 @@
 #include "DifferentialGlobalNumberState.h"
 #include "DifferentialFunctionComparator.h"
 #include "ModuleComparator.h"
+#include "Utils.h"
 #include "passes/CalledFunctionsAnalysis.h"
+#include "passes/ControlFlowSlicer.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include "passes/RemoveLifetimeCallsPass.h"
 #include "passes/RemoveUnusedReturnValuesPass.h"
 #include "passes/SimplifyKernelFunctionCallsPass.h"
 #include "passes/SimplifyKernelGlobalsPass.h"
-#include "passes/VarDependencySlicer.h"
-#include "Utils.h"
 #include "passes/UnifyMemcpyPass.h"
+#include "passes/VarDependencySlicer.h"
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
@@ -44,7 +45,10 @@
 /// 3. Unification of memcpy variants so that all use the llvm.memcpy intrinsic.
 /// 4. Dead code elimination.
 /// 5. Removing calls to llvm.expect.
-void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
+void preprocessModule(Module &Mod,
+                      Function *Main,
+                      GlobalVariable *Var,
+                      bool ControlFlowOnly) {
     if (Var) {
         // Slicing of the program w.r.t. the value of a global variable
         PassManager<Function, FunctionAnalysisManager, GlobalVariable *> fpm;
@@ -62,6 +66,8 @@ void preprocessModule(Module &Mod, Function *Main, GlobalVariable *Var) {
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
 
+    if (ControlFlowOnly)
+        fpm.addPass(ControlFlowSlicer {});
     fpm.addPass(SimplifyKernelFunctionCallsPass{});
     fpm.addPass(UnifyMemcpyPass {});
     fpm.addPass(DCEPass {});

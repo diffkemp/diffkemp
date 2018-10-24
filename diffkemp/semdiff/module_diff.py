@@ -10,7 +10,7 @@ from diffkemp.semdiff.function_coupling import FunctionCouplings
 
 
 def modules_diff(first, second, param, timeout, function, syntax_only=False,
-                 verbose=False):
+                 control_flow_only=False, verbose=False):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
     :param first: File with LLVM IR of the first module
@@ -36,7 +36,8 @@ def modules_diff(first, second, param, timeout, function, syntax_only=False,
                 return stat
 
         result = functions_diff(first.llvm, second.llvm, c.first, c.second,
-                                param, timeout, syntax_only, verbose)
+                                param, timeout, syntax_only, control_flow_only,
+                                verbose)
         stat.log_result(result, c.first)
 
     return stat

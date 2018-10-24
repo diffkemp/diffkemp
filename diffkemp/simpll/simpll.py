@@ -16,7 +16,7 @@ def add_suffix(file, suffix):
 
 
 def simplify_modules_diff(first, second, fun_first, fun_second, var,
-                          suffix=None, verbose=False):
+                          suffix=None, control_flow_only=False, verbose=False):
     """
     Simplify modules to ease their semantic difference. Uses the SimpLL tool.
     """
@@ -41,6 +41,9 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         # Suffix for output files
         if suffix:
             simpll_command.extend(["--suffix", suffix])
+
+        if control_flow_only:
+            simpll_command.append("--control-flow")
 
         if verbose:
             print " ".join(simpll_command)

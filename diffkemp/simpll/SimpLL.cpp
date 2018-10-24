@@ -35,8 +35,10 @@ int main(int argc, const char **argv) {
     Config config;
 
     // Run transformations
-    preprocessModule(*config.First, config.FirstFun, config.FirstVar);
-    preprocessModule(*config.Second, config.SecondFun, config.SecondVar);
+    preprocessModule(*config.First, config.FirstFun, config.FirstVar,
+                     config.ControlFlowOnly);
+    preprocessModule(*config.Second, config.SecondFun, config.SecondVar,
+                     config.ControlFlowOnly);
     config.refreshFunctions();
 
     auto nonequalFuns = simplifyModulesDiff(config);

@@ -28,6 +28,7 @@ extern cl::opt<std::string> SecondFileOpt;
 extern cl::opt<std::string> FunctionOpt;
 extern cl::opt<std::string> VariableOpt;
 extern cl::opt<std::string> SuffixOpt;
+extern cl::opt<bool> ControlFlowOpt;
 
 /// Tool configuration parsed from CLI options.
 class Config {
@@ -52,6 +53,9 @@ class Config {
     // Output files
     std::string FirstOutFile;
     std::string SecondOutFile;
+
+    // Keep only control-flow related instructions
+    bool ControlFlowOnly;
 
     Config();
 

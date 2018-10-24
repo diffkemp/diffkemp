@@ -239,7 +239,7 @@ def syntactically_equal(mod_first, mod_second, fun_first, fun_second):
 
 
 def functions_diff(first, second, funFirst, funSecond, param, timeout,
-                   syntax_only=False, verbose=False):
+                   syntax_only=False, control_flow_only=False, verbose=False):
     """
     Compare two functions for equality.
 
@@ -267,6 +267,7 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
             simplify_modules_diff(first, second,
                                   funFirst, funSecond,
                                   param, param if param else "simpl",
+                                  control_flow_only,
                                   verbose)
         if syntactically_equal(first_simpl, second_simpl, funFirst, funSecond):
             result = Result.EQUAL_SYNTAX

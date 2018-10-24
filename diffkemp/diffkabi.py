@@ -23,6 +23,8 @@ def __make_argument_parser():
     ap.add_argument("--syntax-diff", help="for functions that are \
                     syntactically different, show result of diff",
                     action="store_true")
+    ap.add_argument("--control-flow-only", help="see only control-flow \
+                    differences", action="store_true")
     return ap
 
 
@@ -97,7 +99,8 @@ def run_from_cli():
 
                 # Compare functions semantics
                 stat = modules_diff(mod_first, mod_second, None, timeout, f,
-                                    args.syntax_diff, args.verbose)
+                                    args.syntax_diff, args.control_flow_only,
+                                    args.verbose)
                 res = stat.overall_result()
                 result.log_result(res, f)
 
