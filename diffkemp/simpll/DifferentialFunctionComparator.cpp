@@ -138,33 +138,44 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
     return FunctionComparator::cmpAttrs(LNew, RNew);
 }
 
-/// Handle comparing of memory allocation function in cases where the size
-/// of the composite type is different
+/// Compare allocation instructions using separate cmpAllocs function in case
+/// standard comparison returns something other than zero.
 int DifferentialFunctionComparator::cmpOperations(
     const Instruction *L, const Instruction *R, bool &needToCmpOperands) const {
-    // Check whether the instruction is a CallInst calling the function kzalloc.
-    if (!isa<CallInst>(L) || !isa<CallInst>(R))
-        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+    int Result = FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
-    const CallInst *CL = dyn_cast<CallInst>(L);
-    const CallInst *CR = dyn_cast<CallInst>(R);
+    // Check whether the instruction is a call instruction.
+    if (isa<CallInst>(L) && isa<CallInst>(R)) {
+        const CallInst *CL = dyn_cast<CallInst>(L);
+        const CallInst *CR = dyn_cast<CallInst>(R);
 
-    if (!CL->getCalledFunction() || !CR->getCalledFunction() ||
-        CL->getCalledFunction()->getName() != "kzalloc" ||
-        CR->getCalledFunction()->getName() != "kzalloc")
-        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+        // Check whether both instructions call the kzalloc function.
+        if (CL->getCalledFunction() && CR->getCalledFunction() &&
+            CL->getCalledFunction()->getName() == "kzalloc" &&
+            CR->getCalledFunction()->getName() == "kzalloc")
+            return cmpAllocs(dyn_cast<CallInst>(L), dyn_cast<CallInst>(R),
+                                needToCmpOperands);
+        else
+            return Result;
+    } else
+        return Result;
+}
 
+/// Handle comparing of memory allocation function in cases where the size
+/// of the composite type is different.
+int DifferentialFunctionComparator::cmpAllocs(
+    const CallInst* CL, const CallInst* CR, bool &needToCmpOperands) const {
     // The instruction is a call instrution calling the function kzalloc. Now
     // look whether the next instruction is a BitCastInst casting to a structure
     // type.
     if (!isa<BitCastInst>(CL->getNextNode()) ||
         !isa<BitCastInst>(CR->getNextNode()))
-        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+        return 1;
 
     // Check if kzalloc has constant size of the allocated memory
-    if (!isa<ConstantInt>(L->getOperand(0)) ||
-        !isa<ConstantInt>(R->getOperand(0)))
-        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+    if (!isa<ConstantInt>(CL->getOperand(0)) ||
+        !isa<ConstantInt>(CR->getOperand(0)))
+        return 1;
 
     const BitCastInst *NextInstL = dyn_cast<BitCastInst>(CL->getNextNode());
     const BitCastInst *NextInstR = dyn_cast<BitCastInst>(CR->getNextNode());
@@ -178,29 +189,27 @@ int DifferentialFunctionComparator::cmpOperations(
 
     if (!isa<StructType>(PTyL->getElementType()) ||
         !isa<StructType>(PTyR->getElementType()))
-        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+        return 1;
 
     StructType *STyL = dyn_cast<StructType>(PTyL->getElementType());
     StructType *STyR = dyn_cast<StructType>(PTyR->getElementType());
 
     // Look whether the first argument of kzalloc corresponds to the type size.
     uint64_t TypeSizeL =
-            dyn_cast<ConstantInt>(L->getOperand(0))->getZExtValue();
+            dyn_cast<ConstantInt>(CL->getOperand(0))->getZExtValue();
     uint64_t TypeSizeR =
-            dyn_cast<ConstantInt>(R->getOperand(0))->getZExtValue();
+            dyn_cast<ConstantInt>(CR->getOperand(0))->getZExtValue();
 
     if (TypeSizeL != LayoutL.getTypeStoreSize(STyL) ||
         TypeSizeR != LayoutR.getTypeStoreSize(STyR))
-        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+        return 1;
 
     // Look whether the types the memory is allocated for are the same.
     if (STyL->getName() != STyR->getName())
-        return FunctionComparator::cmpOperations(L, R, needToCmpOperands);
+        return 1;
 
     // As of now this function ignores kzalloc flags, therefore the argument
     // comparison is complete.
-    int Result = FunctionComparator::cmpOperations(L, R, needToCmpOperands);
     needToCmpOperands = false;
-
-    return Result;
+    return 0;
 }
