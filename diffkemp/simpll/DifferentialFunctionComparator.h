@@ -44,10 +44,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Specific comparison of attribute lists.
     /// Attributes that do not affect the semantics of functions are removed.
     int cmpAttrs(const AttributeList L, const AttributeList R) const override;
-    /// Handle comparing of memory allocation function in cases where the size
-    /// of the composite type is different
+    /// Compare CallInsts using cmpAllocs.
     int cmpOperations(const Instruction *L, const Instruction *R,
                       bool &needToCmpOperands) const override;
+    /// Handle comparing of memory allocation function in cases where the size
+    /// of the composite type is different.
+    int cmpAllocs(const CallInst* CL, const CallInst* CR,
+                 bool &needToCmpOperands) const;
 
   private:
     const DebugInfo *DI;
