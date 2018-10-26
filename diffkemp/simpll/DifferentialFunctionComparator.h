@@ -51,6 +51,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// of the composite type is different.
     int cmpAllocs(const CallInst* CL, const CallInst* CR,
                  bool &needToCmpOperands) const;
+    /// Compare two function calls where one has an extra argument.
+    /// Such calls are compared as equal if they only differ in the last
+    /// argument which is 0 or NULL.
+    int cmpCallsWithExtraArg(const CallInst *CL, const CallInst *CR) const;
 
   private:
     const DebugInfo *DI;

@@ -149,16 +149,21 @@ int DifferentialFunctionComparator::cmpOperations(
         const CallInst *CL = dyn_cast<CallInst>(L);
         const CallInst *CR = dyn_cast<CallInst>(R);
 
-        // Check whether both instructions call the kzalloc function.
-        if (CL->getCalledFunction() && CR->getCalledFunction() &&
-            CL->getCalledFunction()->getName() == "kzalloc" &&
-            CR->getCalledFunction()->getName() == "kzalloc")
-            return cmpAllocs(dyn_cast<CallInst>(L), dyn_cast<CallInst>(R),
-                                needToCmpOperands);
-        else
-            return Result;
-    } else
-        return Result;
+        Function *CalledL = CL->getCalledFunction();
+        Function *CalledR = CR->getCalledFunction();
+        if (CalledL && CalledR && CalledL->getName() == CalledR->getName()) {
+            // Check whether both instructions call the kzalloc function.
+            if (CalledL->getName() == "kzalloc")
+                return cmpAllocs(CL, CR, needToCmpOperands);
+
+            if (Result &&
+                    abs(CL->getNumOperands() - CR->getNumOperands()) == 1) {
+                needToCmpOperands = false;
+                return cmpCallsWithExtraArg(CL, CR);
+            }
+        }
+    }
+    return Result;
 }
 
 /// Handle comparing of memory allocation function in cases where the size
@@ -212,4 +217,43 @@ int DifferentialFunctionComparator::cmpAllocs(
     // comparison is complete.
     needToCmpOperands = false;
     return 0;
+}
+
+int DifferentialFunctionComparator::cmpCallsWithExtraArg(
+        const CallInst *CL,
+        const CallInst *CR) const {
+    // Distinguish which call has more parameters
+    const CallInst *CallExtraArg;
+    const CallInst *CallOther;
+    if (CL->getNumOperands() > CR->getNumOperands()) {
+        CallExtraArg = CL;
+        CallOther = CR;
+    } else {
+        CallExtraArg = CR;
+        CallOther = CL;
+    }
+
+    // The last extra argument must be 0 (false) or NULL
+    auto *LastOp = CallExtraArg->getOperand(CallExtraArg->getNumOperands() - 2);
+    if (auto ConstLastOp = dyn_cast<Constant>(LastOp)) {
+        if (!(ConstLastOp->isNullValue() || ConstLastOp->isZeroValue()))
+            return 1;
+
+        // Compare function return types (types of the call instructions)
+        if (int Res = cmpTypes(CallExtraArg->getType(), CallOther->getType()))
+            return Res;
+
+        // For each argument (except the extra one), compare its type and value.
+        // Last argument is not compared since it is the called function.
+        for (unsigned i = 0, e = CallOther->getNumOperands() - 1; i != e; ++i) {
+            auto Arg1 = CallExtraArg->getOperand(i);
+            auto Arg2 = CallOther->getOperand(i);
+            if (int Res = cmpTypes(Arg1->getType(), Arg2->getType()))
+                return Res;
+            if (int Res = cmpValues(Arg1, Arg2))
+                return Res;
+        }
+        return 0;
+    }
+    return 1;
 }
