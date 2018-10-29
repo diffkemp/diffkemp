@@ -26,6 +26,7 @@ using namespace llvm;
 class ModuleComparator {
     Module &First;
     Module &Second;
+    bool controlFlowOnly;
 
   public:
     /// Possible results of syntactical function comparison.
@@ -36,10 +37,10 @@ class ModuleComparator {
     /// DebugInfo class storing results from analysing debug information
     const DebugInfo *DI;
 
-    ModuleComparator(Module &First, Module &Second,
+    ModuleComparator(Module &First, Module &Second, bool controlFlowOnly,
                      const DebugInfo *DI)
-            : First(First), Second(Second), GS(&First, &Second, this),
-            DI(DI) {}
+            : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
+            GS(&First, &Second, this), DI(DI) {}
 
     /// Syntactically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.

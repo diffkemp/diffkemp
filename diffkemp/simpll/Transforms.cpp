@@ -128,7 +128,9 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
 
     std::vector<FunPair> result;
     // Compare functions for syntactical equivalence
-    ModuleComparator modComp(*config.First, *config.Second, &DI);
+    ModuleComparator modComp(*config.First, *config.Second,
+                             config.ControlFlowOnly, &DI);
+
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
 

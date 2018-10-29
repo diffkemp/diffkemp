@@ -156,7 +156,7 @@ int DifferentialFunctionComparator::cmpOperations(
             if (CalledL->getName() == "kzalloc")
                 return cmpAllocs(CL, CR, needToCmpOperands);
 
-            if (Result &&
+            if (Result && controlFlowOnly &&
                     abs(CL->getNumOperands() - CR->getNumOperands()) == 1) {
                 needToCmpOperands = false;
                 return cmpCallsWithExtraArg(CL, CR);
