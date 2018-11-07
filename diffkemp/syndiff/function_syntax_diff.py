@@ -6,7 +6,7 @@ from subprocess import check_output, CalledProcessError
 def syntax_diff(first_file, second_file, fun):
     """Get diff of a C function fun between first_file and second_file"""
     # Run diff with showing lines with function headers for each chunk
-    command = ["diff", first_file, second_file, "-C", "1", "-F",
+    command = ["/diffutils/src/diff", first_file, second_file, "-C", "1", "-F",
                br"^[[:alpha:]\$_][^:]*$"]
     try:
         diff = check_output(command)
