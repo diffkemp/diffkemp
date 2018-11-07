@@ -152,9 +152,12 @@ int DifferentialFunctionComparator::cmpOperations(
         Function *CalledL = CL->getCalledFunction();
         Function *CalledR = CR->getCalledFunction();
         if (CalledL && CalledR && CalledL->getName() == CalledR->getName()) {
-            // Check whether both instructions call the kzalloc function.
-            if (CalledL->getName() == "kzalloc")
-                return cmpAllocs(CL, CR, needToCmpOperands);
+            // Check whether both instructions call an alloc function.
+            if (CalledL->getName() == "kzalloc"
+                    || CalledL->getName() == "__kmalloc") {
+                if (!cmpAllocs(CL, CR, needToCmpOperands))
+                    return 0;
+            }
 
             if (Result && controlFlowOnly &&
                     abs(CL->getNumOperands() - CR->getNumOperands()) == 1) {
