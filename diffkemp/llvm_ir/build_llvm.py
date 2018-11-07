@@ -13,6 +13,8 @@ import shutil
 from subprocess import CalledProcessError, call, check_call, check_output
 from subprocess import Popen, PIPE
 from urllib import urlretrieve
+from tempfile import mkdtemp
+from socket import gethostbyname, error as socket_error
 
 
 class BuildException(Exception):
@@ -73,12 +75,17 @@ class LlvmKernelBuilder:
         # Deduce source where kernel will be downloaded from.
         # The choice is done based on version string, if it has release part
         # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
-        # raise exception on such version string).
+        # raise exception on such version string). If Brew is unavailable, use
+        # the CentOS Git.
         try:
             StrictVersion(kernel_version)
             self.source = "upstream"
         except ValueError:
-            self.source = "brew"
+            try:
+                gethostbyname("download.eng.bos.redhat.com")
+                self.source = "brew"
+            except socket_error:
+                self.source = "centos"
 
         self.configfile = None
         self._prepare_kernel()
@@ -122,6 +129,61 @@ class LlvmKernelBuilder:
         urlretrieve(url, os.path.join(self.kernel_base_path, tarname),
                     show_progress)
 
+        return tarname
+
+    def _get_kernel_tar_from_centos(self):
+        """
+        Download sources of the required kernel from the CentOS Git.
+        First the corresponding Git repository is downloaded and the URLs of the
+        necessary files are derived from it. Then it downloads them and extracts
+        the kernel source.
+        :returns Name of the tar file containing the sources.
+        """
+        centos_git_url = "https://git.centos.org/git/rpms/kernel.git"
+        self.configfile = "kernel-{}-x86_64.config".format(
+            self.kernel_version.split("-")[0])
+
+        tmpdir = mkdtemp()
+        cwd = os.getcwd()
+        os.chdir(tmpdir)
+
+        # Clone the Git repository and checkout the appropriate commit.
+        check_call(["git", "clone", "-q", centos_git_url])
+        os.chdir("kernel")
+        check_call(["git", "checkout", "-q",
+            "tags/imports/c7/kernel-{}.el7".format(self.kernel_version)])
+
+        # Get the hashes of the required files and the config from the metadata
+        # file
+        filelist = []
+        with open(".kernel.metadata", 'r') as metadata:
+            for line in metadata:
+                filelist.append(line.rstrip().split(' '))
+
+        shutil.copy("SOURCES/" + self.configfile, self.kernel_base_path)
+        os.chdir(self.kernel_base_path)
+        shutil.rmtree(tmpdir)
+
+        # Download the actual sources
+        for entry in filelist:
+            url = "https://git.centos.org/sources/kernel/c7/{}".format(entry[0])
+            filename = entry[1].split("/")[1]
+
+            urlretrieve(url, os.path.join(self.kernel_base_path, filename),
+                    show_progress)
+
+        # Delete all files except kernel sources tar, config file, and kabi
+        # whitelists tar if required (keep the directories since these are
+        # other kernels - RPM does not contain dirs).
+        tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
+        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
+            self.kernel_version.split("-")[1])
+        for f in os.listdir("."):
+            if (os.path.isfile(f) and f != tarname and f != self.configfile and
+                    f != self.kabi_tarname):
+                os.remove(f)
+        self.configfile = os.path.abspath(self.configfile)
+        os.chdir(cwd)
         return tarname
 
     def _get_kernel_tar_from_brew(self):
@@ -170,8 +232,10 @@ class LlvmKernelBuilder:
         """Download the sources of the required kernel version."""
         if self.source == "upstream":
             tarname = self._get_kernel_tar_from_upstream()
-        else:
+        elif self.source == "brew":
             tarname = self._get_kernel_tar_from_brew()
+        else:
+            tarname = self._get_kernel_tar_from_centos()
         self._extract_tar(tarname)
 
     def _call_and_print(self, command, stdout=None, stderr=None):
