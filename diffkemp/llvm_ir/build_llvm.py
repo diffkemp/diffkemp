@@ -106,6 +106,20 @@ class LlvmKernelBuilder:
               self.kernel_version, self.kernel_path))
         os.chdir(cwd)
 
+    def _clean_downloaded_files(self, tarname):
+        # Delete all files except kernel sources tar, config file, and kabi
+        # whitelists tar if required (keep the directories since these are
+        # other kernels - RPM does not contain dirs).
+        self.configfile = "kernel-{}-x86_64.config".format(
+            self.kernel_version.split("-")[0])
+        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
+            self.kernel_version.split("-")[1])
+        for f in os.listdir("."):
+            if (os.path.isfile(f) and f != tarname and f != self.configfile and
+                    f != self.kabi_tarname):
+                os.remove(f)
+        self.configfile = os.path.abspath(self.configfile)
+
     def _get_kernel_tar_from_upstream(self):
         """
         Download sources of the required kernel version from the upstream
@@ -134,56 +148,48 @@ class LlvmKernelBuilder:
     def _get_kernel_tar_from_centos(self):
         """
         Download sources of the required kernel from the CentOS Git.
-        First the corresponding Git repository is downloaded and the URLs of the
-        necessary files are derived from it. Then it downloads them and extracts
-        the kernel source.
+        First the corresponding Git repository is downloaded and the URLs of
+        the necessary files are derived from it. Then it downloads them and
+        extracts the kernel source.
         :returns Name of the tar file containing the sources.
         """
         centos_git_url = "https://git.centos.org/git/rpms/kernel.git"
-        self.configfile = "kernel-{}-x86_64.config".format(
-            self.kernel_version.split("-")[0])
 
         tmpdir = mkdtemp()
         cwd = os.getcwd()
         os.chdir(tmpdir)
 
-        # Clone the Git repository and checkout the appropriate commit.
+        # Clone the Git repository and checkout the appropriate branch.
         check_call(["git", "clone", "-q", centos_git_url])
         os.chdir("kernel")
-        check_call(["git", "checkout", "-q",
-            "tags/imports/c7/kernel-{}.el7".format(self.kernel_version)])
+        check_call(["git", "checkout", "-q", "c7"])
 
-        # Get the hashes of the required files and the config from the metadata
-        # file
-        filelist = []
-        with open(".kernel.metadata", 'r') as metadata:
-            for line in metadata:
-                filelist.append(line.rstrip().split(' '))
+        # Reset head to the corresponding commit.
+        # Note: a simple checkout does not work, because get_sources.sh uses
+        # the name of the branch to create the URL of the files. This causes
+        # it to fail when the head is detached
+        check_call(["git", "reset", "--hard", "-q",
+                    "tags/imports/c7/kernel-{}.el7".format(
+                        self.kernel_version)])
 
-        shutil.copy("SOURCES/" + self.configfile, self.kernel_base_path)
+        # Clone the centos-git-common repository for the get_sources.sh script
+        check_call(["git", "clone", "-q",
+                    "https://git.centos.org/git/centos-git-common.git"])
+
+        # Download the sources and copy them into the kernel base directory
+        check_call(["centos-git-common/get_sources.sh"])
+        os.chdir("SOURCES")
+        for f in os.listdir(os.getcwd()):
+            if os.path.isfile(f):
+                shutil.copy(os.path.abspath(f), self.kernel_base_path)
+
         os.chdir(self.kernel_base_path)
         shutil.rmtree(tmpdir)
 
-        # Download the actual sources
-        for entry in filelist:
-            url = "https://git.centos.org/sources/kernel/c7/{}".format(entry[0])
-            filename = entry[1].split("/")[1]
-
-            urlretrieve(url, os.path.join(self.kernel_base_path, filename),
-                    show_progress)
-
-        # Delete all files except kernel sources tar, config file, and kabi
-        # whitelists tar if required (keep the directories since these are
-        # other kernels - RPM does not contain dirs).
         tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
-        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
-            self.kernel_version.split("-")[1])
-        for f in os.listdir("."):
-            if (os.path.isfile(f) and f != tarname and f != self.configfile and
-                    f != self.kabi_tarname):
-                os.remove(f)
-        self.configfile = os.path.abspath(self.configfile)
+        self._clean_downloaded_files(tarname)
         os.chdir(cwd)
+
         return tarname
 
     def _get_kernel_tar_from_brew(self):
@@ -212,20 +218,10 @@ class LlvmKernelBuilder:
             check_call(["cpio", "-idmv"], stdin=rpm_cpio.stdout,
                        stderr=devnull)
 
-        # Delete all files except kernel sources tar, config file, and kabi
-        # whitelists tar if required (keep the directories since these are
-        # other kernels - RPM does not contain dirs).
         tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
-        self.configfile = "kernel-{}-x86_64.config".format(
-            self.kernel_version.split("-")[0])
-        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
-            self.kernel_version.split("-")[1])
-        for f in os.listdir("."):
-            if (os.path.isfile(f) and f != tarname and f != self.configfile and
-                    f != self.kabi_tarname):
-                os.remove(f)
-        self.configfile = os.path.abspath(self.configfile)
+        self._clean_downloaded_files(tarname)
         os.chdir(cwd)
+
         return tarname
 
     def _get_kernel_source(self):
