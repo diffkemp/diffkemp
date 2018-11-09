@@ -31,11 +31,20 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
     // Comparing function declarations (function without bodies).
     if (FirstFun->isDeclaration() || SecondFun->isDeclaration()) {
-        if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
-                && FirstFun->getName() == SecondFun->getName()) {
-            ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
-        } else {
-            ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+        if (controlFlowOnly) {
+            // If checking control flow only, it suffices that one of the
+            // functions is a declaration to treat them equal.
+            if (FirstFun->getName() == SecondFun->getName())
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+            else
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+        }
+        else {
+            if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
+                    && FirstFun->getName() == SecondFun->getName())
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+            else
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
         }
         return;
     }
