@@ -6,7 +6,8 @@ into LLVM IR.
 
 import os
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
-from diffkemp.llvm_ir.kernel_source import KernelSource
+from diffkemp.llvm_ir.kernel_source import (KernelSource,
+                                            SourceNotFoundException)
 from diffkemp.llvm_ir.module_analyser import *
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
@@ -688,6 +689,26 @@ class LlvmKernelBuilder:
                                  .format(name))
         os.chdir(cwd)
         mod = LlvmKernelModule(name, file_name, self.modules_path)
+        return mod
+
+    def build_llvm_function(self, f):
+        mod = None
+
+        srcs = self.source.find_srcs_for_function(f)
+        for src in srcs:
+            try:
+                mod = self.build_file(src)
+                mod.parse_module()
+                if not mod.has_function(f):
+                    mod.clean_module()
+                    mod = None
+                else:
+                    break
+            except BuildException:
+                mod = None
+        if not mod:
+            raise SourceNotFoundException("Source for {} not found".format(f))
+
         return mod
 
     def link_modules(self, modules):
