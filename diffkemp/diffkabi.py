@@ -37,7 +37,6 @@ def run_from_cli():
         # Prepare kernels
         first_builder = LlvmKernelBuilder(args.src_version, None, debug=True,
                                           verbose=not args.syntax_diff)
-        first_builder.build_cscope_database()
         if args.function:
             kabi_funs_first = [args.function]
         else:
@@ -45,7 +44,6 @@ def run_from_cli():
 
         second_builder = LlvmKernelBuilder(args.dest_version, None, debug=True,
                                            verbose=not args.syntax_diff)
-        second_builder.build_cscope_database()
         if args.function:
             kabi_funs_second = [args.function]
         else:
@@ -65,7 +63,7 @@ def run_from_cli():
 
             try:
                 # Find source files with function definitions and build them
-                srcs_first = first_builder.find_srcs_for_function(f)
+                srcs_first = first_builder.source.find_srcs_for_function(f)
                 mod_first = None
                 for src in srcs_first:
                     try:
@@ -81,7 +79,7 @@ def run_from_cli():
                 if not mod_first:
                     raise BuildException("Source for {} not found".format(f))
 
-                srcs_second = second_builder.find_srcs_for_function(f)
+                srcs_second = second_builder.source.find_srcs_for_function(f)
                 mod_second = None
                 for src in srcs_second:
                     try:

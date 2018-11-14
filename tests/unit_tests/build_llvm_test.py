@@ -26,7 +26,7 @@ def test_get_sources_with_params(builder):
     parameters.
     """
     mod_dir = os.path.join(builder.kernel_path, builder.modules_dir)
-    srcs = builder._get_sources_with_params(mod_dir)
+    srcs = builder.source.get_sources_with_params(mod_dir)
     srcs = [os.path.relpath(s, mod_dir) for s in srcs]
     assert sorted(srcs) == sorted([
         "rtctimer.c",
