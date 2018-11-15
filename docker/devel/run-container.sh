@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Prerequisity is an existing docker image called 'diffkemp' built from
+# Prerequisity is an existing docker image called 'diffkemp-devel' built from
 # the provided Dockerfile
 docker run \
 	-ti --security-opt seccomp=unconfined \
@@ -8,5 +8,5 @@ docker run \
     --cpus 3 \
 	-v $PWD:/diffkemp:Z \
 	-w /diffkemp \
-	viktormalik/diffkemp \
+	viktormalik/diffkemp-devel \
 	/bin/bash

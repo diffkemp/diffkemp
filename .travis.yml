@@ -9,16 +9,16 @@ jobs:
   include:
     - stage: build and test
       before_install:
-        - docker pull viktormalik/diffkemp
+        - docker pull viktormalik/diffkemp-devel
       before_script:
         - mkdir build
         - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then tests/regression/clean_test.sh all; fi
       script: 
-        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
           "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release; ninja; cd .."
-        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
           "pytest tests/unit_tests"
-        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp /bin/bash -c \
+        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
           "pytest tests/regression"
     
     - stage: linter
