@@ -54,50 +54,44 @@ class TaskSpec:
         else:
             self.control_flow_only = False
         self.debug = spec["debug"] if "debug" in spec else False
-
-        # The dictionary mapping pairs of corresponding analysed functions into
-        # expected results.
-        # Special values 'only_old' and 'only_new' denote functions that occur
-        # in a single version of the module only.
-        self.functions = dict()
-        self.only_old = set()
-        self.only_new = set()
-        for fun, desc in spec["functions"].iteritems():
-            # Find the module
-            first_builder = LlvmKernelBuilder(self.old_kernel, None,
-                                              debug=self.debug)
-            first_builder.source.build_cscope_database()
-            second_builder = LlvmKernelBuilder(self.new_kernel, None,
-                                               debug=self.debug)
-            second_builder.source.build_cscope_database()
-
-            mod_first = first_builder.build_llvm_function(fun)
-            mod_second = second_builder.build_llvm_function(fun)
-
-            fun = (fun, mod_first, mod_second)
-
-            # All functions should have the same names in diffkabi
-            try:
-                self.functions[fun] = Result[desc.upper()]
-            except KeyError:
-                if desc == "only_old":
-                    self.only_old.add(fun[0])
-                elif desc == "only_new":
-                    self.only_new.add(fun[0])
+        self.functions = spec["functions"]
 
 
 def prepare_task(spec):
     """
-    Prepare testing task (scenario). Build old and new modules if needed and
-    copy created files.
+    Prepare testing task (scenario). Build old and new modules and copy
+    created files.
     """
-    functions = dict()
-    for function, result in spec.functions.iteritems():
-        # Gather various arguments for prepare_module
-        mod_path_old = function[1].llvm
-        mod_path_new = function[2].llvm
-        mod_old = os.path.basename(function[1].name)
-        mod_new = os.path.basename(function[2].name)
+    spec.built_functions = dict()
+
+    for function, desc in spec.functions.iteritems():
+        # Find the modules
+        first_builder = LlvmKernelBuilder(spec.old_kernel, None,
+                                          debug=spec.debug)
+        first_builder.source.build_cscope_database()
+        second_builder = LlvmKernelBuilder(spec.new_kernel, None,
+                                           debug=spec.debug)
+        second_builder.source.build_cscope_database()
+
+        # Build the modules
+        mod_first = first_builder.build_llvm_function(function)
+        mod_second = second_builder.build_llvm_function(function)
+
+        # Add the function to the dictionary
+        fun = (function, mod_first, mod_second)
+        spec.built_functions[fun] = Result[desc.upper()]
+
+        # The modules were already built when finding their sources.
+        # Now the files need only to be copied to the right place.
+        #
+        # Note: the files are copied to the task directory for reference only.
+        # The exact name of the module is not known before building the
+        # function, therefore building from module sources in kernel_modules or
+        # using already built LLVM IR files is not possible.
+        mod_path_old = mod_first.llvm
+        mod_path_new = mod_second.llvm
+        mod_old = os.path.basename(mod_first.name)
+        mod_new = os.path.basename(mod_second.name)
         task_dir = os.path.join(tasks_path, mod_old)
         if not os.path.isdir(task_dir):
             os.mkdir(task_dir)
@@ -108,21 +102,11 @@ def prepare_task(spec):
         old_source_src = os.path.splitext(mod_path_old)[0] + ".c"
         new_source_src = os.path.splitext(mod_path_new)[0] + ".c"
 
-        # The modules were already built when finding their sources.
-        # Now the files need only to be copied to the right place.
         shutil.copyfile(mod_path_old, old_llvm)
         shutil.copyfile(old_source_src, old_src)
 
         shutil.copyfile(mod_path_new, new_llvm)
         shutil.copyfile(new_source_src, new_src)
-
-        # The module objects in the function tuple have to be replaced with
-        # the actual paths to the LLVM IR files
-        functions[(function[0], old_llvm, new_llvm)] = result
-
-    # Replace old function list (with module objects) with the new one (with
-    # paths to actual LLVM IR files
-    spec.functions = functions
 
 
 @pytest.fixture(params=[x[1] for x in specs],
@@ -151,9 +135,9 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        for function, expected in task_spec.functions.iteritems():
+        for function, expected in task_spec.built_functions.iteritems():
             if expected != Result.TIMEOUT:
-                result = functions_diff(function[1], function[2],
+                result = functions_diff(function[1].llvm, function[2].llvm,
                                         function[0], function[0],
                                         None, 120,
                                         control_flow_only =
