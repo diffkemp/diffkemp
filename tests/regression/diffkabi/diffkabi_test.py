@@ -93,6 +93,8 @@ def prepare_task(spec):
         mod_old = os.path.basename(mod_first.name)
         mod_new = os.path.basename(mod_second.name)
         task_dir = os.path.join(tasks_path, mod_old)
+        if not os.path.isdir(tasks_path):
+            os.mkdir(tasks_path)
         if not os.path.isdir(task_dir):
             os.mkdir(task_dir)
         old_src = os.path.join(task_dir, mod_old + "_old.c")
