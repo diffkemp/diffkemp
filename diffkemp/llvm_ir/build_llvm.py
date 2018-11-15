@@ -679,6 +679,7 @@ class LlvmKernelBuilder:
 
         # Check if the module has not already been built
         if name in self.built_modules:
+            os.chdir(cwd)
             return self.built_modules[name]
 
         for command in commands:
@@ -753,6 +754,7 @@ class LlvmKernelBuilder:
         os.chdir(self.kernel_path)
         name = file_name[:-2] if file_name.endswith(".c") else file_name
         if name in self.built_modules:
+            os.chdir(cwd)
             return self.built_modules[name]
         try:
             command = self.kbuild_object_command("{}.o".format(name))
