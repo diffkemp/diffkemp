@@ -84,5 +84,9 @@ cmake-build-debug/
 *.smt2
 *.pdf
 
+# All files in kernel_modules from diffkabi - they are not used in the test
+# compilation at all
+tests/regression/diffkabi/kernel_modules
+
 # Kernel sources directory
 kernel/
