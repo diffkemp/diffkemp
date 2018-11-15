@@ -92,6 +92,9 @@ class LlvmKernelBuilder:
         self._prepare_kernel()
         self.source = KernelSource(self.kernel_path)
 
+        # Caching built modules so that we can reuse them
+        self.built_modules = dict()
+
     def _extract_tar(self, tarname):
         """Extract kernel sources from .tar.xz file."""
         cwd = os.getcwd()
@@ -673,6 +676,11 @@ class LlvmKernelBuilder:
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
+
+        # Check if the module has not already been built
+        if name in self.built_modules:
+            return self.built_modules[name]
+
         for command in commands:
             file = self.get_output_file(command)
             try:
@@ -688,6 +696,7 @@ class LlvmKernelBuilder:
                                  .format(name))
         os.chdir(cwd)
         mod = LlvmKernelModule(name, file_name, self.modules_path)
+        self.built_modules[name] = mod
         return mod
 
     def link_modules(self, modules):
@@ -742,14 +751,18 @@ class LlvmKernelBuilder:
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
+        name = file_name[:-2] if file_name.endswith(".c") else file_name
+        if name in self.built_modules:
+            return self.built_modules[name]
         try:
-            name = file_name[:-2] if file_name.endswith(".c") else file_name
             command = self.kbuild_object_command("{}.o".format(name))
             command = self.gcc_to_llvm(command)
             self.build_llvm_file(os.path.join(self.modules_dir,
                                               "{}.ll".format(name)),
                                  command)
-            return LlvmKernelModule(name, name, self.modules_path)
+            mod = LlvmKernelModule(name, name, self.modules_path)
+            self.built_modules[name] = mod
+            return mod
         except BuildException:
             raise
         finally:
@@ -767,6 +780,7 @@ class LlvmKernelBuilder:
         """
         if clean:
             self._clean_all_modules()
+
         file_name, commands = self.kbuild_module(module)
         clang_commands = self.kbuild_to_llvm_commands(commands, file_name)
         if module == "built-in":
