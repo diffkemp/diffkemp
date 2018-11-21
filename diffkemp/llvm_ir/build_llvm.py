@@ -691,7 +691,14 @@ class LlvmKernelBuilder:
         mod = LlvmKernelModule(name, file_name, self.modules_path)
         return mod
 
-    def build_llvm_function(self, f):
+    def build_file_for_function(self, f):
+        """
+        Looks up files containing the function using CScope, then compiles them
+        using Clang and looks whether the function actually is in the module.
+        First module containing the function is returned.
+        :param f: Name of the function to look up.
+        :returns First module containing the specified function.
+        """
         mod = None
 
         srcs = self.source.find_srcs_for_function(f)

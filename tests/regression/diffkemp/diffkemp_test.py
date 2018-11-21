@@ -1,21 +1,20 @@
 """
 Regression testing using pytest.
-Individual tests are specified using YAML in the tests/regression/test_specs/
-directory. Each test describes a kernel module, two kernel versions between
-which the module is compared, and a list of compared module parameters. For
-each parameter, pairs of corresponding functions (using the parameter) along
-with the expected analysis results must be provided.
-This script parses the test specification and prepares testing scenarions for
-pytest.
+Individual tests are specified using YAML in the
+tests/regression/diffkemp/test_specs/ directory. Each test describes a kernel
+module, two kernel versions between which the module is compared, and a list of
+compared module parameters. For each parameter, pairs of corresponding
+functions (using the parameter) along with the expected analysis results must
+be provided. This script parses the test specification and prepares testing
+scenarions for pytest.
 """
 
-from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
+from diffkemp.test_tools.module_tools import prepare_module
 import glob
 import os
 import pytest
-import shutil
 import yaml
 
 specs_path = "tests/regression/diffkemp/test_specs"
@@ -101,24 +100,6 @@ class TaskSpec:
         self.new_src = os.path.join(self.task_dir, module + "_new.c")
 
 
-def _build_module(kernel_version, module_dir, module, debug):
-    """
-    Build LLVM IR of the analysed module.
-    """
-    builder = LlvmKernelBuilder(kernel_version, module_dir, debug)
-    llvm_mod = builder.build_module(module, True)
-    return llvm_mod
-
-
-def prepare_module(spec, kernel_version, llvm, llvm_simpl, src):
-    if not os.path.isfile(llvm):
-        mod = _build_module(kernel_version, spec.module_dir, spec.module,
-                            spec.debug)
-        shutil.copyfile(mod.llvm, llvm)
-        mod_src = os.path.join(os.path.dirname(mod.llvm), spec.module_src)
-        shutil.copyfile(mod_src, src)
-
-
 def prepare_task(spec):
     """
     Prepare testing task (scenario). Build old and new modules if needed and
@@ -129,11 +110,13 @@ def prepare_task(spec):
         os.mkdir(spec.task_dir)
 
     # Prepare old module
-    prepare_module(spec, spec.old_kernel, spec.old, spec.old_simpl,
-                   spec.old_src)
+    prepare_module(spec.module_dir, spec.module, spec.module_src,
+                   spec.old_kernel, spec.old, spec.old_simpl, spec.old_src,
+                   spec.debug)
     # Prepare new module
-    prepare_module(spec, spec.new_kernel, spec.new, spec.new_simpl,
-                   spec.new_src)
+    prepare_module(spec.module_dir, spec.module, spec.module_src,
+                   spec.new_kernel, spec.new, spec.new_simpl, spec.new_src,
+                   spec.debug)
 
 
 @pytest.fixture(params=[x[1] for x in specs],
