@@ -1,19 +1,18 @@
 """
 Regression testing using pytest.
-Individual tests are specified using YAML in the tests/regression/test_specs/
-directory. Each test describes a kernel module, two kernel versions between
-which the module is compared, and a list of compared module parameters. For
-each parameter, pairs of corresponding functions (using the parameter) along
-with the expected analysis results must be provided.
+Individual tests are specified using YAML in the
+tests/regression/test_specs/diffkabi directory. Each test contains a list of
+KABI functions and two kernel versions between which the module is compared.
+For each function the expected analysis results is specified.
 This script parses the test specification and prepares testing scenarions for
 pytest.
 """
 
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff, Result
+from diffkemp.test_tools.module_tools import prepare_module
 import glob
 import os
-import shutil
 import pytest
 import yaml
 
@@ -31,8 +30,13 @@ def collect_task_specs():
             spec_yaml = yaml.load(spec_file)
             if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
                 continue
-            spec_id = os.path.splitext(spec_file_path)[0]
-            result.append((spec_id, spec_yaml))
+            for function, desc in spec_yaml["functions"].iteritems():
+                spec = spec_yaml
+                spec["function"] = function
+                spec["expected_result"] = desc
+
+                spec_id = os.path.splitext(spec_file_path)[0] + "_" + function
+                result.append((spec_id, spec))
     os.chdir(cwd)
     return result
 
@@ -54,7 +58,8 @@ class TaskSpec:
         else:
             self.control_flow_only = False
         self.debug = spec["debug"] if "debug" in spec else False
-        self.functions = spec["functions"]
+        self.function = spec["function"]
+        self.expected_result = spec["expected_result"]
 
 
 def prepare_task(spec):
@@ -62,53 +67,44 @@ def prepare_task(spec):
     Prepare testing task (scenario). Build old and new modules and copy
     created files.
     """
-    spec.built_functions = dict()
+    # Find the modules
+    first_builder = LlvmKernelBuilder(spec.old_kernel, None,
+                                      debug=spec.debug)
+    second_builder = LlvmKernelBuilder(spec.new_kernel, None,
+                                       debug=spec.debug)
 
-    for function, desc in spec.functions.iteritems():
-        # Find the modules
-        first_builder = LlvmKernelBuilder(spec.old_kernel, None,
-                                          debug=spec.debug)
-        first_builder.source.build_cscope_database()
-        second_builder = LlvmKernelBuilder(spec.new_kernel, None,
-                                           debug=spec.debug)
-        second_builder.source.build_cscope_database()
+    # Build the modules
+    old_module = first_builder.build_file_for_function(spec.function)
+    new_module = second_builder.build_file_for_function(spec.function)
 
-        # Build the modules
-        mod_first = first_builder.build_llvm_function(function)
-        mod_second = second_builder.build_llvm_function(function)
+    # The modules were already built when finding their sources.
+    # Now the files need only to be copied to the right place.
+    #
+    # Note: the files are copied to the task directory for reference only.
+    # The exact name of the module is not known before building the
+    # function, therefore building from module sources in kernel_modules or
+    # using already built LLVM IR files is not possible.
+    mod_old = os.path.basename(old_module.name)
+    mod_new = os.path.basename(new_module.name)
+    spec.task_dir = os.path.join(tasks_path, spec.function)
+    if not os.path.isdir(tasks_path):
+        os.mkdir(tasks_path)
+    if not os.path.isdir(spec.task_dir):
+        os.mkdir(spec.task_dir)
+    spec.old_src = os.path.join(spec.task_dir, mod_old + "_old.c")
+    spec.new_src = os.path.join(spec.task_dir, mod_new + "_new.c")
+    spec.old_module = os.path.join(spec.task_dir, mod_old + "_old.ll")
+    spec.new_module = os.path.join(spec.task_dir, mod_new + "_new.ll")
+    spec.old_simpl = os.path.join(spec.task_dir, mod_old + "_old-simpl.ll")
+    spec.new_simpl = os.path.join(spec.task_dir, mod_new + "_new-simpl.ll")
 
-        # Add the function to the dictionary
-        fun = (function, mod_first, mod_second)
-        spec.built_functions[fun] = Result[desc.upper()]
+    prepare_module(os.path.dirname(old_module.llvm), mod_old, mod_old + ".c",
+                   spec.old_kernel, spec.old_module, spec.old_simpl,
+                   spec.old_src, spec.debug, build_module=False)
 
-        # The modules were already built when finding their sources.
-        # Now the files need only to be copied to the right place.
-        #
-        # Note: the files are copied to the task directory for reference only.
-        # The exact name of the module is not known before building the
-        # function, therefore building from module sources in kernel_modules or
-        # using already built LLVM IR files is not possible.
-        mod_path_old = mod_first.llvm
-        mod_path_new = mod_second.llvm
-        mod_old = os.path.basename(mod_first.name)
-        mod_new = os.path.basename(mod_second.name)
-        task_dir = os.path.join(tasks_path, mod_old)
-        if not os.path.isdir(tasks_path):
-            os.mkdir(tasks_path)
-        if not os.path.isdir(task_dir):
-            os.mkdir(task_dir)
-        old_src = os.path.join(task_dir, mod_old + "_old.c")
-        new_src = os.path.join(task_dir, mod_new + "_new.c")
-        old_llvm = os.path.join(task_dir, mod_old + "_old.ll")
-        new_llvm = os.path.join(task_dir, mod_new + "_new.ll")
-        old_source_src = os.path.splitext(mod_path_old)[0] + ".c"
-        new_source_src = os.path.splitext(mod_path_new)[0] + ".c"
-
-        shutil.copyfile(mod_path_old, old_llvm)
-        shutil.copyfile(old_source_src, old_src)
-
-        shutil.copyfile(mod_path_new, new_llvm)
-        shutil.copyfile(new_source_src, new_src)
+    prepare_module(os.path.dirname(new_module.llvm), mod_new, mod_new + ".c",
+                   spec.new_kernel, spec.new_module, spec.new_simpl,
+                   spec.new_src, spec.debug, build_module=False)
 
 
 @pytest.fixture(params=[x[1] for x in specs],
@@ -123,8 +119,8 @@ def task_spec(request):
 class TestClass(object):
     """
     Main testing class. One object of the class is created for each testing
-    task. Contains 2 tests for function couplings collection and for the
-    actual function analysis (semantic comparison).
+    task. Contains a test for finding and semantically comparing KABI
+    functions.
     """
 
     def test_diffkabi(self, task_spec):
@@ -137,11 +133,9 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        for function, expected in task_spec.built_functions.iteritems():
-            if expected != Result.TIMEOUT:
-                result = functions_diff(function[1].llvm, function[2].llvm,
-                                        function[0], function[0],
-                                        None, 120,
-                                        control_flow_only =
-                                        task_spec.control_flow_only)
-                assert result == expected
+        if task_spec.expected_result != Result.TIMEOUT:
+            result = functions_diff(task_spec.old_module, task_spec.new_module,
+                                    task_spec.function, task_spec.function,
+                                    None, 120, False,
+                                    task_spec.control_flow_only)
+            assert result == Result[task_spec.expected_result.upper()]

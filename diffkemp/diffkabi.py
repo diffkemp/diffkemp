@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 
 from argparse import ArgumentParser
-from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule, \
-    BuildException
+from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
 from diffkemp.semdiff.function_diff import Result
 from diffkemp.semdiff.module_diff import modules_diff, Statistics
 import sys
@@ -63,8 +62,8 @@ def run_from_cli():
 
             try:
                 # Find source files with function definitions and build them
-                mod_first = first_builder.build_llvm_function(f)
-                mod_second = second_builder.build_llvm_function(f)
+                mod_first = first_builder.build_file_for_function(f)
+                mod_second = second_builder.build_file_for_function(f)
 
                 # Compare functions semantics
                 stat = modules_diff(mod_first, mod_second, None, timeout, f,
