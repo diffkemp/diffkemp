@@ -14,35 +14,27 @@ def builder():
     return LlvmKernelBuilder("3.10", "sound/core")
 
 
+@pytest.fixture(scope="module")
+def builder_rhel():
+    """Create module builder for the RHEL kernel."""
+    return LlvmKernelBuilder("3.10.0-957", "sound/core")
+
+
 def test_prepare_kernel(builder):
     """Kernel downloading and preparation."""
     builder._prepare_kernel()
     assert os.path.isdir("kernel/linux-3.10")
 
 
-def test_get_sources_with_params(builder):
-    """
-    Searching for source C files that contain definitions of module
-    parameters.
-    """
-    mod_dir = os.path.join(builder.kernel_path, builder.modules_dir)
-    srcs = builder.source.get_sources_with_params(mod_dir)
-    srcs = [os.path.relpath(s, mod_dir) for s in srcs]
-    assert sorted(srcs) == sorted([
-        "rtctimer.c",
-        "pcm_memory.c",
-        "seq/seq.c",
-        "seq/seq_dummy.c",
-        "seq/seq_midi.c",
-        "seq/oss/seq_oss_init.c",
-        "seq/oss/seq_oss.c",
-        "misc.c",
-        "timer.c",
-        "sound.c",
-        "init.c",
-        "oss/pcm_oss.c",
-        "rawmidi.c"
-    ])
+def test_prepare_rhel_kernel(builder_rhel):
+    """Download and preparation of a RHEL kernel."""
+    builder_rhel._prepare_kernel()
+    assert os.path.isdir("kernel/linux-3.10.0-957")
+
+
+def test_extract_kabi_whitelist(builder_rhel):
+    builder_rhel._prepare_kernel()
+    assert os.path.exists("kernel/linux-3.10.0-957/kabi_whitelist_x86_64")
 
 
 def test_kbuild_object_command(builder):
