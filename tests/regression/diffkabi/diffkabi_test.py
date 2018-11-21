@@ -2,7 +2,8 @@
 Regression testing using pytest.
 Individual tests are specified using YAML in the
 tests/regression/test_specs/diffkabi directory. Each test contains a list of
-KABI functions and two kernel versions between which the module is compared.
+KABI functions and two kernel versions between which the functions are
+compared.
 For each function the expected analysis results is specified.
 This script parses the test specification and prepares testing scenarions for
 pytest.
@@ -10,7 +11,7 @@ pytest.
 
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff, Result
-from diffkemp.test_tools.module_tools import prepare_module
+from tests.regression.module_tools import prepare_module
 import glob
 import os
 import pytest
@@ -23,6 +24,8 @@ tasks_path = "tests/regression/diffkabi/kernel_modules"
 def collect_task_specs():
     """Collecting and parsing YAML files with test specifications."""
     result = list()
+    if not os.path.isdir(tasks_path):
+        os.mkdir(tasks_path)
     cwd = os.getcwd()
     os.chdir(specs_path)
     for spec_file_path in glob.glob("*.yaml"):
@@ -87,8 +90,6 @@ def prepare_task(spec):
     mod_old = os.path.basename(old_module.name)
     mod_new = os.path.basename(new_module.name)
     spec.task_dir = os.path.join(tasks_path, spec.function)
-    if not os.path.isdir(tasks_path):
-        os.mkdir(tasks_path)
     if not os.path.isdir(spec.task_dir):
         os.mkdir(spec.task_dir)
     spec.old_src = os.path.join(spec.task_dir, mod_old + "_old.c")

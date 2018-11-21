@@ -11,7 +11,7 @@ scenarions for pytest.
 
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
-from diffkemp.test_tools.module_tools import prepare_module
+from tests.regression.module_tools import prepare_module
 import glob
 import os
 import pytest
