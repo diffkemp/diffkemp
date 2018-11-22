@@ -56,13 +56,16 @@ class LlvmKernelModule:
 
     def parse_module(self):
         """Parse module file into LLVM module using llvmcpy library"""
-        buffer = create_memory_buffer_with_contents_of_file(self.llvm)
-        context = get_global_context()
-        self.llvm_module = context.parse_ir(buffer)
+        if self.llvm_module is None:
+            buffer = create_memory_buffer_with_contents_of_file(self.llvm)
+            context = get_global_context()
+            self.llvm_module = context.parse_ir(buffer)
 
     def clean_module(self):
         """Free the parsed LLVM module."""
-        self.llvm_module.dispose()
+        if self.llvm_module is not None:
+            self.llvm_module.dispose()
+            self.llvm_module = None
 
     @staticmethod
     def clean_all():
