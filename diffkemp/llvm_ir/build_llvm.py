@@ -9,6 +9,7 @@ from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.kernel_source import KernelSource, \
     SourceNotFoundException
 from diffkemp.llvm_ir.module_analyser import *
+from diffkemp.llvm_ir.llvm_sysctl_module import LlvmSysctlModule
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
 import shutil
@@ -711,7 +712,7 @@ class LlvmKernelBuilder:
         """
         mod = None
 
-        srcs = self.source.find_srcs_for_function(f)
+        srcs = self.source.find_srcs_with_symbol_def(f)
         for src in srcs:
             try:
                 mod = self.build_file(src)
@@ -904,6 +905,23 @@ class LlvmKernelBuilder:
             print ""
         self.link_modules(llvm_modules)
         return llvm_modules
+
+    def build_sysctl_module(self, sysctl):
+        """
+        Build source containing definitions of a sysctl option.
+        :param sysctl: sysctl option to search for
+        :return: Instance of LlvmSysctlModule.
+        """
+        src, sysctl_table = self.source.find_src_for_sysctl(sysctl)
+        if src in self.built_modules:
+            return self.built_modules[src]
+
+        # Build the file normally and then create a corresponding
+        # LlvmSysctlModule with the obtained sysctl table.
+        kernel_mod = self.build_file(src)
+        sysctl_mod = LlvmSysctlModule(kernel_mod, sysctl_table)
+        self.built_modules[src] = sysctl_mod
+        return sysctl_mod
 
     def get_kabi_whitelist(self):
         """Get a list of functions on the kernel abi whitelist."""

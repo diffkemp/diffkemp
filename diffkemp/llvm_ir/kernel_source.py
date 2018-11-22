@@ -73,33 +73,53 @@ class KernelSource:
         check_call(["cscope", "-b", "-q", "-k"])
         os.chdir(cwd)
 
-    def _cscope_find_symbol(self, fun, glob_def):
+    def _cscope_run(self, symbol, definition):
         """
-        Use cscope to find a definition of the given symbol.
-        :param fun: Function to find.
-        :param glob_def: True if only global definitions should be searched by
-                         cscope.
-        :return List of source files potentially containing the definition.
+        Run cscope search for a symbol.
+        :param symbol: Symbol to search for
+        :param definition: If true, search definitions, otherwise search all
+                           usage.
+        :return: List of found cscope entries.
         """
         self.build_cscope_database()
         try:
             command = ["cscope", "-d", "-L"]
-            if glob_def:
+            if definition:
                 command.append("-1")
             else:
                 command.append("-0")
-            command.append(fun)
+            command.append(symbol)
             cscope_output = check_output(command)
+            return cscope_output.splitlines()
         except CalledProcessError:
-            raise SourceNotFoundException(fun)
+            raise SourceNotFoundException(symbol)
+
+    def find_srcs_with_symbol_def(self, symbol):
+        """
+        Use cscope to find a definition of the given symbol.
+        :param symbol: Symbol to find.
+        :return List of source files potentially containing the definition.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        try:
+            cscope_out = self._cscope_run(symbol, True)
+            if len(cscope_out) == 0:
+                # There is a bug in cscope - it cannot find definitions
+                # containing function pointers as parameters. If no source was
+                # found, try to search all occurrences of the symbol and filter
+                # those that are marked as <global>.
+                cscope_out = [l for l in self._cscope_run(symbol, False) if
+                              l.split()[1] == "<global>"]
+            if len(cscope_out) == 0:
+                raise SourceNotFoundException
+        except SourceNotFoundException:
+            raise
+        finally:
+            os.chdir(cwd)
 
         files = []
-        for line in cscope_output.splitlines():
-            # If all usages of the symbol are searched, filter only those that
-            # are of <global> kind.
-            if not glob_def and not line.split()[1] == "<global>":
-                continue
-
+        for line in cscope_out:
             file = os.path.relpath(line.split()[0], self.kernel_path)
             if file.endswith(".c"):
                 # .c files have higher priority - put them to the beginning of
@@ -111,25 +131,33 @@ class KernelSource:
                 files.append(file)
         return files
 
-    def find_srcs_for_function(self, fun):
+    def find_srcs_using_symbol(self, symbol):
         """
-        Find .c source file that contains the definition of the given function.
+        Use cscope to find sources using a symbol.
+        :param symbol: Symbol to find.
+        :return List of source files containing functions that use the symbol.
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         try:
-            files = self._cscope_find_symbol(fun, True)
-            if len(files) == 0:
-                # There is a bug in cscope - it cannot find definitions
-                # containing function pointers as parameters. If no source was
-                # found, try to search all occurences of the symbol.
-                files = self._cscope_find_symbol(fun, False)
+            cscope_out = self._cscope_run(symbol, False)
+            if len(cscope_out) == 0:
+                raise SourceNotFoundException
+            files = set()
+            for line in cscope_out:
+                if line.split()[0].endswith(".h"):
+                    continue
+                if line.split()[1] == "<global>":
+                    continue
+                files.add(os.path.relpath(line.split()[0], self.kernel_path))
+            return files
         except SourceNotFoundException:
             raise
         finally:
             os.chdir(cwd)
 
-        if len(files) == 0:
-            raise SourceNotFoundException(fun)
-
-        return files
+    def find_src_for_sysctl(self, sysctl):
+        """Find source in which a sysctl option is defined."""
+        if sysctl.startswith("kernel."):
+            return "kernel/sysctl.c", "kern_table"
+        raise SourceNotFoundException(sysctl)
