@@ -6,8 +6,8 @@ into LLVM IR.
 
 import os
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
-from diffkemp.llvm_ir.kernel_source import (KernelSource,
-                                            SourceNotFoundException)
+from diffkemp.llvm_ir.kernel_source import KernelSource, \
+    SourceNotFoundException
 from diffkemp.llvm_ir.module_analyser import *
 from distutils.version import StrictVersion
 from progressbar import ProgressBar, Percentage, Bar
@@ -724,7 +724,7 @@ class LlvmKernelBuilder:
             except BuildException:
                 mod = None
         if not mod:
-            raise SourceNotFoundException("Source for {} not found".format(f))
+            raise SourceNotFoundException(f)
 
         return mod
 
@@ -778,12 +778,13 @@ class LlvmKernelBuilder:
         :returns Instance of LlvmKernelModule where the compiled file is the
                  main module file and no kernel object file is provided.
         """
+        name = file_name[:-2] if file_name.endswith(".c") else file_name
+        # If the module has already been built, return it
+        if name in self.built_modules:
+            return self.built_modules[name]
+
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
-        name = file_name[:-2] if file_name.endswith(".c") else file_name
-        if name in self.built_modules:
-            os.chdir(cwd)
-            return self.built_modules[name]
         try:
             command = self.kbuild_object_command("{}.o".format(name))
             command = self.gcc_to_llvm(command)
