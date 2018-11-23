@@ -30,20 +30,27 @@ def _is_header_for_function(header, fun):
 
 
 def _is_comments_only_chunk(chunk):
-    # Chunk contains only comments if all lines start with:
-    #   '***' or '---': diff-specific lines
-    #   '  /*': start multiline comment in the source
-    #   '   *': continuation multiline comment in the source
-    #   '  //': line comment in the source
-    # Note that in a chunk, the diff result is indented by 4 spaces and
+    # Chunk contains only comments if all changed lines start with:
+    #   '/*': start multiline comment in the source
+    #   '*' :  continuation multiline comment in the source
+    #   '//': line comment in the source
+    # Note that in a chunk, the diff result is indented by 4 spaces and the
     # original source code is moreover indented by 2 characters (the first of
     # them can be '+', '-', or '!').
     for line in chunk.splitlines():
-        if not line.isspace() and not (line[4:].startswith("***") or
-                                       line[4:].startswith("---") or
-                                       line[6:].startswith("/*") or
-                                       line[6:].startswith(" *") or
-                                       line[6:].lstrip().startswith("//")):
+        # Ignore empty lines
+        if line.isspace():
+            continue
+        # Ignore diff-specific lines
+        if line[4:].startswith("***") or line[4:].startswith("---"):
+            continue
+        # Ignore unchanged lines
+        if not (line[4] == "+" or line[4] == "-" or line[4] == "!"):
+            continue
+        # If there is a non-comment line, return False
+        if not (line[6:].lstrip().startswith("/*") or
+                line[6:].lstrip().startswith("*") or
+                line[6:].lstrip().startswith("//")):
             return False
     return True
 
