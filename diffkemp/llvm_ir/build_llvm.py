@@ -321,6 +321,7 @@ class LlvmKernelBuilder:
             self._get_kernel_source()
             self._symlink_gcc_header(7)
             self._configure_kernel()
+            self._disable_asm_goto()
             if self.kabi_tarname:
                 self._extract_kabi_whitelist()
 
@@ -347,6 +348,16 @@ class LlvmKernelBuilder:
                 src_file = os.path.join(include_path,
                                         "compiler-gcc{}.h".format(max_major))
                 os.symlink(src_file, dest_file)
+
+    def _disable_asm_goto(self):
+        """
+        Transform 'asm goto(x)' command into 'asm("goto(x)")'.
+        This is because LLVM does not support asm goto yet.
+        """
+        command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(x)\")/g",
+                   os.path.join(self.kernel_path,
+                                "include/linux/compiler-gcc.h")]
+        check_call(command)
 
     def _disable_kabi_size_align_checks(self):
         """
