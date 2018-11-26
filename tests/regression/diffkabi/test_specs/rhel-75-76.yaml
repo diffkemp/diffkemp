@@ -5,4 +5,5 @@ debug: true
 
 functions:
         ipmi_set_gets_events: equal_syntax
+        __wake_up: equal_syntax
 

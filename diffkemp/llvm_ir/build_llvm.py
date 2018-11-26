@@ -91,6 +91,9 @@ class LlvmKernelBuilder:
                 self.source = "centos"
 
         self.configfile = None
+        self.gcc_compiler_header = os.path.join(self.kernel_path,
+                                                "include/linux/compiler-gcc.h")
+        self.orig_gcc_compiler_header = self.gcc_compiler_header + ".orig"
         self._prepare_kernel()
         self.source = KernelSource(self.kernel_path)
 
@@ -353,10 +356,12 @@ class LlvmKernelBuilder:
         """
         Transform 'asm goto(x)' command into 'asm("goto(x)")'.
         This is because LLVM does not support asm goto yet.
+        The original GCC compiler header is kept since it is needed when
+        compiling the kernel using GCC.
         """
-        command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(x)\")/g",
-                   os.path.join(self.kernel_path,
-                                "include/linux/compiler-gcc.h")]
+        shutil.copy(self.gcc_compiler_header, self.orig_gcc_compiler_header)
+        command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
+                   self.gcc_compiler_header]
         check_call(command)
 
     def _disable_kabi_size_align_checks(self):
@@ -423,6 +428,16 @@ class LlvmKernelBuilder:
             return "built-in.o"
         return "{}.ko".format(mod)
 
+    def _swap_gcc_compiler_headers(self):
+        """
+        Swap contents of include/linux/compiler-gcc.h and
+        include/linux/compiler-gcc.h.bak
+        """
+        tmp_header = self.gcc_compiler_header + ".tmp"
+        shutil.move(self.gcc_compiler_header, tmp_header)
+        shutil.move(self.orig_gcc_compiler_header, self.gcc_compiler_header)
+        shutil.move(tmp_header, self.orig_gcc_compiler_header)
+
     def kbuild_object_command(self, object_file):
         """
         Build the object file (.o) using KBuild.
@@ -466,6 +481,8 @@ class LlvmKernelBuilder:
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
+        self._swap_gcc_compiler_headers()
+
         file_name = module
         command = ["make", "V=1", "M={}".format(self.modules_dir)]
         if module != "built-in":
@@ -490,6 +507,7 @@ class LlvmKernelBuilder:
         except CalledProcessError:
             raise BuildException("Could not build module {}".format(module))
         finally:
+            self._swap_gcc_compiler_headers()
             os.chdir(cwd)
         return file_name, output.splitlines()
 
@@ -501,6 +519,8 @@ class LlvmKernelBuilder:
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
+        self._swap_gcc_compiler_headers()
+
         command = ["make", "V=1", "M={}".format(self.modules_dir)]
 
         try:
@@ -509,6 +529,7 @@ class LlvmKernelBuilder:
         except CalledProcessError:
             raise BuildException("Could not build modules.")
         finally:
+            self._swap_gcc_compiler_headers()
             os.chdir(cwd)
 
     def get_module_name(self, gcc_command):
