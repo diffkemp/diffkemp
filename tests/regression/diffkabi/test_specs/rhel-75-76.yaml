@@ -2,8 +2,14 @@ old_kernel: 3.10.0-862
 new_kernel: 3.10.0-957
 
 debug: true
+control_flow_only: true
 
 functions:
         ipmi_set_gets_events: equal_syntax
         __wake_up: equal_syntax
-
+        skb_clone: equal_syntax
+        ipmi_set_my_address: equal_syntax
+        check_addr: equal_syntax
+        __alloc_workqueue_key: equal_syntax
+        blk_execute_rq_nowait: equal_syntax
+        ip6_route_output: equal_syntax
