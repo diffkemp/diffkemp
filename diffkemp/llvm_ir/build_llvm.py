@@ -75,21 +75,6 @@ class LlvmKernelBuilder:
                                            self.kabi_whitelist_file)
         self.verbose = verbose
 
-        # Deduce source where kernel will be downloaded from.
-        # The choice is done based on version string, if it has release part
-        # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
-        # raise exception on such version string). If Brew is unavailable, use
-        # the CentOS Git.
-        try:
-            StrictVersion(kernel_version)
-            self.source = "upstream"
-        except ValueError:
-            try:
-                gethostbyname("download.eng.bos.redhat.com")
-                self.source = "brew"
-            except socket_error:
-                self.source = "centos"
-
         self.configfile = None
         self.gcc_compiler_header = os.path.join(self.kernel_path,
                                                 "include/linux/compiler-gcc.h")
@@ -236,12 +221,21 @@ class LlvmKernelBuilder:
 
     def _get_kernel_source(self):
         """Download the sources of the required kernel version."""
-        if self.source == "upstream":
+        # Deduce source where kernel will be downloaded from.
+        # The choice is done based on version string, if it has release part
+        # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
+        # raise exception on such version string). If Brew is unavailable, use
+        # the CentOS Git.
+        try:
+            StrictVersion(self.kernel_version)
             tarname = self._get_kernel_tar_from_upstream()
-        elif self.source == "brew":
-            tarname = self._get_kernel_tar_from_brew()
-        else:
-            tarname = self._get_kernel_tar_from_centos()
+        except ValueError:
+            try:
+                gethostbyname("download.eng.bos.redhat.com")
+                tarname = self._get_kernel_tar_from_brew()
+            except socket_error:
+                tarname = self._get_kernel_tar_from_centos()
+
         self._extract_tar(tarname)
 
     def _call_and_print(self, command, stdout=None, stderr=None):
