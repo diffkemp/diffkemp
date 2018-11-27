@@ -40,6 +40,6 @@ def test_build_cscope_database(builder):
         assert os.path.isfile(os.path.join("kernel/linux-3.10", file))
 
 
-def test_find_srcs_for_function(builder):
-    srcs = builder.source.find_srcs_for_function("ipmi_set_gets_events")
+def test_find_srcs_with_symbol_def(builder):
+    srcs = builder.source.find_srcs_with_symbol_def("ipmi_set_gets_events")
     assert srcs == ["drivers/char/ipmi/ipmi_msghandler.c"]
