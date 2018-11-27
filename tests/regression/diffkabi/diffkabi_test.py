@@ -34,7 +34,7 @@ def collect_task_specs():
             if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
                 continue
             for function, desc in spec_yaml["functions"].iteritems():
-                spec = spec_yaml
+                spec = dict(spec_yaml)
                 spec["function"] = function
                 spec["expected_result"] = desc
 
@@ -45,7 +45,6 @@ def collect_task_specs():
 
 
 specs = collect_task_specs()
-
 
 class TaskSpec:
     """

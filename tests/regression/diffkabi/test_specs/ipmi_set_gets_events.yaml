@@ -1,8 +1,0 @@
-old_kernel: 3.10.0-862
-new_kernel: 3.10.0-957
-
-debug: true
-
-functions:
-        ipmi_set_gets_events: equal_syntax
-
