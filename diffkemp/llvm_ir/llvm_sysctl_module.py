@@ -48,7 +48,7 @@ class LlvmSysctlModule:
         if not table:
             return None
 
-        # Get global variable initializer. If sysctl_name contains some indices,
+        # Get global variable initializer. If sysctl_name contains some indices
         # follow them to get the actual table.
         sysctl_list = table.get_initializer()
         for i in ctl_table[1:]:
