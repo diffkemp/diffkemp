@@ -65,7 +65,8 @@ def run_from_cli():
                             proc_fun_second)
                         stat = modules_diff(mod_first, mod_second, None,
                                             timeout,
-                                            proc_fun_first)
+                                            proc_fun_first,
+                                            verbose=args.verbose)
                         result.log_result(stat.overall_result(),
                                           proc_fun_first)
                     except BuildException as e:
@@ -98,7 +99,8 @@ def run_from_cli():
                         mod_first = first_builder.build_file(src)
                         mod_second = second_builder.build_file(src)
                         stat = modules_diff(mod_first, mod_second, data_first,
-                                            timeout, None)
+                                            timeout, None,
+                                            verbose=args.verbose)
                         result.log_result(stat.overall_result(), data_first)
                     except BuildException as e:
                         print e
