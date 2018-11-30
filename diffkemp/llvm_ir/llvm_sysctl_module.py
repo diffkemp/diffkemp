@@ -42,12 +42,21 @@ class LlvmSysctlModule:
             return self.sysctls[sysctl_name]
 
         self.mod.parse_module()
-        table = self.mod.llvm_module.get_named_global(self.ctl_table)
+        ctl_table = self.ctl_table.split(".")
+        # sysctl table is a global variable
+        table = self.mod.llvm_module.get_named_global(ctl_table[0])
         if not table:
             return None
 
-        # Iterate all entries in the table
+        # Get global variable initializer. If sysctl_name contains some indices,
+        # follow them to get the actual table.
         sysctl_list = table.get_initializer()
+        for i in ctl_table[1:]:
+            sysctl_list = sysctl_list.get_operand(int(i))
+        if not sysctl_list:
+            return None
+
+        # Iterate all entries in the table
         for i in range(0, sysctl_list.get_num_operands()):
             sysctl = sysctl_list.get_operand(i)
             if sysctl.get_num_operands() == 0:
@@ -57,7 +66,7 @@ class LlvmSysctlModule:
             # We need one more .get_operand(0) because of gep operator
             name = sysctl.get_operand(0).get_operand(0).get_initializer() \
                 .get_as_string(size)
-            if name == sysctl_name.split(".")[1]:
+            if name == sysctl_name.split(".")[-1]:
                 self.sysctls[sysctl_name] = sysctl
                 return sysctl
 
