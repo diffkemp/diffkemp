@@ -318,6 +318,7 @@ class LlvmKernelBuilder:
             self._get_kernel_source()
             self._symlink_gcc_header(7)
             self._configure_kernel()
+            self._autogen_time_headers()
             self._disable_asm_goto()
             if self.kabi_tarname:
                 self._extract_kabi_whitelist()
@@ -357,6 +358,16 @@ class LlvmKernelBuilder:
         command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
                    self.gcc_compiler_header]
         check_call(command)
+
+    def _autogen_time_headers(self):
+        """
+        Generate headers for kernel/time module that need to be generated
+        automatically.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        check_call(["make", "-s", "kernel/time.o"])
+        os.chdir(cwd)
 
     def _disable_kabi_size_align_checks(self):
         """
