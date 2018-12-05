@@ -77,8 +77,9 @@ def run_from_cli():
             print "No proc handler function found"
 
         # Compare the data global variable affected by the sysctl value
-        data_first = sysctl_mod_first.get_data(args.sysctl)
-        data_second = sysctl_mod_second.get_data(args.sysctl)
+        data_first, indices_first = sysctl_mod_first.get_data(args.sysctl)
+        data_second, indices_second = sysctl_mod_second.get_data(args.sysctl)
+
         if data_first and data_second:
             print "Comparing functions using the data variable"
             if data_first != data_second:
@@ -98,9 +99,14 @@ def run_from_cli():
                     try:
                         mod_first = first_builder.build_file(src)
                         mod_second = second_builder.build_file(src)
+                        indices = None
+                        if (indices_first != None and
+                            indices_first == indices_second):
+                            indices = indices_first
                         stat = modules_diff(mod_first, mod_second, data_first,
                                             timeout, None,
-                                            verbose=args.verbose)
+                                            verbose=args.verbose,
+                                            indices = indices)
                         result.log_result(stat.overall_result(), data_first)
                     except BuildException as e:
                         print e
