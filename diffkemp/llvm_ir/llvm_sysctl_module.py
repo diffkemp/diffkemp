@@ -92,10 +92,24 @@ class LlvmSysctlModule:
         data = sysctl.get_operand(1)
         if data.is_null():
             return None
-        # Address is typed to "void *", we need to get rid of the bitcast
-        # operator.
         if data.get_kind() == ConstantExprValueKind:
-            data = data.get_operand(0)
+            if data.get_const_opcode() == Opcode['GetElementPtr']:
+                # Address is a GEP, we have to extract the actual variable.
+                all_constant = True
+                indices = list()
+                # Look whether are all indices constant.
+                for i in range(1, data.get_num_operands()):
+                    indices.append(data.get_operand(i))
+                    if not data.get_operand(i).is_constant():
+                        all_constant = False
+                if all_constant:
+                    data = data.get_operand(0)
+                    if data.get_const_opcode() == Opcode['BitCast']:
+                        data = data.get_operand(0)
+            elif data.get_const_opcode() == Opcode['BitCast']:
+                # Address is typed to "void *", we need to get rid of the
+                # bitcast operator.
+                data = data.get_operand(0)
         if data.get_kind() == GlobalVariableValueKind:
             return data.get_name()
         return None
