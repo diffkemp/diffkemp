@@ -84,6 +84,7 @@ class LlvmSysctlModule:
 
     def get_data(self, sysctl_name):
         """Get name of the data variable for the given sysctl option."""
+        indices = None
         sysctl = self._get_sysctl(sysctl_name)
         if not sysctl or sysctl.get_num_operands() < 2:
             return None
@@ -111,5 +112,5 @@ class LlvmSysctlModule:
                 # bitcast operator.
                 data = data.get_operand(0)
         if data.get_kind() == GlobalVariableValueKind:
-            return data.get_name()
-        return None
+            data = data.get_name()
+        return (data, indices)
