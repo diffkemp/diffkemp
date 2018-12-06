@@ -10,8 +10,68 @@ from diffkemp.semdiff.function_coupling import FunctionCouplings
 from llvmcpy.llvm import *
 
 
+def _indices_correspond(gep, indices):
+    indices_correspond = True
+    for i in range(1, gep.get_num_operands()):
+        if (i - 1) >= len(indices):
+            break
+        if (gep.get_operand(i).const_int_get_z_ext() !=
+                indices[i - 1]):
+            indices_correspond = False
+    return indices_correspond
+
+
+def _corresponding_index_unused(module, function, param, indices):
+    can_skip = True
+    value = module.get_named_global(param)
+
+    for use in value.iter_uses():
+        user = use.get_user()
+        if user.is_a_instruction():
+            if (user.get_instruction_parent().get_parent().in_ptr() !=
+                    function.in_ptr()):
+                # The user is in a different function
+                continue
+            if user.is_a_get_element_ptr_inst():
+                # Look whether the GEP references the desired index or not
+                if _indices_correspond(user, indices):
+                    can_skip = False
+                    break
+            else:
+                # One of the users is not a GEP, do not skip the function
+                can_skip = False
+                break
+        elif user.is_a_constant_expr():
+            # Look whether the constant expression is used in the function at
+            # least once.
+            used_in_function = False
+            for cexpr_use in user.iter_uses():
+                cexpr_user = cexpr_use.get_user()
+                if (cexpr_user.get_instruction_parent().get_parent().in_ptr()
+                        == function.in_ptr()):
+                    used_in_function = True
+            if not used_in_function:
+                # The user is in a different function
+                continue
+            if user.get_const_opcode() == Opcode['GetElementPtr']:
+                # Look whether the GEP references the desired index or not
+                if _indices_correspond(user, indices):
+                    can_skip = False
+                    break
+            else:
+                # One of the users is not a GEP, do not skip the function
+                can_skip = False
+                break
+        else:
+            # One of the users is not a GEP, do not skip the function
+            can_skip = False
+            break
+
+    return can_skip
+
+
 def modules_diff(first, second, param, timeout, function, syntax_only=False,
-                 control_flow_only=False, verbose=False, indices = None):
+                 control_flow_only=False, verbose=False, indices=None):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
     :param first: File with LLVM IR of the first module
@@ -40,7 +100,6 @@ def modules_diff(first, second, param, timeout, function, syntax_only=False,
             # Do not compare function when all uses are of a part of the
             # variable with a different index than specified in the indices
             # parameter.
-            can_skip = True
             llvm_context = get_global_context()
             module_left = llvm_context.parse_ir(
                 create_memory_buffer_with_contents_of_file(first.llvm))
@@ -48,26 +107,12 @@ def modules_diff(first, second, param, timeout, function, syntax_only=False,
                 create_memory_buffer_with_contents_of_file(second.llvm))
             function_left = module_left.get_named_function(c.first)
             function_right = module_right.get_named_function(c.second)
-            value_left = module_left.get_named_global(param)
-            value_right = module_right.get_named_global(param)
 
-            for use in value_left.iter_uses():
-                user = use.get_user()
-                if not user.is_a_get_element_ptr_inst():
-                    # One of the users is not a GEP, do not skip the function
-                    can_skip = False
-                    break
-                indices_correspond = True
-                for i in range(1, user.get_num_operands()):
-                    if data.get_operand(i) != indices[i]:
-                        indices_correspond = False
-                if not indices_correspond:
-                    can_skip = False
-                    break
-
-            if can_skip:
+            if (_corresponding_index_unused(module_left, function_left,
+                                            param, indices) and
+                _corresponding_index_unused(module_right, function_right,
+                                            param, indices)):
                 continue
-
 
         result = functions_diff(first.llvm, second.llvm, c.first, c.second,
                                 param, timeout, syntax_only, control_flow_only,
