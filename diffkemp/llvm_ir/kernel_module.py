@@ -221,6 +221,10 @@ class LlvmKernelModule:
         """Check if module contains a function."""
         return self.llvm_module.get_named_function(fun) is not None
 
+    def has_global(self, glob):
+        """Check if module contains a global variable with the given name."""
+        return self.llvm_module.get_named_global(glob) is not None
+
     def is_declaration(self, fun):
         """
         Check if the given function is a declaration (does not have body).

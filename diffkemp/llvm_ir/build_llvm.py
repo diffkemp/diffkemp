@@ -755,6 +755,9 @@ class LlvmKernelBuilder:
                 mod = self.build_file(src)
                 mod.parse_module()
                 if not mod.has_function(f):
+                    if mod.has_global(f):
+                        mod.clean_module()
+                        raise SourceNotFoundException(f)
                     mod.clean_module()
                     mod = None
                 else:
