@@ -90,7 +90,8 @@ class KernelSource:
                 command.append("-0")
             command.append(symbol)
             cscope_output = check_output(command)
-            return cscope_output.splitlines()
+            return [l for l in cscope_output.splitlines() if
+                    l.split()[0].endswith("c")]
         except CalledProcessError:
             raise SourceNotFoundException(symbol)
 
@@ -103,32 +104,43 @@ class KernelSource:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         try:
-            cscope_out = self._cscope_run(symbol, True)
-            if len(cscope_out) == 0:
-                # There is a bug in cscope - it cannot find definitions
-                # containing function pointers as parameters. If no source was
-                # found, try to search all occurrences of the symbol and filter
-                # those that are marked as <global>.
-                cscope_out = [l for l in self._cscope_run(symbol, False) if
-                              l.split()[1] == "<global>"]
-            if len(cscope_out) == 0:
-                raise SourceNotFoundException
-        except SourceNotFoundException:
+            cscope_defs = self._cscope_run(symbol, True)
+
+            # It may not be enough to get the definitions from the cscope.
+            # There are multiple possible reasons:
+            #   - the symbol is only defined in headers
+            #   - there is a bug in cscope - it cannot find definitions
+            #     containing function pointers as parameters
+            cscope_uses = self._cscope_run(symbol, False)
+
+            if len(cscope_defs) == 0 and len(cscope_uses) == 0:
+                raise SourceNotFoundException(symbol)
+        except SourceNotFoundException(symbol):
             raise
         finally:
             os.chdir(cwd)
 
-        files = []
-        for line in cscope_out:
-            file = os.path.relpath(line.split()[0], self.kernel_path)
-            if file.endswith(".c"):
-                # .c files have higher priority - put them to the beginning of
-                # the list
-                files.insert(0, file)
-            elif file.endswith(".h"):
-                # .h files have lower priority - append them to the end of
-                # the list
-                files.append(file)
+        # We now create a list of files potentially containing the file
+        # definition. The list is sorted by priority:
+        #   1. Files marked by cscope as containing the symbol definition.
+        #   2. Files marked by cscope as using the symbol in <global> scope.
+        #   3. Files marked by cscope as using the symbol in other scope.
+        # Moreover, each file occurs in the list just once (in place of its
+        # highest priority).
+        seen = set()
+        files = [os.path.relpath(f, self.kernel_path)
+                 for f in [line.split()[0] for line in cscope_defs]
+                 if not (f in seen or seen.add(f))]
+        files.extend([os.path.relpath(f, self.kernel_path)
+                      for (f, scope) in [(line.split()[0], line.split()[1])
+                                         for line in cscope_uses]
+                      if (scope == "<global>" and
+                          not (f in seen or seen.add(f)))])
+        files.extend([os.path.relpath(f, self.kernel_path)
+                      for (f, scope) in [(line.split()[0], line.split()[1])
+                                         for line in cscope_uses]
+                      if (scope != "<global>" and
+                          not (f in seen or seen.add(f)))])
         return files
 
     def find_srcs_using_symbol(self, symbol):
