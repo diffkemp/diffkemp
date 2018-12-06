@@ -100,7 +100,7 @@ class LlvmSysctlModule:
                 indices = list()
                 # Look whether are all indices constant.
                 for i in range(1, data.get_num_operands()):
-                    indices.append(data.get_operand(i))
+                    indices.append(data.get_operand(i).const_int_get_z_ext())
                     if not data.get_operand(i).is_constant():
                         all_constant = False
                 if all_constant:
