@@ -42,4 +42,7 @@ def test_build_cscope_database(builder):
 
 def test_find_srcs_with_symbol_def(builder):
     srcs = builder.source.find_srcs_with_symbol_def("ipmi_set_gets_events")
-    assert srcs == ["drivers/char/ipmi/ipmi_msghandler.c"]
+    assert srcs == [
+        "drivers/char/ipmi/ipmi_msghandler.c",
+        "drivers/char/ipmi/ipmi_devintf.c"
+    ]

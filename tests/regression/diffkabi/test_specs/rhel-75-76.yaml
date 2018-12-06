@@ -13,3 +13,4 @@ functions:
         __alloc_workqueue_key: equal_syntax
         blk_execute_rq_nowait: equal_syntax
         ip6_route_output: equal_syntax
+        param_set_int: equal_syntax
