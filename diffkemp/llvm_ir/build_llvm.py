@@ -361,13 +361,17 @@ class LlvmKernelBuilder:
 
     def _autogen_time_headers(self):
         """
-        Generate headers for kernel/time module that need to be generated
-        automatically.
+        Generate headers for kernel/time module (if the module exists) that
+        need to be generated automatically.
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
-        check_call(["make", "-s", "kernel/time.o"])
-        os.chdir(cwd)
+        try:
+            check_call(["make", "-s", "kernel/time.o"])
+        except CalledProcessError:
+            pass
+        finally:
+            os.chdir(cwd)
 
     def _disable_kabi_size_align_checks(self):
         """
