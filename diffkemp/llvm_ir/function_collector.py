@@ -24,6 +24,15 @@ class FunctionCollector():
     supported_prefixes = ["llvm.lifetime", "kmalloc", "kzalloc", "malloc",
                           "calloc", "__kmalloc", "devm_kzalloc"]
 
+    def _indices_correspond(self, gep, indices):
+        for i in range(1, gep.get_num_operands()):
+            if (i - 1) >= len(indices):
+                break
+            if (gep.get_operand(i).const_int_get_z_ext() !=
+                    indices[i - 1]):
+                return False
+        return True
+
     @staticmethod
     def supported_fun(llvm_fun):
         """Check whether the function is supported."""
@@ -74,13 +83,18 @@ class FunctionCollector():
         """
         Find names of all functions using the given parameter (global variable)
         """
-        glob = self._module.get_named_global(param)
+        glob = self._module.get_named_global(param.name)
         result = set()
         for use in glob.iter_uses():
             if use.user.get_kind() == InstructionValueKind:
                 # Use is an Instruction
                 bb = use.user.instruction_parent
                 func = bb.parent
+                if (use.user.is_a_get_element_ptr_inst() and
+                        param.indices is not None):
+                    # Look whether the GEP references the desired index or not
+                    if not self._indices_correspond(use.user, param.indices):
+                        continue
                 if ".old" not in func.name:
                     result.add(func.name)
             elif use.user.get_kind() == ConstantExprValueKind:
@@ -89,6 +103,14 @@ class FunctionCollector():
                     if inner_use.user.get_kind() == InstructionValueKind:
                         bb = inner_use.user.instruction_parent
                         func = bb.parent
+                        if (use.user.get_const_opcode() ==
+                                Opcode['GetElementPtr'] and
+                                param.indices is not None):
+                            # Look whether the GEP references the desired
+                            # index or not
+                            if not self._indices_correspond(use.user,
+                                                            param.indices):
+                                continue
                         if ".old" not in func.name:
                             result.add(func.name)
         return result

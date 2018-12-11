@@ -266,7 +266,8 @@ def functions_diff(first, second, funFirst, funSecond, param, timeout,
         first_simpl, second_simpl, funs_to_compare = \
             simplify_modules_diff(first, second,
                                   funFirst, funSecond,
-                                  param, param if param else "simpl",
+                                  param.name if param else None,
+                                  param.name if param else "simpl",
                                   control_flow_only,
                                   verbose)
         if syntactically_equal(first_simpl, second_simpl, funFirst, funSecond):
