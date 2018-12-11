@@ -9,6 +9,7 @@ be provided. This script parses the test specification and prepares testing
 scenarions for pytest.
 """
 
+from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from diffkemp.semdiff.function_coupling import FunctionCouplings
 from tests.regression.module_tools import prepare_module
@@ -61,7 +62,7 @@ class TaskSpec:
         # Values from the YAML file
         module = spec["module"]
         self.module = module
-        self.param = spec["param"]
+        self.param = KernelParam(spec["param"])
         self.module_dir = spec["path"]
         self.module_src = spec["filename"]
         self.old_kernel = spec["old_kernel"]

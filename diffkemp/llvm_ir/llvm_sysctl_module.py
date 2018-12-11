@@ -106,9 +106,7 @@ class LlvmSysctlModule:
                         all_constant = False
                 if all_constant:
                     data = data.get_operand(0)
-                    if data.get_const_opcode() == Opcode['BitCast']:
-                        data = data.get_operand(0)
-            elif data.get_const_opcode() == Opcode['BitCast']:
+            if data.get_const_opcode() == Opcode['BitCast']:
                 # Address is typed to "void *", we need to get rid of the
                 # bitcast operator.
                 data = data.get_operand(0)
