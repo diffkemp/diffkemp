@@ -77,21 +77,21 @@ def run_from_cli():
             print "No proc handler function found"
 
         # Compare the data global variable affected by the sysctl value
-        data_first, indices_first = sysctl_mod_first.get_data(args.sysctl)
-        data_second, indices_second = sysctl_mod_second.get_data(args.sysctl)
+        data_first = sysctl_mod_first.get_data(args.sysctl)
+        data_second = sysctl_mod_second.get_data(args.sysctl)
 
         if data_first and data_second:
             print "Comparing functions using the data variable"
-            if data_first != data_second:
+            if data_first.name != data_second.name:
                 # Variables with different names are treated as unequal
                 print "  different data variables found"
                 result.log_result(Result.NOT_EQUAL, proc_fun_first)
             else:
-                print "  Variable {}".format(data_first)
+                print "  Variable {}".format(data_first.name)
                 srcs_first = first_builder.source.find_srcs_using_symbol(
-                    data_first)
+                    data_first.name)
                 srcs_second = second_builder.source.find_srcs_using_symbol(
-                    data_second)
+                    data_second.name)
                 # Compare all sources containing functions using the variable
                 for src in srcs_first:
                     if src not in srcs_second:
@@ -99,18 +99,14 @@ def run_from_cli():
                     try:
                         mod_first = first_builder.build_file(src)
                         mod_second = second_builder.build_file(src)
-                        indices = None
-                        if (indices_first != None and
-                            indices_first == indices_second):
-                            indices = indices_first
                         stat = modules_diff(mod_first, mod_second, data_first,
                                             timeout, None,
-                                            verbose=args.verbose,
-                                            indices = indices)
-                        result.log_result(stat.overall_result(), data_first)
+                                            verbose=args.verbose)
+                        result.log_result(stat.overall_result(),
+                                          data_first.name)
                     except BuildException as e:
                         print e
-                        result.log_result(Result.ERROR, data_first)
+                        result.log_result(Result.ERROR, data_first.name)
         else:
             print "No data variable found"
 

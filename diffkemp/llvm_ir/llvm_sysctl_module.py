@@ -4,6 +4,7 @@ Contains reference to LlvmKernelModule and additional sysctl-specific fields
 and methods.
 """
 from llvmcpy.llvm import *
+from diffkemp.llvm_ir.kernel_module import KernelParam
 
 
 class LlvmSysctlModule:
@@ -113,4 +114,4 @@ class LlvmSysctlModule:
                 data = data.get_operand(0)
         if data.get_kind() == GlobalVariableValueKind:
             data = data.get_name()
-        return (data, indices)
+        return KernelParam(data, indices)
