@@ -36,8 +36,8 @@ def modules_diff(first, second, param, timeout, function, syntax_only=False,
                 return stat
 
         result = functions_diff(first.llvm, second.llvm, c.first, c.second,
-                                param, timeout, syntax_only,
-                                control_flow_only, verbose)
+                                param, timeout, syntax_only, control_flow_only,
+                                verbose)
         stat.log_result(result, c.first)
 
     return stat

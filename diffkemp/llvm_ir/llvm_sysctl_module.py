@@ -113,5 +113,4 @@ class LlvmSysctlModule:
         if data.get_kind() == GlobalVariableValueKind:
             data = data.get_name()
             return KernelParam(data, indices)
-        else:
-            return None
+        return None
