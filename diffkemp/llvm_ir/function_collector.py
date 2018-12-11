@@ -25,6 +25,16 @@ class FunctionCollector():
                           "calloc", "__kmalloc", "devm_kzalloc"]
 
     def _indices_correspond(self, gep, indices):
+        """
+        Checks whether the indices in the GEP correspond to the indices in
+        the list. When one list is longer than the other, the function behaves
+        like one is cut to the size of the other and compares the rest.
+        :param gep: The GEP operator. Both the instruction and the constant
+        expression are supported.
+        :param indices: A list of integers representing indices to compare the
+        GEP operator with.
+        :return: True or false based on whether the indices correspond.
+        """
         for i in range(1, gep.get_num_operands()):
             if (i - 1) >= len(indices):
                 break
