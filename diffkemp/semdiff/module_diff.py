@@ -21,9 +21,9 @@ def _indices_correspond(gep, indices):
     return indices_correspond
 
 
-def _corresponding_index_unused(module, function, param, indices):
+def _corresponding_index_unused(module, function, param):
     can_skip = True
-    value = module.get_named_global(param)
+    value = module.get_named_global(param.name)
 
     for use in value.iter_uses():
         user = use.get_user()
@@ -34,7 +34,7 @@ def _corresponding_index_unused(module, function, param, indices):
                 continue
             if user.is_a_get_element_ptr_inst():
                 # Look whether the GEP references the desired index or not
-                if _indices_correspond(user, indices):
+                if _indices_correspond(user, param.indices):
                     can_skip = False
                     break
             else:
@@ -47,15 +47,15 @@ def _corresponding_index_unused(module, function, param, indices):
             used_in_function = False
             for cexpr_use in user.iter_uses():
                 cexpr_user = cexpr_use.get_user()
-                if (cexpr_user.get_instruction_parent().get_parent().in_ptr()
-                        == function.in_ptr()):
+                if (cexpr_user.get_instruction_parent().get_parent().
+                        in_ptr() == function.in_ptr()):
                     used_in_function = True
             if not used_in_function:
                 # The user is in a different function
                 continue
             if user.get_const_opcode() == Opcode['GetElementPtr']:
                 # Look whether the GEP references the desired index or not
-                if _indices_correspond(user, indices):
+                if _indices_correspond(user, param.indices):
                     can_skip = False
                     break
             else:
@@ -71,7 +71,7 @@ def _corresponding_index_unused(module, function, param, indices):
 
 
 def modules_diff(first, second, param, timeout, function, syntax_only=False,
-                 control_flow_only=False, verbose=False, indices=None):
+                 control_flow_only=False, verbose=False):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
     :param first: File with LLVM IR of the first module
@@ -80,10 +80,11 @@ def modules_diff(first, second, param, timeout, function, syntax_only=False,
                   functions using this variable are compared).
     :param function: Function to be compared.
     """
+    print(param)
     stat = Statistics()
     couplings = FunctionCouplings(first.llvm, second.llvm)
     if param:
-        couplings.infer_for_param(param)
+        couplings.infer_for_param(param.name)
     else:
         couplings.set_main(function, function)
     for c in couplings.main:
@@ -96,7 +97,7 @@ def modules_diff(first, second, param, timeout, function, syntax_only=False,
                 stat.log_result(Result.ERROR, "")
                 return stat
 
-        if indices:
+        if param.indices is not None:
             # Do not compare function when all uses are of a part of the
             # variable with a different index than specified in the indices
             # parameter.
@@ -109,14 +110,14 @@ def modules_diff(first, second, param, timeout, function, syntax_only=False,
             function_right = module_right.get_named_function(c.second)
 
             if (_corresponding_index_unused(module_left, function_left,
-                                            param, indices) and
+                                            param) and
                 _corresponding_index_unused(module_right, function_right,
-                                            param, indices)):
+                                            param)):
                 continue
 
         result = functions_diff(first.llvm, second.llvm, c.first, c.second,
-                                param, timeout, syntax_only, control_flow_only,
-                                verbose)
+                                param.name, timeout, syntax_only,
+                                control_flow_only, verbose)
         stat.log_result(result, c.first)
 
     return stat

@@ -14,16 +14,17 @@ class KernelModuleException(Exception):
     pass
 
 
-class ModuleParam:
+class KernelParam:
     """
-    Kernel module parameter.
-    Has name, type, and description.
+    Kernel parameter.
+    Contains name and optionally a list of indices.
     """
-    def __init__(self, name, varname, ctype, desc):
+    def __init__(self, name, indices=None):
         self.name = name
-        self.varname = varname
-        self.ctype = ctype
-        self.desc = desc
+        self.indices = indices
+
+    def __str__(self):
+        return self.name
 
 
 class LlvmKernelModule:
@@ -193,7 +194,7 @@ class LlvmKernelModule:
             ctype = ctype[:-1]
             varname = self.find_param_var(name)
             if varname:
-                self.params[name] = ModuleParam(name, varname, ctype, desc)
+                self.params[name] = KernelParam(varname)
 
     def set_param(self, param):
         """Set single parameter"""
@@ -201,7 +202,7 @@ class LlvmKernelModule:
         if not self._globvar_exists(param):
             globvar = self.find_param_var(param)
         if globvar:
-            self.params = {globvar: ModuleParam(globvar, globvar, None, None)}
+            self.params = {globvar: KernelParam(globvar)}
         else:
             raise KernelModuleException("Parameter {} not found".format(param))
 
