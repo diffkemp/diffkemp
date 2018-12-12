@@ -42,7 +42,7 @@ def collect_task_specs():
                     spec["expected_result"] = desc
 
                     spec_id = os.path.splitext(spec_file_path)[0] + "_" + \
-                              sysctl["sysctl"] + "-" + function
+                        sysctl["sysctl"] + "-" + function
                     result.append((spec_id, spec))
                 # Then process the data variable
                 data_yaml = sysctl["data_variable"]
@@ -53,8 +53,8 @@ def collect_task_specs():
                     spec["expected_result"] = desc
 
                     spec_id = os.path.splitext(spec_file_path)[0] + "_" + \
-                              sysctl["sysctl"] + "-" + data_yaml["name"] + \
-                              "-" + function
+                        sysctl["sysctl"] + "-" + data_yaml["name"] + "-" + \
+                        function
                     result.append((spec_id, spec))
 
     os.chdir(cwd)
