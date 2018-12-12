@@ -10,6 +10,7 @@ pytest.
 """
 
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
+from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from tests.regression.module_tools import prepare_module
 import glob
@@ -36,8 +37,12 @@ def collect_task_specs():
             for sysctl in spec_yaml["sysctls"]:
                 # First handle the proc handler function
                 for function, desc in sysctl["proc_handler"].iteritems():
+                    if desc == "skipped":
+                        continue
+
                     spec = dict(spec_yaml)
-                    spec["param"] = None
+                    spec["sysctl"] = sysctl["sysctl"]
+                    spec["data"] = None
                     spec["function"] = function
                     spec["expected_result"] = desc
 
@@ -48,7 +53,8 @@ def collect_task_specs():
                 data_yaml = sysctl["data_variable"]
                 for function, desc in data_yaml["functions"].iteritems():
                     spec = dict(spec_yaml)
-                    spec["param"] = data_yaml["name"]
+                    spec["sysctl"] = sysctl["sysctl"]
+                    spec["data"] = data_yaml["name"]
                     spec["function"] = function
                     spec["expected_result"] = desc
 
@@ -74,7 +80,8 @@ class TaskSpec:
         # Values from the YAML file
         self.old_kernel = spec["old_kernel"]
         self.new_kernel = spec["new_kernel"]
-        self.param = spec["param"]
+        self.sysctl = spec["sysctl"]
+        self.data = spec["data"]
         if "control_flow_only" in spec:
             self.control_flow_only = spec["control_flow_only"]
         else:
@@ -98,6 +105,16 @@ def prepare_task(spec):
     # Build the modules
     old_module = first_builder.build_file_for_function(spec.function)
     new_module = second_builder.build_file_for_function(spec.function)
+
+    sysctl_module = first_builder.build_sysctl_module(spec.sysctl)
+    if spec.data is not None:
+        # Create the data variable KernelParam object
+        spec.param = sysctl_module.get_data(spec.sysctl)
+    else:
+        # Get the name of the proc handler
+        spec.param = None
+        spec.proc_handler = sysctl_module.get_proc_fun(spec.sysctl)
+
 
     # The modules were already built when finding their sources.
     # Now the files need only to be copied to the right place.
@@ -141,8 +158,26 @@ class TestClass(object):
     Main testing class. One object of the class is created for each testing
     task. Contains a test for finding and semantically comparing either proc
     handler function of the sysctl parameter or function using the data global
-    variable.
+    variable and a test for checking whether the data variable and the proc
+    handler function were determined correctly.
     """
+    def test_llvm_sysctl_module(self, task_spec):
+        """
+        Looks whether the data variable and the proc handler function were
+        determined correctly.
+        """
+        if task_spec.data is not None:
+            # Data variable function
+            if "." in task_spec.data:
+                # Structure attribute
+                assert task_spec.data.split(".")[0] == task_spec.param.name
+            else:
+                # Standard variable
+                assert task_spec.data == task_spec.param.name
+        else:
+            # Proc handler function
+            assert task_spec.function == task_spec.proc_handler
+
 
     def test_diffsysctl(self, task_spec):
         """

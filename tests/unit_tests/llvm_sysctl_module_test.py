@@ -24,4 +24,13 @@ def test_get_proc_fun(module):
 
 
 def test_get_data(module):
-    assert module.get_data("wmem_max") == "sysctl_wmem_max"
+    # Data variable with bitcast
+    assert module.get_data("netdev_budget").name == "netdev_budget"
+    # Data variable with GEP and bitcast
+    data = module.get_data("message_burst")
+    assert data.name == "net_ratelimit_state"
+    assert data.indices == [8L]
+    # Data variable with GEP (without bitcast)
+    data = module.get_data("netdev_rss_key")
+    assert data.name == "netdev_rss_key"
+    assert data.indices == [0L, 0L]
