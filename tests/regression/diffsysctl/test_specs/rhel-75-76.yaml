@@ -1,0 +1,15 @@
+old_kernel: 3.10.0-862
+new_kernel: 3.10.0-957
+
+debug: true
+control_flow_only: true
+
+sysctls:
+  - sysctl: net.core.netdev_rss_key
+    proc_handler:
+      proc_do_rss_key: equal_syntax
+    data_variable:
+      name: netdev_rss_key
+      functions:
+        netdev_rss_key_fill: equal_syntax
+        proc_do_rss_key: equal_syntax

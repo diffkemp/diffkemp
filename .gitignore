@@ -88,5 +88,9 @@ cmake-build-debug/
 # compilation at all
 tests/regression/diffkabi/kernel_modules
 
+# All files in kernel_modules from diffsysctl - they are not used in the test
+# compilation at all
+tests/regression/diffsysctl/kernel_modules
+
 # Kernel sources directory
 kernel/
