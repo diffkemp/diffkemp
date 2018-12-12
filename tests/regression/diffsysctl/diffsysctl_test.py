@@ -1,9 +1,9 @@
 """
 Regression testing using pytest.
 Individual tests are specified using YAML in the
-tests/regression/test_specs/diffkabi directory. Each test contains a list of
-KABI functions and two kernel versions between which the functions are
-compared.
+tests/regression/test_specs/diffsysctl directory. Each test contains a list of
+sysctl parameters - for each parameter the proc handler function is specified
+along with the data variable and all functions using it.
 For each function the expected analysis results is specified.
 This script parses the test specification and prepares testing scenarions for
 pytest.
@@ -17,8 +17,8 @@ import os
 import pytest
 import yaml
 
-specs_path = "tests/regression/diffkabi/test_specs"
-tasks_path = "tests/regression/diffkabi/kernel_modules"
+specs_path = "tests/regression/diffsysctl/test_specs"
+tasks_path = "tests/regression/diffsysctl/kernel_modules"
 
 
 def collect_task_specs():
@@ -33,13 +33,30 @@ def collect_task_specs():
             spec_yaml = yaml.load(spec_file)
             if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
                 continue
-            for function, desc in spec_yaml["functions"].iteritems():
-                spec = dict(spec_yaml)
-                spec["function"] = function
-                spec["expected_result"] = desc
+            for sysctl in spec_yaml["sysctls"]:
+                # First handle the proc handler function
+                for function, desc in sysctl["proc_handler"].iteritems():
+                    spec = dict(spec_yaml)
+                    spec["param"] = None
+                    spec["function"] = function
+                    spec["expected_result"] = desc
 
-                spec_id = os.path.splitext(spec_file_path)[0] + "_" + function
-                result.append((spec_id, spec))
+                    spec_id = os.path.splitext(spec_file_path)[0] + "_" + \
+                              sysctl["sysctl"] + "-" + function
+                    result.append((spec_id, spec))
+                # Then process the data variable
+                data_yaml = sysctl["data_variable"]
+                for function, desc in data_yaml["functions"].iteritems():
+                    spec = dict(spec_yaml)
+                    spec["param"] = data_yaml["name"]
+                    spec["function"] = function
+                    spec["expected_result"] = desc
+
+                    spec_id = os.path.splitext(spec_file_path)[0] + "_" + \
+                              sysctl["sysctl"] + "-" + data_yaml["name"] + \
+                              "-" + function
+                    result.append((spec_id, spec))
+
     os.chdir(cwd)
     return result
 
@@ -49,12 +66,15 @@ specs = collect_task_specs()
 
 class TaskSpec:
     """
-    Task specification representing one testing scenario (one KABI function).
+    Task specification representing one testing scenario (one function - in
+    case the function is one of the functions using the data variable, this
+    also contains the data variable as the parameter).
     """
     def __init__(self, spec):
         # Values from the YAML file
         self.old_kernel = spec["old_kernel"]
         self.new_kernel = spec["new_kernel"]
+        self.param = spec["param"]
         if "control_flow_only" in spec:
             self.control_flow_only = spec["control_flow_only"]
         else:
@@ -76,8 +96,8 @@ def prepare_task(spec):
                                        debug=spec.debug)
 
     # Build the modules
-    old_module = first_builder.build_file_for_symbol(spec.function)
-    new_module = second_builder.build_file_for_symbol(spec.function)
+    old_module = first_builder.build_file_for_function(spec.function)
+    new_module = second_builder.build_file_for_function(spec.function)
 
     # The modules were already built when finding their sources.
     # Now the files need only to be copied to the right place.
@@ -119,14 +139,16 @@ def task_spec(request):
 class TestClass(object):
     """
     Main testing class. One object of the class is created for each testing
-    task. Contains a test for finding and semantically comparing KABI
-    functions.
+    task. Contains a test for finding and semantically comparing either proc
+    handler function of the sysctl parameter or function using the data global
+    variable.
     """
 
-    def test_diffkabi(self, task_spec):
+    def test_diffsysctl(self, task_spec):
         """
-        Test comparison of semantic difference of functions from the KABI
-        whitelist.
+        Test comparison of semantic difference of both functions using the data
+        variable associated with the sysctl parameter and the proc_handler
+        function.
         For each compared function, the module is first simplified using the
         SimpLL tool and then the actual analysis is run. Compares the obtained
         result with the expected one.
@@ -134,12 +156,8 @@ class TestClass(object):
         speed.
         """
         if task_spec.expected_result != Result.TIMEOUT:
-            result = functions_diff(
-                first=task_spec.old_module,
-                second=task_spec.new_module,
-                funFirst=task_spec.function,
-                funSecond=task_spec.function,
-                glob_var=None,
-                timeout=120,
-                control_flow_only=task_spec.control_flow_only)
+            result = functions_diff(task_spec.old_module, task_spec.new_module,
+                                    task_spec.function, task_spec.function,
+                                    task_spec.param, 120, False,
+                                    task_spec.control_flow_only)
             assert result == Result[task_spec.expected_result.upper()]
