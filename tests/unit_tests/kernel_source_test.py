@@ -40,6 +40,11 @@ def test_build_cscope_database(builder):
         assert os.path.isfile(os.path.join("kernel/linux-3.10", file))
 
 
+def test_find_srcs_using_symbol(builder):
+    srcs = builder.source.find_srcs_using_symbol("net_ratelimit_state")
+    assert srcs == set(['net/core/utils.c'])
+
+
 def test_find_srcs_with_symbol_def(builder):
     srcs = builder.source.find_srcs_with_symbol_def("ipmi_set_gets_events")
     assert srcs == [
