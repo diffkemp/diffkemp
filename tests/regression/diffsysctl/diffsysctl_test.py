@@ -10,7 +10,6 @@ pytest.
 """
 
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
-from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.function_diff import functions_diff, Result
 from tests.regression.module_tools import prepare_module
 import glob
@@ -115,7 +114,6 @@ def prepare_task(spec):
         spec.param = None
         spec.proc_handler = sysctl_module.get_proc_fun(spec.sysctl)
 
-
     # The modules were already built when finding their sources.
     # Now the files need only to be copied to the right place.
     #
@@ -177,7 +175,6 @@ class TestClass(object):
         else:
             # Proc handler function
             assert task_spec.function == task_spec.proc_handler
-
 
     def test_diffsysctl(self, task_spec):
         """
