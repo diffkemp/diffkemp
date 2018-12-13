@@ -68,12 +68,13 @@ def run_from_cli():
 
                 if mod_first.has_function(f):
                     # Compare functions semantics
-                    f_result = modules_diff(first=mod_first, second=mod_second,
-                                            glob_var=None, function=f,
-                                            timeout=timeout,
-                                            syntax_only=args.syntax_diff,
-                                            control_flow_only=args.control_flow_only,
-                                            verbose=args.verbose)
+                    f_result = modules_diff(
+                        first=mod_first, second=mod_second,
+                        glob_var=None, function=f,
+                        timeout=timeout,
+                        syntax_only=args.syntax_diff,
+                        control_flow_only=args.control_flow_only,
+                        verbose=args.verbose)
                 else:
                     # f is a global variable: compare semantics of all
                     # functions using the variable

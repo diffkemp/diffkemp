@@ -42,12 +42,13 @@ def diff_all_modules_using_global(first_builder, second_builder,
                     mod_second.parse_module()
                     if (mod_first.has_global(glob_first) and
                             mod_second.has_global(glob_second)):
-                        stat = modules_diff(first=mod_first, second=mod_second,
-                                            glob_var=glob_first, function=None,
-                                            timeout=timeout,
-                                            syntax_only=syntax_only,
-                                            control_flow_only=control_flow_only,
-                                            verbose=verbose)
+                        stat = modules_diff(
+                            first=mod_first, second=mod_second,
+                            glob_var=glob_first, function=None,
+                            timeout=timeout,
+                            syntax_only=syntax_only,
+                            control_flow_only=control_flow_only,
+                            verbose=verbose)
                         result.log_result(stat.overall_result(), src)
                     mod_first.clean_module()
                     mod_second.clean_module()
