@@ -146,6 +146,17 @@ def test_build_all_modules():
         assert os.path.isfile(m.llvm)
 
 
+def test_build_sysctl_module():
+    """
+    Building source containing definitions of a sysctl option.
+    """
+    builder = LlvmKernelBuilder("3.10.0-862", None)
+    module = builder.build_sysctl_module("net.core.message_burst")
+    assert module is not None
+    assert module.mod is not None
+    assert module.mod.name == "net/core/sysctl_net_core"
+
+
 def test_link_modules():
     """
     Linking dependent modules together.
