@@ -160,7 +160,10 @@ class TestClass(object):
         """
         for fun_pair, expected in task_spec.functions.iteritems():
             if expected != Result.TIMEOUT:
-                result = functions_diff(task_spec.old, task_spec.new,
-                                        fun_pair[0], fun_pair[1],
-                                        task_spec.param, 120)
+                result = functions_diff(first=task_spec.old,
+                                        second=task_spec.new,
+                                        funFirst=fun_pair[0],
+                                        funSecond=fun_pair[1],
+                                        glob_var=task_spec.param,
+                                        timeout=120)
                 assert result == expected

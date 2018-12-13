@@ -64,9 +64,10 @@ def run_from_cli():
                             proc_fun_first)
                         mod_second = second_builder.build_file_for_symbol(
                             proc_fun_second)
-                        stat = modules_diff(mod_first, mod_second, None,
-                                            timeout,
-                                            proc_fun_first,
+                        stat = modules_diff(first=mod_first, second=mod_second,
+                                            glob_var=None,
+                                            function=proc_fun_first,
+                                            timeout=timeout,
                                             verbose=args.verbose)
                         result.log_result(stat.overall_result(),
                                           proc_fun_first)
@@ -82,11 +83,12 @@ def run_from_cli():
         data_second = sysctl_mod_second.get_data(args.sysctl)
         if data_first and data_second:
             print "Comparing functions using the data variable"
-            data_res = diff_all_modules_using_global(first_builder,
-                                                     second_builder,
-                                                     data_first, data_second,
-                                                     timeout,
-                                                     args.verbose)
+            data_res = diff_all_modules_using_global(
+                first_builder=first_builder,
+                second_builder=second_builder,
+                glob_first=data_first, glob_second=data_second,
+                timeout=timeout,
+                verbose=args.verbose)
             result.log_result(data_res.overall_result(), data_first)
         else:
             print "No data variable found"

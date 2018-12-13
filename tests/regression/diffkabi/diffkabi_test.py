@@ -135,8 +135,12 @@ class TestClass(object):
         speed.
         """
         if task_spec.expected_result != Result.TIMEOUT:
-            result = functions_diff(task_spec.old_module, task_spec.new_module,
-                                    task_spec.function, task_spec.function,
-                                    None, 120, False,
-                                    task_spec.control_flow_only)
+            result = functions_diff(
+                first=task_spec.old_module,
+                second=task_spec.new_module,
+                funFirst=task_spec.function,
+                funSecond=task_spec.function,
+                glob_var=None,
+                timeout=120,
+                control_flow_only=task_spec.control_flow_only)
             assert result == Result[task_spec.expected_result.upper()]

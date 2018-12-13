@@ -113,8 +113,10 @@ def run_from_cli():
                     continue
                 print "  parameter {}".format(name)
                 # Compare modules
-                stat = modules_diff(first, second, param, timeout,
-                                    args.function, verbose=args.verbose)
+                stat = modules_diff(first=first, second=second,
+                                    glob_var=param.varname,
+                                    function=args.function, timeout=timeout,
+                                    verbose=args.verbose)
                 print "    {}".format(str(stat.overall_result()).upper())
                 result.log_result(stat.overall_result(), "{}-{}".format(mod,
                                                                         name))
