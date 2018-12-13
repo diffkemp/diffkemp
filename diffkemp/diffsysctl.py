@@ -9,7 +9,8 @@ from __future__ import absolute_import
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, BuildException
 from diffkemp.semdiff.function_diff import Result
-from diffkemp.semdiff.module_diff import modules_diff, Statistics
+from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
+    modules_diff, Statistics
 import sys
 
 
@@ -59,9 +60,9 @@ def run_from_cli():
                     result.log_result(Result.EQUAL, proc_fun_first)
                 else:
                     try:
-                        mod_first = first_builder.build_file_for_function(
+                        mod_first = first_builder.build_file_for_symbol(
                             proc_fun_first)
-                        mod_second = second_builder.build_file_for_function(
+                        mod_second = second_builder.build_file_for_symbol(
                             proc_fun_second)
                         stat = modules_diff(mod_first, mod_second, None,
                                             timeout,
@@ -79,34 +80,14 @@ def run_from_cli():
         # Compare the data global variable affected by the sysctl value
         data_first = sysctl_mod_first.get_data(args.sysctl)
         data_second = sysctl_mod_second.get_data(args.sysctl)
-
         if data_first and data_second:
             print "Comparing functions using the data variable"
-            if data_first.name != data_second.name:
-                # Variables with different names are treated as unequal
-                print "  different data variables found"
-                result.log_result(Result.NOT_EQUAL, proc_fun_first)
-            else:
-                print "  Variable {}".format(data_first.name)
-                srcs_first = first_builder.source.find_srcs_using_symbol(
-                    data_first.name)
-                srcs_second = second_builder.source.find_srcs_using_symbol(
-                    data_second.name)
-                # Compare all sources containing functions using the variable
-                for src in srcs_first:
-                    if src not in srcs_second:
-                        result.log_result(Result.NOT_EQUAL, args.sysctl)
-                    try:
-                        mod_first = first_builder.build_file(src)
-                        mod_second = second_builder.build_file(src)
-                        stat = modules_diff(mod_first, mod_second, data_first,
-                                            timeout, None,
-                                            verbose=args.verbose)
-                        result.log_result(stat.overall_result(),
-                                          data_first.name)
-                    except BuildException as e:
-                        print e
-                        result.log_result(Result.ERROR, data_first.name)
+            data_res = diff_all_modules_using_global(first_builder,
+                                                     second_builder,
+                                                     data_first, data_second,
+                                                     timeout,
+                                                     args.verbose)
+            result.log_result(data_res.overall_result(), data_first)
         else:
             print "No data variable found"
 

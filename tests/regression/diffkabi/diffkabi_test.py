@@ -77,8 +77,8 @@ def prepare_task(spec):
                                        debug=spec.debug)
 
     # Build the modules
-    old_module = first_builder.build_file_for_function(spec.function)
-    new_module = second_builder.build_file_for_function(spec.function)
+    old_module = first_builder.build_file_for_symbol(spec.function)
+    new_module = second_builder.build_file_for_symbol(spec.function)
 
     # The modules were already built when finding their sources.
     # Now the files need only to be copied to the right place.

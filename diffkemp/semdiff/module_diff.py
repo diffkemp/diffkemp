@@ -5,8 +5,49 @@ using the given parameter is compared individually.
 """
 from __future__ import absolute_import
 
+from diffkemp.llvm_ir.build_llvm import BuildException
 from diffkemp.semdiff.function_diff import functions_diff, Result, Statistics
 from diffkemp.semdiff.function_coupling import FunctionCouplings
+
+
+def diff_all_modules_using_global(first_builder, second_builder, glob_first,
+                                  glob_second, timeout, verbose):
+    """
+    Compare semantics of all modules using given global variable.
+    Finds all source files that use the given globals and compare all of them.
+    :param first_builder: Builder for the first kernel version
+    :param second_builder: Builder for the second kernel version
+    :param glob_first: First global to compare
+    :param glob_second: Second global to compare
+    """
+    result = Statistics()
+    if glob_first != glob_second:
+        # Variables with different names are treated as unequal
+        result.log_result(Result.NOT_EQUAL, glob_first)
+    else:
+        srcs_first = first_builder.source.find_srcs_using_symbol(glob_first)
+        srcs_second = second_builder.source.find_srcs_using_symbol(glob_second)
+        # Compare all sources containing functions using the variable
+        for src in srcs_first:
+            if src not in srcs_second:
+                result.log_result(Result.NOT_EQUAL, src)
+            else:
+                try:
+                    mod_first = first_builder.build_file(src)
+                    mod_second = second_builder.build_file(src)
+                    mod_first.parse_module()
+                    mod_second.parse_module()
+                    if (mod_first.has_global(glob_first) and
+                            mod_second.has_global(glob_second)):
+                        stat = modules_diff(mod_first, mod_second, glob_first,
+                                            timeout, None,
+                                            verbose=verbose)
+                        result.log_result(stat.overall_result(), src)
+                    mod_first.clean_module()
+                    mod_second.clean_module()
+                except BuildException:
+                    result.log_result(Result.ERROR, src)
+        return result
 
 
 def modules_diff(first, second, param, timeout, function, syntax_only=False,

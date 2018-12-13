@@ -743,7 +743,7 @@ class LlvmKernelBuilder:
         self.built_modules[name] = mod
         return mod
 
-    def build_file_for_function(self, f):
+    def build_file_for_symbol(self, f):
         """
         Looks up files containing the function using CScope, then compiles them
         using Clang and looks whether the function actually is in the module.
@@ -758,10 +758,7 @@ class LlvmKernelBuilder:
             try:
                 mod = self.build_file(src)
                 mod.parse_module()
-                if not mod.has_function(f):
-                    if mod.has_global(f):
-                        mod.clean_module()
-                        raise SourceNotFoundException(f)
+                if not (mod.has_function(f) or mod.has_global(f)):
                     mod.clean_module()
                     mod = None
                 else:

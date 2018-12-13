@@ -3,7 +3,8 @@ from __future__ import absolute_import
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
 from diffkemp.semdiff.function_diff import Result
-from diffkemp.semdiff.module_diff import modules_diff, Statistics
+from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
+    modules_diff, Statistics
 import sys
 
 
@@ -62,27 +63,39 @@ def run_from_cli():
 
             try:
                 # Find source files with function definitions and build them
-                mod_first = first_builder.build_file_for_function(f)
-                mod_second = second_builder.build_file_for_function(f)
+                mod_first = first_builder.build_file_for_symbol(f)
+                mod_second = second_builder.build_file_for_symbol(f)
 
-                # Compare functions semantics
-                stat = modules_diff(mod_first, mod_second, None, timeout, f,
-                                    args.syntax_diff, args.control_flow_only,
-                                    args.verbose)
-                res = stat.overall_result()
-                result.log_result(res, f)
+                if mod_first.has_function(f):
+                    # Compare functions semantics
+                    f_result = modules_diff(mod_first, mod_second, None,
+                                            timeout,
+                                            f,
+                                            args.syntax_diff,
+                                            args.control_flow_only,
+                                            args.verbose)
+                else:
+                    # f is a global variable: compare semantics of all
+                    # functions using the variable
+                    f_result = diff_all_modules_using_global(first_builder,
+                                                             second_builder,
+                                                             f, f,
+                                                             timeout,
+                                                             args.verbose)
 
+                result.log_result(f_result.overall_result(), f)
                 if not args.syntax_diff:
-                    print "  {}".format(str(stat.overall_result()).upper())
+                    print "  {}".format(str(f_result.overall_result()).upper())
 
+            except Exception as e:
+                if not args.syntax_diff:
+                    sys.stderr.write("  ERROR: {}\n".format(str(e)))
+                result.log_result(Result.ERROR, f)
+            finally:
                 # Clean LLVM modules (allow GC to collect the occupied memory)
                 mod_first.clean_module()
                 mod_second.clean_module()
                 LlvmKernelModule.clean_all()
-            except Exception as e:
-                if not args.syntax_diff:
-                    sys.stderr.write("  Error: {}\n".format(str(e)))
-                result.log_result(Result.ERROR, f)
 
         print ""
         print "Statistics"
