@@ -263,7 +263,7 @@ def functions_diff(first, second,
                 fun_str = funFirst
             else:
                 fun_str = "{} and {}".format(funFirst, funSecond)
-            print "    Syntactic diff of {}".format(fun_str)
+            print "    Syntactic diff of {} (in {})".format(fun_str, first)
 
         # Simplify modules
         first_simpl, second_simpl, funs_to_compare = \

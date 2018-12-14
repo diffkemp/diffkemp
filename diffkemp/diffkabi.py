@@ -37,14 +37,14 @@ def run_from_cli():
     try:
         # Prepare kernels
         first_builder = LlvmKernelBuilder(args.src_version, None, debug=True,
-                                          verbose=not args.syntax_diff)
+                                          verbose=False)
         if args.function:
             kabi_funs_first = [args.function]
         else:
             kabi_funs_first = first_builder.get_kabi_whitelist()
 
         second_builder = LlvmKernelBuilder(args.dest_version, None, debug=True,
-                                           verbose=not args.syntax_diff)
+                                           verbose=False)
         if args.function:
             kabi_funs_second = [args.function]
         else:
@@ -58,16 +58,14 @@ def run_from_cli():
         for f in kabi_funs_first:
             if f not in kabi_funs_second:
                 continue
-
-            if not args.syntax_diff:
-                print f
-
             try:
                 # Find source files with function definitions and build them
                 mod_first = first_builder.build_file_for_symbol(f)
                 mod_second = second_builder.build_file_for_symbol(f)
 
                 if mod_first.has_function(f):
+                    if not args.syntax_diff:
+                        print f
                     # Compare functions semantics
                     f_result = modules_diff(
                         first=mod_first, second=mod_second,
@@ -79,6 +77,9 @@ def run_from_cli():
                 else:
                     # f is a global variable: compare semantics of all
                     # functions using the variable
+                    if not args.syntax_diff:
+                        print "{} (global variable)".format(f)
+                        print "Comparing all functions using {}".format(f)
                     globvar = KernelParam(f)
                     f_result = diff_all_modules_using_global(
                         first_builder=first_builder,
