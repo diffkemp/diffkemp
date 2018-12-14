@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
+from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.function_diff import Result
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
     modules_diff, Statistics
@@ -78,11 +79,12 @@ def run_from_cli():
                 else:
                     # f is a global variable: compare semantics of all
                     # functions using the variable
+                    globvar = KernelParam(f)
                     f_result = diff_all_modules_using_global(
                         first_builder=first_builder,
                         second_builder=second_builder,
-                        glob_first=f,
-                        glob_second=f,
+                        glob_first=globvar,
+                        glob_second=globvar,
                         timeout=timeout,
                         syntax_only=args.syntax_diff,
                         control_flow_only=args.control_flow_only,

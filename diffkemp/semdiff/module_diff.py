@@ -24,12 +24,14 @@ def diff_all_modules_using_global(first_builder, second_builder,
     :param glob_second: Second global to compare
     """
     result = Statistics()
-    if glob_first != glob_second:
+    if glob_first.name != glob_second.name:
         # Variables with different names are treated as unequal
-        result.log_result(Result.NOT_EQUAL, glob_first)
+        result.log_result(Result.NOT_EQUAL, glob_first.name)
     else:
-        srcs_first = first_builder.source.find_srcs_using_symbol(glob_first)
-        srcs_second = second_builder.source.find_srcs_using_symbol(glob_second)
+        srcs_first = first_builder.source.find_srcs_using_symbol(
+            glob_first.name)
+        srcs_second = second_builder.source.find_srcs_using_symbol(
+            glob_second.name)
         # Compare all sources containing functions using the variable
         for src in srcs_first:
             if src not in srcs_second:
@@ -40,8 +42,8 @@ def diff_all_modules_using_global(first_builder, second_builder,
                     mod_second = second_builder.build_file(src)
                     mod_first.parse_module()
                     mod_second.parse_module()
-                    if (mod_first.has_global(glob_first) and
-                            mod_second.has_global(glob_second)):
+                    if (mod_first.has_global(glob_first.name) and
+                            mod_second.has_global(glob_second.name)):
                         stat = modules_diff(
                             first=mod_first, second=mod_second,
                             glob_var=glob_first, function=None,
