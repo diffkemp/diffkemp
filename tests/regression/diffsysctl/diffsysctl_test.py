@@ -83,7 +83,7 @@ class TaskSpec:
             self.data_functions.append(FunctionSpec(function, result))
         self.proc_handler = list()
         for function, result in spec["proc_handler"].iteritems():
-            self.proc_handler.append(FunctionSpec(function, result))
+            self.proc_handler = FunctionSpec(function, result)
         if "control_flow_only" in spec:
             self.control_flow_only = spec["control_flow_only"]
         else:
@@ -96,18 +96,13 @@ def prepare_task(spec):
     Prepare testing task (scenario). Build old and new modules and copy
     created files.
     """
-    function_list = spec.proc_handler + spec.data_functions
+    function_list = [spec.proc_handler] + spec.data_functions
 
     # Find the modules
     first_builder = LlvmKernelBuilder(spec.old_kernel, None,
                                       debug=spec.debug)
     second_builder = LlvmKernelBuilder(spec.new_kernel, None,
                                        debug=spec.debug)
-
-    sysctl_module = first_builder.build_sysctl_module(spec.sysctl)
-    spec.data_diffsysctl = sysctl_module.get_data(spec.sysctl)
-    spec.proc_handler_diffsysctl = \
-        sysctl_module.get_proc_fun(spec.sysctl)
 
     # Build the modules
     for function in function_list:
@@ -164,17 +159,23 @@ class TestClass(object):
         Looks whether the data variable and the proc handler function were
         determined correctly.
         """
+        # Get the relevant values
+        builder = LlvmKernelBuilder(task_spec.old_kernel, None,
+                                    debug=task_spec.debug)
+        sysctl_module = builder.build_sysctl_module(task_spec.sysctl)
+
+        data = sysctl_module.get_data(task_spec.sysctl)
+        proc_handler = sysctl_module.get_proc_fun(task_spec.sysctl)
+
         # Data variable function
         if "." in task_spec.data:
             # Structure attribute
-            assert task_spec.data.split(".")[0] == \
-                   task_spec.data_diffsysctl.name
+            assert task_spec.data.split(".")[0] == data.name
         else:
             # Standard variable
-            assert task_spec.data == task_spec.data_diffsysctl.name
+            assert task_spec.data == data.name
         # Proc handler function
-        assert (task_spec.proc_handler_diffsysctl ==
-                task_spec.proc_handler[0].name)
+        assert task_spec.proc_handler.name == proc_handler
 
     def test_proc_handler(self, task_spec):
         """
@@ -187,16 +188,16 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        for function in task_spec.proc_handler:
-            if function.result != Result.TIMEOUT and \
-               function.result != "skipped":
-                result = functions_diff(function.old_module,
-                                        function.new_module,
-                                        function.name, function.name,
-                                        None, 120, False,
-                                        task_spec.control_flow_only)
+        if (task_spec.proc_handler.result != Result.TIMEOUT
+                and task_spec.proc_handler.result != "skipped"):
+            result = functions_diff(task_spec.proc_handler.old_module,
+                                    task_spec.proc_handler.new_module,
+                                    task_spec.proc_handler.name,
+                                    task_spec.proc_handler.name,
+                                    None, 120, False,
+                                    task_spec.control_flow_only)
 
-                assert result == Result[function.result.upper()]
+            assert result == Result[task_spec.proc_handler.result.upper()]
 
     def test_data_functions(self, task_spec):
         """
@@ -209,12 +210,19 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
+        # Get the data variable KernelParam object
+        builder = LlvmKernelBuilder(task_spec.old_kernel, None,
+                                    debug=task_spec.debug)
+        sysctl_module = builder.build_sysctl_module(task_spec.sysctl)
+        data_kernel_param = sysctl_module.get_data(task_spec.sysctl)
+
         for function in task_spec.data_functions:
             if function.result != Result.TIMEOUT:
                 result = functions_diff(function.old_module,
                                         function.new_module,
                                         function.name, function.name,
-                                        task_spec.data_diffsysctl,
+                                        data_kernel_param,
                                         120, False,
-                                        task_spec.control_flow_only)
+                                        task_spec.control_flow_only,
+                                        verbose=True)
                 assert result == Result[function.result.upper()]
