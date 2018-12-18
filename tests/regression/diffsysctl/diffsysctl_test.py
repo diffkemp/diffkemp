@@ -106,8 +106,8 @@ def prepare_task(spec):
 
     # Build the modules
     for function in function_list:
-        old_module = first_builder.build_file_for_function(function.name)
-        new_module = second_builder.build_file_for_function(function.name)
+        old_module = first_builder.build_file_for_symbol(function.name)
+        new_module = second_builder.build_file_for_symbol(function.name)
 
         # The modules were already built when finding their sources.
         # Now the files need only to be copied to the right place.
