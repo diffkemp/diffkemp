@@ -12,7 +12,7 @@ sysctls:
         proc_do_rss_key: equal_syntax
   - sysctl: net.core.message_burst
     proc_handler:
-      proc_dointvec: skipped
+      proc_dointvec: generic
     data_variable:
       name: net_ratelimit_state.burst
       functions:

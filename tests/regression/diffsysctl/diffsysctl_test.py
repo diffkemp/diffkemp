@@ -189,7 +189,7 @@ class TestClass(object):
         speed.
         """
         if (task_spec.proc_handler.result != Result.TIMEOUT
-                and task_spec.proc_handler.result != "skipped"):
+                and task_spec.proc_handler.result != "generic"):
             result = functions_diff(task_spec.proc_handler.old_module,
                                     task_spec.proc_handler.new_module,
                                     task_spec.proc_handler.name,
