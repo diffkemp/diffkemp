@@ -173,6 +173,13 @@ int DifferentialFunctionComparator::cmpOperations(
 /// of the composite type is different.
 int DifferentialFunctionComparator::cmpAllocs(
     const CallInst* CL, const CallInst* CR, bool &needToCmpOperands) const {
+     // Look whether the sizes for allocation match. If yes, then return zero
+     // (ignore flags).
+     if (cmpValues(CL->op_begin()->get(), CR->op_begin()->get()) == 0) {
+         needToCmpOperands = false;
+         return 0;
+     }
+
     // The instruction is a call instrution calling the function kzalloc. Now
     // look whether the next instruction is a BitCastInst casting to a structure
     // type.
