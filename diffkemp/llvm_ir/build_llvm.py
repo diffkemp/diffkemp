@@ -949,20 +949,47 @@ class LlvmKernelBuilder:
 
     def build_sysctl_module(self, sysctl):
         """
-        Build source containing definitions of a sysctl option.
+        Build the source file containing the definition of a sysctl option.
         :param sysctl: sysctl option to search for
         :return: Instance of LlvmSysctlModule.
         """
-        src, sysctl_table = self.source.find_src_for_sysctl(sysctl)
-        if src in self.built_modules:
-            return self.built_modules[src]
+        # The sysctl is composed of entries separated by dots. Entries form
+        # a hierarchy - each entry is a child of its predecessor (i.e. all
+        # entries except the last one point to sysctl tables). We follow
+        # the hierarchy and build the source containing the parent table of
+        # the last entry.
+        entries = sysctl.split(".")
+        if entries[0] in ["kernel", "vm", "fs", "debug", "dev"]:
+            src = "kernel/sysctl.c"
+            table = "sysctl_base_table"
+        elif entries[0] == "net":
+            if entries[1] == "ipv4":
+                if entries[2] == "conf":
+                    src = "net/ipv4/devinet.c"
+                    table = "devinet_sysctl.1"
+                    entries = entries[4:]
+                else:
+                    src = "net/ipv4/sysctl_net_ipv4.c"
+                    table = "ipv4_table"
+                    entries = entries[2:]
+            if entries[1] == "core":
+                src = "net/core/sysctl_net_core.c"
+                table = "net_core_table"
+                entries = entries[2:]
+        else:
+            raise SourceNotFoundException(sysctl)
 
-        # Build the file normally and then create a corresponding
-        # LlvmSysctlModule with the obtained sysctl table.
-        kernel_mod = self.build_file(src)
-        sysctl_mod = LlvmSysctlModule(kernel_mod, sysctl_table)
-        self.built_modules[src] = sysctl_mod
-        return sysctl_mod
+        for (i, entry) in enumerate(entries):
+            # Build the file normally and then create a corresponding
+            # LlvmSysctlModule with the obtained sysctl table.
+            kernel_mod = self.build_file(src)
+            sysctl_mod = LlvmSysctlModule(kernel_mod, table)
+
+            if i == len(entries) - 1:
+                return sysctl_mod
+            table = sysctl_mod.get_child(entry).name
+            src = self.source.find_srcs_with_symbol_def(table)[0]
+            kernel_mod.clean_module()
 
     def get_kabi_whitelist(self):
         """Get a list of functions on the kernel abi whitelist."""

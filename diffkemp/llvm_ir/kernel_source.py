@@ -167,17 +167,3 @@ class KernelSource:
             raise
         finally:
             os.chdir(cwd)
-
-    def find_src_for_sysctl(self, sysctl):
-        """Find source in which a sysctl option is defined."""
-        if sysctl.startswith("kernel."):
-            return "kernel/sysctl.c", "kern_table"
-        elif sysctl.startswith("vm."):
-            return "kernel/sysctl.c", "vm_table"
-        elif sysctl.startswith("net.core"):
-            return "net/core/sysctl_net_core.c", "net_core_table"
-        elif sysctl.startswith("net.ipv4"):
-            if ".conf.all" in sysctl:
-                return "net/ipv4/devinet.c", "devinet_sysctl.1"
-            return "net/ipv4/sysctl_net_ipv4.c", "ipv4_table"
-        raise SourceNotFoundException(sysctl)

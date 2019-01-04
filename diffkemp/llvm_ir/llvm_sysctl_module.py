@@ -71,6 +71,48 @@ class LlvmSysctlModule:
                 self.sysctls[sysctl_name] = sysctl
                 return sysctl
 
+    def _get_global_variable_at_index(self, sysctl_name, index):
+        """
+        Find sysctl with given name and get its element at the given index.
+        The element is expected to be a global variable.
+        :param sysctl_name: Name of the sysctl to be found.
+        :param index: Index to look for.
+        :return: KernelParam object with the given global variable description.
+        """
+        # Get the sysctl entry
+        sysctl = self._get_sysctl(sysctl_name)
+        if not sysctl or sysctl.get_num_operands() <= index:
+            return None
+        # Get operand at the given index
+        data = sysctl.get_operand(index)
+        if data.is_null():
+            return None
+        indices = None
+
+        # Address is a GEP, we have to extract the actual variable.
+        if (data.get_kind() == ConstantExprValueKind and
+                data.get_const_opcode() == Opcode['GetElementPtr']):
+            all_constant = True
+            indices = list()
+            # Look whether are all indices constant.
+            for i in range(1, data.get_num_operands()):
+                indices.append(data.get_operand(i).const_int_get_z_ext())
+                if not data.get_operand(i).is_constant():
+                    all_constant = False
+            if all_constant:
+                data = data.get_operand(0)
+
+        # Address is typed to "void *", we need to get rid of the bitcast
+        # operator.
+        if (data.get_kind() == ConstantExprValueKind and
+                data.get_const_opcode() == Opcode['BitCast']):
+            data = data.get_operand(0)
+
+        if data.get_kind() == GlobalVariableValueKind:
+            data = data.get_name()
+            return KernelParam(data, indices)
+        return None
+
     def get_proc_fun(self, sysctl_name):
         """
         Get name of the proc handler function for the given sysctl option.
@@ -83,35 +125,10 @@ class LlvmSysctlModule:
         proc_handler = sysctl.get_operand(5)
         return proc_handler.get_name() if not proc_handler.is_null() else None
 
+    def get_child(self, sysctl_name):
+        """Get name of the child node of the given sysctl table entry."""
+        return self._get_global_variable_at_index(sysctl_name, 4)
+
     def get_data(self, sysctl_name):
         """Get name of the data variable for the given sysctl option."""
-        indices = None
-        sysctl = self._get_sysctl(sysctl_name)
-        if not sysctl or sysctl.get_num_operands() < 2:
-            return None
-        # Address of the data variable is the 2nd element of the
-        # "struct ctl_table" type.
-        data = sysctl.get_operand(1)
-        if data.is_null():
-            return None
-        if (data.get_kind() == ConstantExprValueKind and
-                data.get_const_opcode() == Opcode['GetElementPtr']):
-            # Address is a GEP, we have to extract the actual variable.
-            all_constant = True
-            indices = list()
-            # Look whether are all indices constant.
-            for i in range(1, data.get_num_operands()):
-                indices.append(data.get_operand(i).const_int_get_z_ext())
-                if not data.get_operand(i).is_constant():
-                    all_constant = False
-            if all_constant:
-                data = data.get_operand(0)
-        if (data.get_kind() == ConstantExprValueKind and
-                data.get_const_opcode() == Opcode['BitCast']):
-            # Address is typed to "void *", we need to get rid of the
-            # bitcast operator.
-            data = data.get_operand(0)
-        if data.get_kind() == GlobalVariableValueKind:
-            data = data.get_name()
-            return KernelParam(data, indices)
-        return None
+        return self._get_global_variable_at_index(sysctl_name, 1)
