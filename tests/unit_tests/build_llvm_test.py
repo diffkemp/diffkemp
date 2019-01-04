@@ -151,10 +151,20 @@ def test_build_sysctl_module():
     Building source containing definitions of a sysctl option.
     """
     builder = LlvmKernelBuilder("3.10.0-862", None)
-    module = builder.build_sysctl_module("net.core.message_burst")
-    assert module is not None
-    assert module.mod is not None
-    assert module.mod.name == "net/core/sysctl_net_core"
+    for mod in [{
+        "name": "net.core.message_burst",
+        "file": "net/core/sysctl_net_core",
+        "table": "net_core_table"
+    }, {
+        "name": "kernel.usermodehelper.bset",
+        "file": "kernel/kmod",
+        "table": "usermodehelper_table"
+    }]:
+        module = builder.build_sysctl_module(mod["name"])
+        assert module is not None
+        assert module.mod is not None
+        assert module.mod.name == mod["file"]
+        assert module.ctl_table == mod["table"]
 
 
 def test_link_modules():

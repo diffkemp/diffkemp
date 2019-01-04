@@ -34,3 +34,10 @@ def test_get_data(module):
     data = module.get_data("netdev_rss_key")
     assert data.name == "netdev_rss_key"
     assert data.indices == [0L, 0L]
+
+
+def test_get_child():
+    builder = LlvmKernelBuilder("3.10.0-862", "kernel")
+    kernel_module = builder.build_file("sysctl.c")
+    sysctl_module = LlvmSysctlModule(kernel_module, "sysctl_base_table")
+    assert sysctl_module.get_child("vm").name == "vm_table"
