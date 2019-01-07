@@ -1,13 +1,11 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
 from __future__ import division
-from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
 from diffkemp.semdiff.function_coupling import FunctionCouplings
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
 from threading import Timer
 from enum import Enum
-import os
 import sys
 
 
