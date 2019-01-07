@@ -26,6 +26,8 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("--control-flow-only", help="see only control-flow \
                     differences", action="store_true")
+    ap.add_argument("--include-globals", help="include whitelists that are \
+                    global variables", action="store_true")
     return ap
 
 
@@ -63,6 +65,7 @@ def run_from_cli():
                 mod_first = first_builder.build_file_for_symbol(f)
                 mod_second = second_builder.build_file_for_symbol(f)
 
+                f_result = None
                 if mod_first.has_function(f):
                     if not args.syntax_diff:
                         print f
@@ -74,7 +77,7 @@ def run_from_cli():
                         syntax_only=args.syntax_diff,
                         control_flow_only=args.control_flow_only,
                         verbose=args.verbose)
-                else:
+                elif args.include_globals:
                     # f is a global variable: compare semantics of all
                     # functions using the variable
                     if not args.syntax_diff:
@@ -91,9 +94,11 @@ def run_from_cli():
                         control_flow_only=args.control_flow_only,
                         verbose=args.verbose)
 
-                result.log_result(f_result.overall_result(), f)
-                if not args.syntax_diff:
-                    print "  {}".format(str(f_result.overall_result()).upper())
+                if f_result is not None:
+                    result.log_result(f_result.overall_result(), f)
+                    if not args.syntax_diff:
+                        print "  {}".format(
+                            str(f_result.overall_result()).upper())
 
             except Exception as e:
                 if not args.syntax_diff:
