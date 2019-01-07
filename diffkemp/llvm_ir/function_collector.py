@@ -38,8 +38,9 @@ class FunctionCollector():
         for i in range(1, gep.get_num_operands()):
             if (i - 1) >= len(indices):
                 break
-            if (gep.get_operand(i).const_int_get_z_ext() !=
-                    indices[i - 1]):
+            op = gep.get_operand(i)
+            if (op.is_constant() and
+                    op.const_int_get_z_ext() != indices[i - 1]):
                 return False
         return True
 
