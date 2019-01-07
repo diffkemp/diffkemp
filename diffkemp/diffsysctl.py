@@ -51,6 +51,7 @@ def run_from_cli():
             if sysctl not in sysctl_list_second:
                 continue
 
+            sysctl_res = Statistics()
             print sysctl
             # Compare the proc handler function
             proc_fun_first = sysctl_mod_first.get_proc_fun(sysctl)
@@ -65,7 +66,7 @@ def run_from_cli():
                     if sysctl_mod_first.is_standard_proc_fun(proc_fun_first):
                         # Standard functions are treated as equal
                         print "    equal"
-                        result.log_result(
+                        sysctl_res.log_result(
                             Result.EQUAL,
                             "{}:{}".format(sysctl, proc_fun_first))
                     else:
@@ -80,11 +81,11 @@ def run_from_cli():
                                                 function=proc_fun_first,
                                                 timeout=timeout,
                                                 verbose=args.verbose)
-                            result.log_result(stat.overall_result(),
-                                              proc_fun_first)
+                            sysctl_res.log_result(stat.overall_result(),
+                                                  proc_fun_first)
                         except BuildException as e:
                             print e
-                            result.log_result(
+                            sysctl_res.log_result(
                                 Result.ERROR,
                                 "{}:{}".format(sysctl, proc_fun_first))
             else:
@@ -101,12 +102,17 @@ def run_from_cli():
                     glob_first=data_first, glob_second=data_second,
                     timeout=timeout,
                     verbose=args.verbose)
-                result.log_result(data_res.overall_result(),
-                                  "{}:{}".format(sysctl, data_first))
+                sysctl_res.log_result(data_res.overall_result(),
+                                      "{}:{}".format(sysctl, data_first))
             else:
                 print "  No data variable found"
 
-        print result.overall_result()
+            result.log_result(sysctl_res.overall_result(), sysctl)
+
+        print ""
+        print "Statistics"
+        print "----------"
+        result.report()
         return 0
 
     except Exception as e:
