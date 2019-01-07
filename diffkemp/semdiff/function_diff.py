@@ -219,25 +219,6 @@ def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
     return result
 
 
-def syntactically_equal(mod_first, mod_second, fun_first, fun_second):
-    """
-    Check if the given functions in the given modules are syntactically equal.
-    """
-    # Functions are syntactically equal if they were simplified into
-    # declarations by SimpLL.
-    first_dir, first_file = os.path.split(mod_first)
-    first = LlvmKernelModule("tmp_first", first_file[:-3], first_dir)
-    first.parse_module()
-    second_dir, second_file = os.path.split(mod_second)
-    second = LlvmKernelModule("tmp_second", second_file[:-3], second_dir)
-    second.parse_module()
-    result = (first.is_declaration(fun_first) and
-              second.is_declaration(fun_second))
-    first.clean_module()
-    second.clean_module()
-    return result
-
-
 def functions_diff(first, second,
                    funFirst, funSecond,
                    glob_var,
@@ -273,7 +254,7 @@ def functions_diff(first, second,
                                   glob_var.name if glob_var else "simpl",
                                   control_flow_only,
                                   verbose)
-        if syntactically_equal(first_simpl, second_simpl, funFirst, funSecond):
+        if not funs_to_compare:
             result = Result.EQUAL_SYNTAX
         elif syntax_only:
             # Only display the syntax diff of the functions that are
