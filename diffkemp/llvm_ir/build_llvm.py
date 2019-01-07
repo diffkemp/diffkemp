@@ -989,7 +989,6 @@ class LlvmKernelBuilder:
                 return sysctl_mod
             table = sysctl_mod.get_child(entry).name
             src = self.source.find_srcs_with_symbol_def(table)[0]
-            kernel_mod.clean_module()
 
     def get_kabi_whitelist(self):
         """Get a list of functions on the kernel abi whitelist."""

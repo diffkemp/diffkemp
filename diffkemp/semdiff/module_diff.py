@@ -52,8 +52,6 @@ def diff_all_modules_using_global(first_builder, second_builder,
                             control_flow_only=control_flow_only,
                             verbose=verbose)
                         result.log_result(stat.overall_result(), src)
-                    mod_first.clean_module()
-                    mod_second.clean_module()
                 except BuildException:
                     result.log_result(Result.ERROR, src)
         return result
