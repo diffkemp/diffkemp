@@ -332,11 +332,11 @@ bool VarDependencySlicer::addAllOpsToIncluded(
 #endif
                 added = true;
                 addAllOpsToIncluded(OpInst);
-                if (isa<AllocaInst>(OpInst))
-                    // For alloca, add all stores between the alloca and
-                    // the current instruction to included.
-                    addStoresToIncluded(OpInst, Inst);
             }
+            if (isa<AllocaInst>(OpInst))
+                // For alloca, add all stores between the alloca and
+                // the current instruction to included.
+                addStoresToIncluded(OpInst, Inst);
         }
         if (auto OpParam = dyn_cast<Argument>(Op))
             IncludedParams.insert(OpParam);

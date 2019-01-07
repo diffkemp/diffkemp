@@ -17,3 +17,10 @@ sysctls:
       name: net_ratelimit_state.burst
       functions:
         net_ratelimit: equal_syntax
+  - sysctl: kernel.core_pipe_limit
+    proc_handler:
+      proc_dointvec: generic
+    data_variable:
+      name: core_pipe_limit
+      functions:
+        do_coredump: equal_syntax
