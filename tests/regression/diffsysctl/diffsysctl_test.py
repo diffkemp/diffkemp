@@ -163,6 +163,7 @@ class TestClass(object):
         builder = LlvmKernelBuilder(task_spec.old_kernel, None,
                                     debug=task_spec.debug)
         sysctl_module = builder.build_sysctl_module(task_spec.sysctl)
+        sysctl_module.parse_sysctls(task_spec.sysctl)
 
         data = sysctl_module.get_data(task_spec.sysctl)
         proc_handler = sysctl_module.get_proc_fun(task_spec.sysctl)

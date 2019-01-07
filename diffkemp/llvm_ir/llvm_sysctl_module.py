@@ -7,6 +7,15 @@ from llvmcpy.llvm import *
 from diffkemp.llvm_ir.kernel_module import KernelParam
 
 
+def matches(name, pattern):
+    if pattern == "*":
+        return True
+    if pattern.startswith("{") and pattern.endswith("}"):
+        match_list = pattern[1:-1].split("|")
+        return name in match_list
+    return name == pattern
+
+
 class LlvmSysctlModule:
     # List of standard proc handler functions.
     standard_proc_funs = [
@@ -38,10 +47,19 @@ class LlvmSysctlModule:
         Get LLVM object (of type struct ctl_table) with the definition of
         the given sysctl option.
         """
-        # If the given table entry has been already found, return it.
-        if sysctl_name in self.sysctls:
-            return self.sysctls[sysctl_name]
+        if sysctl_name not in self.sysctls:
+            self.parse_sysctls(sysctl_name)
+        self.mod.parse_module()
+        return self.sysctls[sysctl_name]
 
+    def parse_sysctls(self, sysctl_pattern):
+        """
+        Parse all sysctls entries that match the given pattern. Parsed entries
+        are LLVM objects of type "struct ctl_table" containing the sysctl
+        definition.
+        They are stored in the dictionary self.sysctls.
+        :return: List of names of parsed sysctls.
+        """
         self.mod.parse_module()
         ctl_table = self.ctl_table.split(".")
         # sysctl table is a global variable
@@ -57,6 +75,7 @@ class LlvmSysctlModule:
         if not sysctl_list:
             return None
 
+        names = []
         # Iterate all entries in the table
         for i in range(0, sysctl_list.get_num_operands()):
             sysctl = sysctl_list.get_operand(i)
@@ -67,9 +86,12 @@ class LlvmSysctlModule:
             # We need one more .get_operand(0) because of gep operator
             name = sysctl.get_operand(0).get_operand(0).get_initializer() \
                 .get_as_string(size)
-            if name == sysctl_name.split(".")[-1]:
+            pattern = sysctl_pattern.split(".")[-1]
+            if matches(name, pattern):
+                sysctl_name = sysctl_pattern.replace(pattern, name)
                 self.sysctls[sysctl_name] = sysctl
-                return sysctl
+                names.append(sysctl_name)
+        return names
 
     def _get_global_variable_at_index(self, sysctl_name, index):
         """

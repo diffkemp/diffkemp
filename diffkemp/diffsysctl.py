@@ -44,54 +44,67 @@ def run_from_cli():
         sysctl_mod_first = first_builder.build_sysctl_module(args.sysctl)
         sysctl_mod_second = second_builder.build_sysctl_module(args.sysctl)
 
-        # Compare the proc handler function
-        proc_fun_first = sysctl_mod_first.get_proc_fun(args.sysctl)
-        proc_fun_second = sysctl_mod_second.get_proc_fun(args.sysctl)
-        if proc_fun_first and proc_fun_second:
-            print "Comparing proc handler functions"
-            if proc_fun_first != proc_fun_second:
-                # Functions with different names are treated as unequal
-                print "  different functions found"
-                result.log_result(Result.NOT_EQUAL, proc_fun_first)
-            else:
-                if sysctl_mod_first.is_standard_proc_fun(proc_fun_first):
-                    # Standard functions are treated as equal
-                    print "  equal"
-                    result.log_result(Result.EQUAL, proc_fun_first)
+        sysctl_list_first = sysctl_mod_first.parse_sysctls(args.sysctl)
+        sysctl_list_second = sysctl_mod_second.parse_sysctls(args.sysctl)
+
+        for sysctl in sysctl_list_first:
+            if sysctl not in sysctl_list_second:
+                continue
+
+            print sysctl
+            # Compare the proc handler function
+            proc_fun_first = sysctl_mod_first.get_proc_fun(sysctl)
+            proc_fun_second = sysctl_mod_second.get_proc_fun(sysctl)
+            if proc_fun_first and proc_fun_second:
+                print "  Comparing proc handler functions"
+                if proc_fun_first != proc_fun_second:
+                    # Functions with different names are treated as unequal
+                    print "    different functions found"
+                    result.log_result(Result.NOT_EQUAL, proc_fun_first)
                 else:
-                    try:
-                        mod_first = first_builder.build_file_for_symbol(
-                            proc_fun_first)
-                        mod_second = second_builder.build_file_for_symbol(
-                            proc_fun_second)
-                        stat = modules_diff(first=mod_first, second=mod_second,
-                                            glob_var=None,
-                                            function=proc_fun_first,
-                                            timeout=timeout,
-                                            verbose=args.verbose)
-                        result.log_result(stat.overall_result(),
-                                          proc_fun_first)
-                    except BuildException as e:
-                        print e
-                        result.log_result(Result.ERROR, proc_fun_first)
+                    if sysctl_mod_first.is_standard_proc_fun(proc_fun_first):
+                        # Standard functions are treated as equal
+                        print "    equal"
+                        result.log_result(
+                            Result.EQUAL,
+                            "{}:{}".format(sysctl, proc_fun_first))
+                    else:
+                        try:
+                            mod_first = first_builder.build_file_for_symbol(
+                                proc_fun_first)
+                            mod_second = second_builder.build_file_for_symbol(
+                                proc_fun_second)
+                            stat = modules_diff(first=mod_first,
+                                                second=mod_second,
+                                                glob_var=None,
+                                                function=proc_fun_first,
+                                                timeout=timeout,
+                                                verbose=args.verbose)
+                            result.log_result(stat.overall_result(),
+                                              proc_fun_first)
+                        except BuildException as e:
+                            print e
+                            result.log_result(
+                                Result.ERROR,
+                                "{}:{}".format(sysctl, proc_fun_first))
+            else:
+                print "  No proc handler function found"
 
-        else:
-            print "No proc handler function found"
-
-        # Compare the data global variable affected by the sysctl value
-        data_first = sysctl_mod_first.get_data(args.sysctl)
-        data_second = sysctl_mod_second.get_data(args.sysctl)
-        if data_first and data_second:
-            print "Comparing functions using the data variable"
-            data_res = diff_all_modules_using_global(
-                first_builder=first_builder,
-                second_builder=second_builder,
-                glob_first=data_first, glob_second=data_second,
-                timeout=timeout,
-                verbose=args.verbose)
-            result.log_result(data_res.overall_result(), data_first)
-        else:
-            print "No data variable found"
+            # Compare the data global variable affected by the sysctl value
+            data_first = sysctl_mod_first.get_data(sysctl)
+            data_second = sysctl_mod_second.get_data(sysctl)
+            if data_first and data_second:
+                print "  Comparing functions using the data variable"
+                data_res = diff_all_modules_using_global(
+                    first_builder=first_builder,
+                    second_builder=second_builder,
+                    glob_first=data_first, glob_second=data_second,
+                    timeout=timeout,
+                    verbose=args.verbose)
+                result.log_result(data_res.overall_result(),
+                                  "{}:{}".format(sysctl, data_first))
+            else:
+                print "  No data variable found"
 
         print result.overall_result()
         return 0
