@@ -2,7 +2,7 @@
 
 import pytest
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
-from diffkemp.llvm_ir.llvm_sysctl_module import LlvmSysctlModule
+from diffkemp.llvm_ir.llvm_sysctl_module import matches, LlvmSysctlModule
 
 
 @pytest.fixture(scope="module")
@@ -41,3 +41,9 @@ def test_get_child():
     kernel_module = builder.build_file("sysctl.c")
     sysctl_module = LlvmSysctlModule(kernel_module, "sysctl_base_table")
     assert sysctl_module.get_child("vm").name == "vm_table"
+
+
+def test_pattern_matches():
+    assert matches("core_pattern", "*")
+    assert matches("core_pattern", "{core_pattern|core_uses_pid}")
+    assert not matches("core_pattern", "{acct|hotplug}")
