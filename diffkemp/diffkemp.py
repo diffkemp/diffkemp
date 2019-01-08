@@ -9,15 +9,20 @@ import sys
 
 def __make_argument_parser():
     """ Parsing arguments. """
-    ap = ArgumentParser()
-    ap.add_argument("modules_dir")
+    ap = ArgumentParser(description="Check semantic equivalence of kernel \
+                        module parameters."
+                        "")
     ap.add_argument("src_version")
     ap.add_argument("dest_version")
-    ap.add_argument("--modules-with-params", help="automatically detect all \
-                    modules containing parameters", action="store_true")
-    ap.add_argument("-m", "--module", help="analyse only chosen module")
-    ap.add_argument("-p", "--param", help="analyse only chosen parameter")
-    ap.add_argument("-f", "--file", help="analyse only chosen file")
+    ap.add_argument("modules_dir", help="directory with modules relative to \
+                    the kernel sources directory (by default all modules \
+                    containing parameters are analysed)")
+    ap.add_argument("--all-modules", help="build and analyse all modules (not \
+                                          only modules containing parameters)",
+                    action="store_true")
+    ap.add_argument("-m", "--module", help="analyse only a chosen module")
+    ap.add_argument("-p", "--param", help="analyse only a chosen parameter")
+    ap.add_argument("-f", "--file", help="analyse only a chosen file")
     ap.add_argument("--build-only", help="only build modules to LLVM IR",
                     action="store_true")
     ap.add_argument("--rebuild", help="force rebuilding sources",
@@ -30,7 +35,7 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("-t", "--timeout", help="timeout in seconds for a single \
                     parameter comparison")
-    ap.add_argument("-s", "--function", help="function to compare")
+    ap.add_argument("-s", "--function", help="analyse only specific function")
     return ap
 
 
@@ -54,12 +59,12 @@ def run_from_cli():
                 args.module: first_builder.build_module(args.module,
                                                         args.rebuild)
             }
-        elif args.modules_with_params:
-            first_mods = first_builder.build_modules_with_params(args.rebuild)
+        elif args.all_modules:
+            first_mods = first_builder.build_all_modules()
         elif args.file:
             first_mods = {args.file: first_builder.build_file(args.file)}
         else:
-            first_mods = first_builder.build_all_modules()
+            first_mods = first_builder.build_modules_with_params(args.rebuild)
 
         second_builder = LlvmKernelBuilder(args.dest_version, args.modules_dir,
                                            args.debug)
@@ -68,13 +73,13 @@ def run_from_cli():
                 args.module: second_builder.build_module(args.module,
                                                          args.rebuild)
             }
-        elif args.modules_with_params:
-            second_mods = second_builder.build_modules_with_params(
-                args.rebuild)
+        elif args.all_modules:
+            second_mods = second_builder.build_all_modules()
         elif args.file:
             second_mods = {args.file: second_builder.build_file(args.file)}
         else:
-            second_mods = second_builder.build_all_modules()
+            second_mods = second_builder.build_modules_with_params(
+                args.rebuild)
 
         if args.build_only:
             print "Compiled modules in version {}:".format(args.src_version)
