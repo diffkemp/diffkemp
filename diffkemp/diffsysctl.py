@@ -16,10 +16,11 @@ import sys
 
 def __make_argument_parser():
     """Parsing CLI arguments."""
-    ap = ArgumentParser()
+    ap = ArgumentParser(description="Check semantic equivalence of sysctl \
+                        options.")
     ap.add_argument("src_version")
     ap.add_argument("dest_version")
-    ap.add_argument("sysctl", help="sysctl parameter to compare")
+    ap.add_argument("sysctl", help="sysctl option to compare")
     ap.add_argument("-v", "--verbose", help="increase output verbosity",
                     action="store_true")
     ap.add_argument("-t", "--timeout", help="timeout in seconds for a single \

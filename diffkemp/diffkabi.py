@@ -11,10 +11,11 @@ import sys
 
 def __make_argument_parser():
     """Parsing CLI arguments."""
-    ap = ArgumentParser()
+    ap = ArgumentParser(description="Check semantic equivalence of KABI \
+                        whitelist functions.")
     ap.add_argument("src_version")
     ap.add_argument("dest_version")
-    ap.add_argument("-f", "--function", help="specify function to compare")
+    ap.add_argument("-f", "--function", help="specify a function to compare")
     ap.add_argument("-v", "--verbose", help="increase output verbosity",
                     action="store_true")
     ap.add_argument("-t", "--timeout", help="timeout in seconds for a single \
@@ -22,12 +23,12 @@ def __make_argument_parser():
     ap.add_argument("--report-stat", help="report statistics of the analysis",
                     action="store_true")
     ap.add_argument("--syntax-diff", help="for functions that are \
-                    syntactically different, show result of diff",
+                    semantically different, show the result of diff",
                     action="store_true")
     ap.add_argument("--control-flow-only", help="see only control-flow \
                     differences", action="store_true")
-    ap.add_argument("--include-globals", help="include whitelists that are \
-                    global variables", action="store_true")
+    ap.add_argument("--include-globals", help="include also whitelists that \
+                    are global variables", action="store_true")
     return ap
 
 
