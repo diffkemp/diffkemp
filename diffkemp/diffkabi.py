@@ -107,8 +107,11 @@ def run_from_cli():
                 result.log_result(Result.ERROR, f)
             finally:
                 # Clean LLVM modules (allow GC to collect the occupied memory)
-                mod_first.clean_module()
-                mod_second.clean_module()
+                try:
+                    mod_first.clean_module()
+                    mod_second.clean_module()
+                except NameError:
+                    pass
                 LlvmKernelModule.clean_all()
 
         print ""
