@@ -58,11 +58,14 @@ class Statistics():
         errs = len(self.errors)
         total = eq + neq + unkwn + errs
         print "Total params: {}".format(total)
-        print "Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100)
-        print " same syntax: {0}".format(eq_syn)
-        print "Not equal:    {0} ({1:.0f}%)".format(neq, neq / total * 100)
-        print "Unknown:      {0} ({1:.0f}%)".format(unkwn, unkwn / total * 100)
-        print "Errors:       {0} ({1:.0f}%)".format(errs, errs / total * 100)
+        if total != 0:
+            print "Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100)
+            print " same syntax: {0}".format(eq_syn)
+            print "Not equal:    {0} ({1:.0f}%)".format(neq, neq / total * 100)
+            print "Unknown:      {0} ({1:.0f}%)".format(unkwn,
+                                                        unkwn / total * 100)
+            print "Errors:       {0} ({1:.0f}%)".format(errs,
+                                                        errs / total * 100)
 
     def overall_result(self):
         """Aggregate results for individual functions into one result."""
