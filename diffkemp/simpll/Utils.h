@@ -26,6 +26,19 @@ enum Program {
 
 typedef std::pair<Function *, Function *> FunPair;
 
+/// Type for call stack entry: contains the called function and its call
+/// location (file and line).
+struct CallInfo {
+    Function *fun;
+    std::string file;
+    unsigned line;
+
+    CallInfo(Function *fun, const std::string &file, unsigned int line)
+            : fun(fun), file(file), line(line) {}
+};
+/// Call stack - list of call entries
+typedef std::vector<CallInfo> CallStack;
+
 /// Extract called function from a called value
 const Function *getCalledFunction(const Value *CalledValue);
 
@@ -44,5 +57,8 @@ std::string dropSuffix(std::string Name);
 /// Get absolute path to a file in which the given function is defined.
 /// Requires debug info to work correctly.
 std::string getFileForFun(Function *Fun);
+
+/// Get call stack for calling Dest from Src
+CallStack getCallStack(Function &Src, Function &Dest);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H

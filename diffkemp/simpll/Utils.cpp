@@ -81,3 +81,45 @@ std::string getFileForFun(Function *Fun) {
     }
     return "";
 }
+
+/// Recusrive search for call stack from Src to Dest
+bool searchCallStackRec(Function *Src,
+                        Function *Dest,
+                        CallStack &callStack,
+                        std::set<Function *> &visited) {
+    visited.insert(Src);
+    for (auto &BB : *Src) {
+        for (auto &Inst : BB) {
+            if (CallInst *Call = dyn_cast<CallInst>(&Inst)) {
+                Function *called = Call->getCalledFunction();
+                if (called && visited.find(called) == visited.end()) {
+                    auto loc = Inst.getDebugLoc();
+                    if (!loc)
+                        continue;
+                    callStack.push_back(CallInfo(called,
+                                                 getFileForFun(Src),
+                                                 loc.getLine()));
+                    if (called == Dest)
+                        return true;
+                    else {
+                        bool found = searchCallStackRec(called, Dest, callStack,
+                                                        visited);
+                        if (found)
+                            return true;
+                        else
+                            callStack.pop_back();
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+/// Calls the recursive function that retrieves the call stack
+CallStack getCallStack(Function &Src, Function &Dest) {
+    CallStack callStack;
+    std::set<Function *> visited;
+    searchCallStackRec(&Src, &Dest, callStack, visited);
+    return callStack;
+}

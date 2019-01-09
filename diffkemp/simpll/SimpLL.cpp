@@ -48,6 +48,9 @@ int main(int argc, const char **argv) {
     for (auto &funPair : nonequalFuns) {
         MainFunsFirst.insert(funPair.first);
         MainFunsSecond.insert(funPair.second);
+
+        auto callStackFirst = getCallStack(*config.FirstFun, *funPair.first);
+        auto callStackSecond = getCallStack(*config.SecondFun, *funPair.second);
         // Write non-equal functions to stdout: these need to be compared for
         // semantic equivalence.
         // Functions are written in the form:
@@ -56,6 +59,19 @@ int main(int argc, const char **argv) {
                << ":" << getFileForFun(funPair.first) << ","
                << funPair.second->getName()
                << ":" << getFileForFun(funPair.second) << "\n";
+        if (config.PrintCallStacks) {
+            outs() << "\n";
+            for (auto &call : callStackFirst) {
+                outs() << call.fun->getName() << " @ "
+                       << call.file << ":" << call.line << "\n";
+            }
+            outs() << "\n";
+            for (auto &call : callStackSecond) {
+                outs() << call.fun->getName() << " @ "
+                       << call.file << ":" << call.line << "\n";
+            }
+            outs() << "----------\n";
+        }
     }
 
     postprocessModule(*config.First, MainFunsFirst);

@@ -28,6 +28,8 @@ cl::opt<std::string> SuffixOpt("suffix", cl::value_desc("suffix"), cl::desc(
         "Add suffix to names of simplified files."));
 cl::opt<bool> ControlFlowOpt("control-flow", cl::desc(
         "Only keep instructions related to the control-flow."));
+cl::opt<bool> PrintCallstacksOpt("print-callstacks", cl::desc(
+        "Print call stacks for non-equal functions."));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -42,7 +44,8 @@ std::string addSuffix(std::string File, std::string Suffix) {
 Config::Config() : First(parseIRFile(FirstFileOpt, err, context_first)),
                    Second(parseIRFile(SecondFileOpt, err, context_second)),
                    FirstOutFile(FirstFileOpt), SecondOutFile(SecondFileOpt),
-                   ControlFlowOnly(ControlFlowOpt) {
+                   ControlFlowOnly(ControlFlowOpt),
+                   PrintCallStacks(PrintCallstacksOpt) {
     if (!FunctionOpt.empty()) {
         // Parse --fun option - find functions with given names.
         // The option can be either single function name (same for both modules)

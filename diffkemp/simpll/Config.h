@@ -29,6 +29,7 @@ extern cl::opt<std::string> FunctionOpt;
 extern cl::opt<std::string> VariableOpt;
 extern cl::opt<std::string> SuffixOpt;
 extern cl::opt<bool> ControlFlowOpt;
+extern cl::opt<bool> PrintCallstacksOpt;
 
 /// Tool configuration parsed from CLI options.
 class Config {
@@ -56,6 +57,8 @@ class Config {
 
     // Keep only control-flow related instructions
     bool ControlFlowOnly;
+    // Show call stacks for non-equal functions
+    bool PrintCallStacks;
 
     Config();
 
