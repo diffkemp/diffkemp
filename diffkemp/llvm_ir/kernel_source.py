@@ -129,7 +129,7 @@ class KernelSource:
                 # fails because of the exact symbol being created by the
                 # preprocessor
                 if any([symbol.startswith(s) for s in
-                    ["param_get_", "param_set_", "param_ops_"]]):
+                        ["param_get_", "param_set_", "param_ops_"]]):
                     # Symbol param_* are created in kernel/params.c using a
                     # macro
                     cscope_defs = [os.path.join(self.kernel_path,
