@@ -95,6 +95,17 @@ class KernelSource:
         except CalledProcessError:
             raise SourceNotFoundException(symbol)
 
+    def _find_tracepoint_macro_use(self, symbol):
+        """
+        Find usages of tracepoint macro creating a tracepoint symbol.
+        :param symbol: Symbol generated using the macro.
+        :return: List of found cscope entries.
+        """
+        macro_argument = symbol[len("__tracepoint_"):]
+        candidates = self._cscope_run("EXPORT_TRACEPOINT_SYMBOL", False)
+        return filter(lambda c: c.endswith("(" + macro_argument + ");"),
+                      candidates)
+
     def find_srcs_with_symbol_def(self, symbol):
         """
         Use cscope to find a definition of the given symbol.
@@ -114,7 +125,23 @@ class KernelSource:
             cscope_uses = self._cscope_run(symbol, False)
 
             if len(cscope_defs) == 0 and len(cscope_uses) == 0:
-                raise SourceNotFoundException(symbol)
+                # Look whether this is one of the special cases when cscope
+                # fails because of the exact symbol being created by the
+                # preprocessor
+                if any([symbol.startswith(s) for s in
+                    ["param_get_", "param_set_", "param_ops_"]]):
+                    # Symbol param_* are created in kernel/params.c using a
+                    # macro
+                    cscope_defs = [os.path.join(self.kernel_path,
+                                                "kernel/params.c")]
+                elif symbol.startswith("__tracepoint_"):
+                    # Functions starting with __tracepoint_ are created by a
+                    # macro in include/kernel/tracepoint.h; the corresponding
+                    # usage of the macro has to be found to get the source file
+                    cscope_defs = self._find_tracepoint_macro_use(symbol)
+                if len(cscope_defs) == 0 and len(cscope_uses) == 0:
+                    # Source wasn't found even after checking for special cases
+                    raise SourceNotFoundException(symbol)
         except SourceNotFoundException(symbol):
             raise
         finally:
