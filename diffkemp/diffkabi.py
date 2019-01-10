@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
 from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
-    modules_diff
+    functions_diff
 from diffkemp.semdiff.result import Result
 import sys
 
@@ -71,9 +71,10 @@ def run_from_cli():
                     if not args.syntax_diff:
                         print f
                     # Compare functions semantics
-                    fun_result = modules_diff(
-                        first=mod_first, second=mod_second,
-                        glob_var=None, function=f,
+                    fun_result = functions_diff(
+                        first=mod_first.llvm, second=mod_second.llvm,
+                        funFirst=f, funSecond=f,
+                        glob_var=None,
                         timeout=timeout,
                         syntax_only=args.syntax_diff,
                         control_flow_only=args.control_flow_only,
@@ -99,7 +100,27 @@ def run_from_cli():
 
                 if fun_result is not None:
                     result.add_inner(fun_result)
-                    if not args.syntax_diff:
+                    if args.syntax_diff:
+                        if fun_result.kind == Result.Kind.NOT_EQUAL:
+                            print "{}:".format(f)
+                            for called_res in fun_result.inner.itervalues():
+                                print "  {} differs:".format(
+                                    called_res.first.name)
+                                print "  {{{"
+                                print "    Callstack ({}):".format(
+                                    args.src_version)
+                                print called_res.first.callstack.replace(
+                                    first_builder.kernel_path + "/", "")
+                                print
+                                print "    Callstack ({}):".format(
+                                    args.dest_version)
+                                print called_res.second.callstack.replace(
+                                    second_builder.kernel_path + "/", "")
+                                print
+                                print "    Diff:"
+                                print called_res.diff
+                                print "  }}}"
+                    else:
                         print "  {}".format(str(fun_result.kind).upper())
 
             except Exception as e:

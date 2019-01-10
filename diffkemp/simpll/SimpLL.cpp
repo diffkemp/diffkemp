@@ -55,23 +55,26 @@ int main(int argc, const char **argv) {
         // semantic equivalence.
         // Functions are written in the form:
         // first_function:first_file,second_function:second_file
-        outs() << funPair.first->getName()
-               << ":" << getFileForFun(funPair.first) << ","
-               << funPair.second->getName()
-               << ":" << getFileForFun(funPair.second) << "\n";
+        outs() << funPair.first->getName() << "\n";
+        if (!getFileForFun(funPair.first).empty())
+               outs() << getFileForFun(funPair.first) << "\n";
         if (config.PrintCallStacks) {
-            outs() << "\n";
             for (auto &call : callStackFirst) {
-                outs() << call.fun->getName() << " @ "
+                outs() << call.fun->getName() << " at "
                        << call.file << ":" << call.line << "\n";
             }
-            outs() << "\n";
-            for (auto &call : callStackSecond) {
-                outs() << call.fun->getName() << " @ "
-                       << call.file << ":" << call.line << "\n";
-            }
-            outs() << "----------\n";
         }
+        outs() << "\n";
+        outs() << funPair.second->getName() << "\n";
+        if (!getFileForFun(funPair.second).empty())
+            outs() << getFileForFun(funPair.second) << "\n";
+        if (config.PrintCallStacks) {
+            for (auto &call : callStackSecond) {
+                outs() << call.fun->getName() << " at "
+                       << call.file << ":" << call.line << "\n";
+            }
+        }
+        outs() << "----------\n";
     }
 
     postprocessModule(*config.First, MainFunsFirst);

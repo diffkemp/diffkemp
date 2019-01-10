@@ -2,6 +2,7 @@
 Simplifying LLVM modules with the SimpLL tool.
 """
 import os
+from diffkemp.semdiff.result import Result
 from subprocess import check_call, check_output, CalledProcessError
 
 
@@ -28,7 +29,8 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
     second_out = add_suffix(second, suffix) if suffix else second
 
     try:
-        simpll_command = ["build/diffkemp/simpll/simpll", first, second]
+        simpll_command = ["build/diffkemp/simpll/simpll", first, second,
+                          "--print-callstacks"]
         # Main (analysed) functions
         simpll_command.append("--fun")
         if fun_first != fun_second:
@@ -55,14 +57,26 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                    stderr=stderr)
 
         funs_to_compare = []
-        for line in simpll_out.splitlines():
-            # Each pair of functions is stored as a 2-element list, each
-            # function is a dictionary containing the function name and the
-            # file that it is defined in.
-            # [{"fun": fun1_name, "file": fun1_file},
-            #  {"fun": fun2_name, "file": fun2_file}]
-            funs_to_compare.append([dict(zip(["fun", "file"], fun.split(":")))
-                                    for fun in line.split(",")])
+        # Nonequal function pairs are separated by "----------"
+        for fun_pair_out in simpll_out.split("----------"):
+            if not fun_pair_out or fun_pair_out.isspace():
+                continue
+            # Entries for functions in a pair are separated by an empty line.
+            # Each function is represented by a Result.Entity object.
+            # Each entity contains:
+            #  - the function name (first line of the function entry)
+            #  - the file (second line of the function entry, if present)
+            #  - the callstack (rest of lines of the function entry)
+            fun_pair_split = [s.strip() for s in fun_pair_out.split("\n\n")]
+            fun_pair = tuple([
+                Result.Entity(
+                    lines[0],
+                    lines[1] if len(lines) > 1 else "",
+                    "    " + "\n    ".join(lines[2:]) if len(lines) > 2 else ""
+                )
+                for lines in
+                (fun_pair_split[i].splitlines() for i in range(0, 2))])
+            funs_to_compare.append(fun_pair)
 
         return first_out, second_out, funs_to_compare
     except CalledProcessError:

@@ -188,18 +188,13 @@ def functions_diff(first, second,
         elif syntax_only:
             # Only display the syntax diff of the functions that are
             # syntactically different.
-            print "{}:".format(funFirst)
             for fun_pair in funs_to_compare:
-                fun_result = Result(Result.Kind.NOT_EQUAL,
-                                    fun_pair[0]["fun"], fun_pair[1]["fun"],
-                                    fun_pair[0]["file"], fun_pair[1]["file"])
-                fun_result.diff = syntax_diff(fun_pair[0]["file"],
-                                              fun_pair[1]["file"],
-                                              fun_pair[0]["fun"])
-                print "  {} differs:".format(fun_pair[0]["fun"])
-                print "  {{{"
-                print fun_result.diff
-                print "  }}}"
+                fun_result = Result(Result.Kind.NOT_EQUAL, "", "")
+                fun_result.first = fun_pair[0]
+                fun_result.second = fun_pair[1]
+                fun_result.diff = syntax_diff(fun_result.first.filename,
+                                              fun_result.second.filename,
+                                              fun_result.first.name)
                 result.add_inner(fun_result)
         else:
             # If the functions are not syntactically equal, funs_to_compare
@@ -211,13 +206,13 @@ def functions_diff(first, second,
                 # functions
                 called_couplings = FunctionCouplings(first_simpl,
                                                      second_simpl)
-                called_couplings.infer_called_by(fun_pair[0]["fun"],
-                                                 fun_pair[1]["fun"])
+                called_couplings.infer_called_by(fun_pair[0].name,
+                                                 fun_pair[1].name)
                 called_couplings.clean()
                 # Do semantic difference of functions
                 fun_result = functions_semdiff(first_simpl, second_simpl,
-                                               fun_pair[0]["fun"],
-                                               fun_pair[1]["fun"],
+                                               fun_pair[0].name,
+                                               fun_pair[1].name,
                                                called_couplings.called,
                                                timeout, verbose)
                 result.add_inner(fun_result)
