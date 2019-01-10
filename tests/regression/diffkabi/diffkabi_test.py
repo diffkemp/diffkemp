@@ -10,7 +10,8 @@ pytest.
 """
 
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
-from diffkemp.semdiff.function_diff import functions_diff, Result
+from diffkemp.semdiff.function_diff import functions_diff
+from diffkemp.semdiff.result import Result
 from tests.regression.module_tools import prepare_module
 import glob
 import os
@@ -61,7 +62,7 @@ class TaskSpec:
             self.control_flow_only = False
         self.debug = spec["debug"] if "debug" in spec else False
         self.function = spec["function"]
-        self.expected_result = spec["expected_result"]
+        self.expected_result = Result.Kind[spec["expected_result"].upper()]
 
 
 def prepare_task(spec):
@@ -133,7 +134,7 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        if task_spec.expected_result != Result.TIMEOUT:
+        if task_spec.expected_result != Result.Kind.TIMEOUT:
             result = functions_diff(
                 first=task_spec.old_module,
                 second=task_spec.new_module,
@@ -142,4 +143,4 @@ class TestClass(object):
                 glob_var=None,
                 timeout=120,
                 control_flow_only=task_spec.control_flow_only)
-            assert result == Result[task_spec.expected_result.upper()]
+            assert result.kind == task_spec.expected_result

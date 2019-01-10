@@ -8,9 +8,9 @@ from __future__ import absolute_import
 
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, BuildException
-from diffkemp.semdiff.function_diff import Result
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
-    modules_diff, Statistics
+    modules_diff
+from diffkemp.semdiff.result import Result
 import sys
 
 
@@ -35,7 +35,7 @@ def run_from_cli():
 
     timeout = int(args.timeout) if args.timeout else 40
 
-    result = Statistics()
+    result = Result(Result.Kind.NONE, args.src_version, args.dest_version)
     try:
         first_builder = LlvmKernelBuilder(args.src_version, None, debug=True,
                                           verbose=args.verbose)
@@ -52,43 +52,42 @@ def run_from_cli():
             if sysctl not in sysctl_list_second:
                 continue
 
-            sysctl_res = Statistics()
+            sysctl_res = Result(Result.Kind.NONE, sysctl, sysctl)
             print sysctl
             # Compare the proc handler function
             proc_fun_first = sysctl_mod_first.get_proc_fun(sysctl)
             proc_fun_second = sysctl_mod_second.get_proc_fun(sysctl)
             if proc_fun_first and proc_fun_second:
+                proc_result = Result(Result.Kind.NONE,
+                                     proc_fun_first, proc_fun_second)
                 print "  Comparing proc handler functions"
                 if proc_fun_first != proc_fun_second:
                     # Functions with different names are treated as unequal
                     print "    different functions found"
-                    result.log_result(Result.NOT_EQUAL, proc_fun_first)
+                    proc_result.kind = Result.Kind.NOT_EQUAL
                 else:
                     if sysctl_mod_first.is_standard_proc_fun(proc_fun_first):
                         # Standard functions are treated as equal
-                        print "    equal"
-                        sysctl_res.log_result(
-                            Result.EQUAL,
-                            "{}:{}".format(sysctl, proc_fun_first))
+                        print "    equal syntax (generic)"
+                        proc_result.kind = Result.Kind.EQUAL_SYNTAX
                     else:
                         try:
                             mod_first = first_builder.build_file_for_symbol(
                                 proc_fun_first)
                             mod_second = second_builder.build_file_for_symbol(
                                 proc_fun_second)
-                            stat = modules_diff(first=mod_first,
-                                                second=mod_second,
-                                                glob_var=None,
-                                                function=proc_fun_first,
-                                                timeout=timeout,
-                                                verbose=args.verbose)
-                            sysctl_res.log_result(stat.overall_result(),
-                                                  proc_fun_first)
+                            proc_result = modules_diff(first=mod_first,
+                                                       second=mod_second,
+                                                       glob_var=None,
+                                                       function=proc_fun_first,
+                                                       timeout=timeout,
+                                                       verbose=args.verbose)
+                            proc_result.first.name = proc_fun_first
+                            proc_result.second.name = proc_fun_second
                         except BuildException as e:
                             print e
-                            sysctl_res.log_result(
-                                Result.ERROR,
-                                "{}:{}".format(sysctl, proc_fun_first))
+                            proc_result.kind = Result.Kind.ERROR
+                sysctl_res.add_inner(proc_result)
             else:
                 print "  No proc handler function found"
 
@@ -97,23 +96,22 @@ def run_from_cli():
             data_second = sysctl_mod_second.get_data(sysctl)
             if data_first and data_second:
                 print "  Comparing functions using the data variable"
-                data_res = diff_all_modules_using_global(
+                data_result = diff_all_modules_using_global(
                     first_builder=first_builder,
                     second_builder=second_builder,
                     glob_first=data_first, glob_second=data_second,
                     timeout=timeout,
                     verbose=args.verbose)
-                sysctl_res.log_result(data_res.overall_result(),
-                                      "{}:{}".format(sysctl, data_first))
+                sysctl_res.add_inner(data_result)
             else:
                 print "  No data variable found"
 
-            result.log_result(sysctl_res.overall_result(), sysctl)
+            result.add_inner(sysctl_res)
 
         print ""
         print "Statistics"
         print "----------"
-        result.report()
+        result.report_stat()
         return 0
 
     except Exception as e:

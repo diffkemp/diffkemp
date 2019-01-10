@@ -2,84 +2,11 @@
 from __future__ import division
 from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
 from diffkemp.semdiff.function_coupling import FunctionCouplings
+from diffkemp.semdiff.result import Result
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
 from threading import Timer
-from enum import Enum
 import sys
-
-
-class Result(Enum):
-    """Enumeration type for possible kinds of analysis results."""
-    EQUAL = 0
-    NOT_EQUAL = 1
-    EQUAL_UNDER_ASSUMPTIONS = 2
-    EQUAL_SYNTAX = 3
-    UNKNOWN = 5
-    ERROR = -1
-    TIMEOUT = -2
-
-    def __str__(self):
-        return self.name.lower().replace("_", " ")
-
-
-class Statistics():
-    """
-    Statistics of the analysis.
-    Captures numbers of equal and not equal functions, as well as number of
-    uncertain or error results.
-    """
-    def __init__(self):
-        self.equal = list()
-        self.equal_syntax = list()
-        self.not_equal = list()
-        self.unknown = list()
-        self.errors = list()
-
-    def log_result(self, result, function):
-        """Add result of analysis (comparison) of some function."""
-        if result == Result.EQUAL or result == Result.EQUAL_UNDER_ASSUMPTIONS:
-            self.equal.append(function)
-        elif result == Result.EQUAL_SYNTAX:
-            self.equal_syntax.append(function)
-        elif result == Result.NOT_EQUAL:
-            self.not_equal.append(function)
-        elif result == Result.UNKNOWN:
-            self.unknown.append(function)
-        else:
-            self.errors.append(function)
-
-    def report(self):
-        """Report results."""
-        eq_syn = len(self.equal_syntax)
-        eq = len(self.equal) + eq_syn
-        neq = len(self.not_equal)
-        unkwn = len(self.unknown)
-        errs = len(self.errors)
-        total = eq + neq + unkwn + errs
-        print "Total params: {}".format(total)
-        if total != 0:
-            print "Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100)
-            print " same syntax: {0}".format(eq_syn)
-            print "Not equal:    {0} ({1:.0f}%)".format(neq, neq / total * 100)
-            print "Unknown:      {0} ({1:.0f}%)".format(unkwn,
-                                                        unkwn / total * 100)
-            print "Errors:       {0} ({1:.0f}%)".format(errs,
-                                                        errs / total * 100)
-
-    def overall_result(self):
-        """Aggregate results for individual functions into one result."""
-        if len(self.errors) > 0:
-            return Result.ERROR
-        if len(self.not_equal) > 0:
-            return Result.NOT_EQUAL
-        if len(self.unknown) > 0:
-            return Result.UNKNOWN
-        if len(self.equal_syntax) > 0:
-            return Result.EQUAL_SYNTAX
-        if len(self.equal) > 0:
-            return Result.EQUAL
-        return Result.UNKNOWN
 
 
 def _kill(processes):
@@ -138,25 +65,25 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
         timer.start()
 
         z3_process.wait()
-        result = Result.ERROR
+        result_kind = Result.Kind.ERROR
         # Processing the output
         for line in z3_process.stdout:
             line = line.strip()
             if line == b"sat":
-                result = Result.NOT_EQUAL
+                result_kind = Result.Kind.NOT_EQUAL
             elif line == b"unsat":
-                result = Result.EQUAL
+                result_kind = Result.Kind.EQUAL
             elif line == b"unknown":
-                result = Result.UNKNOWN
+                result_kind = Result.Kind.UNKNOWN
 
         if z3_process.returncode != 0:
-            result = Result.ERROR
+            result_kind = Result.Kind.ERROR
     finally:
         if not timer.is_alive():
-            result = Result.TIMEOUT
+            result_kind = Result.Kind.TIMEOUT
         timer.cancel()
 
-    return result
+    return Result(result_kind, first, second)
 
 
 def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
@@ -203,16 +130,16 @@ def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
         # this could run for a long time. Moreover, if the analysis times out
         # once, there is a high chance it will time out with more strict
         # assumptions as well.
-        if result == Result.TIMEOUT:
+        if result.kind == Result.Kind.TIMEOUT:
             break
         # Stop the analysis when functions are proven to be equal
-        if result == Result.EQUAL:
+        if result.kind == Result.Kind.EQUAL:
             if assume_level > 0:
-                result = Result.EQUAL_UNDER_ASSUMPTIONS
+                result.kind = Result.Kind.EQUAL_UNDER_ASSUMPTIONS
             break
 
-    print result
-    if result == Result.EQUAL_UNDER_ASSUMPTIONS:
+    print result.kind
+    if result == Result.Kind.EQUAL_UNDER_ASSUMPTIONS:
         print "    Used assumptions:"
         for assume in [a for a in assumptions if a.diff > 0]:
             print "      Functions {} and {} are same".format(assume.first,
@@ -239,6 +166,7 @@ def functions_diff(first, second,
     :param timeout: Timeout for analysis of a function pair (default is 40s)
     :param verbose: Verbosity option
     """
+    result = Result(Result.Kind.NONE, first, second)
     try:
         if not syntax_only:
             if funFirst == funSecond:
@@ -256,25 +184,28 @@ def functions_diff(first, second,
                                   control_flow_only,
                                   verbose)
         if not funs_to_compare:
-            result = Result.EQUAL_SYNTAX
+            result.kind = Result.Kind.EQUAL_SYNTAX
         elif syntax_only:
             # Only display the syntax diff of the functions that are
             # syntactically different.
-            result = Result.NOT_EQUAL
             print "{}:".format(funFirst)
             for fun_pair in funs_to_compare:
-                diff = syntax_diff(fun_pair[0]["file"], fun_pair[1]["file"],
-                                   fun_pair[0]["fun"])
+                fun_result = Result(Result.Kind.NOT_EQUAL,
+                                    fun_pair[0]["fun"], fun_pair[1]["fun"],
+                                    fun_pair[0]["file"], fun_pair[1]["file"])
+                fun_result.diff = syntax_diff(fun_pair[0]["file"],
+                                              fun_pair[1]["file"],
+                                              fun_pair[0]["fun"])
                 print "  {} differs:".format(fun_pair[0]["fun"])
                 print "  {{{"
-                print diff
+                print fun_result.diff
                 print "  }}}"
+                result.add_inner(fun_result)
         else:
             # If the functions are not syntactically equal, funs_to_compare
             # contains a list of functions that need to be compared
             # semantically. If these are all equal, then the originally
             # compared functions are equal as well.
-            stat = Statistics()
             for fun_pair in funs_to_compare:
                 # Find couplings of funcions called by the compared
                 # functions
@@ -284,16 +215,15 @@ def functions_diff(first, second,
                                                  fun_pair[1]["fun"])
                 called_couplings.clean()
                 # Do semantic difference of functions
-                result = functions_semdiff(first_simpl, second_simpl,
-                                           fun_pair[0]["fun"],
-                                           fun_pair[1]["fun"],
-                                           called_couplings.called, timeout,
-                                           verbose)
-                stat.log_result(result, fun_pair[0]["fun"])
-            result = stat.overall_result()
+                fun_result = functions_semdiff(first_simpl, second_simpl,
+                                               fun_pair[0]["fun"],
+                                               fun_pair[1]["fun"],
+                                               called_couplings.called,
+                                               timeout, verbose)
+                result.add_inner(fun_result)
         if not syntax_only:
             print "      {}".format(result)
     except SimpLLException:
         print "    Simplifying has failed"
-        result = Result.ERROR
+        result.kind = Result.Kind.ERROR
     return result

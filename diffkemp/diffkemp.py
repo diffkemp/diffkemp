@@ -3,7 +3,8 @@ from __future__ import absolute_import
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
-from diffkemp.semdiff.module_diff import modules_diff, Statistics
+from diffkemp.semdiff.module_diff import modules_diff
+from diffkemp.semdiff.result import Result
 import sys
 
 
@@ -95,7 +96,7 @@ def run_from_cli():
 
         print "Computing semantic difference of module parameters"
         print "--------------------------------------------------"
-        result = Statistics()
+        result = Result(Result.Kind.NONE, args.src_version, args.dest_version)
         for mod, first in first_mods.iteritems():
             if mod not in second_mods:
                 continue
@@ -118,13 +119,15 @@ def run_from_cli():
                     continue
                 print "  parameter {}".format(name)
                 # Compare modules
-                stat = modules_diff(first=first, second=second,
-                                    glob_var=param,
-                                    function=args.function, timeout=timeout,
-                                    verbose=args.verbose)
-                print "    {}".format(str(stat.overall_result()).upper())
-                result.log_result(stat.overall_result(), "{}-{}".format(mod,
-                                                                        name))
+                param_res = modules_diff(first=first, second=second,
+                                         glob_var=param,
+                                         function=args.function,
+                                         timeout=timeout,
+                                         verbose=args.verbose)
+                param_res.first.name = param
+                param_res.second.name = param
+                print "    {}".format(str(param_res.kind).upper())
+                result.add_inner(param_res)
 
             # Clean LLVM modules (allow GC to collect the occupied memory)
             first.clean_module()
@@ -134,7 +137,7 @@ def run_from_cli():
             print ""
             print "Statistics"
             print "----------"
-            result.report()
+            result.report_stat()
         return 0
 
     except Exception as e:

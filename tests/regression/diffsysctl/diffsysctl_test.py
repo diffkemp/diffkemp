@@ -10,7 +10,8 @@ pytest.
 """
 
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
-from diffkemp.semdiff.function_diff import functions_diff, Result
+from diffkemp.semdiff.function_diff import functions_diff
+from diffkemp.semdiff.result import Result
 from tests.regression.module_tools import prepare_module
 import glob
 import os
@@ -28,7 +29,10 @@ class FunctionSpec:
         self.name = name
         self.old_module = old_module
         self.new_module = new_module
-        self.result = result
+        if result == "generic":
+            self.result = Result.Kind.NONE
+        else:
+            self.result = Result.Kind[result.upper()]
 
 
 specs_path = "tests/regression/diffsysctl/test_specs"
@@ -189,8 +193,8 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
-        if (task_spec.proc_handler.result != Result.TIMEOUT
-                and task_spec.proc_handler.result != "generic"):
+        if task_spec.proc_handler.result not in [Result.Kind.TIMEOUT,
+                                                 Result.Kind.NONE]:
             result = functions_diff(task_spec.proc_handler.old_module,
                                     task_spec.proc_handler.new_module,
                                     task_spec.proc_handler.name,
@@ -198,7 +202,7 @@ class TestClass(object):
                                     None, 120, False,
                                     task_spec.control_flow_only)
 
-            assert result == Result[task_spec.proc_handler.result.upper()]
+            assert result.kind == task_spec.proc_handler.result
 
     def test_data_functions(self, task_spec):
         """
@@ -218,7 +222,7 @@ class TestClass(object):
         data_kernel_param = sysctl_module.get_data(task_spec.sysctl)
 
         for function in task_spec.data_functions:
-            if function.result != Result.TIMEOUT:
+            if function.result != Result.Kind.TIMEOUT:
                 result = functions_diff(function.old_module,
                                         function.new_module,
                                         function.name, function.name,
@@ -226,4 +230,4 @@ class TestClass(object):
                                         120, False,
                                         task_spec.control_flow_only,
                                         verbose=True)
-                assert result == Result[function.result.upper()]
+                assert result.kind == function.result

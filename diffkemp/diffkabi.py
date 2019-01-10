@@ -3,9 +3,9 @@ from __future__ import absolute_import
 from argparse import ArgumentParser
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
 from diffkemp.llvm_ir.kernel_module import KernelParam
-from diffkemp.semdiff.function_diff import Result
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
-    modules_diff, Statistics
+    modules_diff
+from diffkemp.semdiff.result import Result
 import sys
 
 
@@ -57,7 +57,7 @@ def run_from_cli():
 
         print "Computing semantic difference of functions on kabi whitelist"
         print "------------------------------------------------------------"
-        result = Statistics()
+        result = Result(Result.Kind.NONE, args.src_version, args.dest_version)
         for f in kabi_funs_first:
             if f not in kabi_funs_second:
                 continue
@@ -66,18 +66,20 @@ def run_from_cli():
                 mod_first = first_builder.build_file_for_symbol(f)
                 mod_second = second_builder.build_file_for_symbol(f)
 
-                f_result = None
+                fun_result = None
                 if mod_first.has_function(f):
                     if not args.syntax_diff:
                         print f
                     # Compare functions semantics
-                    f_result = modules_diff(
+                    fun_result = modules_diff(
                         first=mod_first, second=mod_second,
                         glob_var=None, function=f,
                         timeout=timeout,
                         syntax_only=args.syntax_diff,
                         control_flow_only=args.control_flow_only,
                         verbose=args.verbose)
+                    fun_result.first.name = f
+                    fun_result.second.name = f
                 elif args.include_globals:
                     # f is a global variable: compare semantics of all
                     # functions using the variable
@@ -85,7 +87,7 @@ def run_from_cli():
                         print "{} (global variable)".format(f)
                         print "Comparing all functions using {}".format(f)
                     globvar = KernelParam(f)
-                    f_result = diff_all_modules_using_global(
+                    fun_result = diff_all_modules_using_global(
                         first_builder=first_builder,
                         second_builder=second_builder,
                         glob_first=globvar,
@@ -95,16 +97,15 @@ def run_from_cli():
                         control_flow_only=args.control_flow_only,
                         verbose=args.verbose)
 
-                if f_result is not None:
-                    result.log_result(f_result.overall_result(), f)
+                if fun_result is not None:
+                    result.add_inner(fun_result)
                     if not args.syntax_diff:
-                        print "  {}".format(
-                            str(f_result.overall_result()).upper())
+                        print "  {}".format(str(fun_result.kind).upper())
 
             except Exception as e:
                 if not args.syntax_diff:
                     sys.stderr.write("  ERROR: {}\n".format(str(e)))
-                result.log_result(Result.ERROR, f)
+                result.add_inner(Result(Result.Kind.ERROR, f, f))
             finally:
                 # Clean LLVM modules (allow GC to collect the occupied memory)
                 try:
@@ -117,7 +118,7 @@ def run_from_cli():
         print ""
         print "Statistics"
         print "----------"
-        result.report()
+        result.report_stat()
         return 0
 
     except Exception as e:

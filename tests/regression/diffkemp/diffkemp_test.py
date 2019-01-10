@@ -10,8 +10,9 @@ scenarions for pytest.
 """
 
 from diffkemp.llvm_ir.kernel_module import KernelParam
-from diffkemp.semdiff.function_diff import functions_diff, Result
+from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.function_coupling import FunctionCouplings
+from diffkemp.semdiff.result import Result
 from tests.regression.module_tools import prepare_module
 import glob
 import os
@@ -82,7 +83,7 @@ class TaskSpec:
             if isinstance(fun, str):
                 fun = (fun, fun)
             try:
-                self.functions[fun] = Result[desc.upper()]
+                self.functions[fun] = Result.Kind[desc.upper()]
             except KeyError:
                 if desc == "only_old":
                     self.only_old.add(fun[0])
@@ -159,11 +160,11 @@ class TestClass(object):
         speed.
         """
         for fun_pair, expected in task_spec.functions.iteritems():
-            if expected != Result.TIMEOUT:
+            if expected != Result.Kind.TIMEOUT:
                 result = functions_diff(first=task_spec.old,
                                         second=task_spec.new,
                                         funFirst=fun_pair[0],
                                         funSecond=fun_pair[1],
                                         glob_var=task_spec.param,
                                         timeout=120)
-                assert result == expected
+                assert result.kind == expected

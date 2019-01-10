@@ -6,8 +6,9 @@ using the given parameter is compared individually.
 from __future__ import absolute_import
 
 from diffkemp.llvm_ir.build_llvm import BuildException
-from diffkemp.semdiff.function_diff import functions_diff, Result, Statistics
 from diffkemp.semdiff.function_coupling import FunctionCouplings
+from diffkemp.semdiff.function_diff import functions_diff
+from diffkemp.semdiff.result import Result
 
 
 def diff_all_modules_using_global(first_builder, second_builder,
@@ -23,10 +24,10 @@ def diff_all_modules_using_global(first_builder, second_builder,
     :param glob_first: First global to compare
     :param glob_second: Second global to compare
     """
-    result = Statistics()
+    result = Result(Result.Kind.NONE, glob_first.name, glob_second.name)
     if glob_first.name != glob_second.name:
         # Variables with different names are treated as unequal
-        result.log_result(Result.NOT_EQUAL, glob_first.name)
+        result.kind = Result.Kind.NOT_EQUAL
     else:
         srcs_first = first_builder.source.find_srcs_using_symbol(
             glob_first.name)
@@ -35,7 +36,7 @@ def diff_all_modules_using_global(first_builder, second_builder,
         # Compare all sources containing functions using the variable
         for src in srcs_first:
             if src not in srcs_second:
-                result.log_result(Result.NOT_EQUAL, src)
+                result.add_inner(Result(Result.Kind.NOT_EQUAL, src, src))
             else:
                 try:
                     mod_first = first_builder.build_file(src)
@@ -44,16 +45,18 @@ def diff_all_modules_using_global(first_builder, second_builder,
                     mod_second.parse_module()
                     if (mod_first.has_global(glob_first.name) and
                             mod_second.has_global(glob_second.name)):
-                        stat = modules_diff(
+                        src_result = modules_diff(
                             first=mod_first, second=mod_second,
                             glob_var=glob_first, function=None,
                             timeout=timeout,
                             syntax_only=syntax_only,
                             control_flow_only=control_flow_only,
                             verbose=verbose)
-                        result.log_result(stat.overall_result(), src)
-                except BuildException:
-                    result.log_result(Result.ERROR, src)
+                        for res in src_result.inner.itervalues():
+                            result.add_inner(res)
+                except BuildException as e:
+                    print e
+                    result.add_inner(Result(Result.Kind.ERROR, src, src))
         return result
 
 
@@ -69,7 +72,7 @@ def modules_diff(first, second,
                   functions using this variable are compared).
     :param function: Function to be compared.
     """
-    stat = Statistics()
+    result = Result(Result.Kind.NONE, first, second)
     couplings = FunctionCouplings(first.llvm, second.llvm)
     if glob_var:
         couplings.infer_for_param(glob_var)
@@ -82,16 +85,16 @@ def modules_diff(first, second,
             if (not first.has_function(function) or not
                     second.has_function(function)):
                 print "    Given function not found in module"
-                stat.log_result(Result.ERROR, "")
-                return stat
+                result.kind = Result.Kind.ERROR
+                return result
 
-        result = functions_diff(first=first.llvm, second=second.llvm,
-                                funFirst=c.first, funSecond=c.second,
-                                glob_var=glob_var,
-                                timeout=timeout,
-                                syntax_only=syntax_only,
-                                control_flow_only=control_flow_only,
-                                verbose=verbose)
-        stat.log_result(result, c.first)
+        fun_result = functions_diff(first=first.llvm, second=second.llvm,
+                                    funFirst=c.first, funSecond=c.second,
+                                    glob_var=glob_var,
+                                    timeout=timeout,
+                                    syntax_only=syntax_only,
+                                    control_flow_only=control_flow_only,
+                                    verbose=verbose)
+        result.add_inner(fun_result)
 
-    return stat
+    return result
