@@ -8,5 +8,5 @@ if [ -d kernel/$NEW_VER ]; then
     VOL2="-v $PWD/kernel/$NEW_VER:/diffkemp/kernel/$NEW_VER:Z"
 fi
 
-docker run -t $VOL1 $VOL2 -w /diffkemp -m 8g --cpus 3 diffkemp bin/diffkabi $@
+docker run -t $VOL1 $VOL2 -w /diffkemp -m 8g --cpus 3 viktormalik/diffkemp bin/diffkabi $@
 
