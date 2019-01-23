@@ -36,9 +36,24 @@ void addAllOperands(const Instruction &Instr,
 bool hasIndirectCall(const Function &Fun) {
     for (auto &BB : Fun) {
         for (auto &Inst : BB) {
-            if (auto Call = dyn_cast<CallInst>(&Inst))
-                if (!Call->getCalledFunction())
+            if (auto Call = dyn_cast<CallInst>(&Inst)) {
+                if (Call->getCalledFunction())
+                    continue;
+                // For indirect call, check if the called value is ever used
+                // (apart from debug instructions and the call itself).
+                // If not, do not return true.
+                const Value *called = Call->getCalledValue();
+                for (auto &Use : called->uses()) {
+                    if (Use.getUser() == Call)
+                        continue;
+                    if (auto UserCall = dyn_cast<CallInst>(Use.getUser())) {
+                        if (UserCall->getCalledFunction()
+                                && UserCall->getCalledFunction()->isIntrinsic())
+                            continue;
+                    }
                     return true;
+                }
+            }
         }
     }
     return false;
