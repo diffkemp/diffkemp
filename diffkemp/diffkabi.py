@@ -180,18 +180,23 @@ def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
                             indent - 2))
             if not log_files:
                 print "  {{{"
-            output.write(text_indent("Callstack ({}):\n".format(src_version),
-                                     indent))
-            output.write(text_indent(
-                called_res.first.callstack.replace(src_path + "/", ""),
-                indent))
-            output.write("\n\n")
-            output.write(text_indent("Callstack ({}):\n".format(dest_version),
-                                     indent))
-            output.write(text_indent(
-                called_res.second.callstack.replace(dest_path + "/", ""),
-                indent))
-            output.write("\n\n")
+
+            if called_res.first.callstack:
+                output.write(
+                    text_indent("Callstack ({}):\n".format(src_version),
+                                indent))
+                output.write(text_indent(
+                    called_res.first.callstack.replace(src_path + "/", ""),
+                    indent))
+                output.write("\n\n")
+            if called_res.second.callstack:
+                output.write(
+                    text_indent("Callstack ({}):\n".format(dest_version),
+                                indent))
+                output.write(text_indent(
+                    called_res.second.callstack.replace(dest_path + "/", ""),
+                    indent))
+                output.write("\n\n")
             output.write(text_indent("Diff:\n", indent))
             output.write(text_indent(
                 called_res.diff, indent))
