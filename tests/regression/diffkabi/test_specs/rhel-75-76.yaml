@@ -15,3 +15,5 @@ functions:
         ip6_route_output: equal_syntax
         param_set_int: equal_syntax
         param_set_long: equal_syntax
+        free_pages: equal_syntax
+

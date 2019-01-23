@@ -59,7 +59,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     int cmpCallsWithExtraArg(const CallInst *CL, const CallInst *CR) const;
     /// Compares array types with equivalent element types as equal when
     /// comparing the control flow only.
-    int cmpTypes(Type *L, Type *R) const;
+    int cmpTypes(Type *L, Type *R) const override;
 
   private:
     const DebugInfo *DI;
