@@ -72,7 +72,7 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                 Result.Entity(
                     lines[0],
                     lines[1] if len(lines) > 1 else "",
-                    "    " + "\n    ".join(lines[2:]) if len(lines) > 2 else ""
+                    "\n".join(lines[2:]) if len(lines) > 2 else ""
                 )
                 for lines in
                 (fun_pair_split[i].splitlines() for i in range(0, 2))])

@@ -6,6 +6,8 @@ from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
     functions_diff
 from diffkemp.semdiff.result import Result
+import os
+import shutil
 import sys
 
 
@@ -29,6 +31,8 @@ def __make_argument_parser():
                     differences", action="store_true")
     ap.add_argument("--include-globals", help="include also whitelists that \
                     are global variables", action="store_true")
+    ap.add_argument("--log-files", help="log diff results into files",
+                    action="store_true")
     return ap
 
 
@@ -54,6 +58,12 @@ def run_from_cli():
             kabi_funs_second = second_builder.get_kabi_whitelist()
 
         timeout = int(args.timeout) if args.timeout else 40
+
+        if args.log_files:
+            dirname = logs_dirname(args.src_version, args.dest_version)
+            if os.path.exists(dirname):
+                shutil.rmtree(dirname)
+            os.mkdir(dirname)
 
         print "Computing semantic difference of functions on kabi whitelist"
         print "------------------------------------------------------------"
@@ -101,25 +111,10 @@ def run_from_cli():
                 if fun_result is not None:
                     result.add_inner(fun_result)
                     if args.syntax_diff:
-                        if fun_result.kind == Result.Kind.NOT_EQUAL:
-                            print "{}:".format(f)
-                            for called_res in fun_result.inner.itervalues():
-                                print "  {} differs:".format(
-                                    called_res.first.name)
-                                print "  {{{"
-                                print "    Callstack ({}):".format(
-                                    args.src_version)
-                                print called_res.first.callstack.replace(
-                                    first_builder.kernel_path + "/", "")
-                                print
-                                print "    Callstack ({}):".format(
-                                    args.dest_version)
-                                print called_res.second.callstack.replace(
-                                    second_builder.kernel_path + "/", "")
-                                print
-                                print "    Diff:"
-                                print called_res.diff
-                                print "  }}}"
+                        print_sytax_diff(args.src_version, args.dest_version,
+                                         first_builder.kernel_path,
+                                         second_builder.kernel_path,
+                                         f, fun_result, args.log_files)
                     else:
                         print "  {}".format(str(fun_result.kind).upper())
 
@@ -145,3 +140,61 @@ def run_from_cli():
     except Exception as e:
         sys.stderr.write("Error: {}\n".format(str(e)))
         return -1
+
+
+def logs_dirname(src_version, dest_version):
+    """Name of the directory to put log files into."""
+    return "kabi-diff-{}_{}".format(src_version, dest_version)
+
+
+def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
+                     fun_result, log_files):
+    """
+    Log syntax diff of 2 functions. If log_files is set, the output is printed
+    into a separate file, otherwise it goes to stdout.
+    :param src_version: Source version number
+    :param dest_version: Destination version number
+    :param src_path: Path to the source kernel root directory
+    :param dest_path: Path to the destination kernel root directory
+    :param fun: Name of the analysed function
+    :param fun_result: Result of the analysis
+    :param log_files: True if the output is to be written into a file
+    """
+    def text_indent(text, width):
+        """Indent each line in the text by a number of spaces given by width"""
+        return ''.join(" " * width + line for line in text.splitlines(True))
+
+    if fun_result.kind == Result.Kind.NOT_EQUAL:
+        if log_files:
+            output = open(os.path.join(logs_dirname(src_version, dest_version),
+                                       "{}.diff".format(fun)), 'w')
+            indent = 2
+        else:
+            output = sys.stdout
+            indent = 4
+            print "{}:".format(fun)
+
+        for called_res in fun_result.inner.itervalues():
+            output.write(
+                text_indent("{} differs:\n".format(called_res.first.name),
+                            indent - 2))
+            if not log_files:
+                print "  {{{"
+            output.write(text_indent("Callstack ({}):\n".format(src_version),
+                                     indent))
+            output.write(text_indent(
+                called_res.first.callstack.replace(src_path + "/", ""),
+                indent))
+            output.write("\n\n")
+            output.write(text_indent("Callstack ({}):\n".format(dest_version),
+                                     indent))
+            output.write(text_indent(
+                called_res.second.callstack.replace(dest_path + "/", ""),
+                indent))
+            output.write("\n\n")
+            output.write(text_indent("Diff:\n", indent))
+            output.write(text_indent(
+                called_res.diff, indent))
+            if not log_files:
+                print "  }}}"
+            output.write("\n")

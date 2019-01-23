@@ -42,15 +42,15 @@ def _is_comments_only_chunk(chunk):
         if line.isspace():
             continue
         # Ignore diff-specific lines
-        if line[4:].startswith("***") or line[4:].startswith("---"):
+        if line.startswith("***") or line.startswith("---"):
             continue
         # Ignore unchanged lines
-        if not (line[4] == "+" or line[4] == "-" or line[4] == "!"):
+        if not (line[0] == "+" or line[0] == "-" or line[0] == "!"):
             continue
         # If there is a non-comment line, return False
-        if not (line[6:].lstrip().startswith("/*") or
-                line[6:].lstrip().startswith("*") or
-                line[6:].lstrip().startswith("//")):
+        if not (line[2:].lstrip().startswith("/*") or
+                line[2:].lstrip().startswith("*") or
+                line[2:].lstrip().startswith("//")):
             return False
     return True
 
@@ -109,16 +109,16 @@ def syntax_diff(first_file, second_file, fun):
         if _is_function_header(line):
             # If the last chunk that was found this way (does not start
             # with the context prefix), add it to the output.
-            if in_fun and not function_chunk.startswith("    ****"):
+            if in_fun and not function_chunk.startswith("****"):
                 output_diff = _add_chunk_to_output(function_chunk, output_diff)
             # New chunk does not contain the line number: initialize it
-            function_chunk = "    {}\n".format(lines_num) if lines_num else ""
+            function_chunk = "{}\n".format(lines_num) if lines_num else ""
             # Check if the new context function is the correct one
             in_fun = _is_header_for_function(line, fun)
 
         # If inside a chunk for of compared function, store the line
         if in_fun:
-            function_chunk += "    {}\n".format(line)
+            function_chunk += "{}\n".format(line)
 
     # Add the last chunk to the output if necessary
     if in_fun:
