@@ -271,7 +271,7 @@ int DifferentialFunctionComparator::cmpCallsWithExtraArg(
 /// Compares array types with equivalent element types as equal when
 /// comparing the control flow only.
 int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
-    if(!L->isArrayTy() || !R->isArrayTy() || !controlFlowOnly)
+    if (!L->isArrayTy() || !R->isArrayTy() || !controlFlowOnly)
         return FunctionComparator::cmpTypes(L, R);
 
     ArrayType *AL = dyn_cast<ArrayType>(L);
