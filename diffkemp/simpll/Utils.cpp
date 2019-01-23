@@ -82,7 +82,7 @@ std::string getFileForFun(Function *Fun) {
     return "";
 }
 
-/// Recusrive search for call stack from Src to Dest
+/// Recursive search for call stack from Src to Dest
 bool searchCallStackRec(Function *Src,
                         Function *Dest,
                         CallStack &callStack,
@@ -90,25 +90,33 @@ bool searchCallStackRec(Function *Src,
     visited.insert(Src);
     for (auto &BB : *Src) {
         for (auto &Inst : BB) {
+            // Function can be either called or used as a parameter
+            Function *called = nullptr;
             if (CallInst *Call = dyn_cast<CallInst>(&Inst)) {
-                Function *called = Call->getCalledFunction();
-                if (called && visited.find(called) == visited.end()) {
-                    auto loc = Inst.getDebugLoc();
-                    if (!loc)
-                        continue;
-                    callStack.push_back(CallInfo(called,
-                                                 getFileForFun(Src),
-                                                 loc.getLine()));
-                    if (called == Dest)
+                called = Call->getCalledFunction();
+            } else {
+                for (auto &Op : Inst.operands()) {
+                    if (isa<Function>(Op))
+                        called = dyn_cast<Function>(Op);
+                }
+            }
+
+            if (called && visited.find(called) == visited.end()) {
+                auto loc = Inst.getDebugLoc();
+                if (!loc)
+                    continue;
+                callStack.push_back(CallInfo(called,
+                                             getFileForFun(Src),
+                                             loc.getLine()));
+                if (called == Dest)
+                    return true;
+                else {
+                    bool found = searchCallStackRec(called, Dest, callStack,
+                                                    visited);
+                    if (found)
                         return true;
-                    else {
-                        bool found = searchCallStackRec(called, Dest, callStack,
-                                                        visited);
-                        if (found)
-                            return true;
-                        else
-                            callStack.pop_back();
-                    }
+                    else
+                        callStack.pop_back();
                 }
             }
         }
