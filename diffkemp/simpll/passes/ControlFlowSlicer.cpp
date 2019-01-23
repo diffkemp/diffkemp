@@ -32,6 +32,18 @@ void addAllOperands(const Instruction &Instr,
     }
 }
 
+/// Check if a function has indirect call (call to a value).
+bool hasIndirectCall(const Function &Fun) {
+    for (auto &BB : Fun) {
+        for (auto &Inst : BB) {
+            if (auto Call = dyn_cast<CallInst>(&Inst))
+                if (!Call->getCalledFunction())
+                    return true;
+        }
+    }
+    return false;
+}
+
 /// Keep only function calls, branches, instructions having functions as
 /// parameters, and all instructions depending on these.
 PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
@@ -52,9 +64,11 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                     keep = false;
             }
             else {
-                // Instructions having functions as parameters
+                // Instructions having functions as parameters are included only
+                // if it is possible that the functions is sometimes called.
+                // This at least requires that Fun contains an indirect call.
                 for (auto &Op : Instr.operands()) {
-                    if (isa<Function>(Op)) {
+                    if (isa<Function>(Op) && hasIndirectCall(Fun)) {
                         keep = true;
                         break;
                     }
@@ -79,9 +93,6 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
     }
     for (auto &Instr : ToRemove)
         Instr->eraseFromParent();
-
-    if (Fun.getName() == "fcoe_ctlr_vn_disc")
-        Fun.dump();
 
     return PreservedAnalyses::none();
 }
