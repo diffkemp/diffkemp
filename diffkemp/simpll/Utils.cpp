@@ -90,33 +90,37 @@ bool searchCallStackRec(Function *Src,
     visited.insert(Src);
     for (auto &BB : *Src) {
         for (auto &Inst : BB) {
+            // Collect all functions occuring in the instruction.
             // Function can be either called or used as a parameter
-            Function *called = nullptr;
+            std::vector<Function *> calledFuns;
             if (CallInst *Call = dyn_cast<CallInst>(&Inst)) {
-                called = Call->getCalledFunction();
-            } else {
-                for (auto &Op : Inst.operands()) {
-                    if (isa<Function>(Op))
-                        called = dyn_cast<Function>(Op);
-                }
+                if (auto c = Call->getCalledFunction())
+                    calledFuns.push_back(c);
+            }
+            for (auto &Op : Inst.operands()) {
+                if (isa<Function>(Op))
+                    calledFuns.push_back(dyn_cast<Function>(Op));
             }
 
-            if (called && visited.find(called) == visited.end()) {
-                auto loc = Inst.getDebugLoc();
-                if (!loc)
-                    continue;
-                callStack.push_back(CallInfo(called,
-                                             getFileForFun(Src),
-                                             loc.getLine()));
-                if (called == Dest)
-                    return true;
-                else {
-                    bool found = searchCallStackRec(called, Dest, callStack,
-                                                    visited);
-                    if (found)
+            // Follow each found function
+            for (Function *called : calledFuns) {
+                if (called && visited.find(called) == visited.end()) {
+                    auto loc = Inst.getDebugLoc();
+                    if (!loc)
+                        continue;
+                    callStack.push_back(CallInfo(called,
+                                                 getFileForFun(Src),
+                                                 loc.getLine()));
+                    if (called == Dest)
                         return true;
-                    else
-                        callStack.pop_back();
+                    else {
+                        bool found = searchCallStackRec(called, Dest, callStack,
+                                                        visited);
+                        if (found)
+                            return true;
+                        else
+                            callStack.pop_back();
+                    }
                 }
             }
         }
