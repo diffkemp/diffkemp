@@ -21,6 +21,7 @@
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/ControlFlowSlicer.h"
 #include "passes/FunctionAbstractionsGenerator.h"
+#include "passes/ReduceFunctionMetadataPass.h"
 #include "passes/RemoveLifetimeCallsPass.h"
 #include "passes/RemoveUnusedReturnValuesPass.h"
 #include "passes/SimplifyKernelFunctionCallsPass.h"
@@ -114,6 +115,8 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
     PassManager<Module, AnalysisManager<Module, Function *>, Function *,
         Module *> mpm;
     mpm.addPass(RemoveUnusedReturnValuesPass {});
+    if (config.ControlFlowOnly)
+        mpm.addPass(ReduceFunctionMetadataPass {});
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
