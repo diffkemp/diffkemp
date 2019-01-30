@@ -23,8 +23,7 @@ using namespace llvm;
 class ReduceFunctionMetadataPass
         : public PassInfoMixin<ReduceFunctionMetadataPass> {
   public:
-    PreservedAnalyses run(Module &Mod, AnalysisManager<Module, Function *> &mam,
-                          Function *Main, Module *ModOther);
+    PreservedAnalyses run(Function &Fun, FunctionAnalysisManager &fam);
 };
 
 #endif //DIFFKEMP_SIMPLL_REDUCEFUNCTIONMETADATAPASS_H

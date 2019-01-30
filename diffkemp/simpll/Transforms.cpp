@@ -73,6 +73,7 @@ void preprocessModule(Module &Mod,
     fpm.addPass(UnifyMemcpyPass {});
     fpm.addPass(DCEPass {});
     fpm.addPass(LowerExpectIntrinsicPass {});
+    fpm.addPass(ReduceFunctionMetadataPass {});
 
     for (auto &Fun : Mod)
         fpm.run(Fun, fam);
@@ -115,8 +116,6 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
     PassManager<Module, AnalysisManager<Module, Function *>, Function *,
         Module *> mpm;
     mpm.addPass(RemoveUnusedReturnValuesPass {});
-    if (config.ControlFlowOnly)
-        mpm.addPass(ReduceFunctionMetadataPass {});
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
