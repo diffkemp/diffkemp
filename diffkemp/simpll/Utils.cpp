@@ -139,6 +139,11 @@ CallStack getCallStack(Function &Src, Function &Dest) {
 /// Check if function has side effect (has 'store' instruction or calls some
 /// other function with side effect).
 bool hasSideEffect(const Function &Fun, std::set<const Function *> &Visited) {
+    if (Fun.isDeclaration()) {
+        return !(Fun.getIntrinsicID() == Intrinsic::dbg_declare ||
+                 Fun.getIntrinsicID() == Intrinsic::dbg_value ||
+                 Fun.getIntrinsicID() == Intrinsic::expect);
+    }
     Visited.insert(&Fun);
     for (auto &BB : Fun) {
         for (auto &Inst : BB) {
@@ -150,11 +155,7 @@ bool hasSideEffect(const Function &Fun, std::set<const Function *> &Visited) {
                     return true;
                 if (Visited.find(called) != Visited.end())
                     continue;
-                if (called->isIntrinsic()) {
-                    if (!(called->getIntrinsicID() == Intrinsic::dbg_declare ||
-                            called->getIntrinsicID() == Intrinsic::dbg_value))
-                        return true;
-                } else if (hasSideEffect(*called, Visited))
+                if (hasSideEffect(*called, Visited))
                     return true;
             }
         }

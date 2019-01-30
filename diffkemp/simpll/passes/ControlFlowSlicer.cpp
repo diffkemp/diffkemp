@@ -76,9 +76,10 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                 // Call instruction except calls to intrinsics
                 keep = true;
                 auto Function = CallInstr->getCalledFunction();
-                if (Function && (Function->isIntrinsic() ||
-                                 !hasSideEffect(*Function)))
+                if (Function && !hasSideEffect(*Function)) {
+                    errs() << "Removing " << Function->getName() << "\n";
                     keep = false;
+                }
             }
             else {
                 // Instructions having functions as parameters are included only
