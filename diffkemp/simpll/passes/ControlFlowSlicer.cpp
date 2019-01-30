@@ -14,9 +14,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "ControlFlowSlicer.h"
+#include "Utils.h"
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
 #include <set>
-#include <llvm/IR/Constants.h>
 
 /// Add all instruction operands of an instruction to the set of dependent
 /// instructions. If any operand is added, the function is called recursively.
@@ -75,7 +76,8 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                 // Call instruction except calls to intrinsics
                 keep = true;
                 auto Function = CallInstr->getCalledFunction();
-                if (Function && Function->isIntrinsic())
+                if (Function && (Function->isIntrinsic() ||
+                                 !hasSideEffect(*Function)))
                     keep = false;
             }
             else {

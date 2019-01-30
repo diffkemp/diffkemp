@@ -135,3 +135,35 @@ CallStack getCallStack(Function &Src, Function &Dest) {
     searchCallStackRec(&Src, &Dest, callStack, visited);
     return callStack;
 }
+
+/// Check if function has side effect (has 'store' instruction or calls some
+/// other function with side effect).
+bool hasSideEffect(const Function &Fun, std::set<const Function *> &Visited) {
+    Visited.insert(&Fun);
+    for (auto &BB : Fun) {
+        for (auto &Inst : BB) {
+            if (isa<StoreInst>(&Inst))
+                return true;
+            if (auto Call = dyn_cast<CallInst>(&Inst)) {
+                const Function *called = Call->getCalledFunction();
+                if (!called)
+                    return true;
+                if (Visited.find(called) != Visited.end())
+                    continue;
+                if (called->isIntrinsic()) {
+                    if (!(called->getIntrinsicID() == Intrinsic::dbg_declare ||
+                            called->getIntrinsicID() == Intrinsic::dbg_value))
+                        return true;
+                } else if (hasSideEffect(*called, Visited))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
+/// Calls recursive variant of the function with empty set of visited functions.
+bool hasSideEffect(const Function &Fun) {
+    std::set<const Function *> visited;
+    return hasSideEffect(Fun, visited);
+}
