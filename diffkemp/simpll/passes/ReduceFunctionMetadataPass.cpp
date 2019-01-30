@@ -1,4 +1,4 @@
-//===----  ReduceFunctionMetadataPass.h - Removes some function metadata --===//
+//===-- ReduceFunctionMetadataPass.cpp - Removes some function metadata ---===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -7,7 +7,8 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// This file contains the declaration of the ReduceFunctionMetadataPass pass.
+/// This file contains the definition of the ReduceFunctionMetadataPass pass.
+/// The pass currently removes custom sections from functions.
 ///
 //===----------------------------------------------------------------------===//
 
