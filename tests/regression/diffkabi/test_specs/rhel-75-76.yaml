@@ -17,3 +17,4 @@ functions:
         param_set_long: equal_syntax
         free_pages: equal_syntax
         fcoe_ctlr_init: equal_syntax
+        __request_region: equal_syntax
