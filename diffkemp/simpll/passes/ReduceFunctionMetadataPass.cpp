@@ -11,10 +11,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "CalledFunctionsAnalysis.h"
 #include "ReduceFunctionMetadataPass.h"
-#include "Utils.h"
-#include <llvm/IR/Instructions.h>
 
 /// Remove custom sections from functions (used when comparing the control flow
 /// only)
