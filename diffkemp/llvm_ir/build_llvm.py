@@ -59,7 +59,7 @@ class LlvmKernelBuilder:
     # Name of the kabi whitelist file
     kabi_whitelist_file = "kabi_whitelist_x86_64"
 
-    def __init__(self, kernel_version, modules_dir, debug=False,
+    def __init__(self, kernel_version, modules_dir, debug=False, rebuild=False,
                  verbose=True):
         self.kernel_base_path = os.path.abspath(self.kernel_base_dir)
         if not os.path.isdir(self.kernel_base_path):
@@ -74,6 +74,7 @@ class LlvmKernelBuilder:
         self.kabi_whitelist = os.path.join(self.kernel_path,
                                            self.kabi_whitelist_file)
         self.verbose = verbose
+        self.rebuild = rebuild
 
         self.configfile = None
         self.gcc_compiler_header = os.path.join(self.kernel_path,
@@ -697,15 +698,16 @@ class LlvmKernelBuilder:
         """
         if self.verbose:
             print "    [{}] {}".format(command[0], file)
-        with open(os.devnull, "w") as stderr:
-            try:
-                check_call(command, stderr=stderr)
-                self.opt_llvm(file, command[0])
-            except CalledProcessError:
-                # Do not raise exceptions if built-in.ll cannot be built. This
-                # always happens when files are built into modules.
-                if not file.endswith("built-in.ll"):
-                    raise BuildException("Building {} failed".format(file))
+        if self.rebuild or not os.path.isfile(file):
+            with open(os.devnull, "w") as stderr:
+                try:
+                    check_call(command, stderr=stderr)
+                    self.opt_llvm(file, command[0])
+                except CalledProcessError:
+                    # Do not raise exceptions if built-in.ll cannot be built.
+                    # This always happens when files are built into modules.
+                    if not file.endswith("built-in.ll"):
+                        raise BuildException("Building {} failed".format(file))
 
     def build_llvm_module(self, name, file_name, commands):
         """
@@ -828,11 +830,11 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         try:
-            command = self.kbuild_object_command("{}.o".format(name))
-            command = self.gcc_to_llvm(command)
-            self.build_llvm_file(os.path.join(self.modules_dir,
-                                              "{}.ll".format(name)),
-                                 command)
+            file_path = os.path.join(self.modules_dir, "{}.ll".format(name))
+            if self.rebuild or not os.path.isfile(file_path):
+                command = self.kbuild_object_command("{}.o".format(name))
+                command = self.gcc_to_llvm(command)
+                self.build_llvm_file(file_path, command)
             mod = LlvmKernelModule(name, name, self.modules_path)
             self.built_modules[name] = mod
             return mod
@@ -841,17 +843,16 @@ class LlvmKernelBuilder:
         finally:
             os.chdir(cwd)
 
-    def build_module(self, module, clean):
+    def build_module(self, module):
         """
         Build kernel module.
         First use kbuild to build kernel object file. Then, transform kbuild
         commands to the corresponding clang commands and build LLVM IR of the
         module.
         :param module: Name of the module
-        :param clean: Clean module before building
         :return Built module in LLVM IR (instance of LlvmKernelModule)
         """
-        if clean:
+        if self.rebuild:
             self._clean_all_modules()
 
         file_name, commands = self.kbuild_module(module)
@@ -862,7 +863,7 @@ class LlvmKernelBuilder:
             name = os.path.basename(module)
         return self.build_llvm_module(name, file_name, clang_commands)
 
-    def build_all_modules(self, clean=True):
+    def build_all_modules(self):
         """
         Build all modules in the modules directory.
         :return Dictionary of modules in form name -> module
@@ -871,8 +872,7 @@ class LlvmKernelBuilder:
         os.chdir(self.kernel_path)
         if self.verbose:
             print "Building all modules"
-        if clean:
-            self._clean_all_modules()
+        self._clean_all_modules()
 
         # Use Kbuild to build directory and extract names of built modules
         gcc_commands = self.kbuild_all_modules()
@@ -902,7 +902,7 @@ class LlvmKernelBuilder:
         self.link_modules(llvm_modules)
         return llvm_modules
 
-    def build_modules_with_params(self, clean):
+    def build_modules_with_params(self):
         """
         Build all modules in the modules directory that can be configured via
         parameters.
@@ -911,7 +911,7 @@ class LlvmKernelBuilder:
         if self.verbose:
             print "Building all kernel modules having parameters"
             print "  Collecting modules"
-        if clean:
+        if self.rebuild:
             self._clean_all_modules()
         sources = self.source.get_sources_with_params(self.modules_path)
         modules = set()
@@ -937,7 +937,7 @@ class LlvmKernelBuilder:
             if self.verbose:
                 print "  {}".format(mod)
             try:
-                llvm_mod = self.build_module(mod, False)
+                llvm_mod = self.build_module(mod)
                 llvm_modules[llvm_mod.name] = llvm_mod
             except BuildException as e:
                 if self.verbose:

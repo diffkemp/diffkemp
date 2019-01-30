@@ -9,7 +9,7 @@ from diffkemp.llvm_ir.llvm_sysctl_module import matches, LlvmSysctlModule
 def module():
     # Builds sysctl source for net.core and uses it for creating a
     # LlvmSysctlModule object
-    kernel_builder = LlvmKernelBuilder("3.10.0-862", "net/core")
+    kernel_builder = LlvmKernelBuilder("3.10.0-862", "net/core", rebuild=True)
     kernel_module = kernel_builder.build_file("sysctl_net_core")
     return LlvmSysctlModule(kernel_module, "net_core_table")
 
@@ -37,7 +37,7 @@ def test_get_data(module):
 
 
 def test_get_child():
-    builder = LlvmKernelBuilder("3.10.0-862", "kernel")
+    builder = LlvmKernelBuilder("3.10.0-862", "kernel", rebuild=True)
     kernel_module = builder.build_file("sysctl.c")
     sysctl_module = LlvmSysctlModule(kernel_module, "sysctl_base_table")
     assert sysctl_module.get_child("vm").name == "vm_table"

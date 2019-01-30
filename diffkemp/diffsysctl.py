@@ -25,6 +25,8 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("-t", "--timeout", help="timeout in seconds for a single \
                     function comparison")
+    ap.add_argument("--rebuild", help="force rebuild sources",
+                    action="store_true")
     return ap
 
 
@@ -38,8 +40,10 @@ def run_from_cli():
     result = Result(Result.Kind.NONE, args.src_version, args.dest_version)
     try:
         first_builder = LlvmKernelBuilder(args.src_version, None, debug=True,
+                                          rebuild=args.rebuild,
                                           verbose=args.verbose)
         second_builder = LlvmKernelBuilder(args.dest_version, None, debug=True,
+                                           rebuild=args.rebuild,
                                            verbose=args.verbose)
 
         sysctl_mod_first = first_builder.build_sysctl_module(args.sysctl)

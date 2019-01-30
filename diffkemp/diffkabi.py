@@ -33,6 +33,8 @@ def __make_argument_parser():
                     are global variables", action="store_true")
     ap.add_argument("--log-files", help="log diff results into files",
                     action="store_true")
+    ap.add_argument("--rebuild", help="force rebuild sources",
+                    action="store_true")
     return ap
 
 
@@ -44,14 +46,14 @@ def run_from_cli():
     try:
         # Prepare kernels
         first_builder = LlvmKernelBuilder(args.src_version, None, debug=True,
-                                          verbose=False)
+                                          rebuild=args.rebuild, verbose=False)
         if args.function:
             kabi_funs_first = [args.function]
         else:
             kabi_funs_first = first_builder.get_kabi_whitelist()
 
         second_builder = LlvmKernelBuilder(args.dest_version, None, debug=True,
-                                           verbose=False)
+                                           rebuild=args.rebuild, verbose=False)
         if args.function:
             kabi_funs_second = [args.function]
         else:

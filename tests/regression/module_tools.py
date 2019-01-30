@@ -9,8 +9,9 @@ def _build_module(kernel_version, module_dir, module, debug):
     """
     Build LLVM IR of the analysed module.
     """
-    builder = LlvmKernelBuilder(kernel_version, module_dir, debug)
-    llvm_mod = builder.build_module(module, True)
+    builder = LlvmKernelBuilder(kernel_version, module_dir, debug,
+                                rebuild=True)
+    llvm_mod = builder.build_module(module)
     return llvm_mod
 
 

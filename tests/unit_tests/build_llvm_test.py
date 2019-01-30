@@ -11,13 +11,13 @@ import os
 @pytest.fixture(scope="module")
 def builder():
     """Create module builder that is shared among tests"""
-    return LlvmKernelBuilder("3.10", "sound/core")
+    return LlvmKernelBuilder("3.10", "sound/core", rebuild=True)
 
 
 @pytest.fixture(scope="module")
 def builder_rhel():
     """Create module builder for the RHEL kernel."""
-    return LlvmKernelBuilder("3.10.0-957", "sound/core")
+    return LlvmKernelBuilder("3.10.0-957", "sound/core", rebuild=True)
 
 
 def test_prepare_kernel(builder):
@@ -97,7 +97,7 @@ def test_build_module(builder):
     Building module into LLVM IR code.
     Checks whether all necessary files are identified and built.
     """
-    mod = builder.build_module("oss/snd_pcm_oss", True)
+    mod = builder.build_module("oss/snd_pcm_oss")
     assert mod.name == "snd_pcm_oss"
 
     module_path = "/diffkemp/kernel/linux-3.10/sound/core/oss/"
@@ -124,8 +124,8 @@ def test_build_modules_with_params():
     Building all modules that contain parameters.
     Checks whether all necessary modules are found and built.
     """
-    builder = LlvmKernelBuilder("3.10", "sound/core/seq")
-    modules = builder.build_modules_with_params(True)
+    builder = LlvmKernelBuilder("3.10", "sound/core/seq", rebuild=True)
+    modules = builder.build_modules_with_params()
     assert sorted(modules.keys()) == sorted(["snd_seq_midi", "snd_seq_dummy",
                                              "snd_seq", "snd_seq_oss"])
 
@@ -139,7 +139,7 @@ def test_build_all_modules():
     Checks whether all modules are built.
     """
     builder = LlvmKernelBuilder("3.10", "sound/core/oss")
-    modules = builder.build_all_modules(True)
+    modules = builder.build_all_modules()
     assert sorted(modules.keys()) == sorted(["snd-mixer-oss", "snd-pcm-oss"])
 
     for n, m in modules.iteritems():
@@ -150,7 +150,7 @@ def test_build_sysctl_module():
     """
     Building source containing definitions of a sysctl option.
     """
-    builder = LlvmKernelBuilder("3.10.0-862", None)
+    builder = LlvmKernelBuilder("3.10.0-862", None, rebuild=True)
     for mod in [{
         "name": "net.core.message_burst",
         "file": "net/core/sysctl_net_core",
@@ -174,7 +174,7 @@ def test_link_modules():
     defined in the other module as well.
     """
     builder = LlvmKernelBuilder("3.10", "sound/core/seq")
-    modules = builder.build_all_modules(True)
+    modules = builder.build_all_modules()
     builder.link_modules(modules)
     modules["snd-seq-virmidi"].parse_module()
 

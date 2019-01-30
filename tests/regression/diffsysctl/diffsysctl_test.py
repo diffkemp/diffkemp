@@ -104,9 +104,9 @@ def prepare_task(spec):
 
     # Find the modules
     first_builder = LlvmKernelBuilder(spec.old_kernel, None,
-                                      debug=spec.debug)
+                                      debug=spec.debug, rebuild=True)
     second_builder = LlvmKernelBuilder(spec.new_kernel, None,
-                                       debug=spec.debug)
+                                       debug=spec.debug, rebuild=True)
 
     # Build the modules
     for function in function_list:
@@ -165,7 +165,7 @@ class TestClass(object):
         """
         # Get the relevant values
         builder = LlvmKernelBuilder(task_spec.old_kernel, None,
-                                    debug=task_spec.debug)
+                                    debug=task_spec.debug, rebuild=True)
         sysctl_module = builder.build_sysctl_module(task_spec.sysctl)
         sysctl_module.parse_sysctls(task_spec.sysctl)
 
@@ -217,7 +217,7 @@ class TestClass(object):
         """
         # Get the data variable KernelParam object
         builder = LlvmKernelBuilder(task_spec.old_kernel, None,
-                                    debug=task_spec.debug)
+                                    debug=task_spec.debug, rebuild=True)
         sysctl_module = builder.build_sysctl_module(task_spec.sysctl)
         data_kernel_param = sysctl_module.get_data(task_spec.sysctl)
 

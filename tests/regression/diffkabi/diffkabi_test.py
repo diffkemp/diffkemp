@@ -72,9 +72,9 @@ def prepare_task(spec):
     """
     # Find the modules
     first_builder = LlvmKernelBuilder(spec.old_kernel, None,
-                                      debug=spec.debug)
+                                      debug=spec.debug, rebuild=True)
     second_builder = LlvmKernelBuilder(spec.new_kernel, None,
-                                       debug=spec.debug)
+                                       debug=spec.debug, rebuild=True)
 
     # Build the modules
     old_module = first_builder.build_file_for_symbol(spec.function)

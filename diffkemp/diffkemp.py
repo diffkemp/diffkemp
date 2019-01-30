@@ -54,33 +54,30 @@ def run_from_cli():
 
     try:
         first_builder = LlvmKernelBuilder(args.src_version, args.modules_dir,
-                                          args.debug)
+                                          args.debug, args.rebuild)
         if args.module:
             first_mods = {
-                args.module: first_builder.build_module(args.module,
-                                                        args.rebuild)
+                args.module: first_builder.build_module(args.module)
             }
         elif args.all_modules:
             first_mods = first_builder.build_all_modules()
         elif args.file:
             first_mods = {args.file: first_builder.build_file(args.file)}
         else:
-            first_mods = first_builder.build_modules_with_params(args.rebuild)
+            first_mods = first_builder.build_modules_with_params()
 
         second_builder = LlvmKernelBuilder(args.dest_version, args.modules_dir,
-                                           args.debug)
+                                           args.debug, args.rebuild)
         if args.module:
             second_mods = {
-                args.module: second_builder.build_module(args.module,
-                                                         args.rebuild)
+                args.module: second_builder.build_module(args.module)
             }
         elif args.all_modules:
             second_mods = second_builder.build_all_modules()
         elif args.file:
             second_mods = {args.file: second_builder.build_file(args.file)}
         else:
-            second_mods = second_builder.build_modules_with_params(
-                args.rebuild)
+            second_mods = second_builder.build_modules_with_params()
 
         if args.build_only:
             print "Compiled modules in version {}:".format(args.src_version)

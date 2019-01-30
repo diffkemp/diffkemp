@@ -23,7 +23,7 @@ def test_collect_all_parameters(builder, mod, params):
     Collecting parameters in a module.
     More test scenarios can be added using pytest parametrization.
     """
-    module = builder.build_module(mod, False)
+    module = builder.build_module(mod)
     module.parse_module()
     module.collect_all_parameters()
     assert sorted(module.params.keys()) == sorted(params)
@@ -35,8 +35,8 @@ def test_find_param_var():
     This is necessary since for parameters defined with module_param_named,
     names of the parameter and of the variable differ.
     """
-    builder = LlvmKernelBuilder("3.10", "net/rfkill")
-    module = builder.build_module("rfkill", False)
+    builder = LlvmKernelBuilder("3.10", "net/rfkill", rebuild=False)
+    module = builder.build_module("rfkill")
     module.parse_module()
     assert module.find_param_var("default_state") == "rfkill_default_state"
     assert module.find_param_var("master_switch_mode") == \
@@ -45,7 +45,7 @@ def test_find_param_var():
 
 def test_set_param(builder):
     """Setting a single parameter"""
-    module = builder.build_module("snd", False)
+    module = builder.build_module("snd")
     module.parse_module()
     module.set_param("cards_limit")
     assert module.params.keys() == ["cards_limit"]
@@ -53,7 +53,7 @@ def test_set_param(builder):
 
 def test_set_param_fail(builder):
     """Trying to set an invalid parameter should raise an exception"""
-    module = builder.build_module("snd", False)
+    module = builder.build_module("snd")
     module.parse_module()
     with pytest.raises(KernelModuleException):
         module.set_param("card_limit")
