@@ -153,8 +153,7 @@ int DifferentialFunctionComparator::cmpOperations(
         Function *CalledR = CR->getCalledFunction();
         if (CalledL && CalledR && CalledL->getName() == CalledR->getName()) {
             // Check whether both instructions call an alloc function.
-            if (CalledL->getName() == "kzalloc"
-                    || CalledL->getName() == "__kmalloc") {
+            if (isAllocFunction(*CalledL)) {
                 if (!cmpAllocs(CL, CR, needToCmpOperands))
                     return 0;
             }

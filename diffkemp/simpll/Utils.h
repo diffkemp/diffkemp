@@ -64,4 +64,7 @@ CallStack getCallStack(Function &Src, Function &Dest);
 /// Check if function has side-effect.
 bool hasSideEffect(const Function &Fun);
 
+/// Check if the function is an allocator
+bool isAllocFunction(const Function &Fun);
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H

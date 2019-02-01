@@ -168,3 +168,8 @@ bool hasSideEffect(const Function &Fun) {
     std::set<const Function *> visited;
     return hasSideEffect(Fun, visited);
 }
+
+/// Returns true if the function is one of the supported allocators
+bool isAllocFunction(const Function &Fun) {
+    return Fun.getName() == "kzalloc" || Fun.getName() == "__kmalloc";
+}

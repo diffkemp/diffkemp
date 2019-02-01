@@ -19,17 +19,27 @@
 #include <llvm/IR/Instructions.h>
 #include <set>
 
-/// Add all instruction operands of an instruction to the set of dependent
-/// instructions. If any operand is added, the function is called recursively.
-void addAllOperands(const Instruction &Instr,
-                    std::set<const Instruction *> &Dependent) {
-    for (const auto &Op : Instr.operands()) {
-        if (const auto *OpInstr = dyn_cast<Instruction>(Op)) {
-            auto added = Dependent.insert(OpInstr);
-            if (added.second) {
-                addAllOperands(*OpInstr, Dependent);
+/// Add instruction and its operands to the set of dependent instructions.
+/// If any operand is added, its operands are added recursively.
+void addWithOperands(const Value &Val,
+                     std::set<const Instruction *> &Dependent) {
+    if (const auto *Instr = dyn_cast<Instruction>(&Val)) {
+        bool added = Dependent.insert(Instr).second;
+        if (added) {
+            for (const auto &Op : Instr->operands()) {
+                addWithOperands(*Op.get(), Dependent);
             }
         }
+    }
+}
+
+/// Add instruction and its users to the set of dependent instructions.
+/// If any user is added, its operands are added recursively.
+void addWithUsers(const Instruction &Instr,
+                 std::set<const Instruction *> &Dependent) {
+    Dependent.insert(&Instr);
+    for (const auto &User : Instr.users()) {
+        addWithOperands(*User, Dependent);
     }
 }
 
@@ -77,8 +87,13 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                 keep = true;
                 auto Function = CallInstr->getCalledFunction();
                 if (Function && !hasSideEffect(*Function)) {
-                    errs() << "Removing " << Function->getName() << "\n";
                     keep = false;
+                }
+                if (Function && isAllocFunction(*Function)) {
+                    auto next = CallInstr->getNextNode();
+                    if (next && isa<BitCastInst>(next)) {
+                        addWithUsers(*next, Dependent);
+                    }
                 }
             }
             else {
@@ -94,8 +109,7 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
             }
 
             if (keep) {
-                Dependent.insert(&Instr);
-                addAllOperands(Instr, Dependent);
+                addWithOperands(Instr, Dependent);
             }
         }
     }
