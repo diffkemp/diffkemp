@@ -124,6 +124,7 @@ AttributeList cleanAttributes(AttributeList AS, unsigned Idx, LLVMContext &C) {
     AttributeList result = AS;
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::AlwaysInline);
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::InlineHint);
+    result = result.removeAttribute(C, Idx, Attribute::AttrKind::NoInline);
     return result;
 }
 

@@ -185,6 +185,8 @@ void markCalleesAlwaysInline(Function &Fun,
                         IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
                     continue;
 
+                if (CalledFun->hasFnAttribute(Attribute::AttrKind::NoInline))
+                    CalledFun->removeFnAttr(Attribute::AttrKind::NoInline);
                 if (!CalledFun->hasFnAttribute(
                         Attribute::AttrKind::AlwaysInline)) {
                     CalledFun->addFnAttr(Attribute::AttrKind::AlwaysInline);
