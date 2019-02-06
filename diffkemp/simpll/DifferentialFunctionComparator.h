@@ -17,6 +17,7 @@
 #define DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
 
 #include "DebugInfo.h"
+#include "ModuleComparator.h"
 #include <llvm/Transforms/Utils/FunctionComparator.h>
 
 using namespace llvm;
@@ -31,11 +32,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    bool controlFlowOnly,
                                    GlobalNumberState *GN,
-                                   const DebugInfo *DI)
+                                   const DebugInfo *DI,
+                                   ModuleComparator *MC)
             : FunctionComparator(F1, F2, GN), DI(DI),
               controlFlowOnly(controlFlowOnly),
               LayoutL(F1->getParent()->getDataLayout()),
-              LayoutR(F2->getParent()->getDataLayout()) { }
+              LayoutR(F2->getParent()->getDataLayout()),
+              ModComparator(MC) {}
 
   protected:
     /// Specific comparison of GEP instructions/operators.
@@ -66,6 +69,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     bool controlFlowOnly;
 
     const DataLayout &LayoutL, &LayoutR;
+
+    ModuleComparator *ModComparator;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H

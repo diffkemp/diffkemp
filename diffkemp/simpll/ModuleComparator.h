@@ -46,6 +46,10 @@ class ModuleComparator {
     /// The result of the comparison is stored into the ComparedFuns map.
     void compareFunctions(Function *FirstFun, Function *SecondFun);
 
+    /// Pointer to a function that is called just by one of the compared
+    /// functions and needs to be inlined.
+    const Function *tryInline = nullptr;
+
   private:
     DifferentialGlobalNumberState GS;
 };

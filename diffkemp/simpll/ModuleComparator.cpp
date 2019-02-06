@@ -51,13 +51,33 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
     // Comparing functions with bodies using custom FunctionComparator.
     DifferentialFunctionComparator fComp(FirstFun, SecondFun, controlFlowOnly,
-                                         &GS, DI);
+                                         &GS, DI, this);
     if (fComp.compare() == 0) {
 #ifdef DEBUG
         errs() << "Function " << FirstFun->getName()
                << " is same in both modules\n";
 #endif
         ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+    } else if (tryInline) {
+#ifdef DEBUG
+        errs() << "Try to inline " << tryInline->getName() << "\n";
+#endif
+        // Try to inline the problematic function
+        if (Function *toInline = First.getFunction(tryInline->getName()))
+            inlineFunction(First, toInline);
+        if (Function *toInline = Second.getFunction(tryInline->getName()))
+            inlineFunction(Second, toInline);
+        // Reset the function diff result
+        ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
+        tryInline = nullptr;
+        // Re-run the comparison
+        DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
+                                                   controlFlowOnly,
+                                                   &GS, DI, this);
+        if (fCompSecond.compare() == 0)
+            ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+        else
+            ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
     } else {
         ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
     }

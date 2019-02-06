@@ -18,6 +18,9 @@
 #include <llvm/Support/raw_ostream.h>
 #include <set>
 #include <iostream>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Transforms/IPO/AlwaysInliner.h>
 
 /// Extract called function from a called value Handles situation when the
 /// called value is a bitcast.
@@ -172,4 +175,29 @@ bool hasSideEffect(const Function &Fun) {
 /// Returns true if the function is one of the supported allocators
 bool isAllocFunction(const Function &Fun) {
     return Fun.getName() == "kzalloc" || Fun.getName() == "__kmalloc";
+}
+
+/// Mark the function with the 'alwaysinline' attribute and run
+/// the Alwaysinliner pass. Also remove the 'noinline' atribute.
+void inlineFunction(Module &Mod, const Function *InlineFun) {
+    for (auto &Fun : Mod) {
+        if (&Fun == InlineFun) {
+            if (!Fun.hasFnAttribute(Attribute::AttrKind::AlwaysInline))
+                Fun.addFnAttr(Attribute::AttrKind::AlwaysInline);
+            if (Fun.hasFnAttribute(Attribute::AttrKind::NoInline))
+                Fun.removeFnAttr(Attribute::AttrKind::NoInline);
+        } else {
+            if (!Fun.hasFnAttribute(Attribute::AttrKind::NoInline))
+                Fun.addFnAttr(Attribute::AttrKind::NoInline);
+            if (Fun.hasFnAttribute(Attribute::AttrKind::AlwaysInline))
+                Fun.removeFnAttr(Attribute::AttrKind::AlwaysInline);
+        }
+    }
+
+    PassBuilder pb;
+    ModulePassManager mpm(false);
+    ModuleAnalysisManager mam(false);
+    pb.registerModuleAnalyses(mam);
+    mpm.addPass(AlwaysInlinerPass {});
+    mpm.run(Mod, mam);
 }

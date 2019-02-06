@@ -67,4 +67,7 @@ bool hasSideEffect(const Function &Fun);
 /// Check if the function is an allocator
 bool isAllocFunction(const Function &Fun);
 
+/// Inline the given function
+void inlineFunction(Module &Mod, const Function *InlineFun);
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H
