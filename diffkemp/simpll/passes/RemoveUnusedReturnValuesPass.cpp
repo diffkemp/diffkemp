@@ -48,9 +48,6 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         if (Fun.getIntrinsicID() != llvm::Intrinsic::not_intrinsic)
             continue;
 
-        if (!Fun.isDeclaration())
-            continue;
-
         if (Fun.getReturnType()->isVoidTy())
             continue;
 
