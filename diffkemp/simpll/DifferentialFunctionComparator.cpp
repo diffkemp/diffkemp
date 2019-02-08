@@ -238,6 +238,24 @@ int DifferentialFunctionComparator::cmpAllocs(
     return 0;
 }
 
+/// Handle values generated from macros and enums whose value changed.
+/// The new values are pre-computed by DebugInfo.
+int DifferentialFunctionComparator::cmpValues(const Value *L,
+                                              const Value *R) const {
+    int result = FunctionComparator::cmpValues(L, R);
+    if (result) {
+        if (isa<Constant>(L) && isa<Constant>(R)) {
+            auto *ConstantL = dyn_cast<Constant>(L);
+            auto *ConstantR = dyn_cast<Constant>(R);
+            auto MacroMapping = DI->MacroConstantMap.find(ConstantL);
+            if (MacroMapping != DI->MacroConstantMap.end() &&
+                    MacroMapping->second == valueAsString(ConstantR))
+                return 0;
+        }
+    }
+    return result;
+}
+
 int DifferentialFunctionComparator::cmpCallsWithExtraArg(
         const CallInst *CL,
         const CallInst *CR) const {

@@ -33,10 +33,9 @@ using namespace llvm;
 ///    different indices. This analysis matches fields with same name and saves
 ///    the index offset into the metadata of a GEP instruction.
 class DebugInfo {
-  using StructFieldNamesMap = std::map<std::pair<StructType *, uint64_t>,
-                                    StringRef>;
-
   public:
+    using StructFieldNamesMap = std::map<std::pair<StructType *, uint64_t>,
+                                         StringRef>;
     DebugInfo(Module &modFirst, Module &modSecond,
               Function *funFirst, Function *funSecond,
               std::set<const Function *> &CalledFirst) :
@@ -46,10 +45,15 @@ class DebugInfo {
         DebugInfoFirst.processModule(ModFirst);
         DebugInfoSecond.processModule(ModSecond);
         calculateGEPIndexAlignments();
+        calculateMacroAlignments();
     };
 
     /// Maps structure type and index to struct member names
     StructFieldNamesMap StructFieldNames;
+
+    /// Maps constants potentially generated from a macro from the first module
+    /// to corresponding values in the second module.
+    std::map<const Constant *, std::string> MacroConstantMap;
 
   private:
     Function *FunFirst;
@@ -64,6 +68,10 @@ class DebugInfo {
     /// indices.
     std::map<StructType *, std::map<uint64_t, uint64_t>> IndexMaps;
 
+    /// Mapping macro names to the set of constants in the first module having
+    /// the macro value.
+    std::map<std::string, std::set<const Constant *>> MacroUsageMap;
+
     /// Calculate alignments of the corresponding indices for one GEP
     /// instruction.
     void extractAlignmentFromInstructions(GetElementPtrInst *GEPL,
@@ -71,6 +79,17 @@ class DebugInfo {
 
     /// Calculate alignments of the corresponding indices of GEP instructions.
     void calculateGEPIndexAlignments();
+
+    /// Calculate alignments of the corresponding macros
+    void calculateMacroAlignments();
+
+    /// Find all macros in the first module having the given value
+    void collectMacrosWithValue(const Constant *Val);
+
+    /// Add an alignment of macros if it exists
+    /// \param MacroName Name of the macro in the second module
+    /// \param MacroValue Value of the macro in the second module
+    void addAlignment(const std::string MacroName, const std::string MacroValue);
 
     /// Get debug info for struct type with given name
     DICompositeType *getStructTypeInfo(const StringRef name,

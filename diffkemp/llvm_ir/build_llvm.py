@@ -608,7 +608,7 @@ class LlvmKernelBuilder:
         command = ["clang", "-S", "-emit-llvm", "-O1", "-Xclang",
                    "-disable-llvm-passes"]
         if self.debug:
-            command.append("-g")
+            command.extend(["-g", "-fdebug-macro"])
         for param in gcc_command.split():
             if (param == "gcc" or
                     (param.startswith("-W") and "-MD" not in param) or

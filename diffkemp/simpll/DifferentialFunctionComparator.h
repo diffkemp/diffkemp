@@ -63,6 +63,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Compares array types with equivalent element types as equal when
     /// comparing the control flow only.
     int cmpTypes(Type *L, Type *R) const override;
+    /// Specific comparing of values. Handles values generated from macros
+    /// whose value changed.
+    int cmpValues(const Value *L, const Value *R) const override;
 
   private:
     const DebugInfo *DI;

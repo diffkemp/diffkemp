@@ -313,3 +313,95 @@ void DebugInfo::setNewAlignmentOfIndex(GetElementPtrInst &GEP,
             ConstantInt::get(c, APInt(bitWidth, alignment, false))));
     GEP.setMetadata("idx_align_" + std::to_string(index), MD);
 }
+
+/// Collects mappings of values for constants that are potentially generated
+/// from macros. It finds all used constants that correpond to some macro value
+/// in the first module and then finds values or given macros in the second
+/// module. If the values differ, a mapping is created for the constant.
+void DebugInfo::calculateMacroAlignments() {
+    // Check if any debug info was collected
+    if (DebugInfoFirst.type_count() == 0 || DebugInfoSecond.type_count() == 0)
+        return;
+
+    // Find all constants used in the first module whose values correspond to
+    // some macro value.
+    for (auto &Fun : ModFirst) {
+        if (!ModSecond.getFunction(Fun.getName()))
+            continue;
+        if (CalledFirst.find(&Fun) == CalledFirst.end())
+            continue;
+
+        std::set<Constant *> VisitedConsts;
+        for (const auto &BB : Fun) {
+            for (const auto &Inst : BB) {
+                for (const auto &Op : Inst.operands()) {
+                    if (auto Const = dyn_cast<Constant>(&Op)) {
+                        if (VisitedConsts.find(Const) == VisitedConsts.end())
+                            VisitedConsts.insert(Const);
+                        collectMacrosWithValue(Const);
+                    }
+                }
+            }
+        }
+    }
+
+    // In second module, search for macros collected in the previous step and
+    // if they have a different value between the modules, create a mapping.
+    for (auto *CompileUnit : DebugInfoSecond.compile_units()) {
+        for (auto *MacroNode : CompileUnit->getMacros()) {
+            if (auto *Macro = dyn_cast<DIMacro>(MacroNode)) {
+                addAlignment(Macro->getName(), Macro->getValue());
+            }
+        }
+        for (auto *Enum : CompileUnit->getEnumTypes()) {
+            for (auto *EnumField : Enum->getElements()) {
+                if (auto *Enumerator = dyn_cast<DIEnumerator>(EnumField)) {
+                    addAlignment(Enumerator->getName(),
+                                 std::to_string(Enumerator->getValue()));
+                }
+            }
+        }
+    }
+}
+
+/// Find all macros and enum values that define a value corresponding to the
+/// value of the given constant and add them to the MacroUsageMap.
+void DebugInfo::collectMacrosWithValue(const Constant *Val) {
+    std::string valStr = valueAsString(Val);
+    if (valStr.empty())
+        return;
+
+    for (auto *CompileUnit : DebugInfoFirst.compile_units()) {
+        for (auto *MacroNode : CompileUnit->getMacros()) {
+            if (auto *Macro = dyn_cast<DIMacro>(MacroNode)) {
+                if (Macro->getValue() == valStr) {
+                    MacroUsageMap[Macro->getName()].insert(Val);
+                }
+            }
+        }
+        for (auto *Enum : CompileUnit->getEnumTypes()) {
+            for (auto *EnumField : Enum->getElements()) {
+                if (auto *Enumerator = dyn_cast<DIEnumerator>(EnumField)) {
+                    if (std::to_string(Enumerator->getValue()) == valStr) {
+                        MacroUsageMap[Enumerator->getName()].insert(Val);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Add alignment for the given macro name and value from the second module.
+/// Checks if a macro with the given name was used in the first module (by
+/// querying the MacroUsageMap). If yes, and the macro value is different in
+/// the second module, creates mapping between constants generated from the
+/// macro in the first module and the new value from the second module.
+void DebugInfo::addAlignment(std::string MacroName, std::string MacroValue) {
+    auto MacroUsage = MacroUsageMap.find(MacroName);
+    if (MacroUsage != MacroUsageMap.end() &&
+            valueAsString(*MacroUsage->second.begin()) != MacroValue) {
+        for (auto *Constant : MacroUsage->second) {
+            MacroConstantMap.emplace(Constant, MacroValue);
+        }
+    }
+}

@@ -201,3 +201,11 @@ void inlineFunction(Module &Mod, const Function *InlineFun) {
     mpm.addPass(AlwaysInlinerPass {});
     mpm.run(Mod, mam);
 }
+
+/// Get value of the given constant as a string
+std::string valueAsString(const Constant *Val) {
+    if (auto *IntVal = dyn_cast<ConstantInt>(Val)) {
+        return std::to_string(IntVal->getSExtValue());
+    }
+    return "";
+}
