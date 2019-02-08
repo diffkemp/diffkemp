@@ -263,6 +263,23 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             if (MacroMapping != DI->MacroConstantMap.end() &&
                     MacroMapping->second == valueAsString(ConstantR))
                 return 0;
+        } else if (isa<BasicBlock>(L) && isa<BasicBlock>(R)) {
+            // In case functions have different numbers of BBs, they may be
+            // compared as unequal here. However, this can be caused by moving
+            // part of the functionality into a function and hence we'll
+            // treat the BBs as equal here to continue comparing and maybe
+            // try inlining.
+            // We also need to synchronize number maps since they now may have
+            // different size.
+            if (sn_mapL.size() != sn_mapR.size()) {
+                auto *smaller = sn_mapL.size() < sn_mapR.size() ? &sn_mapL
+                                                                : &sn_mapR;
+                while (sn_mapL.size() != sn_mapR.size())
+                    smaller->insert(std::make_pair(
+                            nullptr,
+                            sn_mapL.size()));
+            }
+            return 0;
         }
     }
     return result;
