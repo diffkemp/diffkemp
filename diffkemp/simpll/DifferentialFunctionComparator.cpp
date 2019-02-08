@@ -175,6 +175,18 @@ int DifferentialFunctionComparator::cmpOperations(
             ModComparator->tryInline = Call->getCalledFunction();
         }
     }
+    if (Result) {
+        // Do not make difference between signed and unsigned for control flow
+        // only
+        if (controlFlowOnly && isa<ICmpInst>(L) && isa<ICmpInst>(R)) {
+            auto *ICmpL = dyn_cast<ICmpInst>(L);
+            auto *ICmpR = dyn_cast<ICmpInst>(R);
+            if (ICmpL->getUnsignedPredicate()
+                    == ICmpR->getUnsignedPredicate()) {
+                return 0;
+            }
+        }
+    }
     return Result;
 }
 
