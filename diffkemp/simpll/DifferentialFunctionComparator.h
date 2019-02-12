@@ -60,11 +60,17 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Such calls are compared as equal if they only differ in the last
     /// argument which is 0 or NULL.
     int cmpCallsWithExtraArg(const CallInst *CL, const CallInst *CR) const;
-    /// Compares array types with equivalent element types as equal when
-    /// comparing the control flow only.
+    /// Compares array types with equivalent element types and all integer types
+    /// as equal when comparing the control flow only.
     int cmpTypes(Type *L, Type *R) const override;
+    /// Do not compare bitwidth when comparing the control flow only.
+    int cmpAPInts(const APInt &L, const APInt &R) const override;
+    /// Detect cast instructions and ignore them when comparing the control flow
+    /// only. (The rest is the same as in LLVM.)
+    int cmpBasicBlocks(const BasicBlock *BBL, const BasicBlock *BBR)
+        const override;
     /// Specific comparing of values. Handles values generated from macros
-    /// whose value changed.
+    /// whose value changed and values where at least one of them is a cast.
     int cmpValues(const Value *L, const Value *R) const override;
 
   private:
