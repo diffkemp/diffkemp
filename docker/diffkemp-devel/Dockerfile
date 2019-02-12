@@ -1,4 +1,4 @@
-FROM fedora:26
+FROM fedora:29
 MAINTAINER Viktor Malik <vmalik@redhat.com>
 ENV LLVM_VERSION 5.0.0
 ENV Z3_VERSION 4.5.0
@@ -33,7 +33,13 @@ RUN dnf update -y && \
       rsync \
       texinfo \
       vim \
+      wget \
       xz
+RUN dnf \
+      --releasever=27 \
+      --disablerepo=fedora-modular \
+      --disablerepo=updates-modular \
+      downgrade -y gcc
 # Use custom patched 'diff' because the normal only prints 40 characters of
 # the context function (when -F is used). We need at least 80 so that the entire
 # names of the kernel functions are captured.
