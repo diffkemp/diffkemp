@@ -18,3 +18,7 @@ functions:
         free_pages: equal_syntax
         fcoe_ctlr_init: equal_syntax
         __request_region: equal_syntax
+        generic_file_llseek_size: equal_syntax
+        __read_seqcount_begin: equal_syntax
+        skb_csum_hwoffload_help: equal_syntax
+        proc_put_char: equal_syntax
