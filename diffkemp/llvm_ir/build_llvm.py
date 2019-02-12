@@ -109,7 +109,7 @@ class LlvmKernelBuilder:
         self.configfile = "kernel-{}-x86_64.config".format(
             self.kernel_version.split("-")[0])
         self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
-            self.kernel_version.split("-")[1])
+            self.kernel_version.split("-")[1].split(".")[0])
         for f in os.listdir("."):
             if (os.path.isfile(f) and f != tarname and f != self.configfile and
                     f != self.kabi_tarname):
@@ -155,18 +155,26 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(tmpdir)
 
+        # Choose the major version of CentOS
+        if self.kernel_version.endswith("el7"):
+            major = "c7"
+        elif self.kernel_version.endswith("el8"):
+            major = "c8"
+        else:
+            raise BuildException("Unsupported kernel version")
+
         # Clone the Git repository and checkout the appropriate branch.
         check_call(["git", "clone", "-q", centos_git_url])
         os.chdir("kernel")
-        check_call(["git", "checkout", "-q", "c7"])
+        check_call(["git", "checkout", "-q", major])
 
         # Reset head to the corresponding commit.
         # Note: a simple checkout does not work, because get_sources.sh uses
         # the name of the branch to create the URL of the files. This causes
         # it to fail when the head is detached
         check_call(["git", "reset", "--hard", "-q",
-                    "tags/imports/c7/kernel-{}.el7".format(
-                        self.kernel_version)])
+                    "tags/imports/{}/kernel-{}".format(major,
+                                                       self.kernel_version)])
 
         # Clone the centos-git-common repository for the get_sources.sh script
         check_call(["git", "clone", "-q",
@@ -182,7 +190,7 @@ class LlvmKernelBuilder:
         os.chdir(self.kernel_base_path)
         shutil.rmtree(tmpdir)
 
-        tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
+        tarname = "linux-{}.tar.xz".format(self.kernel_version)
         self._clean_downloaded_files(tarname)
         os.chdir(cwd)
 
@@ -197,8 +205,8 @@ class LlvmKernelBuilder:
         """
         url = "http://download.eng.bos.redhat.com/brewroot/packages/kernel/"
         version, release = self.kernel_version.split("-")
-        url += "{}/{}.el7/src/".format(version, release)
-        rpmname = "kernel-{}.el7.src.rpm".format(self.kernel_version)
+        url += "{}/{}/src/".format(version, release)
+        rpmname = "kernel-{}.src.rpm".format(self.kernel_version)
         url += rpmname
         # Download the source RPM package
         print "Downloading kernel version {}".format(self.kernel_version)
@@ -214,7 +222,7 @@ class LlvmKernelBuilder:
             check_call(["cpio", "-idmv"], stdin=rpm_cpio.stdout,
                        stderr=devnull)
 
-        tarname = "linux-{}.el7.tar.xz".format(self.kernel_version)
+        tarname = "linux-{}.tar.xz".format(self.kernel_version)
         self._clean_downloaded_files(tarname)
         os.chdir(cwd)
 

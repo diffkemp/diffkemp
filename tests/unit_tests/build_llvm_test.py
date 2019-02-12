@@ -17,7 +17,7 @@ def builder():
 @pytest.fixture(scope="module")
 def builder_rhel():
     """Create module builder for the RHEL kernel."""
-    return LlvmKernelBuilder("3.10.0-957", "sound/core", rebuild=True)
+    return LlvmKernelBuilder("3.10.0-957.el7", "sound/core", rebuild=True)
 
 
 def test_prepare_kernel(builder):
@@ -29,12 +29,12 @@ def test_prepare_kernel(builder):
 def test_prepare_rhel_kernel(builder_rhel):
     """Download and preparation of a RHEL kernel."""
     builder_rhel._prepare_kernel()
-    assert os.path.isdir("kernel/linux-3.10.0-957")
+    assert os.path.isdir("kernel/linux-3.10.0-957.el7")
 
 
 def test_extract_kabi_whitelist(builder_rhel):
     builder_rhel._prepare_kernel()
-    assert os.path.exists("kernel/linux-3.10.0-957/kabi_whitelist_x86_64")
+    assert os.path.exists("kernel/linux-3.10.0-957.el7/kabi_whitelist_x86_64")
 
 
 def test_kbuild_object_command(builder):
@@ -150,7 +150,7 @@ def test_build_sysctl_module():
     """
     Building source containing definitions of a sysctl option.
     """
-    builder = LlvmKernelBuilder("3.10.0-862", None, rebuild=True)
+    builder = LlvmKernelBuilder("3.10.0-862.el7", None, rebuild=True)
     for mod in [{
         "name": "net.core.message_burst",
         "file": "net/core/sysctl_net_core",

@@ -1,5 +1,5 @@
-old_kernel: 3.10.0-862
-new_kernel: 3.10.0-957
+old_kernel: 3.10.0-862.el7
+new_kernel: 3.10.0-957.el7
 
 debug: true
 control_flow_only: true
