@@ -250,10 +250,85 @@ int DifferentialFunctionComparator::cmpAllocs(
     return 0;
 }
 
+/// Detect cast instructions and ignore them when comparing the control flow
+/// only.
+/// Note: this function was copied from FunctionComparator.
+int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
+        const BasicBlock *BBR) const {
+    BasicBlock::const_iterator InstL = BBL->begin(), InstLE = BBL->end();
+    BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
+
+    do {
+        bool needToCmpOperands = true;
+
+        // Skip bitcast instructions.
+        // Note: this has to be done before calling cmpOperations, because
+        // otherwise the serial number counter used by cmpValues would be
+        // increased, causing the next instruction to compare as non-equal.
+        if (controlFlowOnly)
+            if (InstL->isCast() && InstR->isCast()) {
+                InstL++; InstR++;
+                continue;
+            } else if (InstL->isCast()) {
+                InstL++;
+                continue;
+            } else if (InstR->isCast()) {
+                InstR++;
+                continue;
+            }
+
+        if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands))
+           return Res;
+        if (needToCmpOperands) {
+            assert(InstL->getNumOperands() == InstR->getNumOperands());
+
+            for (unsigned i = 0, e = InstL->getNumOperands(); i != e; ++i) {
+                Value *OpL = InstL->getOperand(i);
+                Value *OpR = InstR->getOperand(i);
+                if (int Res = cmpValues(OpL, OpR))
+                    return Res;
+                // cmpValues should ensure this is true.
+                assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);
+            }
+        }
+
+        ++InstL;
+        ++InstR;
+    } while (InstL != InstLE && InstR != InstRE);
+
+    if (InstL != InstLE && InstR == InstRE)
+        return 1;
+    if (InstL == InstLE && InstR != InstRE)
+        return -1;
+    return 0;
+}
+
 /// Handle values generated from macros and enums whose value changed.
 /// The new values are pre-computed by DebugInfo.
+/// Also handles comparing in case at least one of the values is a cast -
+/// when comparing the control flow only, it compares the original value instead
+/// of the cast.
 int DifferentialFunctionComparator::cmpValues(const Value *L,
                                               const Value *R) const {
+    // Detect casts and use the original value instead when comparing the
+    // control flow only.
+    const CastInst *CIL = dyn_cast<CastInst>(L);
+    const CastInst *CIR = dyn_cast<CastInst>(R);
+
+    if (CIL && CIR && controlFlowOnly) {
+        // Both instruction are casts - compare the original values before
+        // the cast
+        return cmpValues(CIL->getOperand(0), CIR->getOperand(0));
+    } else if (CIL) {
+        // The left value is a cast - use the original value of it in the
+        // comparison
+        return cmpValues(CIL->getOperand(0), R);
+    } else if (CIR) {
+        // The right value is a cast - use the original value of it in the
+        // comparison
+        return cmpValues(L, CIR->getOperand(0));
+    }
+
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
         if (isa<Constant>(L) && isa<Constant>(R)) {
@@ -327,6 +402,10 @@ int DifferentialFunctionComparator::cmpCallsWithExtraArg(
 /// Compares array types with equivalent element types as equal when
 /// comparing the control flow only.
 int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
+    // Compare integer types as the same when comparing the control flow only.
+    if (L->isIntegerTy() && R->isIntegerTy() && controlFlowOnly)
+        return 0;
+
     if (!L->isArrayTy() || !R->isArrayTy() || !controlFlowOnly)
         return FunctionComparator::cmpTypes(L, R);
 
@@ -334,4 +413,20 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
     ArrayType *AR = dyn_cast<ArrayType>(R);
 
     return cmpTypes(AL->getElementType(), AR->getElementType());
+}
+
+/// Do not compare bitwidth when comparing the control flow only.
+int DifferentialFunctionComparator::cmpAPInts(const APInt &L, const APInt &R)
+    const {
+    int Result = FunctionComparator::cmpAPInts(L, R);
+    if (!controlFlowOnly || !Result) {
+        return Result;
+    } else {
+        // The function ugt uses APInt::compare, which can compare only integers
+        // of the same bitwidth. When we want to also compare integers of
+        // different bitwidth, a different approach has to be used.
+        return cmpNumbers(L.getZExtValue(), R.getZExtValue());
+    }
+
+    return 0;
 }
