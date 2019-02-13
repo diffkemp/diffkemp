@@ -1009,7 +1009,7 @@ class LlvmKernelBuilder:
 
     def get_kabi_whitelist(self):
         """Get a list of functions on the kernel abi whitelist."""
-        if self.kabi_tarname is None:
+        if not os.path.isfile(self.kabi_whitelist):
             raise BuildException("KABI whitelist not found")
         with open(self.kabi_whitelist) as whitelist_file:
             funs = whitelist_file.readlines()
