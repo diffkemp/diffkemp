@@ -172,6 +172,8 @@ class LlvmKernelBuilder:
                        stderr=devnull)
 
         tarname = "linux-{}.tar.xz".format(self.kernel_version)
+        self._get_config_file()
+        self._get_kabi_tarname()
         self._clean_downloaded_files(tarname)
         os.chdir(cwd)
 
@@ -227,19 +229,42 @@ class LlvmKernelBuilder:
         shutil.rmtree(tmpdir)
 
         tarname = "linux-{}.tar.xz".format(self.kernel_version)
+        self._get_config_file()
+        self._get_kabi_tarname()
         self._clean_downloaded_files(tarname)
         os.chdir(cwd)
 
         return tarname
 
+    def _get_config_file(self):
+        """
+        Get the name of the default config file.
+        Currently one for x86_64 is taken.
+        """
+        configfile_options = [
+            "kernel-x86_64.config",
+            "kernel-{}-x86_64.config".format(self.kernel_version.split("-")[0])
+        ]
+        for configfile in configfile_options:
+            if os.path.isfile(configfile):
+                self.configfile = configfile
+
+    def _get_kabi_tarname(self):
+        """Get the name of the KABI whitelist archive."""
+        kabi_tarname_options = [
+            "kernel-abi-whitelists-{}.tar.bz2".format(
+                self.kernel_version[:-4]),
+            "kernel-abi-whitelists-{}.tar.bz2".format(
+                self.kernel_version.split("-")[1].split(".")[0])
+        ]
+        for kabi_tarname in kabi_tarname_options:
+            if os.path.isfile(kabi_tarname):
+                self.kabi_tarname = kabi_tarname
+
     def _clean_downloaded_files(self, tarname):
         # Delete all files except kernel sources tar, config file, and kabi
         # whitelists tar if required (keep the directories since these are
         # other kernels - RPM does not contain dirs).
-        self.configfile = "kernel-{}-x86_64.config".format(
-            self.kernel_version.split("-")[0])
-        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
-            self.kernel_version.split("-")[1].split(".")[0])
         for f in os.listdir("."):
             if (os.path.isfile(f) and f != tarname and f != self.configfile and
                     f != self.kabi_tarname):
@@ -983,6 +1008,8 @@ class LlvmKernelBuilder:
 
     def get_kabi_whitelist(self):
         """Get a list of functions on the kernel abi whitelist."""
+        if self.kabi_tarname is None:
+            raise BuildException("KABI whitelist not found")
         with open(self.kabi_whitelist) as whitelist_file:
             funs = whitelist_file.readlines()
             # Strip whitespaces and skip the first line (whitelist header)
