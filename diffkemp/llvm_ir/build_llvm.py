@@ -86,35 +86,39 @@ class LlvmKernelBuilder:
         # Caching built modules so that we can reuse them
         self.built_modules = dict()
 
-    def _extract_tar(self, tarname):
-        """Extract kernel sources from .tar.xz file."""
-        cwd = os.getcwd()
-        os.chdir(self.kernel_base_path)
-        print "Extracting"
-        check_call(["tar", "-xJf", tarname])
-        os.remove(tarname)
-        dirname = tarname[:-7]
-        # If the produced directory does not have the expected name, rename it.
-        if dirname != self.kernel_path:
-            os.rename(dirname, self.kernel_path)
-        print "Done"
-        print("Kernel sources for version {} are in directory {}".format(
-              self.kernel_version, self.kernel_path))
-        os.chdir(cwd)
+    def _prepare_kernel(self):
+        """
+        Download and configure kernel if kernel directory does not exist.
+        """
+        print "Kernel version {}".format(self.kernel_version)
+        print "-------------------"
+        if not os.path.isdir(self.kernel_path):
+            self._get_kernel_source()
+            self._symlink_gcc_header(7)
+            self._configure_kernel()
+            self._autogen_time_headers()
+            self._disable_asm_goto()
+            if self.kabi_tarname:
+                self._extract_kabi_whitelist()
 
-    def _clean_downloaded_files(self, tarname):
-        # Delete all files except kernel sources tar, config file, and kabi
-        # whitelists tar if required (keep the directories since these are
-        # other kernels - RPM does not contain dirs).
-        self.configfile = "kernel-{}-x86_64.config".format(
-            self.kernel_version.split("-")[0])
-        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
-            self.kernel_version.split("-")[1].split(".")[0])
-        for f in os.listdir("."):
-            if (os.path.isfile(f) and f != tarname and f != self.configfile and
-                    f != self.kabi_tarname):
-                os.remove(f)
-        self.configfile = os.path.abspath(self.configfile)
+    def _get_kernel_source(self):
+        """Download the sources of the required kernel version."""
+        # Deduce source where kernel will be downloaded from.
+        # The choice is done based on version string, if it has release part
+        # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
+        # raise exception on such version string). If Brew is unavailable, use
+        # the CentOS Git.
+        try:
+            StrictVersion(self.kernel_version)
+            tarname = self._get_kernel_tar_from_upstream()
+        except ValueError:
+            try:
+                gethostbyname("download.eng.bos.redhat.com")
+                tarname = self._get_kernel_tar_from_brew()
+            except socket_error:
+                tarname = self._get_kernel_tar_from_centos()
+
+        self._extract_tar(tarname)
 
     def _get_kernel_tar_from_upstream(self):
         """
@@ -138,6 +142,38 @@ class LlvmKernelBuilder:
         print "Downloading kernel version {}".format(self.kernel_version)
         urlretrieve(url, os.path.join(self.kernel_base_path, tarname),
                     show_progress)
+
+        return tarname
+
+    def _get_kernel_tar_from_brew(self):
+        """
+        Download sources of the required kernel from Brew.
+        Sources are part of the SRPM package and need to be extracted out of
+        it.
+        :returns Name of the tar file containing the sources.
+        """
+        url = "http://download.eng.bos.redhat.com/brewroot/packages/kernel/"
+        version, release = self.kernel_version.split("-")
+        url += "{}/{}/src/".format(version, release)
+        rpmname = "kernel-{}.src.rpm".format(self.kernel_version)
+        url += rpmname
+        # Download the source RPM package
+        print "Downloading kernel version {}".format(self.kernel_version)
+        urlretrieve(url, os.path.join(self.kernel_base_path, rpmname),
+                    show_progress)
+
+        cwd = os.getcwd()
+        os.chdir(self.kernel_base_path)
+        # Extract files from SRPM package
+        with open(os.devnull, "w") as devnull:
+            rpm_cpio = Popen(["rpm2cpio", rpmname], stdout=PIPE,
+                             stderr=devnull)
+            check_call(["cpio", "-idmv"], stdin=rpm_cpio.stdout,
+                       stderr=devnull)
+
+        tarname = "linux-{}.tar.xz".format(self.kernel_version)
+        self._clean_downloaded_files(tarname)
+        os.chdir(cwd)
 
         return tarname
 
@@ -196,141 +232,35 @@ class LlvmKernelBuilder:
 
         return tarname
 
-    def _get_kernel_tar_from_brew(self):
-        """
-        Download sources of the required kernel from Brew.
-        Sources are part of the SRPM package and need to be extracted out of
-        it.
-        :returns Name of the tar file containing the sources.
-        """
-        url = "http://download.eng.bos.redhat.com/brewroot/packages/kernel/"
-        version, release = self.kernel_version.split("-")
-        url += "{}/{}/src/".format(version, release)
-        rpmname = "kernel-{}.src.rpm".format(self.kernel_version)
-        url += rpmname
-        # Download the source RPM package
-        print "Downloading kernel version {}".format(self.kernel_version)
-        urlretrieve(url, os.path.join(self.kernel_base_path, rpmname),
-                    show_progress)
+    def _clean_downloaded_files(self, tarname):
+        # Delete all files except kernel sources tar, config file, and kabi
+        # whitelists tar if required (keep the directories since these are
+        # other kernels - RPM does not contain dirs).
+        self.configfile = "kernel-{}-x86_64.config".format(
+            self.kernel_version.split("-")[0])
+        self.kabi_tarname = "kernel-abi-whitelists-{}.tar.bz2".format(
+            self.kernel_version.split("-")[1].split(".")[0])
+        for f in os.listdir("."):
+            if (os.path.isfile(f) and f != tarname and f != self.configfile and
+                    f != self.kabi_tarname):
+                os.remove(f)
+        self.configfile = os.path.abspath(self.configfile)
 
+    def _extract_tar(self, tarname):
+        """Extract kernel sources from .tar.xz file."""
         cwd = os.getcwd()
         os.chdir(self.kernel_base_path)
-        # Extract files from SRPM package
-        with open(os.devnull, "w") as devnull:
-            rpm_cpio = Popen(["rpm2cpio", rpmname], stdout=PIPE,
-                             stderr=devnull)
-            check_call(["cpio", "-idmv"], stdin=rpm_cpio.stdout,
-                       stderr=devnull)
-
-        tarname = "linux-{}.tar.xz".format(self.kernel_version)
-        self._clean_downloaded_files(tarname)
+        print "Extracting"
+        check_call(["tar", "-xJf", tarname])
+        os.remove(tarname)
+        dirname = tarname[:-7]
+        # If the produced directory does not have the expected name, rename it.
+        if dirname != self.kernel_path:
+            os.rename(dirname, self.kernel_path)
+        print "Done"
+        print("Kernel sources for version {} are in directory {}".format(
+            self.kernel_version, self.kernel_path))
         os.chdir(cwd)
-
-        return tarname
-
-    def _get_kernel_source(self):
-        """Download the sources of the required kernel version."""
-        # Deduce source where kernel will be downloaded from.
-        # The choice is done based on version string, if it has release part
-        # (e.g. 3.10.0-655) it must be downloaded from Brew (StrictVersion will
-        # raise exception on such version string). If Brew is unavailable, use
-        # the CentOS Git.
-        try:
-            StrictVersion(self.kernel_version)
-            tarname = self._get_kernel_tar_from_upstream()
-        except ValueError:
-            try:
-                gethostbyname("download.eng.bos.redhat.com")
-                tarname = self._get_kernel_tar_from_brew()
-            except socket_error:
-                tarname = self._get_kernel_tar_from_centos()
-
-        self._extract_tar(tarname)
-
-    def _call_and_print(self, command, stdout=None, stderr=None):
-        print "  {}".format(" ".join(command))
-        check_call(command, stdout=stdout, stderr=stderr)
-
-    def _call_output_and_print(self, command):
-        with open(os.devnull) as stderr:
-            print "    {}".format(" ".join(command))
-            output = check_output(command, stderr=stderr)
-            return output
-
-    def _check_make_target(self, make_command):
-        """
-        Check if make target exists.
-        Runs make with -n argument which returns 2 if the target does not
-        exist.
-        :param make_command: Make command to run
-        :return True if the command can be run (target exists)
-        """
-        with open(os.devnull, "w") as devnull:
-            ret_code = call(make_command + ["-n"],
-                            stdout=devnull, stderr=devnull)
-            return ret_code != 2
-
-    def _configure_kernel(self):
-        """
-        Configure kernel.
-        For kernels downloaded from Brew, use the provided config file.
-        For kernels downloaded from upstream, configure all as module (run
-        `make allmodconfig`).
-        Then run:
-            make prepare
-            make modules_prepare
-        """
-        cwd = os.getcwd()
-        os.chdir(self.kernel_path)
-        print "Configuring and preparing modules"
-        with open(os.devnull, 'w') as null:
-            if self.configfile is not None:
-                os.rename(self.configfile, ".config")
-            else:
-                self._call_and_print(["make", "allmodconfig"], null, null)
-            # self._disable_kabi_size_align_checks()
-            self._call_and_print(["make", "prepare"], null, null)
-            self._call_and_print(["make", "modules_prepare"], null, null)
-        os.chdir(cwd)
-
-    def _extract_kabi_whitelist(self):
-        """
-        Extract kernel abi whitelist from the downloaded tar and store it
-        inside the kernel source dir.
-        The file is named kabi_whitelist_x86_64.
-        """
-        cwd = os.getcwd()
-        os.chdir(self.kernel_base_path)
-
-        # Create temp dir and extract the files there
-        os.mkdir("kabi")
-        os.rename(self.kabi_tarname, "kabi/{}".format(self.kabi_tarname))
-        os.chdir("kabi")
-        check_call(["tar", "-xjf", self.kabi_tarname])
-
-        # Copy the desired whitelist
-        shutil.copyfile(os.path.join("kabi-current", self.kabi_whitelist_file),
-                        self.kabi_whitelist)
-
-        # Cleanup
-        os.chdir(self.kernel_base_path)
-        shutil.rmtree("kabi")
-        os.chdir(cwd)
-
-    def _prepare_kernel(self):
-        """
-        Download and configure kernel if kernel directory does not exist.
-        """
-        print "Kernel version {}".format(self.kernel_version)
-        print "-------------------"
-        if not os.path.isdir(self.kernel_path):
-            self._get_kernel_source()
-            self._symlink_gcc_header(7)
-            self._configure_kernel()
-            self._autogen_time_headers()
-            self._disable_asm_goto()
-            if self.kabi_tarname:
-                self._extract_kabi_whitelist()
 
     def _symlink_gcc_header(self, major_version):
         """
@@ -356,17 +286,28 @@ class LlvmKernelBuilder:
                                         "compiler-gcc{}.h".format(max_major))
                 os.symlink(src_file, dest_file)
 
-    def _disable_asm_goto(self):
+    def _configure_kernel(self):
         """
-        Transform 'asm goto(x)' command into 'asm("goto(x)")'.
-        This is because LLVM does not support asm goto yet.
-        The original GCC compiler header is kept since it is needed when
-        compiling the kernel using GCC.
+        Configure kernel.
+        For kernels downloaded from Brew, use the provided config file.
+        For kernels downloaded from upstream, configure all as module (run
+        `make allmodconfig`).
+        Then run:
+            make prepare
+            make modules_prepare
         """
-        shutil.copy(self.gcc_compiler_header, self.orig_gcc_compiler_header)
-        command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
-                   self.gcc_compiler_header]
-        check_call(command)
+        cwd = os.getcwd()
+        os.chdir(self.kernel_path)
+        print "Configuring and preparing modules"
+        with open(os.devnull, 'w') as null:
+            if self.configfile is not None:
+                os.rename(self.configfile, ".config")
+            else:
+                self._call_and_print(["make", "allmodconfig"], null, null)
+            # self._disable_kabi_size_align_checks()
+            self._call_and_print(["make", "prepare"], null, null)
+            self._call_and_print(["make", "modules_prepare"], null, null)
+        os.chdir(cwd)
 
     def _autogen_time_headers(self):
         """
@@ -382,21 +323,40 @@ class LlvmKernelBuilder:
         finally:
             os.chdir(cwd)
 
-    def _disable_kabi_size_align_checks(self):
+    def _disable_asm_goto(self):
         """
-        Set CONFIG_RH_KABI_SIZE_ALIGN_CHECKS=n in .config file. Compiling with
-        this option set to 'y' causes compilation failure.
+        Transform 'asm goto(x)' command into 'asm("goto(x)")'.
+        This is because LLVM does not support asm goto yet.
+        The original GCC compiler header is kept since it is needed when
+        compiling the kernel using GCC.
+        """
+        shutil.copy(self.gcc_compiler_header, self.orig_gcc_compiler_header)
+        command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
+                   self.gcc_compiler_header]
+        check_call(command)
+
+    def _extract_kabi_whitelist(self):
+        """
+        Extract kernel abi whitelist from the downloaded tar and store it
+        inside the kernel source dir.
+        The file is named kabi_whitelist_x86_64.
         """
         cwd = os.getcwd()
-        os.chdir(self.kernel_path)
-        os.rename(".config", ".oldconfig")
-        with open(".oldconfig", "r") as oldconfig:
-            with open(".config", "w") as config:
-                for line in oldconfig:
-                    if "CONFIG_RH_KABI_SIZE_ALIGN_CHECKS" in line:
-                        config.write("CONFIG_RH_KABI_SIZE_ALIGN_CHECKS=n\n")
-                    else:
-                        config.write(line)
+        os.chdir(self.kernel_base_path)
+
+        # Create temp dir and extract the files there
+        os.mkdir("kabi")
+        os.rename(self.kabi_tarname, "kabi/{}".format(self.kabi_tarname))
+        os.chdir("kabi")
+        check_call(["tar", "-xjf", self.kabi_tarname])
+
+        # Copy the desired whitelist
+        shutil.copyfile(os.path.join("kabi-current", self.kabi_whitelist_file),
+                        self.kabi_whitelist)
+
+        # Cleanup
+        os.chdir(self.kernel_base_path)
+        shutil.rmtree("kabi")
         os.chdir(cwd)
 
     def _clean_kernel(self):
@@ -406,6 +366,29 @@ class LlvmKernelBuilder:
         with open(os.devnull, "w") as stdout:
             self._call_and_print(["make", "clean"], stdout=stdout)
         os.chdir(cwd)
+
+    def _call_and_print(self, command, stdout=None, stderr=None):
+        print "  {}".format(" ".join(command))
+        check_call(command, stdout=stdout, stderr=stderr)
+
+    def _call_output_and_print(self, command):
+        with open(os.devnull) as stderr:
+            print "    {}".format(" ".join(command))
+            output = check_output(command, stderr=stderr)
+            return output
+
+    def _check_make_target(self, make_command):
+        """
+        Check if make target exists.
+        Runs make with -n argument which returns 2 if the target does not
+        exist.
+        :param make_command: Make command to run
+        :return True if the command can be run (target exists)
+        """
+        with open(os.devnull, "w") as devnull:
+            ret_code = call(make_command + ["-n"],
+                            stdout=devnull, stderr=devnull)
+            return ret_code != 2
 
     def _clean_object(self, obj):
         """Clean an object file"""
