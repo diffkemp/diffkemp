@@ -327,9 +327,9 @@ class LlvmKernelBuilder:
         with open(os.devnull, 'w') as null:
             if self.configfile is not None:
                 os.rename(self.configfile, ".config")
+                self._call_and_print(["make", "olddefconfig"], null, null)
             else:
                 self._call_and_print(["make", "allmodconfig"], null, null)
-            # self._disable_kabi_size_align_checks()
             self._call_and_print(["make", "prepare"], null, null)
             self._call_and_print(["make", "modules_prepare"], null, null)
         os.chdir(cwd)
@@ -342,7 +342,8 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         try:
-            check_call(["make", "-s", "kernel/time.o"])
+            with open(os.devnull, 'w') as null:
+                check_call(["make", "-s", "kernel/time.o"], stderr=null)
         except CalledProcessError:
             pass
         finally:
