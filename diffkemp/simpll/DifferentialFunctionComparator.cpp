@@ -310,23 +310,25 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
 /// of the cast.
 int DifferentialFunctionComparator::cmpValues(const Value *L,
                                               const Value *R) const {
-    // Detect casts and use the original value instead when comparing the
-    // control flow only.
-    const CastInst *CIL = dyn_cast<CastInst>(L);
-    const CastInst *CIR = dyn_cast<CastInst>(R);
+    if (controlFlowOnly) {
+        // Detect casts and use the original value instead when comparing the
+        // control flow only.
+        const CastInst *CIL = dyn_cast<CastInst>(L);
+        const CastInst *CIR = dyn_cast<CastInst>(R);
 
-    if (CIL && CIR && controlFlowOnly) {
-        // Both instruction are casts - compare the original values before
-        // the cast
-        return cmpValues(CIL->getOperand(0), CIR->getOperand(0));
-    } else if (CIL) {
-        // The left value is a cast - use the original value of it in the
-        // comparison
-        return cmpValues(CIL->getOperand(0), R);
-    } else if (CIR) {
-        // The right value is a cast - use the original value of it in the
-        // comparison
-        return cmpValues(L, CIR->getOperand(0));
+        if (CIL && CIR) {
+            // Both instruction are casts - compare the original values before
+            // the cast
+            return cmpValues(CIL->getOperand(0), CIR->getOperand(0));
+        } else if (CIL) {
+            // The left value is a cast - use the original value of it in the
+            // comparison
+            return cmpValues(CIL->getOperand(0), R);
+        } else if (CIR) {
+            // The right value is a cast - use the original value of it in the
+            // comparison
+            return cmpValues(L, CIR->getOperand(0));
+        }
     }
 
     int result = FunctionComparator::cmpValues(L, R);
