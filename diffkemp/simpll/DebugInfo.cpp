@@ -268,17 +268,29 @@ bool DebugInfo::isSameElemIndex(const DIDerivedType *TypeElem) {
 }
 
 /// Get index of the struct member having the given name.
-/// Handles struct alignment when multiple fields have the same offset.
+/// Handles struct alignment:
+///  - when multiple fields have the same offset
+///  - when a field has explicit alignment and a padding is inserted
 int DebugInfo::getTypeMemberIndex(const DICompositeType &type,
                                   const StringRef name) {
     unsigned index = 0;
+    uint64_t nextOffset = 0;
     for (auto Elem : type.getElements()) {
         if (auto TypeElem = dyn_cast<DIDerivedType>(Elem)) {
+            // Multiple fields with same alignments (bitfields)
             if (isSameElemIndex(TypeElem))
                 index--;
 
+            // Field with explicit alignment (padding is inserted)
+            if (auto align = TypeElem->getAlignInBits()) {
+                if (nextOffset % align != 0)
+                    index++;
+            }
+
             if (TypeElem->getName() == name)
                 return index;
+            nextOffset =
+                    TypeElem->getOffsetInBits() + TypeElem->getSizeInBits();
         }
         index++;
     }
