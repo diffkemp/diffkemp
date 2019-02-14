@@ -36,7 +36,8 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
         // use a map for comparison by value instead of name
         if (GA && GA->hasGlobalUnnamedAddr() && GA->hasInitializer() &&
             (isa<ConstantDataSequential>(GA->getInitializer()) ||
-             isa<ConstantInt>(GA->getInitializer()))) {
+             isa<ConstantInt>(GA->getInitializer()) ||
+             isa<ConstantAggregateZero>(GA->getInitializer()))) {
             // Value is a constant that can be compared by value
             Constant *I = GA->getInitializer();
 
@@ -76,6 +77,15 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
                     result = nextNumber;
                     nextNumber++;
                 }
+            } else if (auto *CZ = dyn_cast<ConstantAggregateZero>(I)) {
+                // 'zeroinitializer' gets always the same constant
+                if (ZeroInit) {
+                    result = ZeroInit;
+                } else {
+                    ZeroInit = nextNumber;
+                    result = nextNumber++;
+                }
+                GlobalNumbers.insert({value, result});
             }
         } else if (auto Fun = dyn_cast<Function>(value)) {
             // If the value is a function, find function in the other module

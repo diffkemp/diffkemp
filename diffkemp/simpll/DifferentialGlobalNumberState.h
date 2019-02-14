@@ -43,6 +43,9 @@ class DifferentialGlobalNumberState : public GlobalNumberState {
     using IntegerMap = std::map<APInt, uint64_t, cmpConstants>;
     IntegerMap Constants{IntegerMap(cmpConstants())};
 
+    // Mapping 'zeroinitializer' to a number
+    uint64_t ZeroInit = 0;
+
     std::vector<StringRef> PrintFunctionList = {"printk", "dev_warn", "dev_err",
         "_dev_info", "sprintf"};
 
