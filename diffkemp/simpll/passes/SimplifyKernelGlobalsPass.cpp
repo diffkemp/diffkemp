@@ -17,11 +17,14 @@
 /// 2. Same applies for functions.
 ///    Supported functions are:
 ///    - __compiletime_assert_<NUMBER>()
+/// 3. Remove global variables containing the kernel symbol table.
 ///
 //===----------------------------------------------------------------------===//
 
 #include "SimplifyKernelGlobalsPass.h"
 #include "Utils.h"
+
+#include <llvm/IR/Constants.h>
 
 /// Check if a global variable with the given name is supported to be merged in
 /// case multiple instances of the same variable with different suffices exist.
@@ -32,6 +35,8 @@ bool canMergeGlobalWithName(const std::string Name) {
 
 PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
                                                  ModuleAnalysisManager &mam) {
+    std::vector<GlobalVariable *> kSymstoDelete;
+
     for (auto &Glob : Mod.globals()) {
         std::string Name = Glob.getName();
         if (canMergeGlobalWithName(Name) && hasSuffix(Name)) {
@@ -41,6 +46,63 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
                 Glob.replaceAllUsesWith(GlobalOrig);
             else
                 Glob.setName(OrigName);
+        }
+
+        // Set kernel symbol to be removed
+        if (Glob.hasName() &&
+            Glob.getName().startswith("__ksym") && isa<GlobalVariable>(Glob)) {
+            kSymstoDelete.push_back(&Glob);
+        }
+    }
+
+    // Remove kernel symbols from llvm.used
+    if (GlobalVariable *GUsed = Mod.getGlobalVariable("llvm.used")) {
+        // Create a new initializer without the kernel symbols
+        ConstantArray *Used = dyn_cast<ConstantArray>(GUsed->getInitializer());
+        std::vector<Constant *> newValues;
+
+        for (Value *C : Used->operands()) {
+            // The element is always a bitcast.
+            ConstantExpr *CE = dyn_cast<ConstantExpr>(C);
+
+            // Check whether the bitcast is a kernel symbol
+            if (!CE->getOperand(0)->getName().startswith("__ksym"))
+                newValues.push_back(dyn_cast<Constant>(C));
+        }
+
+        // Create the new type and initialized
+        ArrayType *NewType =
+                ArrayType::get(Used->getType()->getArrayElementType(),
+                               newValues.size());
+        Constant *Used_New = ConstantArray::get(NewType, newValues);
+
+        // The initialized type has changed, therefore the whole global
+        // variable has to be replaced.
+        GlobalVariable *GUsed_New = new GlobalVariable(Mod, NewType,
+            GUsed->isConstant(), GUsed->getLinkage(), Used_New);
+        GUsed->eraseFromParent();
+        GUsed_New->setName("llvm.used");
+    }
+
+    // Remove kernel symbol
+    for (GlobalVariable *V : kSymstoDelete) {
+        Constant *Initializer = V->getInitializer();
+        Constant *PtrToInt;
+
+        // Remove the global variable itself
+        V->eraseFromParent();
+
+        if (ConstantStruct *IStruct = dyn_cast<ConstantStruct>(Initializer)) {
+            PtrToInt = IStruct->getAggregateElement((unsigned) 0);
+        }
+
+        // Remove its initializer and if it is a struct, also remove its first
+        // member (
+        if (Initializer) {
+            Initializer->destroyConstant();
+
+            if (PtrToInt)
+                PtrToInt->destroyConstant();
         }
     }
 

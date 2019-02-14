@@ -15,6 +15,8 @@
 #include "RemoveUnusedReturnValuesPass.h"
 #include "Utils.h"
 #include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <Config.h>
 
 PreservedAnalyses RemoveUnusedReturnValuesPass::run(
@@ -58,7 +60,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         if (!ModOther->getFunction(Fun.getName())->getReturnType()->isVoidTy())
             continue;
 
-        if (&Fun == Main || CalledFuns.find(&Fun) == CalledFuns.end())
+        if (CalledFuns.find(&Fun) == CalledFuns.end())
             continue;
 
         bool can_replace = true;
@@ -121,6 +123,34 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 Fun_New->removeAttribute(AttributeList::ReturnIndex, AK);
                 Fun_New->removeAttribute(AttributeList::FunctionIndex, AK);
             }
+
+            // Copy over all attributes to a new attribute list.
+            // Note: this is necessary in order to handle a non-optimal
+            // implementation of attributes in LLVM, which does not remove an
+            // AttributeSet when the last attribute in it is removed. This would
+            // cause the AttributeList to be compared as different in some
+            // cases. By copying over only the non-empty attribute sets to the
+            // new attribute list, this problem can be avoided.
+            AttributeList NewAttrList;
+            std::vector<AttributeList::AttrIndex> indices {
+                AttributeList::FirstArgIndex,
+                AttributeList::FunctionIndex,
+                AttributeList::ReturnIndex
+            };
+            for (AttributeList::AttrIndex i : indices) {
+                AttributeSet AttrSet =
+                        Fun_New->getAttributes().getAttributes(i);
+                if (AttrSet.getNumAttributes() != 0) {
+                    AttrBuilder AB;
+                    for (const Attribute &A : AttrSet)
+                        AB.addAttribute(A);
+                    NewAttrList = NewAttrList.addAttributes(
+                            Fun_New->getContext(), i, AB);
+                }
+            }
+            Fun_New->setAttributes(NewAttrList);
+
+            // Set the right function name
             Fun_New->takeName(&Fun);
 
             // Set the names of all arguments of the new function
@@ -144,6 +174,13 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                     ReturnInst *Term_New = ReturnInst::Create(
                             B.getContext());
                     B.getInstList().push_back(Term_New);
+
+                    // Run DCE on the new function
+                    PassBuilder pb;
+                    FunctionPassManager fpm; FunctionAnalysisManager fam;
+                    pb.registerFunctionAnalyses(fam);
+                    fpm.addPass<DCEPass>(DCEPass {});
+                    fpm.run(*Fun_New, fam);
                 }
 
             // Replace all uses of the old arguments
