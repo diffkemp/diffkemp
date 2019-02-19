@@ -109,6 +109,12 @@ int DifferentialFunctionComparator::cmpGEPs(
             IndicesL.push_back(*idxL);
             IndicesR.push_back(*idxR);
         }
+    } else if (GEPL->getNumIndices() == 1 && GEPR->getNumIndices() == 1) {
+        // If there is just a single (non-constant) index, it is an array
+        // element access. We do not need to compare source element type since
+        // members of the elements are not accessed here.
+        // Just the index itself is compared.
+        return cmpValues(GEPL->getOperand(1), GEPR->getOperand(1));
     } else
         // Indicies can't be compared by name, because they are not constant
         return OriginalResult;
