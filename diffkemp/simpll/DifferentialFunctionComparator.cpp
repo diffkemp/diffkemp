@@ -166,6 +166,12 @@ int DifferentialFunctionComparator::cmpOperations(
                     needToCmpOperands = false;
                     return cmpCallsWithExtraArg(CL, CR);
                 }
+
+                if (Result) {
+                    // If the call instructions are different (cmpOperations
+                    // doesn't compare the called functions), try inlining them.
+                    ModComparator->tryInline = CalledL;
+                }
             }
         } else {
             // If just one of the instructions is a call, it is possible that

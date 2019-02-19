@@ -63,9 +63,10 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         errs() << "Try to inline " << tryInline->getName() << "\n";
 #endif
         // Try to inline the problematic function
-        if (Function *toInline = First.getFunction(tryInline->getName()))
+        std::string nameToInline = tryInline->getName();
+        if (Function *toInline = First.getFunction(nameToInline))
             inlineFunction(First, toInline);
-        if (Function *toInline = Second.getFunction(tryInline->getName()))
+        if (Function *toInline = Second.getFunction(nameToInline))
             inlineFunction(Second, toInline);
         // Reset the function diff result
         ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
