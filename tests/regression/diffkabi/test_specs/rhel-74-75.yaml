@@ -6,4 +6,5 @@ control_flow_only: true
 
 functions:
         __netif_schedule: equal_syntax
+        dev_trans_start: equal_syntax
 
