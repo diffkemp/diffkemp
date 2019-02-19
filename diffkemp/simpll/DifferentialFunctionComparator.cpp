@@ -140,7 +140,8 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
     AttributeList RNew = R;
     for (unsigned i = L.index_begin(), e = L.index_end(); i != e; ++i) {
         LNew = cleanAttributes(LNew, i, LNew.getContext());
-        RNew = cleanAttributes(RNew, i, RNew.getContext());
+        if (RNew.hasAttributes(i))
+            RNew = cleanAttributes(RNew, i, RNew.getContext());
     }
     return FunctionComparator::cmpAttrs(LNew, RNew);
 }
