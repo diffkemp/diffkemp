@@ -23,14 +23,25 @@
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/Instructions.h>
 
-/// Replace the second argument of a call instruction by 0.
+/// Replace an argument of a call instruction by 0.
 /// Checks if the argument is of integer type.
-void replaceSecondArgByZero(CallInst *Call) {
-    auto OldArg = dyn_cast<ConstantInt>(Call->getArgOperand(1));
+void replaceArgByZero(CallInst *Call, unsigned index) {
+    auto OldArg = dyn_cast<ConstantInt>(Call->getArgOperand(index));
     if (OldArg->getType()->isIntegerTy()) {
-        Call->setArgOperand(1, ConstantInt::get(OldArg->getType(),
-                                                APInt(OldArg->getBitWidth(),
-                                                      0)));
+        Call->setArgOperand(index, ConstantInt::get(OldArg->getType(),
+                                                    APInt(OldArg->getBitWidth(),
+                                                          0)));
+    }
+}
+
+/// Replace an argument of a call instruction by 0.
+/// Checks if the argument is of integer type.
+void replaceArgByNull(CallInst *Call, unsigned index) {
+    auto OldArg = Call->getArgOperand(index);
+    if (OldArg->getType()->isPointerTy()) {
+        Call->setArgOperand(index,
+                            ConstantPointerNull::get(dyn_cast<PointerType>(
+                                    OldArg->getType())));
     }
 }
 
@@ -44,13 +55,16 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                 auto CalledFun = CallInstr->getCalledFunction();
 
                 if (!CalledFun) {
-                    // Replace the second argument of inline asm containing
-                    // __bug_table by 0.
+                    // For inline asm containing __bug_table:
+                    //  - replace the first argument byt null (is a file name)
+                    //  - replace the second argument by 0 (is a line number)
                     auto CalledVal = CallInstr->getCalledValue();
                     if (auto Asm = dyn_cast<InlineAsm>(CalledVal)) {
                         if (Asm->getAsmString().find("__bug_table")
-                                != std::string::npos)
-                            replaceSecondArgByZero(CallInstr);
+                                != std::string::npos) {
+                            replaceArgByNull(CallInstr, 0);
+                            replaceArgByZero(CallInstr, 1);
+                        }
                     }
                     continue;
                 }
@@ -91,13 +105,12 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                 }
 
                 // Replace the second argument of a call to warn_slowpath_null
-                // by 0.
+                // by 0 (it is a line number).
                 if (CalledFun->getName() == "warn_slowpath_null" ||
                         CalledFun->getName() == "warn_slowpath_fmt" ||
                         CalledFun->getName() == "__might_sleep") {
-                    replaceSecondArgByZero(CallInstr);
+                    replaceArgByZero(CallInstr, 1);
                 }
-
             }
         }
     }
