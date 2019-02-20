@@ -82,13 +82,16 @@ class TaskSpec:
             # are supposed to have the same name
             if isinstance(fun, str):
                 fun = (fun, fun)
-            try:
-                self.functions[fun] = Result.Kind[desc.upper()]
-            except KeyError:
-                if desc == "only_old":
-                    self.only_old.add(fun[0])
-                elif desc == "only_new":
-                    self.only_new.add(fun[0])
+            if desc == "skip":
+                self.functions[fun] = Result.Kind.NONE
+            else:
+                try:
+                    self.functions[fun] = Result.Kind[desc.upper()]
+                except KeyError:
+                    if desc == "only_old":
+                        self.only_old.add(fun[0])
+                    elif desc == "only_new":
+                        self.only_new.add(fun[0])
 
         # Names of files
         self.task_dir = os.path.join(tasks_path, module)
