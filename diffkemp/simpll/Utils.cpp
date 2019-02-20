@@ -174,7 +174,8 @@ bool hasSideEffect(const Function &Fun) {
 
 /// Returns true if the function is one of the supported allocators
 bool isAllocFunction(const Function &Fun) {
-    return Fun.getName() == "kzalloc" || Fun.getName() == "__kmalloc";
+    return Fun.getName() == "kzalloc" || Fun.getName() == "__kmalloc" ||
+           Fun.getName() == "kmalloc";
 }
 
 /// Mark the function with the 'alwaysinline' attribute and run
@@ -208,4 +209,27 @@ std::string valueAsString(const Constant *Val) {
         return std::to_string(IntVal->getSExtValue());
     }
     return "";
+}
+
+/// Extract struct type of the value.
+/// Works if the value is of pointer type which can be even bitcasted.
+/// Returns nullptr if the value is not a struct.
+StructType *getStructType(const Value *Value) {
+    StructType *Type = nullptr;
+    if (auto PtrTy = dyn_cast<PointerType>(Value->getType())) {
+        // Value is a pointer
+        if (auto *StructTy = dyn_cast<StructType>(PtrTy->getElementType())) {
+            // Value points to a struct
+            Type = StructTy;
+        } else if (auto *BitCast = dyn_cast<BitCastInst>(Value)) {
+            // Value is a bicast, get the original type
+            if (auto *SrcPtrTy = dyn_cast<PointerType>(BitCast->getSrcTy())) {
+                if (auto *SrcStructTy =
+                        dyn_cast<StructType>(SrcPtrTy->getElementType()))
+                    Type = SrcStructTy;
+            }
+        }
+    } else
+        Type = dyn_cast<StructType>(Value->getType());
+    return Type;
 }

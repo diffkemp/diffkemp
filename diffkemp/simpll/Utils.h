@@ -73,4 +73,8 @@ void inlineFunction(Module &Mod, const Function *InlineFun);
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val);
 
+/// Extract struct type of the value.
+/// Works if the value is of pointer type which can be even bitcasted.
+StructType *getStructType(const Value *Value);
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H

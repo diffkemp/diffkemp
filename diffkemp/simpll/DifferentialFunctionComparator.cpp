@@ -164,8 +164,18 @@ int DifferentialFunctionComparator::cmpOperations(
                     && CalledL->getName() == CalledR->getName()) {
                 // Check whether both instructions call an alloc function.
                 if (isAllocFunction(*CalledL)) {
-                    if (!cmpAllocs(CL, CR, needToCmpOperands))
+                    if (!cmpAllocs(CL, CR)) {
+                        needToCmpOperands = false;
                         return 0;
+                    }
+                }
+
+                if (CalledL->getIntrinsicID() == Intrinsic::memset &&
+                        CalledR->getIntrinsicID() == Intrinsic::memset) {
+                    if (!cmpMemset(CL, CR)) {
+                        needToCmpOperands = false;
+                        return 0;
+                    }
                 }
 
                 if (Result && controlFlowOnly &&
@@ -199,18 +209,28 @@ int DifferentialFunctionComparator::cmpOperations(
                 return 0;
             }
         }
+        errs() << "  "; L->dump();
+        errs() << "  "; R->dump();
     }
     return Result;
 }
 
+/// Compare structure size with a constant.
+/// @return 0 if equal, 1 otherwise.
+int DifferentialFunctionComparator::cmpStructTypeSizeWithConstant(
+        StructType *Type,
+        const Value *Const) const {
+    uint64_t ConstValue = dyn_cast<ConstantInt>(Const)->getZExtValue();
+    return ConstValue != LayoutL.getTypeStoreSize(Type);
+}
+
 /// Handle comparing of memory allocation function in cases where the size
 /// of the composite type is different.
-int DifferentialFunctionComparator::cmpAllocs(
-    const CallInst* CL, const CallInst* CR, bool &needToCmpOperands) const {
+int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
+                                              const CallInst *CR) const {
      // Look whether the sizes for allocation match. If yes, then return zero
      // (ignore flags).
      if (cmpValues(CL->op_begin()->get(), CR->op_begin()->get()) == 0) {
-         needToCmpOperands = false;
          return 0;
      }
 
@@ -226,41 +246,16 @@ int DifferentialFunctionComparator::cmpAllocs(
         !isa<ConstantInt>(CR->getOperand(0)))
         return 1;
 
-    const BitCastInst *NextInstL = dyn_cast<BitCastInst>(CL->getNextNode());
-    const BitCastInst *NextInstR = dyn_cast<BitCastInst>(CR->getNextNode());
+    // Get the allocated structure types
+    StructType *STyL = getStructType(CL->getNextNode());
+    StructType *STyR = getStructType(CR->getNextNode());
 
-    // The kzalloc instruction is followed by a bitcast instruction,
-    // therefore it is possible to compare the structure type itself
-    PointerType *PTyL =
-        dyn_cast<PointerType>(dyn_cast<BitCastInst>(NextInstL)->getDestTy());
-    PointerType *PTyR =
-        dyn_cast<PointerType>(dyn_cast<BitCastInst>(NextInstR)->getDestTy());
-
-    if (!isa<StructType>(PTyL->getElementType()) ||
-        !isa<StructType>(PTyR->getElementType()))
-        return 1;
-
-    StructType *STyL = dyn_cast<StructType>(PTyL->getElementType());
-    StructType *STyR = dyn_cast<StructType>(PTyR->getElementType());
-
-    // Look whether the first argument of kzalloc corresponds to the type size.
-    uint64_t TypeSizeL =
-            dyn_cast<ConstantInt>(CL->getOperand(0))->getZExtValue();
-    uint64_t TypeSizeR =
-            dyn_cast<ConstantInt>(CR->getOperand(0))->getZExtValue();
-
-    if (TypeSizeL != LayoutL.getTypeStoreSize(STyL) ||
-        TypeSizeR != LayoutR.getTypeStoreSize(STyR))
-        return 1;
-
-    // Look whether the types the memory is allocated for are the same.
-    if (STyL->getName() != STyR->getName())
-        return 1;
-
-    // As of now this function ignores kzalloc flags, therefore the argument
-    // comparison is complete.
-    needToCmpOperands = false;
-    return 0;
+    // Return 0 (equality) if both allocated types are structs of the same name
+    // and each struct has a size equal to the size of the allocated memory.
+    return !STyL || !STyR ||
+           cmpStructTypeSizeWithConstant(STyL, CL->getOperand(0)) ||
+           cmpStructTypeSizeWithConstant(STyR, CR->getOperand(0)) ||
+           STyL->getStructName() != STyR->getStructName();
 }
 
 /// Detect cast instructions and ignore them when comparing the control flow
@@ -444,4 +439,32 @@ int DifferentialFunctionComparator::cmpAPInts(const APInt &L, const APInt &R)
     }
 
     return 0;
+}
+
+/// Comparison of memset functions.
+/// Handles situation when memset sets the memory occupied by a structure, but
+/// the structure size changed.
+int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
+                                              const CallInst *CR) const {
+    // Compare all except the third operand (size to set).
+    for (unsigned i = 0; i < CL->getNumArgOperands(); ++i) {
+        if (i == 2)
+            continue;
+        if (int Res = cmpValues(CL->getArgOperand(i), CR->getArgOperand(i)))
+            return Res;
+    }
+
+    if (!cmpValues(CL->getArgOperand(2), CR->getArgOperand(2)))
+        return 0;
+
+    // Get the struct types of memset destinations.
+    StructType *STyL = getStructType(CL->getOperand(0));
+    StructType *STyR = getStructType(CR->getOperand(0));
+
+    // Return 0 (equality) if both memory destinations are structs of the same
+    // name and each memset size is equal to the corresponding struct size.
+    return !STyL || !STyR ||
+            cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2)) ||
+            cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2)) ||
+            STyL->getStructName() != STyR->getStructName();
 }

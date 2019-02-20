@@ -54,8 +54,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
                       bool &needToCmpOperands) const override;
     /// Handle comparing of memory allocation function in cases where the size
     /// of the composite type is different.
-    int cmpAllocs(const CallInst* CL, const CallInst* CR,
-                 bool &needToCmpOperands) const;
+    int cmpAllocs(const CallInst *CL, const CallInst *CR) const;
     /// Compare two function calls where one has an extra argument.
     /// Such calls are compared as equal if they only differ in the last
     /// argument which is 0 or NULL.
@@ -72,6 +71,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Specific comparing of values. Handles values generated from macros
     /// whose value changed and values where at least one of them is a cast.
     int cmpValues(const Value *L, const Value *R) const override;
+    /// Specific comarison of memcpy instructions
+    int cmpMemset(const CallInst *CL, const CallInst *CR) const;
+    /// Comparing of a structure size with a constant
+    int cmpStructTypeSizeWithConstant(StructType *Type,
+                                      const Value *Const) const;
 
   private:
     const DebugInfo *DI;
