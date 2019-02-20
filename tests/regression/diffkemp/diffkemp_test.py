@@ -160,7 +160,7 @@ class TestClass(object):
         speed.
         """
         for fun_pair, expected in task_spec.functions.iteritems():
-            if expected != Result.Kind.TIMEOUT:
+            if expected not in [Result.Kind.TIMEOUT, Result.Kind.NONE]:
                 result = functions_diff(first=task_spec.old,
                                         second=task_spec.new,
                                         funFirst=fun_pair[0],
