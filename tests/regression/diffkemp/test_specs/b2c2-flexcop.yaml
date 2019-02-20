@@ -8,19 +8,19 @@ debug: true
 params:
   - param: b2c2_flexcop_debug
     functions:
-      flexcop_pid_control: none
-      flexcop_set_tone: none
-      flexcop_dvb_exit: none
-      flexcop_determine_revision: none
-      flexcop_master_xfer: none
-      flexcop_i2c_request: none
-      flexcop_reset_block_300: none
-      flexcop_rcv_data_ctrl: none
-      flexcop_dump_reg: none
+      flexcop_pid_control: skip
+      flexcop_set_tone: skip
+      flexcop_dvb_exit: skip
+      flexcop_determine_revision: skip
+      flexcop_master_xfer: skip
+      flexcop_i2c_request: skip
+      flexcop_reset_block_300: skip
+      flexcop_rcv_data_ctrl: skip
+      flexcop_dump_reg: skip
       flexcop_i2c_operation: equal_syntax
-      flexcop_i2c_read4: none
-      flexcop_toggle_fullts_streaming: none
-      flexcop_set_voltage: none
-      flexcop_i2c_write4: none
-      flexcop_sram_set_dest: none
+      flexcop_i2c_read4: skip
+      flexcop_toggle_fullts_streaming: skip
+      flexcop_set_voltage: skip
+      flexcop_i2c_write4: skip
+      flexcop_sram_set_dest: skip
 
