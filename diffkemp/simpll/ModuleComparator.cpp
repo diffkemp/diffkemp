@@ -15,6 +15,7 @@
 #include "ModuleComparator.h"
 #include "DifferentialFunctionComparator.h"
 #include "Utils.h"
+#include "Config.h"
 #include <llvm/Support/raw_ostream.h>
 
 /// Syntactical comparison of functions.
@@ -23,10 +24,9 @@
 /// is designed for comparing functions between different modules.
 void ModuleComparator::compareFunctions(Function *FirstFun,
                                         Function *SecondFun) {
-#ifdef DEBUG
-    errs() << "Comparing " << FirstFun->getName() << " and "
-           << SecondFun->getName() << "\n";
-#endif
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Comparing " << FirstFun->getName() << " and "
+                           << SecondFun->getName() << "\n");
     ComparedFuns.emplace(std::make_pair(FirstFun, SecondFun), Result::UNKNOWN);
 
     // Comparing function declarations (function without bodies).
@@ -53,15 +53,14 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     DifferentialFunctionComparator fComp(FirstFun, SecondFun, controlFlowOnly,
                                          &GS, DI, this);
     if (fComp.compare() == 0) {
-#ifdef DEBUG
-        errs() << "Function " << FirstFun->getName()
-               << " is same in both modules\n";
-#endif
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Function " << FirstFun->getName()
+                               << " is same in both modules\n");
         ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
     } else if (tryInline) {
-#ifdef DEBUG
-        errs() << "Try to inline " << tryInline->getName() << "\n";
-#endif
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Try to inline " << tryInline->getName()
+                               << "\n");
         // Try to inline the problematic function
         std::string nameToInline = tryInline->getName();
         if (Function *toInline = First.getFunction(nameToInline))

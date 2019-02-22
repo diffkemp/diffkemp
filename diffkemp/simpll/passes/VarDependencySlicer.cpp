@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "VarDependencySlicer.h"
+#include <Config.h>
 #include "DebugInfo.h"
 #include <llvm/Analysis/CFG.h>
 #include <llvm/IR/CFG.h>
@@ -36,9 +37,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     IncludedBasicBlocks.clear();
     IncludedParams.clear();
 
-#ifdef DEBUG
-    errs() << "Function: " << Fun.getName().str() << "\n";
-#endif
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Function: " << Fun.getName().str() << "\n");
 
     // First phase - determine which instructions are dependent on the parameter
     for (auto &BB : Fun) {
@@ -65,10 +65,10 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
             if (dependent) {
                 addToDependent(&Instr);
-#ifdef DEBUG
-                errs() << "Dependent: ";
-                Instr.dump();
-#endif
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+                    dbgs() << "Dependent: ";
+                    Instr.dump();
+                });
                 if (auto BranchInstr = dyn_cast<BranchInst>(&Instr)) {
                     auto affectedBBs = affectedBasicBlocks(BranchInstr);
                     addAllInstrs(affectedBBs);
@@ -85,7 +85,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
     // Second phase - determine which additional instructions we need to
     // produce a valid CFG
-    errs() << "Second phase\n";
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Second phase\n");
     // Recursively add all instruction operands to included
     for (auto &Inst : DependentInstrs) {
         if (isa<PHINode>(Inst))
@@ -159,10 +159,10 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
         // Collect and clear all instruction that can be removed
         for (auto &Inst : BB) {
             if (!isIncluded(&Inst) && !Inst.isTerminator()) {
-#ifdef DEBUG
-                errs() << "Clearing ";
-                Inst.dump();
-#endif
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+                    dbgs() << "Clearing ";
+                    Inst.dump();
+                });
                 Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
                 toRemove.push_back(&Inst);
             }
@@ -211,15 +211,17 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     // to return void
     if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
               && !Fun.getReturnType()->isVoidTy()) {
-        errs() << "Changing return type of " << Fun.getName() << " to void.\n";
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Changing return type of " << Fun.getName()
+                               << " to void.\n");
         changeToVoid(Fun);
     }
 
-#ifdef DEBUG
-    errs() << "Function " << Fun.getName().str() << " after cleanup:\n";
-    Fun.dump();
-    errs() << "\n";
-#endif
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+        dbgs() << "Function " << Fun.getName().str() << " after cleanup:\n";
+        Fun.dump();
+        dbgs() << "\n";
+    });
     return PreservedAnalyses::none();
 }
 
@@ -264,10 +266,10 @@ void VarDependencySlicer::addAllInstrs(
         IncludedBasicBlocks.insert(BB);
         for (auto &Instr : *BB) {
             DependentInstrs.insert(&Instr);
-#ifdef DEBUG
-            errs() << "Dependent: ";
-            Instr.dump();
-#endif
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+                dbgs() << "Dependent: ";
+                Instr.dump();
+            });
         }
     }
 }
@@ -326,10 +328,10 @@ bool VarDependencySlicer::addAllOpsToIncluded(
     for (auto &Op : Inst->operands()) {
         if (auto OpInst = dyn_cast<Instruction>(&Op)) {
             if (addToIncluded(OpInst)) {
-#ifdef DEBUG
-                errs() << "Included: ";
-                OpInst->dump();
-#endif
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+                    dbgs() << "Included: ";
+                    OpInst->dump();
+                });
                 added = true;
                 addAllOpsToIncluded(OpInst);
             }
@@ -420,10 +422,10 @@ void VarDependencySlicer::mockReturn(Type *RetType) {
                 dyn_cast<PointerType>(RetType));
 
     auto NewReturn = builder.CreateRet(returnVal);
-#ifdef DEBUG
-    errs() << "New return: ";
-    NewReturn->dump();
-#endif
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+        dbgs() << "New return: ";
+        NewReturn->dump();
+    });
 }
 
 /// Check if a basic block can be removed.

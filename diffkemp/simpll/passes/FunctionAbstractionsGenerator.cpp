@@ -17,6 +17,7 @@
 #include "Utils.h"
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/Instructions.h>
+#include <Config.h>
 
 AnalysisKey FunctionAbstractionsGenerator::Key;
 
@@ -86,7 +87,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                         args.push_back(CallInstr->getCalledValue());
                     auto newCall = CallInst::Create(newFun, args, "",
                                                     CallInstr);
-                    newCall->dump();
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, newCall->dump());
                     CallInstr->replaceAllUsesWith(newCall);
                     toErase.push_back(&Instr);
                 }

@@ -15,6 +15,7 @@
 #include "RemoveUnusedReturnValuesPass.h"
 #include "Utils.h"
 #include <llvm/IR/Instructions.h>
+#include <Config.h>
 
 PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Module &Mod,
@@ -61,9 +62,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             continue;
 
         bool can_replace = true;
-#ifdef DEBUG
-        errs() << "Changing function: " << Fun.getName() << " to void\n";
-#endif
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Changing function: " << Fun.getName()
+                               << " to void\n");
         for (Use &U : Fun.uses()) {
             // Figure out whether the return value is used after each call
 
@@ -71,16 +72,13 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 if (CI->getCalledFunction() != &Fun)
                     // Different function is called, Fun is an argument
                     can_replace = false;
-#ifdef DEBUG
-                CI->print(errs(), false);
-                errs() << "\n";
-                for (Use &UU : CI->uses()) {
-                    errs() << "  ";
-                    UU.getUser()->print(errs(),
-                                        false);
-                    errs() << "\n";
-                }
-#endif
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+                    CI->dump();
+                    for (Use &UU : CI->uses()) {
+                        dbgs() << "  ";
+                        UU.getUser()->dump();
+                    }
+                });
                 if (!CI->use_empty())
                     // The return value is actually used
                     can_replace = false;
@@ -88,16 +86,13 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 if (II->getCalledFunction() != &Fun)
                     // Different function is called, Fun is an argument
                     can_replace = false;
-#ifdef DEBUG
-                II->print(errs(), false);
-                errs() << "\n";
-                for (Use &UU : II->uses()) {
-                    errs() << "  ";
-                    UU.getUser()->print(errs(),
-                                        false);
-                    errs() << "\n";
-                }
-#endif
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
+                    II->dump();
+                    for (Use &UU : II->uses()) {
+                        dbgs() << "  ";
+                        UU.getUser()->dump();
+                    }
+                });
                 if (!II->use_empty())
                     // The return value is actually used
                     can_replace = false;
@@ -189,10 +184,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                     CI_New->setCallingConv(CI->getCallingConv());
                     if (CI->isTailCall())
                         CI_New->setTailCall();
-#ifdef DEBUG
-                    errs() << "Replacing :" << *CI << " with " << *CI_New;
-                    errs() << "\n";
-#endif
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                    dbgs() << "Replacing :" << *CI << " with "
+                                           << *CI_New << "\n");
                     // Erase the old instruction
                     CI->eraseFromParent();
                 } else if (InvokeInst *II = dyn_cast<InvokeInst>(U.getUser())) {
@@ -223,18 +217,14 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                                 AttributeList::FunctionIndex, AK);
                     }
                     II_New->setCallingConv(II->getCallingConv());
-#ifdef DEBUG
-                    errs() << "Replacing :" << *II << " with " << *II_New;
-                    errs() << "\n";
-#endif
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                    dbgs() << "Replacing :" << *II << " with "
+                                           << *II_New << "\n");
                     // Erase the old instruction
                     II->eraseFromParent();
                 }
             }
-#ifdef DEBUG
-            Fun_New->print(errs());
-            errs() << "\n";
-#endif
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL, Fun_New->dump());
             // Delete function after iteration
             functionsToDelete.push_back(&Fun);
         }

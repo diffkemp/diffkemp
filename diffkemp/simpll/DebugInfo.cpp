@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DebugInfo.h"
+#include "Config.h"
 #include <llvm/IR/Constants.h>
 
 using namespace llvm;
@@ -163,7 +164,7 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                             IndexConstant->getBitWidth(),
                             ModFirst.getContext());
 
-                    GEP->dump();
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, GEP->dump());
 
                     StructFieldNames.insert(
                         {{dyn_cast<StructType>(indexedType),
@@ -179,7 +180,9 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                                     indexedType->getStructName()),
                         indexSecond}, elementName});
 
-                    errs() << "New index: " << indexSecond << "\n";
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                    dbgs() << "New index: " << indexSecond
+                                           << "\n");
                 }
             }
 

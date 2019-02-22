@@ -14,6 +14,7 @@
 
 #include "Config.h"
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/Debug.h>
 
 // Command line options
 cl::opt<std::string> FirstFileOpt(cl::Positional, cl::Required,
@@ -30,6 +31,8 @@ cl::opt<bool> ControlFlowOpt("control-flow", cl::desc(
         "Only keep instructions related to the control-flow."));
 cl::opt<bool> PrintCallstacksOpt("print-callstacks", cl::desc(
         "Print call stacks for non-equal functions."));
+cl::opt<bool> VerboseOpt("verbose", cl::desc(
+        "Show verbose output (debugging information)."));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -73,6 +76,11 @@ Config::Config() : First(parseIRFile(FirstFileOpt, err, context_first)),
         // Parse --suffix option - add suffix to the names of output files.
         FirstOutFile = addSuffix(FirstOutFile, SuffixOpt);
         SecondOutFile = addSuffix(SecondOutFile, SuffixOpt);
+    }
+    if (VerboseOpt) {
+        // Enable debugging output in passes
+        DebugFlag = true;
+        setCurrentDebugType(DEBUG_SIMPLL);
     }
 }
 

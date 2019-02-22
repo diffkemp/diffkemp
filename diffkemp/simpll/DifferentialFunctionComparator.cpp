@@ -209,8 +209,6 @@ int DifferentialFunctionComparator::cmpOperations(
                 return 0;
             }
         }
-        errs() << "  "; L->dump();
-        errs() << "  "; R->dump();
     }
     return Result;
 }

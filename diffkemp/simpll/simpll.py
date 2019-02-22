@@ -48,9 +48,10 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
             simpll_command.append("--control-flow")
 
         if verbose:
+            simpll_command.append("--verbose")
             print " ".join(simpll_command)
 
-        simpll_out = check_output(simpll_command, stderr=stderr)
+        simpll_out = check_output(simpll_command)
         check_call(["opt", "-S", "-deadargelim", "-o", first_out, first_out],
                    stderr=stderr)
         check_call(["opt", "-S", "-deadargelim", "-o", second_out, second_out],

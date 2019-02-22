@@ -14,6 +14,7 @@
 #include "UnifyMemcpyPass.h"
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
+#include <Config.h>
 
 PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                                        FunctionAnalysisManager &fam) {
@@ -26,7 +27,7 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                     continue;
 
                 if (CalledFun->getName() == "__memcpy") {
-                    Call->dump();
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, Call->dump());
                     // Replace call to __memcpy by llvm.memcpy intrinsic
                     IRBuilder<> builder(&Instr);
                     auto newCall = builder.CreateMemCpy(Call->getArgOperand(0),

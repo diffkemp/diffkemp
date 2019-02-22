@@ -20,6 +20,8 @@
 #include "llvm/Support/CommandLine.h"
 #include <llvm/Support/SourceMgr.h>
 
+#define DEBUG_SIMPLL "debug-simpll"
+
 using namespace llvm;
 
 // Declaration of command line options
@@ -30,6 +32,7 @@ extern cl::opt<std::string> VariableOpt;
 extern cl::opt<std::string> SuffixOpt;
 extern cl::opt<bool> ControlFlowOpt;
 extern cl::opt<bool> PrintCallstacksOpt;
+extern cl::opt<bool> VerboseOpt;
 
 /// Tool configuration parsed from CLI options.
 class Config {

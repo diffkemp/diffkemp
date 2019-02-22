@@ -123,10 +123,9 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
                  config.FirstFun, config.SecondFun,
                  mam.getResult<CalledFunctionsAnalysis>(*config.First,
                                                         config.FirstFun));
-#ifdef DEBUG
-    llvm::errs() << "StructFieldNames size: " <<
-        DI.StructFieldNames.size() << '\n';
-#endif
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "StructFieldNames size: "
+                           << DI.StructFieldNames.size() << "\n");
 
     std::vector<FunPair> result;
     // Compare functions for syntactical equivalence
@@ -136,27 +135,25 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
 
-#ifdef DEBUG
-        errs() << "Syntactic comparison results:\n";
-#endif
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Syntactic comparison results:\n");
         bool allEqual = true;
         for (auto &funPair : modComp.ComparedFuns) {
             if (funPair.second == ModuleComparator::NOT_EQUAL) {
                 allEqual = false;
                 result.emplace_back(funPair.first.first, funPair.first.second);
-#ifdef DEBUG
-                errs() << funPair.first.first->getName()
-                       << " are syntactically different\n";
-#endif
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << funPair.first.first->getName()
+                                       << " are syntactically different\n");
             }
         }
         if (allEqual) {
             // Functions are equal iff all functions that were compared by
             // module comparator(i.e. those that are recursively called by the
             // main functions) are equal.
-#ifdef DEBUG
-            errs() << "All functions are syntactically equal\n";
-#endif
+            DEBUG_WITH_TYPE(
+                    DEBUG_SIMPLL,
+                    dbgs() << "All functions are syntactically equal\n");
             config.FirstFun->deleteBody();
             config.SecondFun->deleteBody();
             deleteAliasToFun(*config.First, config.FirstFun);
@@ -190,7 +187,9 @@ void markCalleesAlwaysInline(Function &Fun,
                 if (!CalledFun->hasFnAttribute(
                         Attribute::AttrKind::AlwaysInline)) {
                     CalledFun->addFnAttr(Attribute::AttrKind::AlwaysInline);
-                    errs() << "Inlining: " << CalledFun->getName() << "\n";
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                    dbgs() << "Inlining: "
+                                           << CalledFun->getName() << "\n");
                     markCalleesAlwaysInline(*CalledFun, IgnoreFuns);
                 }
             }
@@ -207,10 +206,11 @@ void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns) {
     if (MainFuns.empty())
         return;
 
-    errs() << "Postprocess\n";
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Postprocess\n");
 
     for (auto *Main : MainFuns) {
-        errs() << "  " << Main->getName() << "\n";
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "  " << Main->getName() << "\n");
         // Do not inline function that will be compared
         if (Main->hasFnAttribute(Attribute::AttrKind::AlwaysInline))
             Main->removeFnAttr(Attribute::AttrKind::AlwaysInline);
