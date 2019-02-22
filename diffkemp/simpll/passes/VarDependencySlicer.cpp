@@ -192,7 +192,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
             if (canRemoveBlock(BB)) {
                 bool removed =
                         TryToSimplifyUncondBranchFromEmptyBlock(BB);
-                assert(removed);
+                assert(removed || BB->getSingleSuccessor() == BB);
             }
         }
     }
