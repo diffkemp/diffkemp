@@ -84,6 +84,7 @@ void preprocessModule(Module &Mod,
     pb.registerModuleAnalyses(mam);
 
     mpm.addPass(SimplifyKernelGlobalsPass {});
+    mpm.addPass(RemoveLifetimeCallsPass {});
 
     mpm.run(Mod, mam);
 }
@@ -232,6 +233,5 @@ void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns) {
     ModuleAnalysisManager mam(false);
     pb.registerModuleAnalyses(mam);
     mpm.addPass(AlwaysInlinerPass {});
-    mpm.addPass(RemoveLifetimeCallsPass {});
     mpm.run(Mod, mam);
 }
