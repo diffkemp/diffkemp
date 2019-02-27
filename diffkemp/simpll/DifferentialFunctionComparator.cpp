@@ -209,6 +209,17 @@ int DifferentialFunctionComparator::cmpOperations(
                 return 0;
             }
         }
+        // Handle alloca of a structure type with changed layout
+        if (isa<AllocaInst>(L) && isa<AllocaInst>(R)) {
+            StructType *TypeL = dyn_cast<StructType>(
+                    dyn_cast<AllocaInst>(L)->getAllocatedType());
+            StructType *TypeR = dyn_cast<StructType>(
+                    dyn_cast<AllocaInst>(R)->getAllocatedType());
+            if (TypeL && TypeR &&
+                    TypeL->getStructName() == TypeR->getStructName())
+                return cmpNumbers(dyn_cast<AllocaInst>(L)->getAlignment(),
+                                  dyn_cast<AllocaInst>(R)->getAlignment());
+        }
     }
     return Result;
 }
