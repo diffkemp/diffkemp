@@ -89,7 +89,8 @@ class KernelSource:
             else:
                 command.append("-0")
             command.append(symbol)
-            cscope_output = check_output(command)
+            with open(os.devnull, "w") as devnull:
+                cscope_output = check_output(command, stderr=devnull)
             return [l for l in cscope_output.splitlines() if
                     l.split()[0].endswith("c")]
         except CalledProcessError:
@@ -142,8 +143,12 @@ class KernelSource:
                 if len(cscope_defs) == 0 and len(cscope_uses) == 0:
                     # Source wasn't found even after checking for special cases
                     raise SourceNotFoundException(symbol)
-        except SourceNotFoundException(symbol):
-            raise
+        except SourceNotFoundException:
+            if symbol == "vfree":
+                cscope_uses = []
+                cscope_defs = [os.path.join(self.kernel_path, "mm/vmalloc.c")]
+            else:
+                raise
         finally:
             os.chdir(cwd)
 
