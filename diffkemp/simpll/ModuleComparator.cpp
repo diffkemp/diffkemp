@@ -57,28 +57,30 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         dbgs() << "Function " << FirstFun->getName()
                                << " is same in both modules\n");
         ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
-    } else if (tryInline) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << "Try to inline " << tryInline->getName()
-                               << "\n");
-        // Try to inline the problematic function
-        std::string nameToInline = tryInline->getName();
-        if (Function *toInline = First.getFunction(nameToInline))
-            inlineFunction(First, toInline);
-        if (Function *toInline = Second.getFunction(nameToInline))
-            inlineFunction(Second, toInline);
-        // Reset the function diff result
-        ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
-        tryInline = nullptr;
-        // Re-run the comparison
-        DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
-                                                   controlFlowOnly,
-                                                   &GS, DI, this);
-        if (fCompSecond.compare() == 0)
-            ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
-        else
-            ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
     } else {
         ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+        while (tryInline) {
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                            dbgs() << "Try to inline " << tryInline->getName()
+                                   << "\n");
+            // Try to inline the problematic function
+            std::string nameToInline = tryInline->getName();
+            if (Function *toInline = First.getFunction(nameToInline))
+                inlineFunction(First, toInline);
+            if (Function *toInline = Second.getFunction(nameToInline))
+                inlineFunction(Second, toInline);
+            // Reset the function diff result
+            ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
+            tryInline = nullptr;
+            // Re-run the comparison
+            DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
+                                                       controlFlowOnly,
+                                                       &GS, DI, this);
+            if (fCompSecond.compare() == 0) {
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+            } else {
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+            }
+        }
     }
 }

@@ -21,6 +21,8 @@
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
+#include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
 
 /// Extract called function from a called value Handles situation when the
 /// called value is a bitcast.
@@ -180,7 +182,7 @@ bool isAllocFunction(const Function &Fun) {
 
 /// Mark the function with the 'alwaysinline' attribute and run
 /// the Alwaysinliner pass. Also remove the 'noinline' atribute.
-void inlineFunction(Module &Mod, const Function *InlineFun) {
+void inlineFunction(Module &Mod, Function *InlineFun) {
     for (auto &Fun : Mod) {
         if (&Fun == InlineFun) {
             if (!Fun.hasFnAttribute(Attribute::AttrKind::AlwaysInline))
@@ -195,12 +197,32 @@ void inlineFunction(Module &Mod, const Function *InlineFun) {
         }
     }
 
+    // Get a list of functions calling the function to inline (these will be
+    // changed).
+    std::set<Function *> Callers;
+    for (auto *User : InlineFun->users()) {
+        if (auto *InstUser = dyn_cast<Instruction>(User)) {
+            if (InstUser->getFunction())
+                Callers.insert(InstUser->getFunction());
+        }
+    }
+
     PassBuilder pb;
     ModulePassManager mpm(false);
     ModuleAnalysisManager mam(false);
     pb.registerModuleAnalyses(mam);
     mpm.addPass(AlwaysInlinerPass {});
     mpm.run(Mod, mam);
+
+    // Run some simplifications on the changed functions
+    FunctionPassManager fpm(false);
+    FunctionAnalysisManager fam(false);
+    pb.registerFunctionAnalyses(fam);
+    fpm.addPass(SimplifyCFGPass {});
+    fpm.addPass(DCEPass {});
+    for (auto *Caller : Callers) {
+        fpm.run(*Caller, fam);
+    }
 }
 
 /// Get value of the given constant as a string

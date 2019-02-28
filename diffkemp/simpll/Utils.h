@@ -68,7 +68,7 @@ bool hasSideEffect(const Function &Fun);
 bool isAllocFunction(const Function &Fun);
 
 /// Inline the given function
-void inlineFunction(Module &Mod, const Function *InlineFun);
+void inlineFunction(Module &Mod, Function *InlineFun);
 
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val);
