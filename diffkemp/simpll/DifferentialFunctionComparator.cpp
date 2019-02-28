@@ -187,7 +187,8 @@ int DifferentialFunctionComparator::cmpOperations(
                 if (Result) {
                     // If the call instructions are different (cmpOperations
                     // doesn't compare the called functions), try inlining them.
-                    ModComparator->tryInline = CalledL;
+                    if (!CalledL->isDeclaration())
+                        ModComparator->tryInline = CalledL;
                 }
             }
         } else {
@@ -195,7 +196,8 @@ int DifferentialFunctionComparator::cmpOperations(
             // some logic has been moved into a function. We'll try to inline
             // that function and compare again.
             const CallInst *Call = dyn_cast<CallInst>(isa<CallInst>(L) ? L : R);
-            ModComparator->tryInline = Call->getCalledFunction();
+            if (!Call->getCalledFunction()->isDeclaration())
+                ModComparator->tryInline = Call->getCalledFunction();
         }
     }
     if (Result) {
