@@ -267,6 +267,11 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
            STyL->getStructName() != STyR->getStructName();
 }
 
+/// Check if the given operation can be ignored (it does not affect semantics).
+bool mayIgnore(const Instruction *Inst) {
+    return isa<AllocaInst>(Inst) || Inst->isCast();
+}
+
 /// Detect cast instructions and ignore them when comparing the control flow
 /// only.
 /// Note: this function was copied from FunctionComparator.
@@ -278,24 +283,25 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
     do {
         bool needToCmpOperands = true;
 
-        // Skip bitcast instructions.
-        // Note: this has to be done before calling cmpOperations, because
-        // otherwise the serial number counter used by cmpValues would be
-        // increased, causing the next instruction to compare as non-equal.
-        if (controlFlowOnly)
-            if (InstL->isCast() && InstR->isCast()) {
-                InstL++; InstR++;
-                continue;
-            } else if (InstL->isCast()) {
-                InstL++;
-                continue;
-            } else if (InstR->isCast()) {
-                InstR++;
+        if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands)) {
+            // Some operations not affecting semantics and control flow may be
+            // ignored (currently allocas and casts). This may help to handle
+            // some small changes that do not affect semantics (it is also
+            // useful in combination with function inlining).
+            if (controlFlowOnly && (mayIgnore(&*InstL) || mayIgnore(&*InstR))) {
+                // Reset serial counters
+                sn_mapL.erase(&*InstL);
+                sn_mapR.erase(&*InstR);
+                // One of the compared operations will be skipped and the
+                // comparison will be repeated.
+                if (mayIgnore(&*InstL))
+                    InstL++;
+                else
+                    InstR++;
                 continue;
             }
-
-        if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands))
-           return Res;
+            return Res;
+        }
         if (needToCmpOperands) {
             assert(InstL->getNumOperands() == InstR->getNumOperands());
 
