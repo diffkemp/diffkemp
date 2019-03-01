@@ -196,7 +196,8 @@ int DifferentialFunctionComparator::cmpOperations(
             // some logic has been moved into a function. We'll try to inline
             // that function and compare again.
             const CallInst *Call = dyn_cast<CallInst>(isa<CallInst>(L) ? L : R);
-            if (!Call->getCalledFunction()->isDeclaration())
+            if (Call->getCalledFunction() &&
+                    !Call->getCalledFunction()->isDeclaration())
                 ModComparator->tryInline = Call->getCalledFunction();
         }
     }

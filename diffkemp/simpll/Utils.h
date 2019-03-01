@@ -70,6 +70,11 @@ bool isAllocFunction(const Function &Fun);
 /// Inline the given function
 void inlineFunction(Module &Mod, Function *InlineFun);
 
+/// Run simplification passes on the function
+///  - simplify CFG
+///  - dead code elimination
+void simplifyFunction(Function *Fun);
+
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val);
 

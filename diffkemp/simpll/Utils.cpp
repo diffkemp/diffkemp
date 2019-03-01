@@ -214,15 +214,9 @@ void inlineFunction(Module &Mod, Function *InlineFun) {
     mpm.addPass(AlwaysInlinerPass {});
     mpm.run(Mod, mam);
 
-    // Run some simplifications on the changed functions
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
-    pb.registerFunctionAnalyses(fam);
-    fpm.addPass(SimplifyCFGPass {});
-    fpm.addPass(DCEPass {});
-    for (auto *Caller : Callers) {
-        fpm.run(*Caller, fam);
-    }
+    // Run simplification on the changed functions
+    for (auto *Caller : Callers)
+        simplifyFunction(Caller);
 }
 
 /// Get value of the given constant as a string
@@ -254,4 +248,17 @@ StructType *getStructType(const Value *Value) {
     } else
         Type = dyn_cast<StructType>(Value->getType());
     return Type;
+}
+
+/// Run simplification passes on the function
+///  - simplify CFG
+///  - dead code elimination
+void simplifyFunction(Function *Fun) {
+    PassBuilder pb;
+    FunctionPassManager fpm(false);
+    FunctionAnalysisManager fam(false);
+    pb.registerFunctionAnalyses(fam);
+    fpm.addPass(SimplifyCFGPass {});
+    fpm.addPass(DCEPass {});
+    fpm.run(*Fun, fam);
 }

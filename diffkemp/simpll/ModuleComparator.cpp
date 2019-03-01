@@ -65,21 +65,39 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                                    << "\n");
             // Try to inline the problematic function
             std::string nameToInline = tryInline->getName();
-            if (Function *toInline = First.getFunction(nameToInline))
-                inlineFunction(First, toInline);
-            if (Function *toInline = Second.getFunction(nameToInline))
-                inlineFunction(Second, toInline);
-            // Reset the function diff result
-            ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
-            tryInline = nullptr;
-            // Re-run the comparison
-            DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
-                                                       controlFlowOnly,
-                                                       &GS, DI, this);
-            if (fCompSecond.compare() == 0) {
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+            Function *inlineFirst = First.getFunction(nameToInline);
+            Function *inlineSecond = Second.getFunction(nameToInline);
+            // Do not inline if the function to be inlined has already been
+            // compared and is non-equal. In such case, inlining could remove
+            // the function and we could not get information about it later.
+            auto compared = ComparedFuns.find({inlineFirst, inlineSecond});
+            if (compared == ComparedFuns.end()
+                    || compared->second == Result::EQUAL) {
+                // Inline the function in the appropriate module and simplify
+                // the other function (because inlining does the same
+                // simplification to the caller of the inlined function).
+                if (inlineFirst) {
+                    inlineFunction(First, inlineFirst);
+                    simplifyFunction(SecondFun);
+                }
+                if (inlineSecond) {
+                    inlineFunction(Second, inlineSecond);
+                    simplifyFunction(FirstFun);
+                }
+                // Reset the function diff result
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
+                tryInline = nullptr;
+                // Re-run the comparison
+                DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
+                                                           controlFlowOnly,
+                                                           &GS, DI, this);
+                if (fCompSecond.compare() == 0) {
+                    ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+                } else {
+                    ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+                }
             } else {
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+                tryInline = nullptr;
             }
         }
     }
