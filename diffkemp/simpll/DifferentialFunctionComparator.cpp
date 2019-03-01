@@ -371,15 +371,13 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             // part of the functionality into a function and hence we'll
             // treat the BBs as equal here to continue comparing and maybe
             // try inlining.
-            // We also need to synchronize number maps since they now may have
-            // different size.
+            // We also need to remove a BB that was newly inserted in cmpValues
+            // since the serial maps would not be synchronized otherwise.
             if (sn_mapL.size() != sn_mapR.size()) {
-                auto *smaller = sn_mapL.size() < sn_mapR.size() ? &sn_mapL
-                                                                : &sn_mapR;
-                while (sn_mapL.size() != sn_mapR.size())
-                    smaller->insert(std::make_pair(
-                            nullptr,
-                            sn_mapL.size()));
+                if (sn_mapL[L] == (sn_mapL.size() - 1))
+                    sn_mapL.erase(L);
+                if (sn_mapR[R] == (sn_mapR.size() - 1))
+                    sn_mapR.erase(R);
             }
             return 0;
         }
