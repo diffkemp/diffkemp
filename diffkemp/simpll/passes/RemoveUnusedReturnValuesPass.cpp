@@ -15,8 +15,6 @@
 #include "RemoveUnusedReturnValuesPass.h"
 #include "Utils.h"
 #include <llvm/IR/Instructions.h>
-#include <llvm/Transforms/Scalar/DCE.h>
-#include <llvm/Passes/PassBuilder.h>
 #include <Config.h>
 
 PreservedAnalyses RemoveUnusedReturnValuesPass::run(
@@ -150,8 +148,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             }
             Fun_New->setAttributes(NewAttrList);
 
-            // Set the right function name
+            // Set the right function name and subprogram
             Fun_New->takeName(&Fun);
+            Fun_New->setSubprogram(Fun.getSubprogram());
 
             // Set the names of all arguments of the new function
             for (Function::arg_iterator AI = Fun.arg_begin(),
@@ -175,12 +174,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                             B.getContext());
                     B.getInstList().push_back(Term_New);
 
-                    // Run DCE on the new function
-                    PassBuilder pb;
-                    FunctionPassManager fpm; FunctionAnalysisManager fam;
-                    pb.registerFunctionAnalyses(fam);
-                    fpm.addPass<DCEPass>(DCEPass {});
-                    fpm.run(*Fun_New, fam);
+                    // Simplify the function to remove any code that became dead
+                    simplifyFunction(Fun_New);
                 }
 
             // Replace all uses of the old arguments
