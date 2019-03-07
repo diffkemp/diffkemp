@@ -123,22 +123,20 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
-    Function *NewFirstFun = nullptr, *NewSecondFun = nullptr;
-
     // For the purpose of the comparision it is necessary to use the new
     // function pointer in case the main function was replaced in order to
     // compare the right functions.
     if (config.FirstFun !=
         config.First->getFunction(FirstFunName)) {
         // Main function was replaced by a pass - fix the function pointer
-        NewFirstFun =
+        config.FirstFun =
                 config.First->getFunction(FirstFunName);
     }
 
     if (config.SecondFun !=
         config.Second->getFunction(SecondFunName)) {
         // Main function was replaced by a pass - fix the function pointer
-        NewSecondFun =
+        config.SecondFun =
                 config.Second->getFunction(SecondFunName);
     }
 
@@ -155,27 +153,8 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
     ModuleComparator modComp(*config.First, *config.Second,
                              config.ControlFlowOnly, &DI);
 
-    // Find the right function for the comparison
-    Function *FirstFun, *SecondFun;
-    FirstFun = NewFirstFun ? NewFirstFun : config.FirstFun;
-    SecondFun = NewSecondFun ? NewSecondFun : config.SecondFun;
-
-    if (FirstFun && SecondFun) {
-        modComp.compareFunctions(FirstFun, SecondFun);
-
-        // If one of the functions was replaced by the pass, rename the old
-        // function back to its old name and discard the name of the new
-        // new function in order for the name of the function to be resolved
-        // correctly.
-        if (FirstFun == NewFirstFun) {
-            FirstFun->setName("");
-            config.FirstFun->setName(FirstFunName);
-        }
-
-        if (SecondFun == NewSecondFun) {
-            SecondFun->setName("");
-            config.SecondFun->setName(SecondFunName);
-        }
+    if (config.FirstFun && config.SecondFun) {
+        modComp.compareFunctions(config.FirstFun, config.SecondFun);
 
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "Syntactic comparison results:\n");
@@ -183,21 +162,7 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
         for (auto &funPair : modComp.ComparedFuns) {
             if (funPair.second == ModuleComparator::NOT_EQUAL) {
                 allEqual = false;
-
-                // If the function is the main function, replace it with the
-                // pointer to the original function (pre-pass) to ensure the
-                // source file is found correctly
-                Function *FirstToEmplace, *SecondToEmplace;
-                if (funPair.first.first == FirstFun)
-                    FirstToEmplace = config.FirstFun;
-                else
-                    FirstToEmplace = funPair.first.first;
-                if (funPair.first.second == SecondFun)
-                    SecondToEmplace = config.SecondFun;
-                else
-                    SecondToEmplace = funPair.first.second;
-
-                result.emplace_back(FirstToEmplace, SecondToEmplace);
+                result.emplace_back(funPair.first.first, funPair.first.second);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << funPair.first.first->getName()
                                        << " are syntactically different\n");
