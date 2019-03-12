@@ -113,9 +113,6 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
             mam.getResult<FunctionAbstractionsGenerator>(*config.Second,
                                                          config.SecondFun));
 
-    StringRef FirstFunName = config.FirstFun->getName();
-    StringRef SecondFunName = config.SecondFun->getName();
-
     // Module passes
     PassManager<Module, AnalysisManager<Module, Function *>, Function *,
         Module *> mpm;
@@ -123,22 +120,9 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
-    // For the purpose of the comparision it is necessary to use the new
-    // function pointer in case the main function was replaced in order to
-    // compare the right functions.
-    if (config.FirstFun !=
-        config.First->getFunction(FirstFunName)) {
-        // Main function was replaced by a pass - fix the function pointer
-        config.FirstFun =
-                config.First->getFunction(FirstFunName);
-    }
-
-    if (config.SecondFun !=
-        config.Second->getFunction(SecondFunName)) {
-        // Main function was replaced by a pass - fix the function pointer
-        config.SecondFun =
-                config.Second->getFunction(SecondFunName);
-    }
+    // Refreshing main functions is necessary because they can be replaced with
+    // a new version by a pass
+    config.refreshFunctions();
 
     DebugInfo DI(*config.First, *config.Second,
                  config.FirstFun, config.SecondFun,
@@ -169,8 +153,8 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
             }
         }
         if (allEqual) {
-            // Functions are equal if all functions that were compared by
-            // module comparator(i.e. those that are recursively called by the
+            // Functions are equal iff all functions that were compared by
+            // module comparator (i.e. those that are recursively called by the
             // main functions) are equal.
             DEBUG_WITH_TYPE(
                     DEBUG_SIMPLL,
