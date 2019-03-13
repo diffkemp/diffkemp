@@ -82,4 +82,7 @@ std::string valueAsString(const Constant *Val);
 /// Works if the value is of pointer type which can be even bitcasted.
 StructType *getStructType(const Value *Value);
 
+/// Removes empty attribute sets from an attribute list.
+AttributeList cleanAttributeList(AttributeList AL);
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H

@@ -262,3 +262,31 @@ void simplifyFunction(Function *Fun) {
     fpm.addPass(DCEPass {});
     fpm.run(*Fun, fam);
 }
+
+/// Removes empty attribute sets from an attribute list.
+/// This function is used when some attributes are removed to clean up.
+AttributeList cleanAttributeList(AttributeList AL) {
+    // Copy over all attributes to a new attribute list.
+    AttributeList NewAttrList;
+
+    // There are three possible indices for attribute sets
+    std::vector<AttributeList::AttrIndex> indices {
+        AttributeList::FirstArgIndex,
+        AttributeList::FunctionIndex,
+        AttributeList::ReturnIndex
+    };
+
+    for (AttributeList::AttrIndex i : indices) {
+        AttributeSet AttrSet =
+                AL.getAttributes(i);
+        if (AttrSet.getNumAttributes() != 0) {
+            AttrBuilder AB;
+            for (const Attribute &A : AttrSet)
+                AB.addAttribute(A);
+            NewAttrList = NewAttrList.addAttributes(
+                    AL.getContext(), i, AB);
+        }
+    }
+
+    return NewAttrList;
+}

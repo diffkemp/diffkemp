@@ -121,32 +121,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 Fun_New->removeAttribute(AttributeList::ReturnIndex, AK);
                 Fun_New->removeAttribute(AttributeList::FunctionIndex, AK);
             }
-
-            // Copy over all attributes to a new attribute list.
-            // Note: this is necessary in order to handle a non-optimal
-            // implementation of attributes in LLVM, which does not remove an
-            // AttributeSet when the last attribute in it is removed. This would
-            // cause the AttributeList to be compared as different in some
-            // cases. By copying over only the non-empty attribute sets to the
-            // new attribute list, this problem can be avoided.
-            AttributeList NewAttrList;
-            std::vector<AttributeList::AttrIndex> indices {
-                AttributeList::FirstArgIndex,
-                AttributeList::FunctionIndex,
-                AttributeList::ReturnIndex
-            };
-            for (AttributeList::AttrIndex i : indices) {
-                AttributeSet AttrSet =
-                        Fun_New->getAttributes().getAttributes(i);
-                if (AttrSet.getNumAttributes() != 0) {
-                    AttrBuilder AB;
-                    for (const Attribute &A : AttrSet)
-                        AB.addAttribute(A);
-                    NewAttrList = NewAttrList.addAttributes(
-                            Fun_New->getContext(), i, AB);
-                }
-            }
-            Fun_New->setAttributes(NewAttrList);
+            Fun_New->setAttributes(
+                cleanAttributeList(Fun_New->getAttributes()));
 
             // Set the right function name and subprogram
             Fun_New->takeName(&Fun);
@@ -213,6 +189,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                         CI_New->removeAttribute(
                                 AttributeList::FunctionIndex, AK);
                     }
+                    CI_New->setAttributes(
+                        cleanAttributeList(CI_New->getAttributes()));
+                    CI_New->setDebugLoc(CI->getDebugLoc());
                     CI_New->setCallingConv(CI->getCallingConv());
                     if (CI->isTailCall())
                         CI_New->setTailCall();
@@ -248,6 +227,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                         II_New->removeAttribute(
                                 AttributeList::FunctionIndex, AK);
                     }
+                    II_New->setAttributes(
+                        cleanAttributeList(II_New->getAttributes()));
+                    II_New->setDebugLoc(II->getDebugLoc());
                     II_New->setCallingConv(II->getCallingConv());
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << "Replacing :" << *II << " with "
