@@ -1,9 +1,10 @@
 """
 Simplifying LLVM modules with the SimpLL tool.
 """
-import os
 from diffkemp.semdiff.result import Result
+import os
 from subprocess import check_call, check_output, CalledProcessError
+import yaml
 
 
 class SimpLLException(Exception):
@@ -57,27 +58,24 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         check_call(["opt", "-S", "-deadargelim", "-o", second_out, second_out],
                    stderr=stderr)
 
+        simpll_result = yaml.load(simpll_out)
         funs_to_compare = []
-        # Nonequal function pairs are separated by "----------"
-        for fun_pair_out in simpll_out.split("----------"):
-            if not fun_pair_out or fun_pair_out.isspace():
-                continue
-            # Entries for functions in a pair are separated by an empty line.
-            # Each function is represented by a Result.Entity object.
-            # Each entity contains:
-            #  - the function name (first line of the function entry)
-            #  - the file (second line of the function entry, if present)
-            #  - the callstack (rest of lines of the function entry)
-            fun_pair_split = [s.strip() for s in fun_pair_out.split("\n\n")]
-            fun_pair = tuple([
-                Result.Entity(
-                    lines[0],
-                    lines[1] if len(lines) > 1 else "",
-                    "\n".join(lines[2:]) if len(lines) > 2 else ""
-                )
-                for lines in
-                (fun_pair_split[i].splitlines() for i in range(0, 2))])
-            funs_to_compare.append(fun_pair)
+        if simpll_result is not None:
+            for fun_pair_yaml in simpll_result["diff-functions"]:
+                fun_pair = tuple([
+                    Result.Entity(
+                        fun["function"],
+                        fun["file"] if "file" in fun else "",
+                        "\n".join(["{} at ({}:{})".format(call["function"],
+                                                          call["file"],
+                                                          call["line"])
+                                   for call in fun["callstack"]])
+                        if "callstack" in fun else ""
+                    )
+                    for fun in [fun_pair_yaml["first"],
+                                fun_pair_yaml["second"]]
+                ])
+                funs_to_compare.append(fun_pair)
 
         return first_out, second_out, funs_to_compare
     except CalledProcessError:

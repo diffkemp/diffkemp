@@ -29,12 +29,14 @@ typedef std::pair<Function *, Function *> FunPair;
 /// Type for call stack entry: contains the called function and its call
 /// location (file and line).
 struct CallInfo {
-    Function *fun;
+    std::string fun;
     std::string file;
     unsigned line;
 
+    // Default constructor needed for YAML serialisation.
+    CallInfo() {}
     CallInfo(Function *fun, const std::string &file, unsigned int line)
-            : fun(fun), file(file), line(line) {}
+            : fun(fun->getName()), file(file), line(line) {}
 };
 /// Call stack - list of call entries
 typedef std::vector<CallInfo> CallStack;
