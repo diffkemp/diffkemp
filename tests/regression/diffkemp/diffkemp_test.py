@@ -9,6 +9,7 @@ be provided. This script parses the test specification and prepares testing
 scenarions for pytest.
 """
 
+from diffkemp.config import Config
 from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.function_coupling import FunctionCouplings
@@ -162,12 +163,14 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
+        # Configuration (only set the timeout, the rest is not used).
+        config = Config(None, None, 120, False, False, False)
         for fun_pair, expected in task_spec.functions.iteritems():
             if expected not in [Result.Kind.TIMEOUT, Result.Kind.NONE]:
-                result = functions_diff(first=task_spec.old,
-                                        second=task_spec.new,
-                                        funFirst=fun_pair[0],
-                                        funSecond=fun_pair[1],
+                result = functions_diff(file_first=task_spec.old,
+                                        file_second=task_spec.new,
+                                        fun_first=fun_pair[0],
+                                        fun_second=fun_pair[1],
                                         glob_var=task_spec.param,
-                                        timeout=120)
+                                        config=config)
                 assert result.kind == expected

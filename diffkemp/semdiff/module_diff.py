@@ -11,27 +11,22 @@ from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 
 
-def diff_all_modules_using_global(first_builder, second_builder,
-                                  glob_first, glob_second,
-                                  timeout,
-                                  syntax_only=False, control_flow_only=False,
-                                  verbose=False):
+def diff_all_modules_using_global(glob_first, glob_second, config):
     """
     Compare semantics of all modules using given global variable.
     Finds all source files that use the given globals and compare all of them.
-    :param first_builder: Builder for the first kernel version
-    :param second_builder: Builder for the second kernel version
     :param glob_first: First global to compare
     :param glob_second: Second global to compare
+    :param config: Configuration
     """
     result = Result(Result.Kind.NONE, glob_first.name, glob_second.name)
     if glob_first.name != glob_second.name:
         # Variables with different names are treated as unequal
         result.kind = Result.Kind.NOT_EQUAL
     else:
-        srcs_first = first_builder.source.find_srcs_using_symbol(
+        srcs_first = config.builder_first.source.find_srcs_using_symbol(
             glob_first.name)
-        srcs_second = second_builder.source.find_srcs_using_symbol(
+        srcs_second = config.builder_second.source.find_srcs_using_symbol(
             glob_second.name)
         # Compare all sources containing functions using the variable
         for src in srcs_first:
@@ -39,19 +34,16 @@ def diff_all_modules_using_global(first_builder, second_builder,
                 result.add_inner(Result(Result.Kind.NOT_EQUAL, src, src))
             else:
                 try:
-                    mod_first = first_builder.build_file(src)
-                    mod_second = second_builder.build_file(src)
+                    mod_first = config.builder_first.build_file(src)
+                    mod_second = config.builder_second.build_file(src)
                     mod_first.parse_module()
                     mod_second.parse_module()
                     if (mod_first.has_global(glob_first.name) and
                             mod_second.has_global(glob_second.name)):
                         src_result = modules_diff(
-                            first=mod_first, second=mod_second,
-                            glob_var=glob_first, function=None,
-                            timeout=timeout,
-                            syntax_only=syntax_only,
-                            control_flow_only=control_flow_only,
-                            verbose=verbose)
+                            mod_first=mod_first, mod_second=mod_second,
+                            glob_var=glob_first, fun=None,
+                            config=config)
                         for res in src_result.inner.itervalues():
                             result.add_inner(res)
                 except BuildException as e:
@@ -60,41 +52,36 @@ def diff_all_modules_using_global(first_builder, second_builder,
         return result
 
 
-def modules_diff(first, second,
-                 glob_var, function,
-                 timeout,
-                 syntax_only=False, control_flow_only=False, verbose=False):
+def modules_diff(mod_first, mod_second, glob_var, fun, config):
     """
     Analyse semantic difference of two LLVM IR modules w.r.t. some parameter
-    :param first: File with LLVM IR of the first module
-    :param second: File with LLVM IR of the second module
+    :param mod_first: First LLVM module
+    :param mod_second: Second LLVM module
     :param glob_var: Parameter (global variable) to compare (if specified, all
                   functions using this variable are compared).
-    :param function: Function to be compared.
+    :param fun: Function to be compared.
+    :param config: Configuration.
     """
-    result = Result(Result.Kind.NONE, first, second)
-    couplings = FunctionCouplings(first.llvm, second.llvm)
+    result = Result(Result.Kind.NONE, mod_first, mod_second)
+    couplings = FunctionCouplings(mod_first.llvm, mod_second.llvm)
     if glob_var:
         couplings.infer_for_param(glob_var)
     else:
-        couplings.set_main(function, function)
+        couplings.set_main(fun, fun)
     for c in couplings.main:
-        if function:
-            if not function == c.first and not function == c.second:
+        if fun:
+            if not fun == c.first and not fun == c.second:
                 continue
-            if (not first.has_function(function) or not
-                    second.has_function(function)):
+            if (not mod_first.has_function(fun) or not
+                    mod_second.has_function(fun)):
                 print "    Given function not found in module"
                 result.kind = Result.Kind.ERROR
                 return result
 
-        fun_result = functions_diff(first=first.llvm, second=second.llvm,
-                                    funFirst=c.first, funSecond=c.second,
-                                    glob_var=glob_var,
-                                    timeout=timeout,
-                                    syntax_only=syntax_only,
-                                    control_flow_only=control_flow_only,
-                                    verbose=verbose)
+        fun_result = functions_diff(file_first=mod_first.llvm,
+                                    file_second=mod_second.llvm,
+                                    fun_first=c.first, fun_second=c.second,
+                                    glob_var=glob_var, config=config)
         result.add_inner(fun_result)
 
     return result

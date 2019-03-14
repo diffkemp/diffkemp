@@ -9,6 +9,7 @@ This script parses the test specification and prepares testing scenarions for
 pytest.
 """
 
+from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
@@ -63,6 +64,7 @@ class TaskSpec:
         self.debug = spec["debug"] if "debug" in spec else False
         self.function = spec["function"]
         self.expected_result = Result.Kind[spec["expected_result"].upper()]
+        self.config = None
 
 
 def prepare_task(spec):
@@ -75,6 +77,9 @@ def prepare_task(spec):
                                       debug=spec.debug, rebuild=True)
     second_builder = LlvmKernelBuilder(spec.new_kernel, None,
                                        debug=spec.debug, rebuild=True)
+
+    spec.config = Config(first_builder, second_builder, 120, False,
+                         spec.control_flow_only, False)
 
     # Build the modules
     old_module = first_builder.build_file_for_symbol(spec.function)
@@ -136,11 +141,8 @@ class TestClass(object):
         """
         if task_spec.expected_result != Result.Kind.TIMEOUT:
             result = functions_diff(
-                first=task_spec.old_module,
-                second=task_spec.new_module,
-                funFirst=task_spec.function,
-                funSecond=task_spec.function,
-                glob_var=None,
-                timeout=120,
-                control_flow_only=task_spec.control_flow_only)
+                file_first=task_spec.old_module,
+                file_second=task_spec.new_module,
+                fun_first=task_spec.function, fun_second=task_spec.function,
+                glob_var=None, config=task_spec.config)
             assert result.kind == task_spec.expected_result

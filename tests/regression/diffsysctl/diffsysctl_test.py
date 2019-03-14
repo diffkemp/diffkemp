@@ -9,6 +9,7 @@ This script parses the test specification and prepares testing scenarions for
 pytest.
 """
 
+from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
@@ -93,6 +94,7 @@ class TaskSpec:
         else:
             self.control_flow_only = False
         self.debug = spec["debug"] if "debug" in spec else False
+        self.config = None
 
 
 def prepare_task(spec):
@@ -107,6 +109,9 @@ def prepare_task(spec):
                                       debug=spec.debug, rebuild=True)
     second_builder = LlvmKernelBuilder(spec.new_kernel, None,
                                        debug=spec.debug, rebuild=True)
+
+    spec.config = Config(first_builder, second_builder, 120, False,
+                         spec.control_flow_only, False)
 
     # Build the modules
     for function in function_list:
@@ -195,12 +200,12 @@ class TestClass(object):
         """
         if task_spec.proc_handler.result not in [Result.Kind.TIMEOUT,
                                                  Result.Kind.NONE]:
-            result = functions_diff(task_spec.proc_handler.old_module,
-                                    task_spec.proc_handler.new_module,
-                                    task_spec.proc_handler.name,
-                                    task_spec.proc_handler.name,
-                                    None, 120, False,
-                                    task_spec.control_flow_only)
+            result = functions_diff(
+                file_first=task_spec.proc_handler.old_module,
+                file_second=task_spec.proc_handler.new_module,
+                fun_first=task_spec.proc_handler.name,
+                fun_second=task_spec.proc_handler.name,
+                glob_var=None, config=task_spec.config)
 
             assert result.kind == task_spec.proc_handler.result
 
@@ -223,11 +228,10 @@ class TestClass(object):
 
         for function in task_spec.data_functions:
             if function.result != Result.Kind.TIMEOUT:
-                result = functions_diff(function.old_module,
-                                        function.new_module,
-                                        function.name, function.name,
-                                        data_kernel_param,
-                                        120, False,
-                                        task_spec.control_flow_only,
-                                        verbose=True)
+                result = functions_diff(file_first=function.old_module,
+                                        file_second=function.new_module,
+                                        fun_first=function.name,
+                                        fun_second=function.name,
+                                        glob_var=data_kernel_param,
+                                        config=task_spec.config)
                 assert result.kind == function.result

@@ -147,11 +147,9 @@ def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
     return result
 
 
-def functions_diff(first, second,
-                   funFirst, funSecond,
-                   glob_var,
-                   timeout,
-                   syntax_only=False, control_flow_only=False, verbose=False):
+def functions_diff(file_first, file_second,
+                   fun_first, fun_second,
+                   glob_var, config):
     """
     Compare two functions for equality.
 
@@ -159,33 +157,34 @@ def functions_diff(first, second,
     the SimpLL tool. If they are not syntactically equal, SimpLL prints a list
     of functions that the syntactic equality depends on. These are then
     compared for semantic equality.
-    :param first: File with the first LLVM module
-    :param second: File with the second LLVM module
-    :param funFirst: Function from the first module to be compared
-    :param funSecond: Function from the second module to be compared
-    :param timeout: Timeout for analysis of a function pair (default is 40s)
-    :param verbose: Verbosity option
+    :param file_first: File with the first LLVM module
+    :param file_second: File with the second LLVM module
+    :param fun_first: Function from the first module to be compared
+    :param fun_second: Function from the second module to be compared
+    :param glob_var: Global variable whose effect on the functions to compare
+    :param config: Configuration
     """
-    result = Result(Result.Kind.NONE, first, second)
+    result = Result(Result.Kind.NONE, file_first, file_second)
     try:
-        if not syntax_only:
-            if funFirst == funSecond:
-                fun_str = funFirst
+        if not config.syntax_only:
+            if fun_first == fun_second:
+                fun_str = fun_first
             else:
-                fun_str = "{} and {}".format(funFirst, funSecond)
-            print "    Syntactic diff of {} (in {})".format(fun_str, first)
+                fun_str = "{} and {}".format(fun_first, fun_second)
+            print "    Syntactic diff of {} (in {})".format(fun_str,
+                                                            file_first)
 
         # Simplify modules
         first_simpl, second_simpl, funs_to_compare = \
-            simplify_modules_diff(first, second,
-                                  funFirst, funSecond,
+            simplify_modules_diff(file_first, file_second,
+                                  fun_first, fun_second,
                                   glob_var.name if glob_var else None,
                                   glob_var.name if glob_var else "simpl",
-                                  control_flow_only,
-                                  verbose)
+                                  config.control_flow_only,
+                                  config.verbosity)
         if not funs_to_compare:
             result.kind = Result.Kind.EQUAL_SYNTAX
-        elif syntax_only:
+        elif config.syntax_only:
             # Only display the syntax diff of the functions that are
             # syntactically different.
             for fun_pair in funs_to_compare:
@@ -214,9 +213,10 @@ def functions_diff(first, second,
                                                fun_pair[0].name,
                                                fun_pair[1].name,
                                                called_couplings.called,
-                                               timeout, verbose)
+                                               config.timeout,
+                                               config.verbosity)
                 result.add_inner(fun_result)
-        if not syntax_only:
+        if not config.syntax_only:
             print "      {}".format(result)
     except SimpLLException:
         print "    Simplifying has failed"
