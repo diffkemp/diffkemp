@@ -33,6 +33,13 @@ class ModuleComparator {
     enum Result { EQUAL, NOT_EQUAL, UNKNOWN };
     /// Storing results of function comparisons.
     std::map<FunPair, Result> ComparedFuns;
+    /// Storing results from macro comparisons.
+    struct MacroDifference {
+        StringRef macroName, LValue, RValue;
+        std::vector<MacroElement> StackL, StackR;
+        StringRef functionName;
+    };
+    std::vector<MacroDifference> DifferingMacros;
 
     std::vector<ConstFunPair> MissingDefs;
 

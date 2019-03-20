@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DifferentialFunctionComparator.h"
+#include "Config.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -229,6 +230,10 @@ int DifferentialFunctionComparator::cmpOperations(
                                   dyn_cast<AllocaInst>(R)->getAlignment());
         }
     }
+
+    if (Result)
+        findMacroDifferences(L, R);
+
     return Result;
 }
 
@@ -488,4 +493,63 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
             cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2)) ||
             cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2)) ||
             STyL->getStructName() != STyR->getStructName();
+}
+
+/// Finds macro differences at the locations of the instructions L and R and
+/// adds them to the list in ModuleComparator.
+/// This is used when a difference is suspected to be in a macro in order to
+/// include that difference into the diffkemp output.
+void DifferentialFunctionComparator::findMacroDifferences(
+        const Instruction *L, const Instruction *R) const {
+    // Try to discover a macro difference
+    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
+    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
+
+    for (auto Elem : MacrosL) {
+        auto LValue = MacrosL.find(Elem.first);
+        auto RValue = MacrosR.find(Elem.first);
+
+        if (LValue != MacrosL.end() && RValue != MacrosR.end() &&
+            LValue->second.body != RValue->second.body) {
+            // Macro difference found - get the macro stacks and insert the
+            // object into the macro differences array to be passed on to
+            // the Python part of diffkemp.
+            std::vector<MacroElement> StackL, StackR;
+            MacroElement currentElement = LValue->second;
+            while (currentElement.parentMacro != "") {
+                StackL.push_back(currentElement);
+                currentElement = MacrosL[currentElement.parentMacro];
+            }
+            currentElement = RValue->second;
+            while (currentElement.parentMacro != "") {
+                StackR.push_back(currentElement);
+                currentElement = MacrosR[currentElement.parentMacro];
+            }
+
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                dbgs() << "Left stack:\n\t";
+                dbgs() << LValue->second.body << "\n";
+                for (MacroElement &elem : StackL) {
+                    dbgs() << "\t\tfrom macro " << elem.name <<
+                            " in file " <<
+                            elem.source->getFile()->getFilename() << " on line "
+                            << elem.line << "\n";
+                });
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                dbgs() << "Right stack:\n\t";
+                dbgs() << RValue->second.body << "\n";
+                for (MacroElement &elem : StackR) {
+                    dbgs() << "\t\tfrom macro " << elem.name <<
+                            " in file " <<
+                            elem.source->getFile()->getFilename() << " on line "
+                            << elem.line << "\n";
+                });
+
+
+            ModComparator->DifferingMacros.push_back(
+                ModuleComparator::MacroDifference {Elem.first,
+                LValue->second.body, RValue->second.body, StackL, StackR,
+                L->getFunction()->getName()});
+        }
+    }
 }

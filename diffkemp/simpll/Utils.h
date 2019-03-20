@@ -16,6 +16,7 @@
 
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Function.h>
+#include <unordered_map>
 
 using namespace llvm;
 
@@ -87,5 +88,24 @@ AttributeList cleanAttributeList(AttributeList AL);
 
 /// Get a non-const pointer to a call instruction in a function
 CallInst *findCallInst(const CallInst *Call, Function *Fun);
+
+/// Gets C source file from a DIScope and the module.
+std::string getSourceFilePath(DIScope *Scope, const Module *Mod);
+
+/// Returned macros with value and location.
+struct MacroElement {
+    StringRef name, body, parentMacro;
+    int line;
+    const DIMacroFile *source;
+};
+
+/// Gets all macros used on the line in the form of a key to value map.
+std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
+    StringRef line, StringMap<StringRef> macroMap);
+
+/// Gets all macros used on a certain DILocation in the form of a key to value
+/// map.
+std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
+    DILocation *LineLoc, const Module *Mod);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H

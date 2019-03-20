@@ -12,9 +12,14 @@
 //===----------------------------------------------------------------------===//
 
 #include "Utils.h"
+#include "Config.h"
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
+#include <llvm/Support/LineIterator.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/Path.h>
+#include <llvm/Support/raw_ostream.h>
 #include <set>
 #include <iostream>
 #include <llvm/IR/PassManager.h>
@@ -264,4 +269,165 @@ CallInst *findCallInst(const CallInst *Call, Function *Fun) {
         }
     }
     return nullptr;
+}
+
+/// Gets C source file from a DIScope and the module.
+std::string getSourceFilePath(DIScope *Scope, const Module *Mod) {
+    // Extract the source file path.
+    StringRef parentDirectory = llvm::sys::path::parent_path(
+            Mod->getModuleIdentifier());
+
+    while (!llvm::sys::path::filename(parentDirectory).startswith("linux")) {
+        parentDirectory = llvm::sys::path::parent_path(parentDirectory);
+        if (parentDirectory == "")
+            // Avoid infinite loop
+            return "";
+    }
+
+    std::string sourceFilePath = parentDirectory.str() +
+            llvm::sys::path::get_separator().str() +
+            Scope->getFilename().str();
+
+    return sourceFilePath;
+}
+
+bool isValidCharForIdentifier(char ch) {
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+        (ch >= '0' && ch <= '9') || ch == '_')
+        return true;
+    else
+        return false;
+}
+
+/// Gets all macros used on the line in the form of a key to value map.
+std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
+    StringRef line, StringMap<MacroElement> macroMap) {
+    // Create a second map, but only with macros that are used on the line.
+    // Note: For the purpose of the algorithm the starting line is treated as a
+    // with a space as its key, making it an invalid identifier for a macro.
+    std::unordered_map<std::string, MacroElement> usedMacroMap;
+    bool mapChanged = true;
+    usedMacroMap[" "] = MacroElement {"<>", line, StringRef(""), 0, nullptr};
+
+    while (mapChanged) {
+        mapChanged = false;
+        std::vector<std::pair<StringRef, MacroElement>> entriesToAdd;
+        for (auto &Entry : usedMacroMap) {
+            // Process all substrings of the macro value to look for any other
+            // macros that could be contained inside it
+            std::string macroBody = Entry.second.body.str();
+            for (int i = 0; i < macroBody.length(); i++) {
+                for (int j = 1; j < (macroBody.length() - i); j++) {
+                    auto potentialMacro =
+                            macroMap.find(macroBody.substr(i, j));
+
+                    if (i > 0 && isValidCharForIdentifier(macroBody[i - 1]))
+                        continue;
+                    if (isValidCharForIdentifier(macroBody[i + j]))
+                        continue;
+
+                    if (potentialMacro != macroMap.end()) {
+                        int lengthBefore = usedMacroMap.size();
+                        MacroElement macro = potentialMacro->second;
+                        macro.parentMacro = Entry.first;
+                        entriesToAdd.push_back({potentialMacro->first(),
+                                                macro});
+                    }
+                }
+            }
+        }
+
+        int originalMapSize = usedMacroMap.size();
+        for (std::pair<StringRef, MacroElement> &Entry : entriesToAdd) {
+            if (usedMacroMap.find(Entry.first.str()) == usedMacroMap.end()) {
+                usedMacroMap[Entry.first.str()] = Entry.second;
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << "Adding macro " << Entry.first <<
+                                " : " << Entry.second.body << ", parent macro "
+                                << Entry.second.parentMacro << "\n");
+            }
+        }
+
+        if (originalMapSize < usedMacroMap.size())
+            mapChanged = true;
+    }
+
+    // Remove the line itself from the macro maps (they should contain only
+    // macros)
+    usedMacroMap.erase(" ");
+
+    return usedMacroMap;
+}
+
+/// Gets all macros used on a certain DILocation in the form of a key to value
+/// map.
+std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
+    DILocation *LineLoc, const Module *Mod) {
+    if (!LineLoc || LineLoc->getNumOperands() == 0) {
+        // DILocation has no scope or is not present - cannot get macro stack
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Scope for macro not found\n");
+        return std::unordered_map<std::string, MacroElement>();
+    }
+
+    // Open the file and extract the line
+    auto sourceFile = MemoryBuffer::getFile(Twine(getSourceFilePath(
+            dyn_cast<DIScope>(LineLoc->getScope()), Mod)));
+    if (sourceFile.getError()) {
+        // Source file was not found, return empty maps
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Source for macro not found\n");
+        return std::unordered_map<std::string, MacroElement>();
+    }
+
+    line_iterator it(**sourceFile);
+    StringRef line;
+    while (!it.is_at_end() && it.line_number() != (LineLoc->getLine())) {
+        ++it; line = *it;
+    }
+
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Looking for all macros on line:" << line
+                    << "\n");
+
+    // Get macro array from debug info
+    DISubprogram *Sub = LineLoc->getScope()->getSubprogram();
+    DIMacroNodeArray RawMacros = Sub->getUnit()->getMacros();
+
+    // Create a map from macro identifiers to their values.
+    StringMap<MacroElement> macroMap;
+    StringMap<const DIMacroFile *> macroFileMap;
+    std::vector<const DIMacroFile *> macroFileStack;
+
+    for (const DIMacroNode *Node : RawMacros) {
+        if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+            macroFileStack.push_back(File);
+    }
+
+    while (!macroFileStack.empty()) {
+        const DIMacroFile *MF = macroFileStack.back();
+        DIMacroNodeArray A = MF->getElements();
+        macroFileStack.pop_back();
+
+        for (const DIMacroNode *Node : A)
+            if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+                macroFileStack.push_back(File);
+            else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
+                std::string macroName = Macro->getName().str();
+
+                // If the macro name contains arguments, remove them
+                auto position = macroName.find('(');
+                if (position != std::string::npos) {
+                    macroName = macroName.substr(0, position);
+                }
+
+                MacroElement element;
+                element.name = Macro->getName();
+                element.body = Macro->getValue();
+                element.parentMacro = "N/A";
+                element.source = MF;
+                element.line = Macro->getLine();
+                macroMap[macroName] = element;
+            }
+    }
+
+    return getAllMacrosOnLine(line, macroMap);
 }
