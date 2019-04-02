@@ -131,6 +131,7 @@ AttributeList cleanAttributes(AttributeList AS, unsigned Idx, LLVMContext &C) {
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::AlwaysInline);
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::InlineHint);
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::NoInline);
+    result = result.removeAttribute(C, Idx, Attribute::AttrKind::NoUnwind);
     return result;
 }
 
@@ -140,9 +141,12 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
     AttributeList RNew = R;
     for (unsigned i = L.index_begin(), e = L.index_end(); i != e; ++i) {
         LNew = cleanAttributes(LNew, i, LNew.getContext());
-        if (RNew.hasAttributes(i))
-            RNew = cleanAttributes(RNew, i, RNew.getContext());
     }
+    for (unsigned i = R.index_begin(), e = R.index_end(); i != e; ++i) {
+        RNew = cleanAttributes(RNew, i, RNew.getContext());
+    }
+    LNew = cleanAttributeList(LNew);
+    RNew = cleanAttributeList(RNew);
     return FunctionComparator::cmpAttrs(LNew, RNew);
 }
 
