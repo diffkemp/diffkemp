@@ -1,5 +1,6 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
 from __future__ import division
+from diffkemp.llvm_ir.build_llvm import SourceNotFoundException
 from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
 from diffkemp.semdiff.function_coupling import FunctionCouplings
 from diffkemp.semdiff.result import Result
@@ -147,7 +148,7 @@ def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
     return result
 
 
-def functions_diff(file_first, file_second,
+def functions_diff(mod_first, mod_second,
                    fun_first, fun_second,
                    glob_var, config):
     """
@@ -157,14 +158,14 @@ def functions_diff(file_first, file_second,
     the SimpLL tool. If they are not syntactically equal, SimpLL prints a list
     of functions that the syntactic equality depends on. These are then
     compared for semantic equality.
-    :param file_first: File with the first LLVM module
-    :param file_second: File with the second LLVM module
+    :param mod_first: First LLVM module
+    :param mod_second: Second LLVM module
     :param fun_first: Function from the first module to be compared
     :param fun_second: Function from the second module to be compared
     :param glob_var: Global variable whose effect on the functions to compare
     :param config: Configuration
     """
-    result = Result(Result.Kind.NONE, file_first, file_second)
+    result = Result(Result.Kind.NONE, mod_first, mod_second)
     try:
         if not config.syntax_only:
             if fun_first == fun_second:
@@ -172,16 +173,43 @@ def functions_diff(file_first, file_second,
             else:
                 fun_str = "{} and {}".format(fun_first, fun_second)
             print "    Syntactic diff of {} (in {})".format(fun_str,
-                                                            file_first)
+                                                            mod_first.llvm)
 
-        # Simplify modules
-        first_simpl, second_simpl, funs_to_compare = \
-            simplify_modules_diff(file_first, file_second,
-                                  fun_first, fun_second,
-                                  glob_var.name if glob_var else None,
-                                  glob_var.name if glob_var else "simpl",
-                                  config.control_flow_only,
-                                  config.verbosity)
+        simplify = True
+        while simplify:
+            simplify = False
+            # Simplify modules
+            first_simpl, second_simpl, funs_to_compare, missing_defs = \
+                simplify_modules_diff(mod_first.llvm, mod_second.llvm,
+                                      fun_first, fun_second,
+                                      glob_var.name if glob_var else None,
+                                      glob_var.name if glob_var else "simpl",
+                                      config.control_flow_only,
+                                      config.verbosity)
+            if missing_defs:
+                # If there are missing function definitions, try to find
+                # implementing them, link those to the current modules, and
+                # rerun the simplification.
+                for fun_pair in missing_defs:
+                    if "first" in fun_pair:
+                        try:
+                            new_mod = config.builder_first \
+                                .build_file_for_symbol(fun_pair["first"])
+                            if mod_first.link_modules([new_mod]):
+                                simplify = True
+                            new_mod.clean_module()
+                        except SourceNotFoundException:
+                            pass
+                    if "second" in fun_pair:
+                        try:
+                            new_mod = config.builder_second \
+                                .build_file_for_symbol(fun_pair["second"])
+                            if mod_second.link_modules([new_mod]):
+                                simplify = True
+                            new_mod.clean_module()
+                        except SourceNotFoundException:
+                            pass
+
         if not funs_to_compare:
             result.kind = Result.Kind.EQUAL_SYNTAX
         elif config.syntax_only:

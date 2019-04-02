@@ -86,7 +86,7 @@ def run_from_cli():
                         print f
                     # Compare functions semantics
                     fun_result = functions_diff(
-                        file_first=mod_first.llvm, file_second=mod_second.llvm,
+                        mod_first=mod_first, mod_second=mod_second,
                         fun_first=f, fun_second=f,
                         glob_var=None,
                         config=config)

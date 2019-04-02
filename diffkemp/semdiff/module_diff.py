@@ -78,8 +78,7 @@ def modules_diff(mod_first, mod_second, glob_var, fun, config):
                 result.kind = Result.Kind.ERROR
                 return result
 
-        fun_result = functions_diff(file_first=mod_first.llvm,
-                                    file_second=mod_second.llvm,
+        fun_result = functions_diff(mod_first=mod_first, mod_second=mod_second,
                                     fun_first=c.first, fun_second=c.second,
                                     glob_var=glob_var, config=config)
         result.add_inner(fun_result)

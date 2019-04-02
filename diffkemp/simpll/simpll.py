@@ -60,15 +60,16 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
 
         simpll_result = yaml.load(simpll_out)
         funs_to_compare = []
+        missing_defs = None
         if simpll_result is not None:
             for fun_pair_yaml in simpll_result["diff-functions"]:
                 fun_pair = tuple([
                     Result.Entity(
                         fun["function"],
                         fun["file"] if "file" in fun else "",
-                        "\n".join(["{} at ({}:{})".format(call["function"],
-                                                          call["file"],
-                                                          call["line"])
+                        "\n".join(["{} at {}:{}".format(call["function"],
+                                                        call["file"],
+                                                        call["line"])
                                    for call in fun["callstack"]])
                         if "callstack" in fun else ""
                     )
@@ -76,7 +77,9 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                                 fun_pair_yaml["second"]]
                 ])
                 funs_to_compare.append(fun_pair)
+            missing_defs = simpll_result["missing-defs"] \
+                if "missing-defs" in simpll_result else None
 
-        return first_out, second_out, funs_to_compare
+        return first_out, second_out, funs_to_compare, missing_defs
     except CalledProcessError:
         raise SimpLLException("Simplifying files failed")
