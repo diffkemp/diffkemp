@@ -55,9 +55,9 @@ class LlvmKernelModule:
                                    self.kernel_object], stderr=stderr)
             self.depends = modinfo.rstrip().split(",")
 
-    def parse_module(self):
+    def parse_module(self, force=False):
         """Parse module file into LLVM module using llvmcpy library"""
-        if self.llvm_module is None:
+        if force or self.llvm_module is None:
             buffer = create_memory_buffer_with_contents_of_file(self.llvm)
             context = get_global_context()
             self.llvm_module = context.parse_ir(buffer)
@@ -81,9 +81,12 @@ class LlvmKernelModule:
         """Link module against a list of other modules."""
         link_llvm_modules = []
         for m in modules:
+            if self.links_mod(m):
+                continue
             # Create a temporary copy of the linked module
             tmp_mod = copy(m)
             tmp_mod.llvm = "{}.tmp".format(m.llvm)
+            tmp_mod.llvm_module = None
             link_llvm_modules.append(tmp_mod)
             shutil.copyfile(m.llvm, tmp_mod.llvm)
 
@@ -95,20 +98,31 @@ class LlvmKernelModule:
             tmp_mod._update_module_file()
             tmp_mod.clean_module()
 
+        if not link_llvm_modules:
+            return False
+
+        new_llvm = "{}-linked.ll".format(self.llvm[:-3])
         link_command = ["llvm-link", "-S", self.llvm]
         link_command.extend([m.llvm for m in link_llvm_modules])
-        link_command.extend(["-o", self.llvm])
-        opt_command = ["opt", "-S", "-constmerge", self.llvm, "-o", self.llvm]
+        link_command.extend(["-o", new_llvm])
+        opt_command = ["opt", "-S", "-constmerge", "-mergefunc", new_llvm,
+                       "-o", new_llvm]
         with open(os.devnull, "w") as devnull:
             try:
                 check_call(link_command, stdout=devnull, stderr=devnull)
                 check_call(opt_command, stdout=devnull, stderr=devnull)
+                os.rename(new_llvm, self.llvm)
+                self.parse_module(True)
             except CalledProcessError:
-                pass
+                return False
             finally:
-                # Delete temporary modules
+                result = False
                 for m in link_llvm_modules:
+                    if self.links_mod(m):
+                        result = True
+                    # Delete temporary modules
                     os.remove(m.llvm)
+                return result
 
     def _remove_global(self, glob_name):
         """Remove global variable or alias with the given name if it exists."""
@@ -233,3 +247,32 @@ class LlvmKernelModule:
         llvm_fun = self.llvm_module.get_named_function(fun)
         return (llvm_fun.get_kind() == FunctionValueKind and
                 llvm_fun.is_declaration())
+
+    def get_filename(self):
+        """
+        Get name of the source file for this module.
+        """
+        len = ffi.new("size_t *")
+        try:
+            name = self.llvm_module.get_source_file_name(len)
+            return name
+        except RuntimeError:
+            return None
+
+    def links_mod(self, module):
+        """
+        Check if the given module has been linked to this module
+        """
+        filename = module.get_filename()
+        if not filename:
+            return False
+        # Iterate all functions and check their file names from debug info
+        for fun in self.llvm_module.iter_functions():
+            len = ffi.new("unsigned *")
+            try:
+                name = fun.get_debug_loc_filename(len)
+                if name == filename:
+                    return True
+            except RuntimeError:
+                pass
+        return False
