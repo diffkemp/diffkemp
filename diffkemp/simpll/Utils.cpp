@@ -20,6 +20,7 @@
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Transforms/Scalar/NewGVN.h>
 #include <llvm/Transforms/Scalar/SimplifyCFG.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
@@ -220,6 +221,7 @@ void simplifyFunction(Function *Fun) {
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(SimplifyCFGPass {});
     fpm.addPass(DCEPass {});
+    fpm.addPass(NewGVNPass {});
     fpm.run(*Fun, fam);
 }
 
