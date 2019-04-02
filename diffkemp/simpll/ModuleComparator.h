@@ -34,6 +34,8 @@ class ModuleComparator {
     /// Storing results of function comparisons.
     std::map<FunPair, Result> ComparedFuns;
 
+    std::vector<ConstFunPair> MissingDefs;
+
     /// DebugInfo class storing results from analysing debug information
     const DebugInfo *DI;
 
@@ -48,7 +50,7 @@ class ModuleComparator {
 
     /// Pointer to a function that is called just by one of the compared
     /// functions and needs to be inlined.
-    const Function *tryInline = nullptr;
+    std::pair<const CallInst *, const CallInst*> tryInline = {nullptr, nullptr};
 
   private:
     DifferentialGlobalNumberState GS;

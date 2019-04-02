@@ -77,9 +77,24 @@ struct MappingTraits<DiffFunPair> {
 // Vector of DiffFunPair to YAML
 LLVM_YAML_IS_SEQUENCE_VECTOR(DiffFunPair);
 
+// Pair of function names
+typedef std::pair<std::string, std::string> MissingDefPair;
+
+// MissingDefPair to YAML
+namespace llvm::yaml {
+template<>
+struct MappingTraits<MissingDefPair> {
+    static void mapping(IO &io, MissingDefPair &funs) {
+        io.mapOptional("first", funs.first);
+        io.mapOptional("second", funs.second);
+    }
+};
+}
+
 // Overall report: contains pairs of different (non-equal) functions
 struct ResultReport {
     std::vector<DiffFunPair> diffFuns;
+    std::vector<MissingDefPair> missingDefs;
 };
 
 // Report to YAML
@@ -88,13 +103,15 @@ template<>
 struct MappingTraits<ResultReport> {
     static void mapping(IO &io, ResultReport &result) {
         io.mapOptional("diff-functions", result.diffFuns);
+        io.mapOptional("missing-defs", result.missingDefs);
     }
 };
 }
 
-void reportOutput(Config &config, std::vector<FunPair> &nonequalFuns) {
+void reportOutput(Config &config,
+                  std::vector<FunPair> &nonequalFuns,
+                  std::vector<ConstFunPair> &missingDefs) {
     ResultReport report;
-
     for (auto &funPair : nonequalFuns) {
         report.diffFuns.emplace_back(
                 FunctionInfo(funPair.first->getName(),
@@ -105,6 +122,11 @@ void reportOutput(Config &config, std::vector<FunPair> &nonequalFuns) {
                              getCallStack(*config.SecondFun, *funPair.second))
 
         );
+    }
+    for (auto &funPair : missingDefs) {
+        report.missingDefs.emplace_back(
+                funPair.first ? funPair.first->getName() : "",
+                funPair.second ? funPair.second->getName() : "");
     }
 
     llvm::yaml::Output output(outs());

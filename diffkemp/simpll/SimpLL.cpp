@@ -42,9 +42,11 @@ int main(int argc, const char **argv) {
                      config.ControlFlowOnly);
     config.refreshFunctions();
 
-    auto nonequalFuns = simplifyModulesDiff(config);
+    std::vector<FunPair> nonequalFuns;
+    std::vector<ConstFunPair> missingDefs;
+    simplifyModulesDiff(config, nonequalFuns, missingDefs);
 
-    reportOutput(config, nonequalFuns);
+    reportOutput(config, nonequalFuns, missingDefs);
 
     // Split list of non-equal function pairs into two sets.
     std::set<Function *> MainFunsFirst;

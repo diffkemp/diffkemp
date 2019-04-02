@@ -25,6 +25,7 @@ enum Program {
 };
 
 typedef std::pair<Function *, Function *> FunPair;
+typedef std::pair<const Function *, const Function *> ConstFunPair;
 
 /// Type for call stack entry: contains the called function and its call
 /// location (file and line).
@@ -69,9 +70,6 @@ bool hasSideEffect(const Function &Fun);
 /// Check if the function is an allocator
 bool isAllocFunction(const Function &Fun);
 
-/// Inline the given function
-void inlineFunction(Module &Mod, Function *InlineFun);
-
 /// Run simplification passes on the function
 ///  - simplify CFG
 ///  - dead code elimination
@@ -86,5 +84,8 @@ StructType *getStructType(const Value *Value);
 
 /// Removes empty attribute sets from an attribute list.
 AttributeList cleanAttributeList(AttributeList AL);
+
+/// Get a non-const pointer to a call instruction in a function
+CallInst *findCallInst(const CallInst *Call, Function *Fun);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H
