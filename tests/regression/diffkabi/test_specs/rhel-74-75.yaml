@@ -8,4 +8,5 @@ functions:
         __netif_schedule: equal_syntax
         dev_trans_start: equal_syntax
         single_open: equal_syntax
+        netif_free_tx_queues: equal_syntax
 
