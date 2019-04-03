@@ -209,6 +209,8 @@ def functions_diff(mod_first, mod_second,
                             new_mod.clean_module()
                         except SourceNotFoundException:
                             pass
+        mod_first.restore_unlinked_llvm()
+        mod_second.restore_unlinked_llvm()
 
         if not funs_to_compare:
             result.kind = Result.Kind.EQUAL_SYNTAX

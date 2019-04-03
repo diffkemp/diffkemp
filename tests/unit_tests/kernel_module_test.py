@@ -61,16 +61,16 @@ def test_set_param_fail(builder):
 
 def test_get_filename(builder):
     """Getting file name."""
-    # Need to rebuild the file since it might have been linked and in such case
-    # the name would be "llvm-link"
-    builder.rebuild = True
     module = builder.build_file("sound.c")
     module.parse_module()
     assert module.get_filename() == "sound/core/sound.c"
 
 
 def test_links_mod(builder):
-    """Testing if a module links another module."""
+    """
+    Testing if a module links another module. Then restoring the module to
+    the unlinked state.
+    """
     # Need to rebuild the file with debug info.
     builder.rebuild = True
     builder.debug = True
@@ -80,3 +80,5 @@ def test_links_mod(builder):
     init.parse_module()
     sound.link_modules([init])
     assert sound.links_mod(init)
+    sound.restore_unlinked_llvm()
+    assert not sound.links_mod(init)

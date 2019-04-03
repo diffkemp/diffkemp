@@ -44,6 +44,7 @@ class LlvmKernelModule:
             self.kernel_object = None
             self.depends = None
         self.params = dict()
+        self.unlinked_llvm = None
 
     def get_depends(self):
         """
@@ -102,7 +103,10 @@ class LlvmKernelModule:
         if not link_llvm_modules:
             return False
 
-        new_llvm = "{}-linked.ll".format(self.llvm[:-3])
+        if "-linked" not in self.llvm:
+            new_llvm = "{}-linked.ll".format(self.llvm[:-3])
+        else:
+            new_llvm = self.llvm
         link_command = ["llvm-link", "-S", self.llvm]
         link_command.extend([m.llvm for m in link_llvm_modules])
         link_command.extend(["-o", new_llvm])
@@ -112,7 +116,9 @@ class LlvmKernelModule:
             try:
                 check_call(link_command, stdout=devnull, stderr=devnull)
                 check_call(opt_command, stdout=devnull, stderr=devnull)
-                os.rename(new_llvm, self.llvm)
+                if self.unlinked_llvm is None:
+                    self.unlinked_llvm = self.llvm
+                self.llvm = new_llvm
                 self.parse_module(True)
             except CalledProcessError:
                 return False
@@ -253,6 +259,7 @@ class LlvmKernelModule:
         """
         Get name of the source file for this module.
         """
+        self.parse_module()
         len = ffi.new("size_t *")
         try:
             name = self.llvm_module.get_source_file_name(len)
@@ -267,6 +274,7 @@ class LlvmKernelModule:
         filename = module.get_filename()
         if not filename:
             return False
+        self.parse_module()
         # Iterate all functions and check their file names from debug info
         for fun in self.llvm_module.iter_functions():
             len = ffi.new("unsigned *")
@@ -277,3 +285,10 @@ class LlvmKernelModule:
             except RuntimeError:
                 pass
         return False
+
+    def restore_unlinked_llvm(self):
+        """Restore the module to the state before any linking was done."""
+        if self.unlinked_llvm is not None:
+            self.llvm = self.unlinked_llvm
+            self.unlinked_llvm = None
+            self.parse_module(True)
