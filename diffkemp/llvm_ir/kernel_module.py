@@ -33,9 +33,10 @@ class LlvmKernelModule:
     """
     def __init__(self, name, file_name, module_dir):
         self.name = name
-        self.llvm = os.path.join(module_dir, "{}.ll".format(file_name))
+        file_basename = os.path.splitext(file_name)[0]
+        self.llvm = os.path.join(module_dir, "{}.ll".format(file_basename))
         self.llvm_module = None
-        kernel_object = os.path.join(module_dir, "{}.ko".format(file_name))
+        kernel_object = os.path.join(module_dir, "{}.ko".format(file_basename))
         if os.path.isfile(kernel_object):
             self.kernel_object = kernel_object
             self.get_depends()
