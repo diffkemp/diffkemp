@@ -288,7 +288,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
     BasicBlock::const_iterator InstL = BBL->begin(), InstLE = BBL->end();
     BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
 
-    do {
+    while (InstL != InstLE && InstR != InstRE) {
         bool needToCmpOperands = true;
 
         if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands)) {
@@ -325,7 +325,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
 
         ++InstL;
         ++InstR;
-    } while (InstL != InstLE && InstR != InstRE);
+    }
 
     if (InstL != InstLE && InstR == InstRE)
         return 1;
