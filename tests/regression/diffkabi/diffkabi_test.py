@@ -31,16 +31,20 @@ def collect_task_specs():
     os.chdir(specs_path)
     for spec_file_path in glob.glob("*.yaml"):
         with open(spec_file_path, "r") as spec_file:
-            spec_yaml = yaml.load(spec_file)
-            if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
-                continue
-            for function, desc in spec_yaml["functions"].iteritems():
-                spec = dict(spec_yaml)
-                spec["function"] = function
-                spec["expected_result"] = desc
+            try:
+                spec_yaml = yaml.safe_load(spec_file)
+                if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
+                    continue
+                for function, desc in spec_yaml["functions"].iteritems():
+                    spec = dict(spec_yaml)
+                    spec["function"] = function
+                    spec["expected_result"] = desc
 
-                spec_id = os.path.splitext(spec_file_path)[0] + "_" + function
-                result.append((spec_id, spec))
+                    spec_id = \
+                        os.path.splitext(spec_file_path)[0] + "_" + function
+                    result.append((spec_id, spec))
+            except yaml.YAMLError:
+                pass
     os.chdir(cwd)
     return result
 

@@ -30,23 +30,26 @@ def collect_task_specs():
     os.chdir(specs_path)
     for spec_file_path in glob.glob("*.yaml"):
         with open(spec_file_path, "r") as spec_file:
-            spec_yaml = yaml.load(spec_file)
-            if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
-                continue
-            # One specification for each analysed parameter is created
-            for param in spec_yaml["params"]:
-                spec = param
-                spec["module"] = spec_yaml["module"]
-                spec["path"] = spec_yaml["path"]
-                spec["filename"] = spec_yaml["filename"]
-                spec["old_kernel"] = spec_yaml["old_kernel"]
-                spec["new_kernel"] = spec_yaml["new_kernel"]
-                if "debug" in spec_yaml:
-                    spec["debug"] = True
-                else:
-                    spec["debug"] = False
-                spec_id = spec["module"] + "-" + spec["param"]
-                result.append((spec_id, spec))
+            try:
+                spec_yaml = yaml.safe_load(spec_file)
+                if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
+                    continue
+                # One specification for each analysed parameter is created
+                for param in spec_yaml["params"]:
+                    spec = param
+                    spec["module"] = spec_yaml["module"]
+                    spec["path"] = spec_yaml["path"]
+                    spec["filename"] = spec_yaml["filename"]
+                    spec["old_kernel"] = spec_yaml["old_kernel"]
+                    spec["new_kernel"] = spec_yaml["new_kernel"]
+                    if "debug" in spec_yaml:
+                        spec["debug"] = True
+                    else:
+                        spec["debug"] = False
+                    spec_id = spec["module"] + "-" + spec["param"]
+                    result.append((spec_id, spec))
+            except yaml.YAMLError:
+                pass
     os.chdir(cwd)
     return result
 
