@@ -217,6 +217,8 @@ void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns) {
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Postprocess\n");
 
     for (auto *Main : MainFuns) {
+        if (Main->getName().empty())
+            continue;
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "  " << Main->getName() << "\n");
         // Do not inline function that will be compared
