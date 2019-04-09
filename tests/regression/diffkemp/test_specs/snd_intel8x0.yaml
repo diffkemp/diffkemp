@@ -1,3 +1,4 @@
+disabled: true
 module: snd_intel8x0
 path: sound/pci
 filename: intel8x0.c
