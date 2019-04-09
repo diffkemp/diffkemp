@@ -65,8 +65,8 @@ RUN curl -SL https://github.com/Z3Prover/z3/archive/z3-$Z3_VERSION.tar.gz | tar 
 # Download and unpack clang
 RUN  curl -SL http://llvm.org/releases/$LLVM_VERSION/cfe-$LLVM_VERSION.src.tar.xz | tar xJ
 # Download and unpack llvm from my repo 
-RUN curl -SL https://github.com/viktormalik/llvm/archive/diffkemp.tar.gz | tar xz
-RUN mv llvm-diffkemp llvm && \
+RUN curl -SL https://github.com/viktormalik/llvm/archive/diffkemp.tar.gz | tar xz && \
+    mv llvm-diffkemp llvm && \
     mv cfe-$LLVM_VERSION.src llvm/tools/clang && \
     cd llvm && \
     mkdir build && \
