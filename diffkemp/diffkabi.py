@@ -36,6 +36,9 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("--rebuild", help="force rebuild sources",
                     action="store_true")
+    ap.add_argument("--do-not-link",
+                    help="do not link function definitions from other sources",
+                    action="store_true")
     return ap
 
 
@@ -61,7 +64,8 @@ def run_from_cli():
             kabi_funs_second = second_builder.get_kabi_whitelist()
 
         config = Config(first_builder, second_builder, args.timeout,
-                        args.syntax_diff, args.control_flow_only, args.verbose)
+                        args.syntax_diff, args.control_flow_only, args.verbose,
+                        args.do_not_link)
 
         if args.log_files:
             dirname = logs_dirname(args.src_version, args.dest_version)

@@ -186,7 +186,7 @@ def functions_diff(mod_first, mod_second,
                                       glob_var.name if glob_var else "simpl",
                                       config.control_flow_only,
                                       config.verbosity)
-            if funs_to_compare and missing_defs:
+            if not config.do_not_link and funs_to_compare and missing_defs:
                 # If there are missing function definitions, try to find
                 # implementing them, link those to the current modules, and
                 # rerun the simplification.

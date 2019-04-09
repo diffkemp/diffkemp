@@ -90,7 +90,7 @@ def run_from_cli():
             return 0
 
         config = Config(first_builder, second_builder, args.timeout, False,
-                        False, args.verbose)
+                        False, args.verbose, True)
 
         print "Computing semantic difference of module parameters"
         print "--------------------------------------------------"
