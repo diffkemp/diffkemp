@@ -272,21 +272,10 @@ CallInst *findCallInst(const CallInst *Call, Function *Fun) {
 }
 
 /// Gets C source file from a DIScope and the module.
-std::string getSourceFilePath(DIScope *Scope, const Module *Mod) {
-    // Extract the source file path.
-    StringRef parentDirectory = llvm::sys::path::parent_path(
-            Mod->getModuleIdentifier());
-
-    while (!llvm::sys::path::filename(parentDirectory).startswith("linux")) {
-        parentDirectory = llvm::sys::path::parent_path(parentDirectory);
-        if (parentDirectory == "")
-            // Avoid infinite loop
-            return "";
-    }
-
-    std::string sourceFilePath = parentDirectory.str() +
-            llvm::sys::path::get_separator().str() +
-            Scope->getFilename().str();
+std::string getSourceFilePath(DIScope *Scope) {
+    std::string sourceFilePath = Scope->getFile()->getDirectory().str() +
+                                 llvm::sys::path::get_separator().str() +
+                                 Scope->getFile()->getFilename().str();
 
     return sourceFilePath;
 }
@@ -299,41 +288,70 @@ bool isValidCharForIdentifier(char ch) {
         return false;
 }
 
+bool isValidCharForIdentifierStart(char ch) {
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_')
+        return true;
+    else
+        return false;
+}
+
 /// Gets all macros used on the line in the form of a key to value map.
 std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
     StringRef line, StringMap<MacroElement> macroMap) {
-    // Create a second map, but only with macros that are used on the line.
+    // Transform macroMap into a second that will contain only macros that are
+    // used on the line.
     // Note: For the purpose of the algorithm the starting line is treated as a
     // with a space as its key, making it an invalid identifier for a macro.
     std::unordered_map<std::string, MacroElement> usedMacroMap;
     bool mapChanged = true;
     usedMacroMap[" "] = MacroElement {"<>", line, StringRef(""), 0, nullptr};
 
+    // The bodies of all macros currently present in usedMacroMap are examined;
+    // every time another macro is found in it, it is added to the map.
+    // This process is repeated over and over until it gets to a state when the
+    // map does not change after the iteration (this means that all macros
+    // already are in it).
     while (mapChanged) {
         mapChanged = false;
+
+        // This vector is used to store the entries that are to be added to the
+        // map, but can't be added directly, because it would break the cycle
+        // because it is iterating over the same map.
         std::vector<std::pair<StringRef, MacroElement>> entriesToAdd;
+
         for (auto &Entry : usedMacroMap) {
-            // Process all substrings of the macro value to look for any other
-            // macros that could be contained inside it
+            // Go through the macro body to find all string that could possibly
+            // be macro identifiers. Because we know which characters the
+            // identifier starts and ends with, we can go through the string
+            // from the left, record all such substrings and test them using the
+            // macro map provided in the function arguments.
             std::string macroBody = Entry.second.body.str();
-            for (int i = 0; i < macroBody.length(); i++) {
-                for (int j = 1; j < (macroBody.length() - i); j++) {
-                    auto potentialMacro =
-                            macroMap.find(macroBody.substr(i, j));
+            std::string potentialMacroName;
 
-                    if (i > 0 && isValidCharForIdentifier(macroBody[i - 1]))
-                        continue;
-                    if (isValidCharForIdentifier(macroBody[i + j]))
-                        continue;
-
+            for (int i = 0; i < macroBody.size(); i++) {
+                if (potentialMacroName.size() == 0) {
+                    // We are looking for the beginning of an identifier.
+                    if (isValidCharForIdentifierStart(macroBody[i]))
+                        potentialMacroName += macroBody[i];
+                } else if (!isValidCharForIdentifier(macroBody[i])) {
+                    // We found the end of the identifier.
+                    auto potentialMacro = macroMap.find(potentialMacroName);
                     if (potentialMacro != macroMap.end()) {
-                        int lengthBefore = usedMacroMap.size();
+                        // Macro used by the currently processed macro was
+                        // found.
+                        // Add it to entriesToAdd in order for it to be added to
+                        // the map.
                         MacroElement macro = potentialMacro->second;
                         macro.parentMacro = Entry.first;
                         entriesToAdd.push_back({potentialMacro->first(),
                                                 macro});
                     }
-                }
+
+                    // Reset the potential identifier.
+                    potentialMacroName = "";
+                } else
+                    // We are in the middle of the identifier.
+                    potentialMacroName += macroBody[i];
             }
         }
 
@@ -369,15 +387,17 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
         return std::unordered_map<std::string, MacroElement>();
     }
 
-    // Open the file and extract the line
+    // Open the C source file corresponding to the location and extract the line
     auto sourceFile = MemoryBuffer::getFile(Twine(getSourceFilePath(
-            dyn_cast<DIScope>(LineLoc->getScope()), Mod)));
+            dyn_cast<DIScope>(LineLoc->getScope()))));
     if (sourceFile.getError()) {
         // Source file was not found, return empty maps
         DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Source for macro not found\n");
         return std::unordered_map<std::string, MacroElement>();
     }
 
+    // Read the source file by lines, stop at the right number (the line that
+    // is referenced by the DILocation)
     line_iterator it(**sourceFile);
     StringRef line;
     while (!it.is_at_end() && it.line_number() != (LineLoc->getLine())) {
@@ -397,11 +417,17 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
     StringMap<const DIMacroFile *> macroFileMap;
     std::vector<const DIMacroFile *> macroFileStack;
 
+    // First all DIMacroFiles (these represent directly included headers) are
+    // added to a stack.
     for (const DIMacroNode *Node : RawMacros) {
         if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
             macroFileStack.push_back(File);
     }
 
+    // Next a DFS algorithm (using the stack created in the previous step) is
+    // used to add all macros that are found inside the file on the top of the
+    // stack to a map and to add all macro files referenced from the top macro
+    // file to the stack (these represent indirectly included headers).
     while (!macroFileStack.empty()) {
         const DIMacroFile *MF = macroFileStack.back();
         DIMacroNodeArray A = MF->getElements();
@@ -409,11 +435,17 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
         for (const DIMacroNode *Node : A)
             if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+                // The macro node is another macro file - add it to the
+                // stack
                 macroFileStack.push_back(File);
             else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
+                // The macro node is an actual macro - add an object
+                // representing it (containing its full name) with its shortened
+                // name as the key.
                 std::string macroName = Macro->getName().str();
 
-                // If the macro name contains arguments, remove them
+                // If the macro name contains arguments, remove them for the
+                // purpose of the map key.
                 auto position = macroName.find('(');
                 if (position != std::string::npos) {
                     macroName = macroName.substr(0, position);

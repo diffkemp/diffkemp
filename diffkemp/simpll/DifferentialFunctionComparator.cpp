@@ -498,7 +498,8 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
 /// Finds macro differences at the locations of the instructions L and R and
 /// adds them to the list in ModuleComparator.
 /// This is used when a difference is suspected to be in a macro in order to
-/// include that difference into the diffkemp output.
+/// include that difference into ModuleComparator, and therefore avoid an
+/// empty diff.
 void DifferentialFunctionComparator::findMacroDifferences(
         const Instruction *L, const Instruction *R) const {
     // Try to discover a macro difference
@@ -513,7 +514,7 @@ void DifferentialFunctionComparator::findMacroDifferences(
             LValue->second.body != RValue->second.body) {
             // Macro difference found - get the macro stacks and insert the
             // object into the macro differences array to be passed on to
-            // the Python part of diffkemp.
+            // ModuleComparator.
             std::vector<MacroElement> StackL, StackR;
             MacroElement currentElement = LValue->second;
             while (currentElement.parentMacro != "") {

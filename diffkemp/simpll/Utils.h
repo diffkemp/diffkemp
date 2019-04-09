@@ -90,11 +90,18 @@ AttributeList cleanAttributeList(AttributeList AL);
 CallInst *findCallInst(const CallInst *Call, Function *Fun);
 
 /// Gets C source file from a DIScope and the module.
-std::string getSourceFilePath(DIScope *Scope, const Module *Mod);
+std::string getSourceFilePath(DIScope *Scope);
 
 /// Returned macros with value and location.
 struct MacroElement {
-    StringRef name, body, parentMacro;
+    // The macro name is shortened, therefore it has to be stored as the whole
+    // string, because otherwise the content would be dropped on leaving the
+    // block in which the shortening is done.
+    std::string name;
+    // The body is in DebugInfo, parentMacro is a key in the map, therefore
+    // both can be stored by reference.
+    StringRef body, parentMacro;
+    // This is the line in the C source code on which the macro is located.
     int line;
     const DIMacroFile *source;
 };

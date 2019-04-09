@@ -81,7 +81,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Finds macro differences at the locations of the instructions L and R and
     /// adds them to the list in ModuleComparator.
     /// This is used when a difference is suspected to be in a macro in order to
-    /// include that difference into the diffkemp output.
+    /// include that difference into ModuleComparator, and therefore avoid an
+    /// empty diff.
     void findMacroDifferences(const Instruction *L, const Instruction *R) const;
 
     const DebugInfo *DI;
