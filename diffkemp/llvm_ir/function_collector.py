@@ -134,7 +134,8 @@ class FunctionCollector():
         result = set()
         for fun_name in function_names:
             llvm_fun = self._module.get_named_function(fun_name)
-            self._called_by_one(llvm_fun, result)
+            if llvm_fun:
+                self._called_by_one(llvm_fun, result)
         return result
 
     def undefined(self, function_names):

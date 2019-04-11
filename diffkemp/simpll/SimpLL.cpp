@@ -14,6 +14,7 @@
 #include "Config.h"
 #include "Transforms.h"
 #include "Utils.h"
+#include "Output.h"
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -41,41 +42,23 @@ int main(int argc, const char **argv) {
                      config.ControlFlowOnly);
     config.refreshFunctions();
 
-    auto nonequalFuns = simplifyModulesDiff(config);
+    std::vector<FunPair> nonequalFuns;
+    std::vector<ConstFunPair> missingDefs;
+    simplifyModulesDiff(config, nonequalFuns, missingDefs);
 
+    reportOutput(config, nonequalFuns, missingDefs);
+
+    // Split list of non-equal function pairs into two sets.
     std::set<Function *> MainFunsFirst;
+    std::transform(nonequalFuns.begin(),
+                   nonequalFuns.end(),
+                   std::inserter(MainFunsFirst, MainFunsFirst.begin()),
+                   [](FunPair &p) { return p.first; });
     std::set<Function *> MainFunsSecond;
-    for (auto &funPair : nonequalFuns) {
-        MainFunsFirst.insert(funPair.first);
-        MainFunsSecond.insert(funPair.second);
-
-        auto callStackFirst = getCallStack(*config.FirstFun, *funPair.first);
-        auto callStackSecond = getCallStack(*config.SecondFun, *funPair.second);
-        // Write non-equal functions to stdout: these need to be compared for
-        // semantic equivalence.
-        // Functions are written in the form:
-        // first_function:first_file,second_function:second_file
-        outs() << funPair.first->getName() << "\n";
-        if (!getFileForFun(funPair.first).empty())
-               outs() << getFileForFun(funPair.first) << "\n";
-        if (config.PrintCallStacks) {
-            for (auto &call : callStackFirst) {
-                outs() << call.fun->getName() << " at "
-                       << call.file << ":" << call.line << "\n";
-            }
-        }
-        outs() << "\n";
-        outs() << funPair.second->getName() << "\n";
-        if (!getFileForFun(funPair.second).empty())
-            outs() << getFileForFun(funPair.second) << "\n";
-        if (config.PrintCallStacks) {
-            for (auto &call : callStackSecond) {
-                outs() << call.fun->getName() << " at "
-                       << call.file << ":" << call.line << "\n";
-            }
-        }
-        outs() << "----------\n";
-    }
+    std::transform(nonequalFuns.begin(),
+                   nonequalFuns.end(),
+                   std::inserter(MainFunsSecond, MainFunsSecond.begin()),
+                   [](FunPair &p) { return p.second; });
 
     postprocessModule(*config.First, MainFunsFirst);
     postprocessModule(*config.Second, MainFunsSecond);

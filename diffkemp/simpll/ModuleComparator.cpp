@@ -17,6 +17,7 @@
 #include "Utils.h"
 #include "Config.h"
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 
 /// Syntactical comparison of functions.
 /// Function declarations are equal if they have the same name.
@@ -38,8 +39,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
             else
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
-        }
-        else {
+        } else {
             if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
                     && FirstFun->getName() == SecondFun->getName())
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
@@ -59,45 +59,81 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
     } else {
         ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
-        while (tryInline) {
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << "Try to inline " << tryInline->getName()
-                                   << "\n");
-            // Try to inline the problematic function
-            std::string nameToInline = tryInline->getName();
-            Function *inlineFirst = First.getFunction(nameToInline);
-            Function *inlineSecond = Second.getFunction(nameToInline);
-            // Do not inline if the function to be inlined has already been
-            // compared and is non-equal. In such case, inlining could remove
-            // the function and we could not get information about it later.
-            auto compared = ComparedFuns.find({inlineFirst, inlineSecond});
-            if (compared == ComparedFuns.end()
-                    || compared->second == Result::EQUAL) {
-                // Inline the function in the appropriate module and simplify
-                // the other function (because inlining does the same
-                // simplification to the caller of the inlined function).
-                if (inlineFirst) {
-                    inlineFunction(First, inlineFirst);
-                    simplifyFunction(SecondFun);
-                }
-                if (inlineSecond) {
-                    inlineFunction(Second, inlineSecond);
-                    simplifyFunction(FirstFun);
-                }
-                // Reset the function diff result
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
-                tryInline = nullptr;
-                // Re-run the comparison
-                DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
-                                                           controlFlowOnly,
-                                                           &GS, DI, this);
-                if (fCompSecond.compare() == 0) {
-                    ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+        while (tryInline.first || tryInline.second) {
+            // Try to inline the problematic function calls
+            CallInst *inlineFirst = findCallInst(tryInline.first, FirstFun);
+            CallInst *inlineSecond = findCallInst(tryInline.second, SecondFun);
+
+            ConstFunPair missingDefs;
+            bool inlined = false;
+            // If the called function is a declaration, add it to missingDefs.
+            // Otherwise, inline the call and simplify the function.
+            // The above is done for the first and the second call to inline.
+            if (inlineFirst) {
+                const Function *toInline =
+                        getCalledFunction(inlineFirst->getCalledValue());
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << "Try to inline "
+                                       << toInline->getName()
+                                       << " in first.\n");
+                if (toInline->isDeclaration()) {
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                    dbgs() << "Missing definition\n");
+                    if (!toInline->isIntrinsic()
+                            && toInline->getName().find("simpll__")
+                                    == std::string::npos)
+                        missingDefs.first = toInline;
                 } else {
-                    ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+                    InlineFunctionInfo ifi;
+                    if (InlineFunction(inlineFirst, ifi)) {
+                        simplifyFunction(FirstFun);
+                        simplifyFunction(SecondFun);
+                        inlined = true;
+                    }
                 }
+            }
+            if (inlineSecond) {
+                const Function *toInline =
+                        getCalledFunction(inlineSecond->getCalledValue());
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << "Try to inline "
+                                       << toInline->getName()
+                                       << " in second.\n");
+                if (toInline->isDeclaration()) {
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                    dbgs() << "Missing definition\n");
+                    if (!toInline->isIntrinsic()
+                            && toInline->getName().find("simpll__")
+                                    == std::string::npos)
+                        missingDefs.second = toInline;
+                } else {
+                    InlineFunctionInfo ifi;
+                    if (InlineFunction(inlineSecond, ifi)) {
+                        simplifyFunction(FirstFun);
+                        simplifyFunction(SecondFun);
+                        inlined = true;
+                    }
+                }
+            }
+            // If some function to be inlined does not have a declaration,
+            // store it into MissingDefs (will be reported at the end).
+            if (missingDefs.first || missingDefs.second) {
+                MissingDefs.push_back(missingDefs);
+            }
+            tryInline = {nullptr, nullptr};
+            // If nothing was inlined, do not continue
+            if (!inlined)
+                break;
+            // Reset the function diff result
+            ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
+            // Re-run the comparison
+            DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
+                                                       controlFlowOnly,
+                                                       &GS, DI, this);
+            if (fCompSecond.compare() == 0) {
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
             } else {
-                tryInline = nullptr;
+                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
             }
         }
     }

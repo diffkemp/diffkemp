@@ -9,11 +9,11 @@ be provided. This script parses the test specification and prepares testing
 scenarions for pytest.
 """
 
-from diffkemp.llvm_ir.kernel_module import KernelParam
+from diffkemp.llvm_ir.kernel_module import KernelParam, LlvmKernelModule
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.function_coupling import FunctionCouplings
 from diffkemp.semdiff.result import Result
-from tests.regression.module_tools import prepare_module
+from tests.regression.task_spec import TaskSpec
 import glob
 import os
 import pytest
@@ -30,23 +30,26 @@ def collect_task_specs():
     os.chdir(specs_path)
     for spec_file_path in glob.glob("*.yaml"):
         with open(spec_file_path, "r") as spec_file:
-            spec_yaml = yaml.load(spec_file)
-            if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
-                continue
-            # One specification for each analysed parameter is created
-            for param in spec_yaml["params"]:
-                spec = param
-                spec["module"] = spec_yaml["module"]
-                spec["path"] = spec_yaml["path"]
-                spec["filename"] = spec_yaml["filename"]
-                spec["old_kernel"] = spec_yaml["old_kernel"]
-                spec["new_kernel"] = spec_yaml["new_kernel"]
-                if "debug" in spec_yaml:
-                    spec["debug"] = True
-                else:
-                    spec["debug"] = False
-                spec_id = spec["module"] + "-" + spec["param"]
-                result.append((spec_id, spec))
+            try:
+                spec_yaml = yaml.safe_load(spec_file)
+                if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
+                    continue
+                # One specification for each analysed parameter is created
+                for param in spec_yaml["params"]:
+                    spec = param
+                    spec["module"] = spec_yaml["module"]
+                    spec["path"] = spec_yaml["path"]
+                    spec["filename"] = spec_yaml["filename"]
+                    spec["old_kernel"] = spec_yaml["old_kernel"]
+                    spec["new_kernel"] = spec_yaml["new_kernel"]
+                    if "debug" in spec_yaml:
+                        spec["debug"] = True
+                    else:
+                        spec["debug"] = False
+                    spec_id = spec["module"] + "-" + spec["param"]
+                    result.append((spec_id, spec))
+            except yaml.YAMLError:
+                pass
     os.chdir(cwd)
     return result
 
@@ -54,21 +57,16 @@ def collect_task_specs():
 specs = collect_task_specs()
 
 
-class TaskSpec:
+class DiffKempTaskSpec(TaskSpec):
     """
-    Task specification representing one testing scenario (a kernel module with
-    a parameter)
+    Task specification for one parameter of one kernel module.
     """
     def __init__(self, spec):
-        # Values from the YAML file
-        module = spec["module"]
-        self.module = module
+        TaskSpec.__init__(self, spec, tasks_path, spec["module"], spec["path"])
+        self.module = spec["module"]
         self.param = KernelParam(spec["param"])
         self.module_dir = spec["path"]
         self.module_src = spec["filename"]
-        self.old_kernel = spec["old_kernel"]
-        self.new_kernel = spec["new_kernel"]
-        self.debug = spec["debug"]
 
         # The dictionary mapping pairs of corresponding analysed functions into
         # expected results.
@@ -93,42 +91,38 @@ class TaskSpec:
                     elif desc == "only_new":
                         self.only_new.add(fun[0])
 
-        # Names of files
-        self.task_dir = os.path.join(tasks_path, module)
-        self.old = os.path.join(self.task_dir, module + "_old.ll")
-        self.new = os.path.join(self.task_dir, module + "_new.ll")
-        self.old_simpl = os.path.join(self.task_dir, module + "_old-" +
-                                      spec["param"] + ".ll")
-        self.new_simpl = os.path.join(self.task_dir, module + "_new-" +
-                                      spec["param"] + ".ll")
-        self.old_src = os.path.join(self.task_dir, module + "_old.c")
-        self.new_src = os.path.join(self.task_dir, module + "_new.c")
-
 
 def prepare_task(spec):
     """
-    Prepare testing task (scenario). Build old and new modules if needed and
-    copy created files.
+    Prepare testing task (scenario). Build old and new modules and copy the
+    source files.
     """
-    # Create task dir
-    if not os.path.isdir(spec.task_dir):
-        os.mkdir(spec.task_dir)
+    # Build the modules
+    if not os.path.isfile(spec.old_llvm_file()):
+        spec.old_module = spec.old_builder.build_module(spec.module)
+    else:
+        spec.old_module = LlvmKernelModule(spec.module, spec.old_llvm_file(),
+                                           "")
+    if not os.path.isfile(spec.new_llvm_file()):
+        spec.new_module = spec.new_builder.build_module(spec.module)
+    else:
+        spec.new_module = LlvmKernelModule(spec.module, spec.new_llvm_file(),
+                                           "")
 
-    # Prepare old module
-    prepare_module(spec.module_dir, spec.module, spec.module_src,
-                   spec.old_kernel, spec.old, spec.old_simpl, spec.old_src,
-                   spec.debug)
-    # Prepare new module
-    prepare_module(spec.module_dir, spec.module, spec.module_src,
-                   spec.new_kernel, spec.new, spec.new_simpl, spec.new_src,
-                   spec.debug)
+    # Copy the source files to the task directory (kernel_modules/module)
+    spec.prepare_dir(old_module=spec.old_module,
+                     old_src=os.path.join(spec.old_builder.kernel_path,
+                                          spec.module_dir, spec.module_src),
+                     new_module=spec.new_module,
+                     new_src=os.path.join(spec.new_builder.kernel_path,
+                                          spec.module_dir, spec.module_src))
 
 
 @pytest.fixture(params=[x[1] for x in specs],
                 ids=[x[0] for x in specs])
 def task_spec(request):
     """pytest fixture to prepare tasks"""
-    spec = TaskSpec(request.param)
+    spec = DiffKempTaskSpec(request.param)
     prepare_task(spec)
     return spec
 
@@ -145,7 +139,8 @@ class TestClass(object):
         couplings of main functions (functions using the paramter of the
         analysis) match functions specified in the test spec.
         """
-        couplings = FunctionCouplings(task_spec.old, task_spec.new)
+        couplings = FunctionCouplings(task_spec.old_module.llvm,
+                                      task_spec.new_module.llvm)
         couplings.infer_for_param(task_spec.param)
 
         coupled = set([(c.first, c.second) for c in couplings.main])
@@ -162,12 +157,13 @@ class TestClass(object):
         If timeout is expected, the analysis is not run to increase testing
         speed.
         """
+        # Configuration (only set the timeout, the rest is not used).
         for fun_pair, expected in task_spec.functions.iteritems():
             if expected not in [Result.Kind.TIMEOUT, Result.Kind.NONE]:
-                result = functions_diff(first=task_spec.old,
-                                        second=task_spec.new,
-                                        funFirst=fun_pair[0],
-                                        funSecond=fun_pair[1],
+                result = functions_diff(mod_first=task_spec.old_module,
+                                        mod_second=task_spec.new_module,
+                                        fun_first=fun_pair[0],
+                                        fun_second=fun_pair[1],
                                         glob_var=task_spec.param,
-                                        timeout=120)
+                                        config=task_spec.config)
                 assert result.kind == expected

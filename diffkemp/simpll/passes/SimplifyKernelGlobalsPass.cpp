@@ -87,22 +87,14 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
     // Remove kernel symbol
     for (GlobalVariable *V : kSymstoDelete) {
         Constant *Initializer = V->getInitializer();
-        Constant *PtrToInt;
 
         // Remove the global variable itself
         V->eraseFromParent();
-
-        if (ConstantStruct *IStruct = dyn_cast<ConstantStruct>(Initializer)) {
-            PtrToInt = IStruct->getAggregateElement((unsigned) 0);
-        }
 
         // Remove its initializer and if it is a struct, also remove its first
         // member (
         if (Initializer) {
             Initializer->destroyConstant();
-
-            if (PtrToInt)
-                PtrToInt->destroyConstant();
         }
     }
 

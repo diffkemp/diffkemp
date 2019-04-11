@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from argparse import ArgumentParser
+from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.semdiff.module_diff import modules_diff
@@ -88,8 +89,8 @@ def run_from_cli():
                 print "{} ".format(mod_name)
             return 0
 
-        # Set timeout (default is 40s)
-        timeout = int(args.timeout) if args.timeout else 40
+        config = Config(first_builder, second_builder, args.timeout, False,
+                        False, args.verbose, True)
 
         print "Computing semantic difference of module parameters"
         print "--------------------------------------------------"
@@ -116,11 +117,9 @@ def run_from_cli():
                     continue
                 print "  parameter {}".format(name)
                 # Compare modules
-                param_res = modules_diff(first=first, second=second,
-                                         glob_var=param,
-                                         function=args.function,
-                                         timeout=timeout,
-                                         verbose=args.verbose)
+                param_res = modules_diff(mod_first=first, mod_second=second,
+                                         glob_var=param, fun=args.function,
+                                         config=config)
                 param_res.first.name = param
                 param_res.second.name = param
                 print "    {}".format(str(param_res.kind).upper())

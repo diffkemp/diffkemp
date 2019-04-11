@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from argparse import ArgumentParser
+from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
 from diffkemp.llvm_ir.kernel_module import KernelParam
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
@@ -35,6 +36,9 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("--rebuild", help="force rebuild sources",
                     action="store_true")
+    ap.add_argument("--do-not-link",
+                    help="do not link function definitions from other sources",
+                    action="store_true")
     return ap
 
 
@@ -59,7 +63,9 @@ def run_from_cli():
         else:
             kabi_funs_second = second_builder.get_kabi_whitelist()
 
-        timeout = int(args.timeout) if args.timeout else 40
+        config = Config(first_builder, second_builder, args.timeout,
+                        args.syntax_diff, args.control_flow_only, args.verbose,
+                        args.do_not_link)
 
         if args.log_files:
             dirname = logs_dirname(args.src_version, args.dest_version)
@@ -84,13 +90,10 @@ def run_from_cli():
                         print f
                     # Compare functions semantics
                     fun_result = functions_diff(
-                        first=mod_first.llvm, second=mod_second.llvm,
-                        funFirst=f, funSecond=f,
+                        mod_first=mod_first, mod_second=mod_second,
+                        fun_first=f, fun_second=f,
                         glob_var=None,
-                        timeout=timeout,
-                        syntax_only=args.syntax_diff,
-                        control_flow_only=args.control_flow_only,
-                        verbose=args.verbose)
+                        config=config)
                     fun_result.first.name = f
                     fun_result.second.name = f
                 elif args.include_globals:
@@ -101,14 +104,7 @@ def run_from_cli():
                         print "Comparing all functions using {}".format(f)
                     globvar = KernelParam(f)
                     fun_result = diff_all_modules_using_global(
-                        first_builder=first_builder,
-                        second_builder=second_builder,
-                        glob_first=globvar,
-                        glob_second=globvar,
-                        timeout=timeout,
-                        syntax_only=args.syntax_diff,
-                        control_flow_only=args.control_flow_only,
-                        verbose=args.verbose)
+                        glob_first=globvar, glob_second=globvar, config=config)
 
                 if fun_result is not None:
                     result.add_inner(fun_result)

@@ -131,6 +131,7 @@ AttributeList cleanAttributes(AttributeList AS, unsigned Idx, LLVMContext &C) {
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::AlwaysInline);
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::InlineHint);
     result = result.removeAttribute(C, Idx, Attribute::AttrKind::NoInline);
+    result = result.removeAttribute(C, Idx, Attribute::AttrKind::NoUnwind);
     return result;
 }
 
@@ -140,9 +141,12 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
     AttributeList RNew = R;
     for (unsigned i = L.index_begin(), e = L.index_end(); i != e; ++i) {
         LNew = cleanAttributes(LNew, i, LNew.getContext());
-        if (RNew.hasAttributes(i))
-            RNew = cleanAttributes(RNew, i, RNew.getContext());
     }
+    for (unsigned i = R.index_begin(), e = R.index_end(); i != e; ++i) {
+        RNew = cleanAttributes(RNew, i, RNew.getContext());
+    }
+    LNew = cleanAttributeList(LNew);
+    RNew = cleanAttributeList(RNew);
     return FunctionComparator::cmpAttrs(LNew, RNew);
 }
 
@@ -160,45 +164,46 @@ int DifferentialFunctionComparator::cmpOperations(
 
             Function *CalledL = CL->getCalledFunction();
             Function *CalledR = CR->getCalledFunction();
-            if (CalledL && CalledR
-                    && CalledL->getName() == CalledR->getName()) {
-                // Check whether both instructions call an alloc function.
-                if (isAllocFunction(*CalledL)) {
-                    if (!cmpAllocs(CL, CR)) {
+            if (CalledL && CalledR) {
+                if (CalledL->getName() == CalledR->getName()) {
+                    // Check whether both instructions call an alloc function.
+                    if (isAllocFunction(*CalledL)) {
+                        if (!cmpAllocs(CL, CR)) {
+                            needToCmpOperands = false;
+                            return 0;
+                        }
+                    }
+
+                    if (CalledL->getIntrinsicID() == Intrinsic::memset &&
+                            CalledR->getIntrinsicID() == Intrinsic::memset) {
+                        if (!cmpMemset(CL, CR)) {
+                            needToCmpOperands = false;
+                            return 0;
+                        }
+                    }
+
+                    if (Result && controlFlowOnly &&
+                            abs(CL->getNumOperands() - CR->getNumOperands())
+                                    == 1) {
                         needToCmpOperands = false;
-                        return 0;
+                        return cmpCallsWithExtraArg(CL, CR);
                     }
                 }
-
-                if (CalledL->getIntrinsicID() == Intrinsic::memset &&
-                        CalledR->getIntrinsicID() == Intrinsic::memset) {
-                    if (!cmpMemset(CL, CR)) {
-                        needToCmpOperands = false;
-                        return 0;
-                    }
-                }
-
-                if (Result && controlFlowOnly &&
-                        abs(CL->getNumOperands() - CR->getNumOperands()) == 1) {
-                    needToCmpOperands = false;
-                    return cmpCallsWithExtraArg(CL, CR);
-                }
-
-                if (Result) {
+                if (Result || CalledL->getName() != CalledR->getName()) {
                     // If the call instructions are different (cmpOperations
-                    // doesn't compare the called functions), try inlining them.
-                    if (!CalledL->isDeclaration())
-                        ModComparator->tryInline = CalledL;
+                    // doesn't compare the called functions) or the called
+                    // functions have different names, try inlining them.
+                    ModComparator->tryInline = {CL, CR};
                 }
             }
         } else {
             // If just one of the instructions is a call, it is possible that
             // some logic has been moved into a function. We'll try to inline
             // that function and compare again.
-            const CallInst *Call = dyn_cast<CallInst>(isa<CallInst>(L) ? L : R);
-            if (Call->getCalledFunction() &&
-                    !Call->getCalledFunction()->isDeclaration())
-                ModComparator->tryInline = Call->getCalledFunction();
+            if (isa<CallInst>(L))
+                ModComparator->tryInline = {dyn_cast<CallInst>(L), nullptr};
+            else
+                ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
         }
     }
     if (Result) {
@@ -283,7 +288,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
     BasicBlock::const_iterator InstL = BBL->begin(), InstLE = BBL->end();
     BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
 
-    do {
+    while (InstL != InstLE && InstR != InstRE) {
         bool needToCmpOperands = true;
 
         if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands)) {
@@ -320,7 +325,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
 
         ++InstL;
         ++InstR;
-    } while (InstL != InstLE && InstR != InstRE);
+    }
 
     if (InstL != InstLE && InstR == InstRE)
         return 1;

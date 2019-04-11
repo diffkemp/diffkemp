@@ -9,10 +9,10 @@ This script parses the test specification and prepares testing scenarions for
 pytest.
 """
 
-from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
-from tests.regression.module_tools import prepare_module
+from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
+from tests.regression.task_spec import TaskSpec
 import glob
 import os
 import pytest
@@ -31,16 +31,20 @@ def collect_task_specs():
     os.chdir(specs_path)
     for spec_file_path in glob.glob("*.yaml"):
         with open(spec_file_path, "r") as spec_file:
-            spec_yaml = yaml.load(spec_file)
-            if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
-                continue
-            for function, desc in spec_yaml["functions"].iteritems():
-                spec = dict(spec_yaml)
-                spec["function"] = function
-                spec["expected_result"] = desc
+            try:
+                spec_yaml = yaml.safe_load(spec_file)
+                if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
+                    continue
+                for function, desc in spec_yaml["functions"].iteritems():
+                    spec = dict(spec_yaml)
+                    spec["function"] = function
+                    spec["expected_result"] = desc
 
-                spec_id = os.path.splitext(spec_file_path)[0] + "_" + function
-                result.append((spec_id, spec))
+                    spec_id = \
+                        os.path.splitext(spec_file_path)[0] + "_" + function
+                    result.append((spec_id, spec))
+            except yaml.YAMLError:
+                pass
     os.chdir(cwd)
     return result
 
@@ -48,71 +52,46 @@ def collect_task_specs():
 specs = collect_task_specs()
 
 
-class TaskSpec:
+class DiffKabiTaskSpec(TaskSpec):
     """
-    Task specification representing one testing scenario (one KABI function).
+    Task specification for one KABI function.
     """
     def __init__(self, spec):
-        # Values from the YAML file
-        self.old_kernel = spec["old_kernel"]
-        self.new_kernel = spec["new_kernel"]
-        if "control_flow_only" in spec:
-            self.control_flow_only = spec["control_flow_only"]
-        else:
-            self.control_flow_only = False
-        self.debug = spec["debug"] if "debug" in spec else False
+        TaskSpec.__init__(self, spec, tasks_path, spec["function"], None)
         self.function = spec["function"]
         self.expected_result = Result.Kind[spec["expected_result"].upper()]
 
 
 def prepare_task(spec):
     """
-    Prepare testing task (scenario). Build old and new modules and copy
+    Prepare testing task (scenario). Build old and new modules and copy the
     created files.
     """
-    # Find the modules
-    first_builder = LlvmKernelBuilder(spec.old_kernel, None,
-                                      debug=spec.debug, rebuild=True)
-    second_builder = LlvmKernelBuilder(spec.new_kernel, None,
-                                       debug=spec.debug, rebuild=True)
+    # Build the modules if needed
+    if not os.path.isfile(spec.old_llvm_file()):
+        spec.old_module = spec.old_builder.build_file_for_symbol(spec.function)
+    else:
+        spec.old_module = LlvmKernelModule(spec.function, spec.old_llvm_file(),
+                                           "")
 
-    # Build the modules
-    old_module = first_builder.build_file_for_symbol(spec.function)
-    new_module = second_builder.build_file_for_symbol(spec.function)
+    if not os.path.isfile(spec.new_llvm_file()):
+        spec.new_module = spec.new_builder.build_file_for_symbol(spec.function)
+    else:
+        spec.new_module = LlvmKernelModule(spec.function, spec.new_llvm_file(),
+                                           "")
 
-    # The modules were already built when finding their sources.
-    # Now the files need only to be copied to the right place.
-    #
-    # Note: the files are copied to the task directory for reference only.
-    # The exact name of the module is not known before building the
-    # function, therefore building from module sources in kernel_modules or
-    # using already built LLVM IR files is not possible.
-    mod_old = os.path.basename(old_module.name)
-    mod_new = os.path.basename(new_module.name)
-    spec.task_dir = os.path.join(tasks_path, spec.function)
-    if not os.path.isdir(spec.task_dir):
-        os.mkdir(spec.task_dir)
-    spec.old_src = os.path.join(spec.task_dir, mod_old + "_old.c")
-    spec.new_src = os.path.join(spec.task_dir, mod_new + "_new.c")
-    spec.old_module = os.path.join(spec.task_dir, mod_old + "_old.ll")
-    spec.new_module = os.path.join(spec.task_dir, mod_new + "_new.ll")
-    spec.old_simpl = os.path.join(spec.task_dir, mod_old + "_old-simpl.ll")
-    spec.new_simpl = os.path.join(spec.task_dir, mod_new + "_new-simpl.ll")
-
-    prepare_module(os.path.dirname(old_module.llvm), mod_old, mod_old + ".c",
-                   spec.old_kernel, spec.old_module, spec.old_simpl,
-                   spec.old_src, spec.debug, build_module=False)
-
-    prepare_module(os.path.dirname(new_module.llvm), mod_new, mod_new + ".c",
-                   spec.new_kernel, spec.new_module, spec.new_simpl,
-                   spec.new_src, spec.debug, build_module=False)
+    # Copy the source files to the task directory (kernel_modules/function)
+    spec.prepare_dir(old_module=spec.old_module,
+                     old_src="{}.c".format(spec.old_module.llvm[:-3]),
+                     new_module=spec.new_module,
+                     new_src="{}.c".format(spec.new_module.llvm[:-3]))
 
 
 @pytest.fixture(params=[x[1] for x in specs],
                 ids=[x[0] for x in specs])
 def task_spec(request):
     """pytest fixture to prepare tasks"""
-    spec = TaskSpec(request.param)
+    spec = DiffKabiTaskSpec(request.param)
     prepare_task(spec)
     return spec
 
@@ -136,11 +115,8 @@ class TestClass(object):
         """
         if task_spec.expected_result != Result.Kind.TIMEOUT:
             result = functions_diff(
-                first=task_spec.old_module,
-                second=task_spec.new_module,
-                funFirst=task_spec.function,
-                funSecond=task_spec.function,
-                glob_var=None,
-                timeout=120,
-                control_flow_only=task_spec.control_flow_only)
+                mod_first=task_spec.old_module,
+                mod_second=task_spec.new_module,
+                fun_first=task_spec.function, fun_second=task_spec.function,
+                glob_var=None, config=task_spec.config)
             assert result.kind == task_spec.expected_result

@@ -57,3 +57,28 @@ def test_set_param_fail(builder):
     module.parse_module()
     with pytest.raises(KernelModuleException):
         module.set_param("card_limit")
+
+
+def test_get_filename(builder):
+    """Getting file name."""
+    module = builder.build_file("sound.c")
+    module.parse_module()
+    assert module.get_filename() == "sound/core/sound.c"
+
+
+def test_links_mod(builder):
+    """
+    Testing if a module links another module. Then restoring the module to
+    the unlinked state.
+    """
+    # Need to rebuild the file with debug info.
+    builder.rebuild = True
+    builder.debug = True
+    sound = builder.build_file("sound.c")
+    sound.parse_module()
+    init = builder.build_file("init.c")
+    init.parse_module()
+    sound.link_modules([init])
+    assert sound.links_mod(init)
+    sound.restore_unlinked_llvm()
+    assert not sound.links_mod(init)

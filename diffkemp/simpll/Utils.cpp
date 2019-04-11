@@ -15,14 +15,14 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
-#include <llvm/Support/raw_ostream.h>
 #include <set>
 #include <iostream>
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
-#include <llvm/Transforms/IPO/AlwaysInliner.h>
 #include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Transforms/Scalar/NewGVN.h>
 #include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 
 /// Extract called function from a called value Handles situation when the
 /// called value is a bitcast.
@@ -180,45 +180,6 @@ bool isAllocFunction(const Function &Fun) {
            Fun.getName() == "kmalloc";
 }
 
-/// Mark the function with the 'alwaysinline' attribute and run
-/// the Alwaysinliner pass. Also remove the 'noinline' atribute.
-void inlineFunction(Module &Mod, Function *InlineFun) {
-    for (auto &Fun : Mod) {
-        if (&Fun == InlineFun) {
-            if (!Fun.hasFnAttribute(Attribute::AttrKind::AlwaysInline))
-                Fun.addFnAttr(Attribute::AttrKind::AlwaysInline);
-            if (Fun.hasFnAttribute(Attribute::AttrKind::NoInline))
-                Fun.removeFnAttr(Attribute::AttrKind::NoInline);
-        } else {
-            if (!Fun.hasFnAttribute(Attribute::AttrKind::NoInline))
-                Fun.addFnAttr(Attribute::AttrKind::NoInline);
-            if (Fun.hasFnAttribute(Attribute::AttrKind::AlwaysInline))
-                Fun.removeFnAttr(Attribute::AttrKind::AlwaysInline);
-        }
-    }
-
-    // Get a list of functions calling the function to inline (these will be
-    // changed).
-    std::set<Function *> Callers;
-    for (auto *User : InlineFun->users()) {
-        if (auto *InstUser = dyn_cast<Instruction>(User)) {
-            if (InstUser->getFunction())
-                Callers.insert(InstUser->getFunction());
-        }
-    }
-
-    PassBuilder pb;
-    ModulePassManager mpm(false);
-    ModuleAnalysisManager mam(false);
-    pb.registerModuleAnalyses(mam);
-    mpm.addPass(AlwaysInlinerPass {});
-    mpm.run(Mod, mam);
-
-    // Run simplification on the changed functions
-    for (auto *Caller : Callers)
-        simplifyFunction(Caller);
-}
-
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val) {
     if (auto *IntVal = dyn_cast<ConstantInt>(Val)) {
@@ -260,6 +221,7 @@ void simplifyFunction(Function *Fun) {
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(SimplifyCFGPass {});
     fpm.addPass(DCEPass {});
+    fpm.addPass(NewGVNPass {});
     fpm.run(*Fun, fam);
 }
 
@@ -289,4 +251,17 @@ AttributeList cleanAttributeList(AttributeList AL) {
     }
 
     return NewAttrList;
+}
+
+/// Get a non-const pointer to a call instruction in a function
+CallInst *findCallInst(const CallInst *Call, Function *Fun) {
+    if (!Call)
+        return nullptr;
+    for (auto &BB : *Fun) {
+        for (auto &Inst : BB) {
+            if (&Inst == Call)
+                return dyn_cast<CallInst>(&Inst);
+        }
+    }
+    return nullptr;
 }

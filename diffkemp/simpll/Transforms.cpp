@@ -100,7 +100,9 @@ void preprocessModule(Module &Mod,
 /// 3. Using debug information to compute offsets of the corresponding GEP
 ///    indices. Offsets are stored inside LLVM metadata.
 /// 4. Removing bodies of functions that are syntactically equivalent.
-std::vector<FunPair> simplifyModulesDiff(Config &config) {
+void simplifyModulesDiff(Config &config,
+                         std::vector<FunPair> &nonequalFuns,
+                         std::vector<ConstFunPair> &missingDefs) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies. Then, unify the abstractions between the modules so that
     // the corresponding abstractions get the same name.
@@ -132,7 +134,6 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
                     dbgs() << "StructFieldNames size: "
                            << DI.StructFieldNames.size() << "\n");
 
-    std::vector<FunPair> result;
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First, *config.Second,
                              config.ControlFlowOnly, &DI);
@@ -146,7 +147,8 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
         for (auto &funPair : modComp.ComparedFuns) {
             if (funPair.second == ModuleComparator::NOT_EQUAL) {
                 allEqual = false;
-                result.emplace_back(funPair.first.first, funPair.first.second);
+                nonequalFuns.emplace_back(funPair.first.first,
+                                          funPair.first.second);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << funPair.first.first->getName()
                                        << " are syntactically different\n");
@@ -172,7 +174,8 @@ std::vector<FunPair> simplifyModulesDiff(Config &config) {
             }
         }
     }
-    return result;
+
+    missingDefs = modComp.MissingDefs;
 }
 
 /// Recursively mark callees of a function with 'alwaysinline' attribute.
@@ -214,6 +217,8 @@ void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns) {
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Postprocess\n");
 
     for (auto *Main : MainFuns) {
+        if (Main->getName().empty())
+            continue;
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "  " << Main->getName() << "\n");
         // Do not inline function that will be compared

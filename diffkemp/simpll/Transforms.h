@@ -41,7 +41,9 @@ void preprocessModule(Module &Mod,
 /// semantic difference analysis. Tries to remove all the code that is
 /// syntactically equal between the modules which should decrease the complexity
 /// of the semantic diff.
-std::vector<FunPair> simplifyModulesDiff(Config &config);
+void simplifyModulesDiff(Config &config,
+                         std::vector<FunPair> &nonequalFuns,
+                         std::vector<ConstFunPair> &missingDefs);
 
 /// Preprocessing transformations - run independently on each module at the
 /// end.

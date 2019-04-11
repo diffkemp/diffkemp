@@ -7,6 +7,7 @@ affected by the value of the option.
 from __future__ import absolute_import
 
 from argparse import ArgumentParser
+from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, BuildException
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
     modules_diff
@@ -35,8 +36,6 @@ def run_from_cli():
     ap = __make_argument_parser()
     args = ap.parse_args()
 
-    timeout = int(args.timeout) if args.timeout else 40
-
     result = Result(Result.Kind.NONE, args.src_version, args.dest_version)
     try:
         first_builder = LlvmKernelBuilder(args.src_version, None, debug=True,
@@ -45,6 +44,9 @@ def run_from_cli():
         second_builder = LlvmKernelBuilder(args.dest_version, None, debug=True,
                                            rebuild=args.rebuild,
                                            verbose=args.verbose)
+
+        config = Config(first_builder, second_builder, args.timeout, False,
+                        False, args.verbose, True)
 
         sysctl_mod_first = first_builder.build_sysctl_module(args.sysctl)
         sysctl_mod_second = second_builder.build_sysctl_module(args.sysctl)
@@ -80,12 +82,11 @@ def run_from_cli():
                                 proc_fun_first)
                             mod_second = second_builder.build_file_for_symbol(
                                 proc_fun_second)
-                            proc_result = modules_diff(first=mod_first,
-                                                       second=mod_second,
+                            proc_result = modules_diff(mod_first=mod_first,
+                                                       mod_second=mod_second,
                                                        glob_var=None,
-                                                       function=proc_fun_first,
-                                                       timeout=timeout,
-                                                       verbose=args.verbose)
+                                                       fun=proc_fun_first,
+                                                       config=config)
                             proc_result.first.name = proc_fun_first
                             proc_result.second.name = proc_fun_second
                         except BuildException as e:
@@ -101,11 +102,8 @@ def run_from_cli():
             if data_first and data_second:
                 print "  Comparing functions using the data variable"
                 data_result = diff_all_modules_using_global(
-                    first_builder=first_builder,
-                    second_builder=second_builder,
                     glob_first=data_first, glob_second=data_second,
-                    timeout=timeout,
-                    verbose=args.verbose)
+                    config=config)
                 sysctl_res.add_inner(data_result)
             else:
                 print "  No data variable found"
