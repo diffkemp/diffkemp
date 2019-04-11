@@ -95,6 +95,7 @@ struct MappingTraits<MissingDefPair> {
 struct ResultReport {
     std::vector<DiffFunPair> diffFuns;
     std::vector<MissingDefPair> missingDefs;
+    std::vector<MacroDifference> differingMacros;
 };
 
 // Report to YAML
@@ -104,13 +105,50 @@ struct MappingTraits<ResultReport> {
     static void mapping(IO &io, ResultReport &result) {
         io.mapOptional("diff-functions", result.diffFuns);
         io.mapOptional("missing-defs", result.missingDefs);
+        io.mapOptional("differing-macros", result.differingMacros);
     }
 };
 }
 
+// MacroElement to YAML (for stack in MacroDifference)
+namespace llvm::yaml {
+template<>
+struct MappingTraits<MacroElement> {
+    static void mapping(IO &io, MacroElement &result) {
+        auto filename = result.source->getFile()->getFilename().str();
+        io.mapRequired("name", result.name);
+        io.mapRequired("body", result.body);
+        io.mapRequired("file", filename);
+        io.mapRequired("line", result.line);
+    }
+};
+}
+
+// Vector of MacroElement to YAML
+LLVM_YAML_IS_SEQUENCE_VECTOR(MacroElement);
+
+// MacroDifference to YAML
+namespace llvm::yaml {
+template<>
+struct MappingTraits<MacroDifference> {
+    static void mapping(IO &io, MacroDifference &result) {
+        io.mapRequired("name", result.macroName);
+        io.mapRequired("function", result.functionName);
+        io.mapRequired("left-stack", result.StackL);
+        io.mapRequired("right-stack", result.StackR);
+        io.mapRequired("left-line", result.lineLeft);
+        io.mapRequired("right-line", result.lineRight);
+    }
+};
+}
+
+// Vector of MacroDifference to YAML
+LLVM_YAML_IS_SEQUENCE_VECTOR(MacroDifference);
+
 void reportOutput(Config &config,
                   std::vector<FunPair> &nonequalFuns,
-                  std::vector<ConstFunPair> &missingDefs) {
+                  std::vector<ConstFunPair> &missingDefs,
+                  std::vector<MacroDifference> &differingMacros) {
     ResultReport report;
     for (auto &funPair : nonequalFuns) {
         report.diffFuns.emplace_back(
@@ -128,6 +166,7 @@ void reportOutput(Config &config,
                 funPair.first ? funPair.first->getName() : "",
                 funPair.second ? funPair.second->getName() : "");
     }
+    report.differingMacros = differingMacros;
 
     llvm::yaml::Output output(outs());
     output << report;

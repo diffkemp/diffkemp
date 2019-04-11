@@ -18,6 +18,7 @@
 
 #include "Config.h"
 #include "Utils.h"
+#include "ModuleComparator.h"
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
 #include <set>
@@ -43,7 +44,8 @@ void preprocessModule(Module &Mod,
 /// of the semantic diff.
 void simplifyModulesDiff(Config &config,
                          std::vector<FunPair> &nonequalFuns,
-                         std::vector<ConstFunPair> &missingDefs);
+                         std::vector<ConstFunPair> &missingDefs,
+                         std::vector<MacroDifference> &differingMacros);
 
 /// Preprocessing transformations - run independently on each module at the
 /// end.

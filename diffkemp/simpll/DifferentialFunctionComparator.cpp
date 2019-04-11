@@ -547,10 +547,14 @@ void DifferentialFunctionComparator::findMacroDifferences(
                 });
 
 
-            ModComparator->DifferingMacros.push_back(
-                ModuleComparator::MacroDifference {Elem.first,
-                LValue->second.body, RValue->second.body, StackL, StackR,
-                L->getFunction()->getName()});
+            ModComparator->DifferingMacros.push_back(MacroDifference {
+                Elem.first,
+                StackL,
+                StackR,
+                L->getFunction()->getName(),
+                L->getDebugLoc()->getLine(),
+                R->getDebugLoc()->getLine()
+              });
         }
     }
 }

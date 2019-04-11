@@ -23,6 +23,19 @@
 
 using namespace llvm;
 
+struct MacroDifference {
+	// Name of the macro.
+	std::string macroName;
+	// Stacks containing the differing macros and all other macros affected
+	// by the difference (again for both modules).
+	std::vector<MacroElement> StackL, StackR;
+	// The name of the function the macro difference was found in. This is
+	// necessary for correct printing of the difference.
+	StringRef functionName;
+	// Line in the original source file where the difference was found.
+	unsigned lineLeft, lineRight;
+};
+
 class ModuleComparator {
     Module &First;
     Module &Second;
@@ -34,18 +47,6 @@ class ModuleComparator {
     /// Storing results of function comparisons.
     std::map<FunPair, Result> ComparedFuns;
     /// Storing results from macro comparisons.
-    struct MacroDifference {
-        // Name of the macro.
-        std::string macroName;
-        // Macro body for the both modules.
-        StringRef LValue, RValue;
-        // Stacks containing the differing macros and all other macros affected
-        // by the difference (again for both modules).
-        std::vector<MacroElement> StackL, StackR;
-        // The name of the function the macro difference was found in. This is
-        // necessary for correct printing of the difference.
-        StringRef functionName;
-    };
     std::vector<MacroDifference> DifferingMacros;
 
     std::vector<ConstFunPair> MissingDefs;
