@@ -865,16 +865,17 @@ class LlvmKernelBuilder:
         finally:
             os.chdir(cwd)
 
-    def build_module(self, module):
+    def build_module(self, module, prevent_clean=False):
         """
         Build kernel module.
         First use kbuild to build kernel object file. Then, transform kbuild
         commands to the corresponding clang commands and build LLVM IR of the
         module.
         :param module: Name of the module
+        :param prevent_clean: Do not clean the module.
         :return Built module in LLVM IR (instance of LlvmKernelModule)
         """
-        if self.rebuild:
+        if not prevent_clean and self.rebuild:
             self._clean_all_modules()
 
         file_name, commands = self.kbuild_module(module)
@@ -959,7 +960,7 @@ class LlvmKernelBuilder:
             if self.verbose:
                 print "  {}".format(mod)
             try:
-                llvm_mod = self.build_module(mod)
+                llvm_mod = self.build_module(mod, True)
                 llvm_modules[llvm_mod.name] = llvm_mod
             except BuildException as e:
                 if self.verbose:
