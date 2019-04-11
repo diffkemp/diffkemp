@@ -43,22 +43,24 @@ uint64_t DifferentialGlobalNumberState::getNumber(GlobalValue *value) {
 
             if (ConstantDataSequential *CDS =
                 dyn_cast<ConstantDataSequential>(I)) {
-                // Value is a string - look it up in the string map
-                auto possibleResult = Strings.find(
-                    CDS->getAsString());
+                if (CDS->isString()) {
+                    // Value is a string - look it up in the string map
+                    auto possibleResult = Strings.find(
+                            CDS->getAsString());
 
-                if (possibleResult != Strings.end()) {
-                    // If the string is in the map, set the result to it
-                    result = possibleResult->getValue();
-                    GlobalNumbers.insert({value, result});
-                } else {
-                    // If it isn't, assign it the next number and insert it to
-                    // both GlobalNumbers and the string map
-                    Strings.insert({CDS->getAsString(), nextNumber});
-                    GlobalNumbers.insert({value, nextNumber});
+                    if (possibleResult != Strings.end()) {
+                        // If the string is in the map, set the result to it
+                        result = possibleResult->getValue();
+                        GlobalNumbers.insert({value, result});
+                    } else {
+                        // If it isn't, assign it the next number and insert it
+                        // to both GlobalNumbers and the string map
+                        Strings.insert({CDS->getAsString(), nextNumber});
+                        GlobalNumbers.insert({value, nextNumber});
 
-                    result = nextNumber;
-                    nextNumber++;
+                        result = nextNumber;
+                        nextNumber++;
+                    }
                 }
             } else if (ConstantInt *CI =
                     dyn_cast<ConstantInt>(I)) {
