@@ -14,6 +14,7 @@
 #include "DebugInfo.h"
 #include "Config.h"
 #include <llvm/IR/Constants.h>
+#include <llvm/Passes/PassBuilder.h>
 
 using namespace llvm;
 
@@ -419,4 +420,18 @@ void DebugInfo::addAlignment(std::string MacroName, std::string MacroValue) {
             MacroConstantMap.emplace(Constant, MacroValue);
         }
     }
+}
+
+/// Remove calls to debug info intrinsics from all functions in the module.
+/// We do not use LLVM's stripDebugInfo functions here since they remove other
+/// information that we need later (particularly file names).
+void DebugInfo::removeFunctionsDebugInfo(Module &Mod) {
+    // Function passes
+    PassBuilder pb;
+    FunctionPassManager fpm(false);
+    FunctionAnalysisManager fam(false);
+    pb.registerFunctionAnalyses(fam);
+    fpm.addPass(RemoveDebugInfoPass {});
+    for (auto &F : Mod)
+        fpm.run(F, fam);
 }

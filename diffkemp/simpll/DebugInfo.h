@@ -44,8 +44,13 @@ class DebugInfo {
             CalledFirst(CalledFirst) {
         DebugInfoFirst.processModule(ModFirst);
         DebugInfoSecond.processModule(ModSecond);
+        // Use debug info to gather useful information
         calculateGEPIndexAlignments();
         calculateMacroAlignments();
+        // Remove calls to debug info intrinsics from the functions - it may
+        // cause some non-equalities in FunctionComparator.
+        removeFunctionsDebugInfo(modFirst);
+        removeFunctionsDebugInfo(modSecond);
     };
 
     /// Maps structure type and index to struct member names
@@ -123,6 +128,9 @@ class DebugInfo {
     /// Check if the struct element has the same index as the previous element
     /// (this situation may be caused by the compiler due to struct alignment).
     static bool isSameElemIndex(const DIDerivedType *TypeElem);
+
+    /// Remove calls to debug info intrinsics from all functions in the module.
+    void removeFunctionsDebugInfo(Module &Mod);
 };
 
 /// A pass to remove all debugging information from a function.

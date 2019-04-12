@@ -228,16 +228,8 @@ void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns) {
         markCalleesAlwaysInline(*Main, MainFuns);
     }
 
-    // Function passes
-    PassBuilder pb;
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
-    pb.registerFunctionAnalyses(fam);
-    fpm.addPass(RemoveDebugInfoPass {});
-    for (auto &F : Mod)
-        fpm.run(F, fam);
-
     // Module passes
+    PassBuilder pb;
     ModulePassManager mpm(false);
     ModuleAnalysisManager mam(false);
     pb.registerModuleAnalyses(mam);
