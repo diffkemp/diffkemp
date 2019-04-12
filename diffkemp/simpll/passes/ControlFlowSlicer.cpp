@@ -70,6 +70,16 @@ bool hasIndirectCall(const Function &Fun) {
     return false;
 }
 
+/// Check if all uses of a function are stores.
+bool isResultOnlyStored(const Instruction *Inst) {
+    for (const auto &User : Inst->users()) {
+        if (!isa<StoreInst>(User))
+            return false;
+    }
+    // Return false if there are no uses
+    return Inst->getNumUses() > 0;
+}
+
 /// Keep only function calls, branches, instructions having functions as
 /// parameters, and all instructions depending on these.
 PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
@@ -86,7 +96,11 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                 // Call instruction except calls to intrinsics
                 keep = true;
                 auto Function = CallInstr->getCalledFunction();
-                if (Function && !hasSideEffect(*Function)) {
+                if (Function && !hasSideEffect(*Function) &&
+                        isResultOnlyStored(CallInstr)) {
+                    // Remove calls to functions having no side effects whose
+                    // result is only stored somewhere (does not affect control
+                    // flow).
                     keep = false;
                 }
                 if (Function && isAllocFunction(*Function)) {
