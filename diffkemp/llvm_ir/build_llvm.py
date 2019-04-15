@@ -680,7 +680,8 @@ class LlvmKernelBuilder:
         else:
             raise BuildException("Invalid call to {}".format(command))
         try:
-            check_call(opt_command)
+            with open(os.devnull, "w") as devnull:
+                check_call(opt_command, stderr=devnull)
         except CalledProcessError:
             raise BuildException("Running opt failed")
 
