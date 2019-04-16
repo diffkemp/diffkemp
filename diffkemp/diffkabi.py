@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
 from diffkemp.llvm_ir.kernel_module import KernelParam
+from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
 from diffkemp.semdiff.module_diff import diff_all_modules_using_global, \
     functions_diff
 from diffkemp.semdiff.result import Result
@@ -116,6 +117,10 @@ def run_from_cli():
                     else:
                         print "  {}".format(str(fun_result.kind).upper())
 
+            except SourceNotFoundException as e:
+                if not args.syntax_diff:
+                    sys.stderr.write("UNKNOWN: {}".format(str(e)))
+                result.add_inner(Result(Result.Kind.UNKNOWN, f, f))
             except Exception as e:
                 if not args.syntax_diff:
                     sys.stderr.write("  ERROR: {}\n".format(str(e)))
