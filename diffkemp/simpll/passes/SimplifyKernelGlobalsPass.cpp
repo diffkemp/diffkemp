@@ -70,18 +70,24 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
                 newValues.push_back(dyn_cast<Constant>(C));
         }
 
-        // Create the new type and initialized
-        ArrayType *NewType =
-                ArrayType::get(Used->getType()->getArrayElementType(),
-                               newValues.size());
-        Constant *Used_New = ConstantArray::get(NewType, newValues);
-
-        // The initialized type has changed, therefore the whole global
-        // variable has to be replaced.
-        GlobalVariable *GUsed_New = new GlobalVariable(Mod, NewType,
-            GUsed->isConstant(), GUsed->getLinkage(), Used_New);
-        GUsed->eraseFromParent();
-        GUsed_New->setName("llvm.used");
+        if (!newValues.empty()) {
+            // Create the new type and initialized
+            ArrayType *NewType =
+                    ArrayType::get(Used->getType()->getArrayElementType(),
+                                   newValues.size());
+            Constant *Used_New = ConstantArray::get(NewType, newValues);
+            // The initialized type has changed, therefore the whole global
+            // variable has to be replaced.
+            GlobalVariable *GUsed_New = new GlobalVariable(Mod,
+                                                           NewType,
+                                                           GUsed->isConstant(),
+                                                           GUsed->getLinkage(),
+                                                           Used_New);
+            GUsed->eraseFromParent();
+            GUsed_New->setName("llvm.used");
+        } else {
+            GUsed->eraseFromParent();
+        }
     }
 
     // Remove kernel symbol
