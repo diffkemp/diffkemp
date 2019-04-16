@@ -240,8 +240,9 @@ class LlvmKernelModule:
         self.called_functions = collector.called_by(self.main_functions)
 
     def has_function(self, fun):
-        """Check if module contains a function."""
-        return self.llvm_module.get_named_function(fun) is not None
+        """Check if module contains a function definition."""
+        llvm_fun = self.llvm_module.get_named_function(fun)
+        return llvm_fun is not None and not llvm_fun.is_declaration()
 
     def has_global(self, glob):
         """Check if module contains a global variable with the given name."""
