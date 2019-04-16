@@ -65,7 +65,7 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
             if simpll_result is not None:
                 if "diff-functions" in simpll_result:
                     for fun_pair_yaml in simpll_result["diff-functions"]:
-                        fun_pair = tuple([
+                        fun_pair = [
                             Result.Entity(
                                 fun["function"],
                                 fun["file"] if "file" in fun else "",
@@ -78,8 +78,14 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                             )
                             for fun in [fun_pair_yaml["first"],
                                         fun_pair_yaml["second"]]
-                        ])
-                        funs_to_compare.append(fun_pair)
+                        ]
+
+                        fun_pair.append(
+                            map(Result.MacroDifference,
+                                fun_pair_yaml["macro-diff"])
+                            if "macro-diff" in fun_pair_yaml else None)
+
+                        funs_to_compare.append(tuple(fun_pair))
                 missing_defs = simpll_result["missing-defs"] \
                     if "missing-defs" in simpll_result else None
         except yaml.YAMLError:

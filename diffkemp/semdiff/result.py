@@ -37,11 +37,49 @@ class Result:
             self.filename = filename
             self.callstack = callstack
 
+    class MacroElement:
+        """
+        Represents a macro element on the macro stack.
+        """
+        def __init__(self, yaml):
+            """Transforms YAML to MacroElement object."""
+            self.name = yaml["name"]
+            self.body = yaml["body"]
+            self.file = yaml["file"]
+            self.line = yaml["line"]
+
+    class MacroDifference:
+        """
+        Represents a macro difference as found by SimpLL.
+        """
+        def __init__(self, yaml):
+            """Transforms YAML to MacroDifference object."""
+            self.name = yaml["name"]
+            self.first_stack = map(Result.MacroElement, yaml["left-stack"])
+            self.second_stack = map(Result.MacroElement, yaml["right-stack"])
+            self.first_line = yaml["left-line"]
+            self.second_line = yaml["right-line"]
+
+        def __str__(self):
+            res = "Macro " + self.first_stack[0].name + " is different:\n"
+            for stack in [self.first_stack, self.second_stack]:
+                for macro in stack:
+                    res = res + "  from macro " + macro.name + " in file " + \
+                        macro.file + " on line " + str(macro.line) + "\n"
+                res = res + "  used in the function on line " + \
+                    (str(self.first_line) if stack is self.first_stack else
+                     str(self.second_line)) + "\n"
+                res = res + "    " + stack[0].body + "\n"
+                if stack is self.first_stack:
+                    res = res + "\n"
+            return res
+
     def __init__(self, kind, first_name, second_name):
         self.kind = kind
         self.first = Result.Entity(first_name)
         self.second = Result.Entity(second_name)
         self.diff = None
+        self.macro_diff = None
         self.inner = dict()
 
     def __str__(self):

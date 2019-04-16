@@ -224,6 +224,7 @@ def functions_diff(mod_first, mod_second,
                 fun_result.diff = syntax_diff(fun_result.first.filename,
                                               fun_result.second.filename,
                                               fun_result.first.name)
+                fun_result.macro_diff = fun_pair[2]
                 result.add_inner(fun_result)
         else:
             # If the functions are not syntactically equal, funs_to_compare

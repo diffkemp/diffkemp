@@ -61,7 +61,10 @@ struct MappingTraits<FunctionInfo> {
 }
 
 // Pair of different functions that will be reported
-typedef std::pair<FunctionInfo, FunctionInfo> DiffFunPair;
+struct DiffFunPair {
+    FunctionInfo first, second;
+    std::vector<MacroDifference> macroDiff;
+};
 
 // DiffFunPair to YAML
 namespace llvm::yaml {
@@ -70,6 +73,7 @@ struct MappingTraits<DiffFunPair> {
     static void mapping(IO &io, DiffFunPair &funs) {
         io.mapOptional("first", funs.first);
         io.mapOptional("second", funs.second);
+        io.mapOptional("macro-diff", funs.macroDiff);
     }
 };
 }
@@ -105,7 +109,6 @@ struct MappingTraits<ResultReport> {
     static void mapping(IO &io, ResultReport &result) {
         io.mapOptional("diff-functions", result.diffFuns);
         io.mapOptional("missing-defs", result.missingDefs);
-        io.mapOptional("differing-macros", result.differingMacros);
     }
 };
 }
@@ -151,22 +154,29 @@ void reportOutput(Config &config,
                   std::vector<MacroDifference> &differingMacros) {
     ResultReport report;
     for (auto &funPair : nonequalFuns) {
-        report.diffFuns.emplace_back(
+        // Assign macro differences that belong to the function pair
+        std::vector<MacroDifference> macroDiffs;
+        for (MacroDifference diff : differingMacros) {
+            if (diff.functionName == funPair.first->getName() ||
+                diff.functionName == funPair.second->getName())
+                macroDiffs.push_back(diff);
+        }
+
+        report.diffFuns.push_back({
                 FunctionInfo(funPair.first->getName(),
                              getFileForFun(funPair.first),
                              getCallStack(*config.FirstFun, *funPair.first)),
                 FunctionInfo(funPair.second->getName(),
                              getFileForFun(funPair.second),
-                             getCallStack(*config.SecondFun, *funPair.second))
-
-        );
+                             getCallStack(*config.SecondFun, *funPair.second)),
+                macroDiffs
+        });
     }
     for (auto &funPair : missingDefs) {
         report.missingDefs.emplace_back(
                 funPair.first ? funPair.first->getName() : "",
                 funPair.second ? funPair.second->getName() : "");
     }
-    report.differingMacros = differingMacros;
 
     llvm::yaml::Output output(outs());
     output << report;
