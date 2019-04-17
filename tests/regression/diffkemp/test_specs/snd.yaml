@@ -9,12 +9,4 @@ params:
     functions: 
       alsa_sound_init: equal_syntax
       snd_request_card: equal_syntax
-      
-  - param: major
-    functions: 
-      alsa_sound_exit: equal_syntax
-      alsa_sound_init: timeout
-      !!python/tuple [snd_register_device_for_dev, snd_register_device]: error
-      snd_unregister_device: only_old
-
 
