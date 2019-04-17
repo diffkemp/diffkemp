@@ -200,8 +200,8 @@ def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
                     called_res.second.callstack.replace(dest_path + "/", ""),
                     indent))
                 output.write("\n\n")
-            if called_res.diff.strip() == "" and \
-               called_res.macro_diff is not None:
+            if (called_res.diff.strip() == "" and
+                    called_res.macro_diff is not None):
                 output.write(text_indent(
                     "\n".join(map(str, called_res.macro_diff)), indent))
             else:

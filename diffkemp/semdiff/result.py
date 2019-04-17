@@ -61,17 +61,17 @@ class Result:
             self.second_line = yaml["right-line"]
 
         def __str__(self):
-            res = "Macro " + self.first_stack[0].name + " is different:\n"
+            res = "Macro {} is different:\n".format(self.first_stack[0].name)
             for stack in [self.first_stack, self.second_stack]:
                 for macro in stack:
-                    res = res + "  from macro " + macro.name + " in file " + \
-                        macro.file + " on line " + str(macro.line) + "\n"
-                res = res + "  used in the function on line " + \
-                    (str(self.first_line) if stack is self.first_stack else
-                     str(self.second_line)) + "\n"
-                res = res + "    " + stack[0].body + "\n"
+                    res += "  from macro {} in file {} on line {}\n".format(
+                        macro.name, macro.file, str(macro.line))
+                res += "  used in the function on line {}\n".format(
+                    (str(self.first_line) if stack is self.first_stack
+                     else str(self.second_line)))
+                res += "    {}\n".format(stack[0].body)
                 if stack is self.first_stack:
-                    res = res + "\n"
+                    res += "\n"
             return res
 
     def __init__(self, kind, first_name, second_name):
