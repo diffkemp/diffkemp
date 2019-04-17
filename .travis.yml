@@ -3,7 +3,7 @@ sudo: required
 services:
   - docker
 
-language: python
+language: minimal
 
 jobs:
   include:
@@ -22,6 +22,8 @@ jobs:
           "pytest tests/regression"
     
     - stage: linter
+      install:
+        - pip install flake8
       script:
         - flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
         - flake8 tests
