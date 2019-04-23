@@ -178,6 +178,10 @@ def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
             print "{}:".format(fun)
 
         for called_res in fun_result.inner.itervalues():
+            if called_res.diff == "":
+                # Do not print empty diffs
+                continue
+
             output.write(
                 text_indent("{} differs:\n".format(called_res.first.name),
                             indent - 2))
