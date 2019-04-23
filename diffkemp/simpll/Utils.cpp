@@ -118,7 +118,7 @@ bool searchCallStackRec(Function *Src,
                     auto loc = Inst.getDebugLoc();
                     if (!loc)
                         continue;
-                    callStack.push_back(CallInfo(called,
+                    callStack.push_back(CallInfo(called->getName().str(),
                                                  getFileForFun(Src),
                                                  loc.getLine()));
                     if (called == Dest)

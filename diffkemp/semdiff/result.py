@@ -32,47 +32,12 @@ class Result:
         or a parameter.
         If it is a function, it contains the file of the function.
         """
-        def __init__(self, name, filename=None, callstack=None):
+        def __init__(self, name, filename=None, callstack=None,
+                     is_macro=False):
             self.name = name
             self.filename = filename
             self.callstack = callstack
-
-    class MacroElement:
-        """
-        Represents a macro element on the macro stack.
-        """
-        def __init__(self, yaml):
-            """Transforms YAML to MacroElement object."""
-            self.name = yaml["name"]
-            self.body = yaml["body"]
-            self.file = yaml["file"]
-            self.line = yaml["line"]
-
-    class MacroDifference:
-        """
-        Represents a macro difference as found by SimpLL.
-        """
-        def __init__(self, yaml):
-            """Transforms YAML to MacroDifference object."""
-            self.name = yaml["name"]
-            self.first_stack = map(Result.MacroElement, yaml["left-stack"])
-            self.second_stack = map(Result.MacroElement, yaml["right-stack"])
-            self.first_line = yaml["left-line"]
-            self.second_line = yaml["right-line"]
-
-        def __str__(self):
-            res = "Macro {} is different:\n".format(self.first_stack[0].name)
-            for stack in [self.first_stack, self.second_stack]:
-                for macro in stack:
-                    res += "  from macro {} in file {} on line {}\n".format(
-                        macro.name, macro.file, str(macro.line))
-                res += "  used in the function on line {}\n".format(
-                    (str(self.first_line) if stack is self.first_stack
-                     else str(self.second_line)))
-                res += "    {}\n".format(stack[0].body)
-                if stack is self.first_stack:
-                    res += "\n"
-            return res
+            self.is_macro = is_macro
 
     def __init__(self, kind, first_name, second_name):
         self.kind = kind

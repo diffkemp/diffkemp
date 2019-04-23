@@ -58,8 +58,9 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         check_call(["opt", "-S", "-deadargelim", "-o", second_out, second_out],
                    stderr=stderr)
 
-        funs_to_compare = []
+        objects_to_compare = []
         missing_defs = None
+        macro_defs = None
         try:
             simpll_result = yaml.safe_load(simpll_out)
             if simpll_result is not None:
@@ -74,23 +75,21 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                                                           call["file"],
                                                           call["line"])
                                      for call in fun["callstack"]])
-                                if "callstack" in fun else ""
+                                if "callstack" in fun else "",
+                                fun["is-macro"]
                             )
                             for fun in [fun_pair_yaml["first"],
                                         fun_pair_yaml["second"]]
                         ]
 
-                        fun_pair.append(
-                            map(Result.MacroDifference,
-                                fun_pair_yaml["macro-diff"])
-                            if "macro-diff" in fun_pair_yaml else None)
-
-                        funs_to_compare.append(tuple(fun_pair))
+                        objects_to_compare.append(tuple(fun_pair))
                 missing_defs = simpll_result["missing-defs"] \
                     if "missing-defs" in simpll_result else None
+                macro_defs = simpll_result["macro-defs"] \
+                    if "macro-defs" in simpll_result else None
         except yaml.YAMLError:
             pass
 
-        return first_out, second_out, funs_to_compare, missing_defs
+        return first_out, second_out, objects_to_compare, missing_defs, macro_defs
     except CalledProcessError:
         raise SimpLLException("Simplifying files failed")

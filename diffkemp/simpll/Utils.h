@@ -37,8 +37,8 @@ struct CallInfo {
 
     // Default constructor needed for YAML serialisation.
     CallInfo() {}
-    CallInfo(Function *fun, const std::string &file, unsigned int line)
-            : fun(fun->getName()), file(file), line(line) {}
+    CallInfo(const std::string &fun, const std::string &file, unsigned int line)
+            : fun(fun), file(file), line(line) {}
 };
 /// Call stack - list of call entries
 typedef std::vector<CallInfo> CallStack;

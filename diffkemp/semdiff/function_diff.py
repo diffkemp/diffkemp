@@ -179,13 +179,16 @@ def functions_diff(mod_first, mod_second,
         while simplify:
             simplify = False
             # Simplify modules
-            first_simpl, second_simpl, funs_to_compare, missing_defs = \
+            first_simpl, second_simpl, objects_to_compare, missing_defs, \
+                macro_defs = \
                 simplify_modules_diff(mod_first.llvm, mod_second.llvm,
                                       fun_first, fun_second,
                                       glob_var.name if glob_var else None,
                                       glob_var.name if glob_var else "simpl",
                                       config.control_flow_only,
                                       config.verbosity)
+            funs_to_compare = list(filter(lambda o: not o[0].is_macro,
+                                          objects_to_compare))
             if not config.do_not_link and funs_to_compare and missing_defs:
                 # If there are missing function definitions, try to find
                 # implementing them, link those to the current modules, and
@@ -217,14 +220,24 @@ def functions_diff(mod_first, mod_second,
         elif config.syntax_only:
             # Only display the syntax diff of the functions that are
             # syntactically different.
-            for fun_pair in funs_to_compare:
+            for fun_pair in objects_to_compare:
                 fun_result = Result(Result.Kind.NOT_EQUAL, "", "")
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
-                fun_result.diff = syntax_diff(fun_result.first.filename,
-                                              fun_result.second.filename,
-                                              fun_result.first.name)
-                fun_result.macro_diff = fun_pair[2]
+                if not fun_result.first.is_macro:
+                    fun_result.diff = syntax_diff(fun_result.first.filename,
+                                                  fun_result.second.filename,
+                                                  fun_result.first.name)
+                else:
+                    # Find the macro definitions
+                    found = None
+                    for md in macro_defs:
+                        if md["name"] == fun_result.first.name:
+                            found = md
+                            break
+                    if found is not None:
+                        fun_result.diff = "  {}\n\n  {}\n".format(
+                            md["left-value"], md["right-value"])
                 result.add_inner(fun_result)
         else:
             # If the functions are not syntactically equal, funs_to_compare
