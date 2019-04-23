@@ -158,10 +158,10 @@ void reportOutput(Config &config,
         // Try to append call stack of function to the macro stack if possible
         CallStack toAppendLeft, toAppendRight;
         for (auto &diff : report.diffFuns) {
-            if (diff.first.name == macroDiff.StackL[0].fun &&
+            if (diff.first.name == macroDiff.function &&
                 diff.first.callstack.size() > 0)
                 toAppendLeft = diff.first.callstack;
-            if (diff.second.name == macroDiff.StackR[0].fun &&
+            if (diff.second.name == macroDiff.function &&
                 diff.second.callstack.size() > 0)
                 toAppendRight = diff.second.callstack;
         }

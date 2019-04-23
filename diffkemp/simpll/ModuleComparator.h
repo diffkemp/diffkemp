@@ -31,6 +31,8 @@ struct MacroDifference {
 	// Stacks containing the differing macros and all other macros affected
 	// by the difference (again for both modules).
 	CallStack StackL, StackR;
+	// The function in which the difference was found
+	std::string function;
 };
 
 class ModuleComparator {

@@ -304,7 +304,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
     // with a space as its key, making it an invalid identifier for a macro.
     std::unordered_map<std::string, MacroElement> usedMacroMap;
     bool mapChanged = true;
-    usedMacroMap[" "] = MacroElement {"<>", line, StringRef(""), 0, nullptr};
+    usedMacroMap[" "] = MacroElement {"<>", line, StringRef(""), 0, ""};
 
     // The bodies of all macros currently present in usedMacroMap are examined;
     // every time another macro is found in it, it is added to the map.
@@ -370,10 +370,6 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
             mapChanged = true;
     }
 
-    // Remove the line itself from the macro maps (they should contain only
-    // macros)
-    usedMacroMap.erase(" ");
-
     return usedMacroMap;
 }
 
@@ -387,9 +383,13 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
         return std::unordered_map<std::string, MacroElement>();
     }
 
+    // Get the path of the source file corresponding to the module where the
+    // difference was found
+    auto sourcePath = getSourceFilePath(
+            dyn_cast<DIScope>(LineLoc->getScope()));
+
     // Open the C source file corresponding to the location and extract the line
-    auto sourceFile = MemoryBuffer::getFile(Twine(getSourceFilePath(
-            dyn_cast<DIScope>(LineLoc->getScope()))));
+    auto sourceFile = MemoryBuffer::getFile(Twine(sourcePath));
     if (sourceFile.getError()) {
         // Source file was not found, return empty maps
         DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Source for macro not found\n");
@@ -452,14 +452,19 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
                 }
 
                 MacroElement element;
-                element.name = Macro->getName();
+                element.name = macroName;
                 element.body = Macro->getValue();
                 element.parentMacro = "N/A";
-                element.source = MF;
+                element.sourceFile = MF->getFile()->getFilename().str();
                 element.line = Macro->getLine();
                 macroMap[macroName] = element;
             }
     }
 
-    return getAllMacrosOnLine(line, macroMap);
+    // Add information about the original line to the map, then return the map
+    auto macrosOnLine = getAllMacrosOnLine(line, macroMap);
+    macrosOnLine[" "].sourceFile = sourcePath;
+    macrosOnLine[" "].line = LineLoc->getLine();
+
+    return macrosOnLine;
 }

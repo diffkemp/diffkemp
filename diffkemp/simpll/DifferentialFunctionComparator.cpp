@@ -507,6 +507,11 @@ void DifferentialFunctionComparator::findMacroDifferences(
     auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
 
     for (auto Elem : MacrosL) {
+        if (Elem.second.name == "<>")
+            // Note: this is the final parent "macro" element representing the
+            // actual line in the source file on which the macro is used
+            continue;
+
         auto LValue = MacrosL.find(Elem.first);
         auto RValue = MacrosR.find(Elem.first);
 
@@ -524,17 +529,19 @@ void DifferentialFunctionComparator::findMacroDifferences(
             // on which it is defined.
             MacroElement currentElement = LValue->second;
             while (currentElement.parentMacro != "") {
-                StackL.push_back(CallInfo(currentElement.name,
-                    currentElement.source->getFile()->getFilename().str(),
-					currentElement.line));
-                currentElement = MacrosL[currentElement.parentMacro];
+                auto parent = MacrosL[currentElement.parentMacro];
+                StackL.push_back(CallInfo(currentElement.name + " (macro)",
+                    parent.sourceFile,
+                    parent.line));
+                currentElement = parent;
             }
             currentElement = RValue->second;
             while (currentElement.parentMacro != "") {
-                StackR.push_back(CallInfo(currentElement.name,
-                    currentElement.source->getFile()->getFilename().str(),
-                    currentElement.line));
-                currentElement = MacrosR[currentElement.parentMacro];
+                auto parent = MacrosR[currentElement.parentMacro];
+                StackR.push_back(CallInfo(currentElement.name + " (macro)",
+                    parent.sourceFile,
+                    parent.line));
+                currentElement = parent;
             }
 
             // Invert stacks to match the format of actual call stacks
@@ -562,7 +569,7 @@ void DifferentialFunctionComparator::findMacroDifferences(
 
             ModComparator->DifferingMacros.push_back(MacroDifference {
                 Elem.first, LValue->second.body, RValue->second.body,
-                StackL, StackR
+                StackL, StackR, L->getFunction()->getName()
             });
         }
     }

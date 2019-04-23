@@ -103,7 +103,7 @@ struct MacroElement {
     StringRef body, parentMacro;
     // This is the line in the C source code on which the macro is located.
     int line;
-    const DIMacroFile *source;
+    std::string sourceFile;
 };
 
 /// Gets all macros used on the line in the form of a key to value map.
