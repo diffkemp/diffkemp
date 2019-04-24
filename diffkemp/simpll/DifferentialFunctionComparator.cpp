@@ -14,6 +14,7 @@
 
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
+#include "MacroUtils.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -231,8 +232,12 @@ int DifferentialFunctionComparator::cmpOperations(
         }
     }
 
-    if (Result)
-        findMacroDifferences(L, R);
+    if (Result) {
+        auto macroDiffs = findMacroDifferences(L, R);
+        ModComparator->DifferingMacros.insert(
+            ModComparator->DifferingMacros.end(),
+            macroDiffs.begin(), macroDiffs.end());
+    }
 
     return Result;
 }
@@ -493,84 +498,4 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
             cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2)) ||
             cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2)) ||
             STyL->getStructName() != STyR->getStructName();
-}
-
-/// Finds macro differences at the locations of the instructions L and R and
-/// adds them to the list in ModuleComparator.
-/// This is used when a difference is suspected to be in a macro in order to
-/// include that difference into ModuleComparator, and therefore avoid an
-/// empty diff.
-void DifferentialFunctionComparator::findMacroDifferences(
-        const Instruction *L, const Instruction *R) const {
-    // Try to discover a macro difference
-    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
-    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
-
-    for (auto Elem : MacrosL) {
-        if (Elem.second.name == "<>")
-            // Note: this is the final parent "macro" element representing the
-            // actual line in the source file on which the macro is used
-            continue;
-
-        auto LValue = MacrosL.find(Elem.first);
-        auto RValue = MacrosR.find(Elem.first);
-
-        if (LValue != MacrosL.end() && RValue != MacrosR.end() &&
-            LValue->second.body != RValue->second.body) {
-            // Macro difference found - get the macro stacks and insert the
-            // object into the macro differences array to be passed on to
-            // ModuleComparator.
-            CallStack StackL, StackR;
-
-            // Insert all macros between the differing macro and the original
-            // macro that the line contains to the stack.
-            // Note: the lines on which are the macros have to be shifted,
-            // because we want the line on which the macro is used, not the line
-            // on which it is defined.
-            MacroElement currentElement = LValue->second;
-            while (currentElement.parentMacro != "") {
-                auto parent = MacrosL[currentElement.parentMacro];
-                StackL.push_back(CallInfo(currentElement.name + " (macro)",
-                    parent.sourceFile,
-                    parent.line));
-                currentElement = parent;
-            }
-            currentElement = RValue->second;
-            while (currentElement.parentMacro != "") {
-                auto parent = MacrosR[currentElement.parentMacro];
-                StackR.push_back(CallInfo(currentElement.name + " (macro)",
-                    parent.sourceFile,
-                    parent.line));
-                currentElement = parent;
-            }
-
-            // Invert stacks to match the format of actual call stacks
-            std::reverse(StackL.begin(), StackL.end());
-            std::reverse(StackR.begin(), StackR.end());
-
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                dbgs() << "Left stack:\n\t";
-                dbgs() << LValue->second.body << "\n";
-                for (CallInfo &elem : StackL) {
-                    dbgs() << "\t\tfrom " << elem.fun <<
-                        " in file " <<
-                        elem.file << " on line "
-                        << elem.line << "\n";
-                });
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                dbgs() << "Right stack:\n\t";
-                dbgs() << RValue->second.body << "\n";
-                for (CallInfo &elem : StackR) {
-                    dbgs() << "\t\tfrom " << elem.fun <<
-                        " in file " <<
-                        elem.file << " on line "
-                        << elem.line << "\n";
-                });
-
-            ModComparator->DifferingMacros.push_back(MacroDifference {
-                Elem.first, LValue->second.body, RValue->second.body,
-                StackL, StackR, L->getFunction()->getName()
-            });
-        }
-    }
 }

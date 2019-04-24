@@ -92,27 +92,11 @@ CallInst *findCallInst(const CallInst *Call, Function *Fun);
 /// Gets C source file from a DIScope and the module.
 std::string getSourceFilePath(DIScope *Scope);
 
-/// Returned macros with value and location.
-struct MacroElement {
-    // The macro name is shortened, therefore it has to be stored as the whole
-    // string, because otherwise the content would be dropped on leaving the
-    // block in which the shortening is done.
-    std::string name;
-    // The body is in DebugInfo, parentMacro is a key in the map, therefore
-    // both can be stored by reference.
-    StringRef body, parentMacro;
-    // This is the line in the C source code on which the macro is located.
-    int line;
-    std::string sourceFile;
-};
+/// Checks whether the character is valid for a C identifier.
+bool isValidCharForIdentifier(char ch);
 
-/// Gets all macros used on the line in the form of a key to value map.
-std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
-    StringRef line, StringMap<StringRef> macroMap);
-
-/// Gets all macros used on a certain DILocation in the form of a key to value
-/// map.
-std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-    DILocation *LineLoc, const Module *Mod);
+/// Checks whether the character is valid for the first character of
+/// a C identifier.
+bool isValidCharForIdentifierStart(char ch);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H

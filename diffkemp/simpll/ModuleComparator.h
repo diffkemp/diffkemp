@@ -17,23 +17,12 @@
 
 #include "DebugInfo.h"
 #include "DifferentialGlobalNumberState.h"
+#include "MacroUtils.h"
 #include "Utils.h"
 #include <llvm/IR/Module.h>
 #include <set>
 
 using namespace llvm;
-
-struct MacroDifference {
-	// Name of the macro.
-	std::string macroName;
-	// The difference.
-	std::string BodyL, BodyR;
-	// Stacks containing the differing macros and all other macros affected
-	// by the difference (again for both modules).
-	CallStack StackL, StackR;
-	// The function in which the difference was found
-	std::string function;
-};
 
 class ModuleComparator {
     Module &First;
