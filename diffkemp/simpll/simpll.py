@@ -90,6 +90,7 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
         except yaml.YAMLError:
             pass
 
-        return first_out, second_out, objects_to_compare, missing_defs, macro_defs
+        return first_out, second_out, objects_to_compare, missing_defs, \
+            macro_defs
     except CalledProcessError:
         raise SimpLLException("Simplifying files failed")
