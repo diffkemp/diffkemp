@@ -122,11 +122,29 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
     // Read the source file by lines, stop at the right number (the line that
     // is referenced by the DILocation)
+    // The code also tries to include other lines belonging to the statement by
+    // counting parenthesis - in case the line is only a part of the statement,
+    // the other parts are added to it.
     line_iterator it(**sourceFile);
-    StringRef line;
+    std::string line, previousLine;
     while (!it.is_at_end() && it.line_number() != (LineLoc->getLine())) {
-        ++it; line = *it;
+        ++it;
+        if (it->count('(') < it->count(')'))
+            // The line is a continuation of the previous one
+            line += it->str();
+        else {
+            previousLine = line;
+            line = it->str();
+        }
     }
+    if (StringRef(line).count('(') > StringRef(line).count(')')) {
+        // Unfinished line
+        do {
+            ++it;
+            line += it->str();
+        } while (!it.is_at_end() && (it->count('(') < it->count(')')));
+    }
+
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                     dbgs() << "Looking for all macros on line:" << line
@@ -187,6 +205,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
     // Add information about the original line to the map, then return the map
     auto macrosOnLine = getAllMacrosOnLine(line, macroMap);
+    if (macrosOnLine.size() == 0)
+        macrosOnLine = getAllMacrosOnLine(previousLine, macroMap);
     macrosOnLine[" "].sourceFile = sourcePath;
     macrosOnLine[" "].line = LineLoc->getLine();
 
@@ -199,7 +219,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
 std::vector<MacroDifference> findMacroDifferences(
-		const Instruction *L, const Instruction *R) {
+    const Instruction *L, const Instruction *R) {
     // Try to discover a macro difference
     auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
     auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
