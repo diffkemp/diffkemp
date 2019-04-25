@@ -13,6 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "DifferentialFunctionComparator.h"
+#include "Config.h"
+#include "MacroUtils.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -229,6 +231,14 @@ int DifferentialFunctionComparator::cmpOperations(
                                   dyn_cast<AllocaInst>(R)->getAlignment());
         }
     }
+
+    if (Result) {
+        auto macroDiffs = findMacroDifferences(L, R);
+        ModComparator->DifferingMacros.insert(
+            ModComparator->DifferingMacros.end(),
+            macroDiffs.begin(), macroDiffs.end());
+    }
+
     return Result;
 }
 

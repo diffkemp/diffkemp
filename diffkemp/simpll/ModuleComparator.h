@@ -17,6 +17,7 @@
 
 #include "DebugInfo.h"
 #include "DifferentialGlobalNumberState.h"
+#include "MacroUtils.h"
 #include "Utils.h"
 #include <llvm/IR/Module.h>
 #include <set>
@@ -33,6 +34,8 @@ class ModuleComparator {
     enum Result { EQUAL, NOT_EQUAL, UNKNOWN };
     /// Storing results of function comparisons.
     std::map<FunPair, Result> ComparedFuns;
+    /// Storing results from macro comparisons.
+    std::vector<MacroDifference> DifferingMacros;
 
     std::vector<ConstFunPair> MissingDefs;
 

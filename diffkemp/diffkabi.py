@@ -40,6 +40,8 @@ def __make_argument_parser():
     ap.add_argument("--do-not-link",
                     help="do not link function definitions from other sources",
                     action="store_true")
+    ap.add_argument("--show-empty-diff", help="shows difference in function \
+                    when the syntactic diff is empty", action="store_true")
     return ap
 
 
@@ -113,7 +115,8 @@ def run_from_cli():
                         print_sytax_diff(args.src_version, args.dest_version,
                                          first_builder.kernel_path,
                                          second_builder.kernel_path,
-                                         f, fun_result, args.log_files)
+                                         f, fun_result, args.log_files,
+                                         args.show_empty_diff)
                     else:
                         print "  {}".format(str(fun_result.kind).upper())
 
@@ -151,7 +154,7 @@ def logs_dirname(src_version, dest_version):
 
 
 def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
-                     fun_result, log_files):
+                     fun_result, log_files, print_empty_diffs=False):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
@@ -162,6 +165,7 @@ def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
     :param fun: Name of the analysed function
     :param fun_result: Result of the analysis
     :param log_files: True if the output is to be written into a file
+    :param print_empty_diffs: Print empty syntax diffs.
     """
     def text_indent(text, width):
         """Indent each line in the text by a number of spaces given by width"""
@@ -178,6 +182,10 @@ def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
             print "{}:".format(fun)
 
         for called_res in fun_result.inner.itervalues():
+            if called_res.diff == "" and not print_empty_diffs:
+                # Do not print empty diffs
+                continue
+
             output.write(
                 text_indent("{} differs:\n".format(called_res.first.name),
                             indent - 2))
@@ -200,9 +208,14 @@ def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
                     called_res.second.callstack.replace(dest_path + "/", ""),
                     indent))
                 output.write("\n\n")
-            output.write(text_indent("Diff:\n", indent))
-            output.write(text_indent(
-                called_res.diff, indent))
+            if (called_res.diff.strip() == "" and
+                    called_res.macro_diff is not None):
+                output.write(text_indent(
+                    "\n".join(map(str, called_res.macro_diff)), indent))
+            else:
+                output.write(text_indent("Diff:\n", indent))
+                output.write(text_indent(
+                    called_res.diff, indent))
             if not log_files:
                 print "  }}}"
             output.write("\n")

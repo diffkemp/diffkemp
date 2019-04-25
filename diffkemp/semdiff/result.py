@@ -32,16 +32,19 @@ class Result:
         or a parameter.
         If it is a function, it contains the file of the function.
         """
-        def __init__(self, name, filename=None, callstack=None):
+        def __init__(self, name, filename=None, callstack=None,
+                     is_macro=False):
             self.name = name
             self.filename = filename
             self.callstack = callstack
+            self.is_macro = is_macro
 
     def __init__(self, kind, first_name, second_name):
         self.kind = kind
         self.first = Result.Entity(first_name)
         self.second = Result.Entity(second_name)
         self.diff = None
+        self.macro_diff = None
         self.inner = dict()
 
     def __str__(self):

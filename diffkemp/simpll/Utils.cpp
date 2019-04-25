@@ -12,9 +12,14 @@
 //===----------------------------------------------------------------------===//
 
 #include "Utils.h"
+#include "Config.h"
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
+#include <llvm/Support/LineIterator.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/Path.h>
+#include <llvm/Support/raw_ostream.h>
 #include <set>
 #include <iostream>
 #include <llvm/IR/PassManager.h>
@@ -113,7 +118,7 @@ bool searchCallStackRec(Function *Src,
                     auto loc = Inst.getDebugLoc();
                     if (!loc)
                         continue;
-                    callStack.push_back(CallInfo(called,
+                    callStack.push_back(CallInfo(called->getName().str(),
                                                  getFileForFun(Src),
                                                  loc.getLine()));
                     if (called == Dest)
@@ -264,4 +269,31 @@ CallInst *findCallInst(const CallInst *Call, Function *Fun) {
         }
     }
     return nullptr;
+}
+
+/// Gets C source file from a DIScope and the module.
+std::string getSourceFilePath(DIScope *Scope) {
+    std::string sourceFilePath = Scope->getFile()->getDirectory().str() +
+                                 llvm::sys::path::get_separator().str() +
+                                 Scope->getFile()->getFilename().str();
+
+    return sourceFilePath;
+}
+
+/// Checks whether the character is valid for a C identifier.
+bool isValidCharForIdentifier(char ch) {
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+        (ch >= '0' && ch <= '9') || ch == '_')
+        return true;
+    else
+        return false;
+}
+
+/// Checks whether the character is valid for the first character of
+/// a C identifier.
+bool isValidCharForIdentifierStart(char ch) {
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_')
+        return true;
+    else
+        return false;
 }

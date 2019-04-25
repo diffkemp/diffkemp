@@ -16,6 +16,7 @@
 
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Function.h>
+#include <unordered_map>
 
 using namespace llvm;
 
@@ -36,8 +37,8 @@ struct CallInfo {
 
     // Default constructor needed for YAML serialisation.
     CallInfo() {}
-    CallInfo(Function *fun, const std::string &file, unsigned int line)
-            : fun(fun->getName()), file(file), line(line) {}
+    CallInfo(const std::string &fun, const std::string &file, unsigned int line)
+            : fun(fun), file(file), line(line) {}
 };
 /// Call stack - list of call entries
 typedef std::vector<CallInfo> CallStack;
@@ -87,5 +88,15 @@ AttributeList cleanAttributeList(AttributeList AL);
 
 /// Get a non-const pointer to a call instruction in a function
 CallInst *findCallInst(const CallInst *Call, Function *Fun);
+
+/// Gets C source file from a DIScope and the module.
+std::string getSourceFilePath(DIScope *Scope);
+
+/// Checks whether the character is valid for a C identifier.
+bool isValidCharForIdentifier(char ch);
+
+/// Checks whether the character is valid for the first character of
+/// a C identifier.
+bool isValidCharForIdentifierStart(char ch);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H

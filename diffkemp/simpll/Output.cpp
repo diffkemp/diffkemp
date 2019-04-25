@@ -38,15 +38,41 @@ struct FunctionInfo {
     std::string name;
     std::string file;
     CallStack callstack;
+    bool isMacro;
 
     // Default constructor is needed for YAML serialisation so that the struct
     // can be used as an optional YAML field.
     FunctionInfo() {}
     FunctionInfo(const std::string &name,
                  const std::string &file,
+                 const CallStack &callstack,
+                 bool isMacro)
+            : name(name), file(file), callstack(callstack), isMacro(isMacro) {}
+    FunctionInfo(const std::string &name,
+                 const std::string &file,
                  const CallStack &callstack)
-            : name(name), file(file), callstack(callstack) {}
+            : FunctionInfo(name, file, callstack, false) {}
 };
+
+// Macro body
+struct MacroBody {
+    std::string name, LBody, RBody;
+};
+
+// MacroBody to YAML
+namespace llvm::yaml {
+template<>
+struct MappingTraits<MacroBody> {
+    static void mapping(IO &io, MacroBody &body) {
+        io.mapRequired("name", body.name);
+        io.mapRequired("left-value", body.LBody);
+        io.mapRequired("right-value", body.RBody);
+    }
+};
+}
+
+// Vector of MacroBody to YAML
+LLVM_YAML_IS_SEQUENCE_VECTOR(MacroBody);
 
 // FunctionInfo to YAML
 namespace llvm::yaml {
@@ -56,12 +82,15 @@ struct MappingTraits<FunctionInfo> {
         io.mapRequired("function", info.name);
         io.mapOptional("file", info.file);
         io.mapOptional("callstack", info.callstack);
+        io.mapRequired("is-macro", info.isMacro);
     }
 };
 }
 
 // Pair of different functions that will be reported
-typedef std::pair<FunctionInfo, FunctionInfo> DiffFunPair;
+struct DiffFunPair {
+    FunctionInfo first, second;
+};
 
 // DiffFunPair to YAML
 namespace llvm::yaml {
@@ -95,6 +124,7 @@ struct MappingTraits<MissingDefPair> {
 struct ResultReport {
     std::vector<DiffFunPair> diffFuns;
     std::vector<MissingDefPair> missingDefs;
+    std::vector<MacroBody> macroDefinitions;
 };
 
 // Report to YAML
@@ -104,24 +134,58 @@ struct MappingTraits<ResultReport> {
     static void mapping(IO &io, ResultReport &result) {
         io.mapOptional("diff-functions", result.diffFuns);
         io.mapOptional("missing-defs", result.missingDefs);
+        io.mapOptional("macro-defs", result.macroDefinitions);
     }
 };
 }
 
 void reportOutput(Config &config,
                   std::vector<FunPair> &nonequalFuns,
-                  std::vector<ConstFunPair> &missingDefs) {
+                  std::vector<ConstFunPair> &missingDefs,
+                  std::vector<MacroDifference> &differingMacros) {
     ResultReport report;
     for (auto &funPair : nonequalFuns) {
-        report.diffFuns.emplace_back(
+        report.diffFuns.push_back({
                 FunctionInfo(funPair.first->getName(),
                              getFileForFun(funPair.first),
                              getCallStack(*config.FirstFun, *funPair.first)),
                 FunctionInfo(funPair.second->getName(),
                              getFileForFun(funPair.second),
                              getCallStack(*config.SecondFun, *funPair.second))
+        });
+    }
+    for (auto &macroDiff : differingMacros) {
+        // Try to append call stack of function to the macro stack if possible
+        CallStack toAppendLeft, toAppendRight;
+        for (auto &diff : report.diffFuns) {
+            if (diff.first.name == macroDiff.function &&
+                diff.first.callstack.size() > 0)
+                toAppendLeft = diff.first.callstack;
+            if (diff.second.name == macroDiff.function &&
+                diff.second.callstack.size() > 0)
+                toAppendRight = diff.second.callstack;
+        }
+        if (toAppendLeft.size() > 0)
+            macroDiff.StackL.insert(macroDiff.StackL.begin(),
+                toAppendLeft.begin(), toAppendLeft.end());
+        if (toAppendRight.size() > 0)
+            macroDiff.StackR.insert(macroDiff.StackR.begin(),
+                toAppendRight.begin(), toAppendRight.end());
 
-        );
+        report.diffFuns.push_back({
+               FunctionInfo(macroDiff.macroName,
+                            macroDiff.StackL[0].file,
+                            macroDiff.StackL,
+                            true),
+               FunctionInfo(macroDiff.macroName,
+                            macroDiff.StackR[0].file,
+                            macroDiff.StackR,
+                            true)
+        });
+
+        report.macroDefinitions.push_back(MacroBody {
+            macroDiff.macroName, macroDiff.BodyL, macroDiff.BodyR
+        });
     }
     for (auto &funPair : missingDefs) {
         report.missingDefs.emplace_back(

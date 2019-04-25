@@ -102,7 +102,8 @@ void preprocessModule(Module &Mod,
 /// 4. Removing bodies of functions that are syntactically equivalent.
 void simplifyModulesDiff(Config &config,
                          std::vector<FunPair> &nonequalFuns,
-                         std::vector<ConstFunPair> &missingDefs) {
+                         std::vector<ConstFunPair> &missingDefs,
+                         std::vector<MacroDifference> &differingMacros) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies. Then, unify the abstractions between the modules so that
     // the corresponding abstractions get the same name.
@@ -176,6 +177,7 @@ void simplifyModulesDiff(Config &config,
     }
 
     missingDefs = modComp.MissingDefs;
+    differingMacros = modComp.DifferingMacros;
 }
 
 /// Recursively mark callees of a function with 'alwaysinline' attribute.

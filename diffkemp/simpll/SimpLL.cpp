@@ -15,6 +15,7 @@
 #include "Transforms.h"
 #include "Utils.h"
 #include "Output.h"
+#include "ModuleComparator.h"
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -44,9 +45,10 @@ int main(int argc, const char **argv) {
 
     std::vector<FunPair> nonequalFuns;
     std::vector<ConstFunPair> missingDefs;
-    simplifyModulesDiff(config, nonequalFuns, missingDefs);
+    std::vector<MacroDifference> differingMacros;
+    simplifyModulesDiff(config, nonequalFuns, missingDefs, differingMacros);
 
-    reportOutput(config, nonequalFuns, missingDefs);
+    reportOutput(config, nonequalFuns, missingDefs, differingMacros);
 
     // Split list of non-equal function pairs into two sets.
     std::set<Function *> MainFunsFirst;
