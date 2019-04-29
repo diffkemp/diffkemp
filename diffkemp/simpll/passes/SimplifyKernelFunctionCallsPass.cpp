@@ -108,7 +108,8 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                 // by 0 (it is a line number).
                 if (CalledFun->getName() == "warn_slowpath_null" ||
                         CalledFun->getName() == "warn_slowpath_fmt" ||
-                        CalledFun->getName() == "__might_sleep") {
+                        CalledFun->getName() == "__might_sleep" ||
+                        CalledFun->getName() == "acpi_ut_predefined_warning") {
                     replaceArgByZero(CallInstr, 1);
                 }
             }
