@@ -191,7 +191,9 @@ int DifferentialFunctionComparator::cmpOperations(
                         return cmpCallsWithExtraArg(CL, CR);
                     }
                 }
-                if (Result || CalledL->getName() != CalledR->getName()) {
+                if ((Result || CalledL->getName() != CalledR->getName()) &&
+                    !CalledL->getName().startswith("simpll") &&
+                    !CalledR->getName().startswith("simpll")) {
                     // If the call instructions are different (cmpOperations
                     // doesn't compare the called functions) or the called
                     // functions have different names, try inlining them.
@@ -202,9 +204,11 @@ int DifferentialFunctionComparator::cmpOperations(
             // If just one of the instructions is a call, it is possible that
             // some logic has been moved into a function. We'll try to inline
             // that function and compare again.
-            if (isa<CallInst>(L))
+            if (isa<CallInst>(L) && !dyn_cast<CallInst>(L)->
+                getCalledFunction()->getName().startswith("simpll"))
                 ModComparator->tryInline = {dyn_cast<CallInst>(L), nullptr};
-            else
+            else if (isa<CallInst>(R) && !dyn_cast<CallInst>(R)->
+                     getCalledFunction()->getName().startswith("simpll"))
                 ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
         }
     }
