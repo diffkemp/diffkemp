@@ -43,8 +43,16 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
                     && FirstFun->getName() == SecondFun->getName())
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
-            else
+            else if (FirstFun->getName() != SecondFun->getName())
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+            else {
+                // One function has a body, the second one does not; add the
+                // missing definition
+                if (FirstFun->isDeclaration())
+                    this->MissingDefs.push_back({FirstFun, nullptr});
+                else if (SecondFun->isDeclaration())
+                    this->MissingDefs.push_back({nullptr, SecondFun});
+            }
         }
         return;
     }
