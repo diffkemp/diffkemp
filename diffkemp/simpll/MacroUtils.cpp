@@ -57,8 +57,13 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
                     // We are looking for the beginning of an identifier.
                     if (isValidCharForIdentifierStart(macroBody[i]))
                         potentialMacroName += macroBody[i];
-                } else if (!isValidCharForIdentifier(macroBody[i])) {
+                } else if (!isValidCharForIdentifier(macroBody[i]) ||
+                           (i == (macroBody.size() - 1))) {
                     // We found the end of the identifier.
+                    if (i == (macroBody.size() - 1))
+                        // We found the end of the entire macro - append the
+                        // last character, too
+                        potentialMacroName += macroBody[i];
                     auto potentialMacro = macroMap.find(potentialMacroName);
                     if (potentialMacro != macroMap.end()) {
                         // Macro used by the currently processed macro was
