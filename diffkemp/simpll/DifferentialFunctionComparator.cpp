@@ -401,6 +401,38 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
     return result;
 }
 
+/// Specific comparing of constants. If one of them (or both) is a cast
+/// constant expression, compare its interal value.
+int DifferentialFunctionComparator::cmpConstants(const Constant *L,
+        const Constant *R) const {
+    int Result = FunctionComparator::cmpConstants(L, R);
+
+    if (Result == 0)
+        return Result;
+
+    if (controlFlowOnly) {
+        // Look whether the constants is a cast ConstantExpr
+        const ConstantExpr *UEL = dyn_cast<ConstantExpr>(L);
+        const ConstantExpr *UER = dyn_cast<ConstantExpr>(R);
+
+        // We want to compare only casts by their operands
+        if (UEL && !UEL->isCast())
+            UEL = nullptr;
+        if (UER && !UER->isCast())
+            UER = nullptr;
+
+        if (UEL && UER) {
+            return cmpConstants(UEL->getOperand(0), UER->getOperand(0));
+        } else if (UEL) {
+            return cmpConstants(UEL->getOperand(0), R);
+        } else if (UER) {
+            return cmpConstants(L, UER->getOperand(0));
+        }
+    }
+
+    return Result;
+}
+
 int DifferentialFunctionComparator::cmpCallsWithExtraArg(
         const CallInst *CL,
         const CallInst *CR) const {
