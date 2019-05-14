@@ -72,6 +72,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Specific comparing of values. Handles values generated from macros
     /// whose value changed and values where at least one of them is a cast.
     int cmpValues(const Value *L, const Value *R) const override;
+    /// Specific comparing of constants. If one of them (or both) is a cast
+    /// constant expression, compare its operand.
+    int cmpConstants(const Constant *L, const Constant *R) const override;
     /// Specific comarison of memcpy instructions
     int cmpMemset(const CallInst *CL, const CallInst *CR) const;
     /// Comparing of a structure size with a constant
