@@ -67,7 +67,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                 addToDependent(&Instr);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
                     dbgs() << "Dependent: ";
-                    Instr.dump();
+                    Instr.print(dbgs());
                 });
                 if (auto BranchInstr = dyn_cast<BranchInst>(&Instr)) {
                     auto affectedBBs = affectedBasicBlocks(BranchInstr);
@@ -161,7 +161,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
             if (!isIncluded(&Inst) && !Inst.isTerminator()) {
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
                     dbgs() << "Clearing ";
-                    Inst.dump();
+                    Inst.print(dbgs());
                 });
                 Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
                 toRemove.push_back(&Inst);
@@ -219,7 +219,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
         dbgs() << "Function " << Fun.getName().str() << " after cleanup:\n";
-        Fun.dump();
+        Fun.print(dbgs());
         dbgs() << "\n";
     });
     return PreservedAnalyses::none();
@@ -268,7 +268,7 @@ void VarDependencySlicer::addAllInstrs(
             DependentInstrs.insert(&Instr);
             DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
                 dbgs() << "Dependent: ";
-                Instr.dump();
+                Instr.print(dbgs());
             });
         }
     }
@@ -330,7 +330,7 @@ bool VarDependencySlicer::addAllOpsToIncluded(
             if (addToIncluded(OpInst)) {
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
                     dbgs() << "Included: ";
-                    OpInst->dump();
+                    OpInst->print(dbgs());
                 });
                 added = true;
                 addAllOpsToIncluded(OpInst);

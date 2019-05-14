@@ -165,7 +165,7 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                             IndexConstant->getBitWidth(),
                             ModFirst.getContext());
 
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, GEP->dump());
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, GEP->print(dbgs()));
 
                     StructFieldNames.insert(
                         {{dyn_cast<StructType>(indexedType),
