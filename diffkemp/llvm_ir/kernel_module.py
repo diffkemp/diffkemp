@@ -3,10 +3,8 @@ Kernel modules in LLVM IR.
 Functions for working with parameters of modules.
 """
 
-from copy import copy
 from llvmcpy.llvm import *
 import os
-import shutil
 from subprocess import check_call, check_output, CalledProcessError
 
 
@@ -45,6 +43,7 @@ class LlvmKernelModule:
             self.depends = None
         self.params = dict()
         self.unlinked_llvm = None
+        self.linked_modules = set()
 
     def get_depends(self):
         """
@@ -81,24 +80,7 @@ class LlvmKernelModule:
 
     def link_modules(self, modules):
         """Link module against a list of other modules."""
-        link_llvm_modules = []
-        for m in modules:
-            if self.links_mod(m):
-                continue
-            # Create a temporary copy of the linked module
-            tmp_mod = copy(m)
-            tmp_mod.llvm = "{}.tmp".format(m.llvm)
-            tmp_mod.llvm_module = None
-            link_llvm_modules.append(tmp_mod)
-            shutil.copyfile(m.llvm, tmp_mod.llvm)
-
-            # Remove 'init_module' and 'cleanup_module' globals from the linked
-            # module since they would cause a conflict when linking.
-            tmp_mod.parse_module()
-            tmp_mod._remove_global("init_module")
-            tmp_mod._remove_global("cleanup_module")
-            tmp_mod._update_module_file()
-            tmp_mod.clean_module()
+        link_llvm_modules = [m for m in modules if not self.links_mod(m)]
 
         if not link_llvm_modules:
             return False
@@ -119,28 +101,18 @@ class LlvmKernelModule:
                 if self.unlinked_llvm is None:
                     self.unlinked_llvm = self.llvm
                 self.llvm = new_llvm
+                self.linked_modules.update([m.name for m in link_llvm_modules])
                 self.parse_module(True)
             except CalledProcessError:
                 return False
             finally:
-                result = False
-                for m in link_llvm_modules:
-                    if self.links_mod(m):
-                        result = True
-                    # Delete temporary modules
-                    os.remove(m.llvm)
-                return result
+                return any([m for m in link_llvm_modules if self.links_mod(m)])
 
     def _remove_global(self, glob_name):
         """Remove global variable or alias with the given name if it exists."""
         globvar = self.llvm_module.get_named_global(glob_name)
         if globvar:
             globvar.delete()
-        else:
-            globalias = self.llvm_module.get_named_global_alias(glob_name,
-                                                                len(glob_name))
-            if globalias:
-                globalias.delete_global_alias()
 
     def _globvar_exists(self, param):
         """Check if a global variable with the given name exists."""
@@ -272,24 +244,12 @@ class LlvmKernelModule:
         """
         Check if the given module has been linked to this module
         """
-        filename = module.get_filename()
-        if not filename:
-            return False
-        self.parse_module()
-        # Iterate all functions and check their file names from debug info
-        for fun in self.llvm_module.iter_functions():
-            len = ffi.new("unsigned *")
-            try:
-                name = fun.get_debug_loc_filename(len)
-                if name == filename:
-                    return True
-            except RuntimeError:
-                pass
-        return False
+        return module.name in self.linked_modules
 
     def restore_unlinked_llvm(self):
         """Restore the module to the state before any linking was done."""
         if self.unlinked_llvm is not None:
             self.llvm = self.unlinked_llvm
             self.unlinked_llvm = None
+            self.linked_modules = set()
             self.parse_module(True)
