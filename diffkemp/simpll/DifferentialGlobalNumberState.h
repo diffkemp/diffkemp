@@ -16,7 +16,7 @@
 #ifndef DIFFKEMP_SIMPLL_DIFFERENTIALGLOBALNUMBERSTATE_H
 #define DIFFKEMP_SIMPLL_DIFFERENTIALGLOBALNUMBERSTATE_H
 
-#include <llvm/Transforms/Utils/FunctionComparator.h>
+#include "FunctionComparator.h"
 #include <llvm/IR/Module.h>
 
 using namespace llvm;
