@@ -402,7 +402,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
 }
 
 /// Specific comparing of constants. If one of them (or both) is a cast
-/// constant expression, compare its interal value.
+/// constant expression, compare its operand.
 int DifferentialFunctionComparator::cmpConstants(const Constant *L,
         const Constant *R) const {
     int Result = FunctionComparator::cmpConstants(L, R);
