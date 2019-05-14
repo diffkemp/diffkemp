@@ -85,8 +85,6 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
 
     bool checkDependency(const Use *Op);
 
-    void mockReturn(Type *RetType);
-
     bool canRemoveBlock(const BasicBlock *bb);
     bool canRemoveFirstBlock(const BasicBlock *bb);
 

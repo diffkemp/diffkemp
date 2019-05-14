@@ -408,26 +408,6 @@ std::set<BasicBlock *> VarDependencySlicer::includedSuccessors(
     }
 }
 
-/// Mock return instruction.
-void VarDependencySlicer::mockReturn(Type *RetType) {
-    IRBuilder<> builder(RetBB);
-    RetBB->getTerminator()->eraseFromParent();
-
-    // TODO support more return types
-    Value *returnVal = nullptr;
-    if (RetType->isIntegerTy())
-        returnVal = ConstantInt::get(RetType, 0);
-    else if (RetType->isPointerTy())
-        returnVal = ConstantPointerNull::get(
-                dyn_cast<PointerType>(RetType));
-
-    auto NewReturn = builder.CreateRet(returnVal);
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
-        dbgs() << "New return: ";
-        NewReturn->dump();
-    });
-}
-
 /// Check if a basic block can be removed.
 /// If a removal of bb would result in a situation that there exists a phi
 /// node Phi with two different incoming values for the same incoming
@@ -471,8 +451,7 @@ std::set<const BasicBlock *> VarDependencySlicer::reachableBlocks(
         const BasicBlock *Src, Function &Fun) {
     std::set<const BasicBlock *> result;
     for (auto &BB : Fun) {
-        if (Src != &BB &&
-                isPotentiallyReachable(Src, &BB, nullptr, nullptr, false))
+        if (Src != &BB && isPotentiallyReachable(Src, &BB))
             result.insert(&BB);
     }
     return result;
