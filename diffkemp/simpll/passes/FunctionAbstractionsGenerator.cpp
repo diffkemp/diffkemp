@@ -87,7 +87,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                         args.push_back(CallInstr->getCalledValue());
                     auto newCall = CallInst::Create(newFun, args, "",
                                                     CallInstr);
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, newCall->dump());
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, newCall->print(dbgs()));
                     CallInstr->replaceAllUsesWith(newCall);
                     toErase.push_back(&Instr);
                 }

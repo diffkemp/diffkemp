@@ -7,6 +7,5 @@ new_kernel: "4.11"
 params:
   - param: cfg80211_disable_40mhz_24ghz
     functions:
-      wiphy_register: equal
-
+      wiphy_register: equal_syntax
 

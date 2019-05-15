@@ -19,7 +19,7 @@
 #include "DebugInfo.h"
 #include "ModuleComparator.h"
 #include "Utils.h"
-#include <llvm/Transforms/Utils/FunctionComparator.h>
+#include "FunctionComparator.h"
 
 using namespace llvm;
 

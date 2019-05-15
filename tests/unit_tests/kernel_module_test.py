@@ -59,13 +59,6 @@ def test_set_param_fail(builder):
         module.set_param("card_limit")
 
 
-def test_get_filename(builder):
-    """Getting file name."""
-    module = builder.build_file("sound.c")
-    module.parse_module()
-    assert module.get_filename() == "sound/core/sound.c"
-
-
 def test_links_mod(builder):
     """
     Testing if a module links another module. Then restoring the module to

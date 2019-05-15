@@ -923,7 +923,6 @@ class LlvmKernelBuilder:
                 llvm_modules[name] = LlvmKernelModule(name, mod,
                                                       self.modules_path)
         os.chdir(cwd)
-        self.link_modules(llvm_modules)
         return llvm_modules
 
     def build_modules_with_params(self):
@@ -968,7 +967,6 @@ class LlvmKernelBuilder:
                     print "    {}".format(str(e))
         if self.verbose:
             print ""
-        self.link_modules(llvm_modules)
         return llvm_modules
 
     def build_sysctl_module(self, sysctl):

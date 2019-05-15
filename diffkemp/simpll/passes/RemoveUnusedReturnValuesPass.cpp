@@ -73,10 +73,10 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                     // Different function is called, Fun is an argument
                     can_replace = false;
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
-                    CI->dump();
+                    CI->print(dbgs());
                     for (Use &UU : CI->uses()) {
                         dbgs() << "  ";
-                        UU.getUser()->dump();
+                        UU.getUser()->print(dbgs());
                     }
                 });
                 if (!CI->use_empty())
@@ -87,10 +87,10 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                     // Different function is called, Fun is an argument
                     can_replace = false;
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
-                    II->dump();
+                    II->print(dbgs());
                     for (Use &UU : II->uses()) {
                         dbgs() << "  ";
-                        UU.getUser()->dump();
+                        UU.getUser()->print(dbgs());
                     }
                 });
                 if (!II->use_empty())
@@ -238,7 +238,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                     II->eraseFromParent();
                 }
             }
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL, Fun_New->dump());
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL, Fun_New->print(dbgs()));
             // Delete function after iteration
             functionsToDelete.push_back(&Fun);
         }

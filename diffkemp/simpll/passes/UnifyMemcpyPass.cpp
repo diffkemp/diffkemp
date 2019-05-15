@@ -27,7 +27,7 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                     continue;
 
                 if (CalledFun->getName() == "__memcpy") {
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, Call->dump());
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, Call->print(dbgs()));
                     // Replace call to __memcpy by llvm.memcpy intrinsic
                     IRBuilder<> builder(&Instr);
                     auto newCall = builder.CreateMemCpy(Call->getArgOperand(0),
