@@ -37,6 +37,7 @@ LLVM_YAML_IS_SEQUENCE_VECTOR(CallInfo);
 struct FunctionInfo {
     std::string name;
     std::string file;
+    int line;
     CallStack callstack;
     bool isMacro;
 
@@ -46,12 +47,10 @@ struct FunctionInfo {
     FunctionInfo(const std::string &name,
                  const std::string &file,
                  const CallStack &callstack,
-                 bool isMacro)
-            : name(name), file(file), callstack(callstack), isMacro(isMacro) {}
-    FunctionInfo(const std::string &name,
-                 const std::string &file,
-                 const CallStack &callstack)
-            : FunctionInfo(name, file, callstack, false) {}
+                 bool isMacro = false,
+                 int line = 0)
+            : name(name), file(file), line(line), callstack(callstack),
+              isMacro(isMacro) {}
 };
 
 // Macro body
@@ -81,6 +80,8 @@ struct MappingTraits<FunctionInfo> {
     static void mapping(IO &io, FunctionInfo &info) {
         io.mapRequired("function", info.name);
         io.mapOptional("file", info.file);
+        if (info.line != 0)
+            io.mapOptional("line", info.line);
         io.mapOptional("callstack", info.callstack);
         io.mapRequired("is-macro", info.isMacro);
     }
@@ -148,10 +149,14 @@ void reportOutput(Config &config,
         report.diffFuns.push_back({
                 FunctionInfo(funPair.first->getName(),
                              getFileForFun(funPair.first),
-                             getCallStack(*config.FirstFun, *funPair.first)),
+                             getCallStack(*config.FirstFun, *funPair.first),
+                             false, funPair.first->getSubprogram() ?
+                             funPair.first->getSubprogram()->getLine() : 0),
                 FunctionInfo(funPair.second->getName(),
                              getFileForFun(funPair.second),
-                             getCallStack(*config.SecondFun, *funPair.second))
+                             getCallStack(*config.SecondFun, *funPair.second),
+                             false, funPair.second->getSubprogram() ?
+                             funPair.second->getSubprogram()->getLine() : 0)
         });
     }
     for (auto &macroDiff : differingMacros) {

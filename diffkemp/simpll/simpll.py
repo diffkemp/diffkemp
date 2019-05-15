@@ -70,6 +70,7 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                             Result.Entity(
                                 fun["function"],
                                 fun["file"] if "file" in fun else "",
+                                fun["line"] if "line" in fun else None,
                                 "\n".join(
                                     ["{} at {}:{}".format(call["function"],
                                                           call["file"],

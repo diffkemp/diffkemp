@@ -32,10 +32,11 @@ class Result:
         or a parameter.
         If it is a function, it contains the file of the function.
         """
-        def __init__(self, name, filename=None, callstack=None,
+        def __init__(self, name, filename=None, line=None, callstack=None,
                      is_macro=False):
             self.name = name
             self.filename = filename
+            self.line = line
             self.callstack = callstack
             self.is_macro = is_macro
 
