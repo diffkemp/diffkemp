@@ -39,15 +39,6 @@ RUN dnf install -y \
       xz \
       z3 \
       z3-devel
-# Use custom patched 'diff' because the normal only prints 40 characters of
-# the context function (when -F is used). We need at least 80 so that the entire
-# names of the kernel functions are captured.
-RUN git clone https://git.savannah.gnu.org/git/diffutils.git && \
-    cd diffutils && \
-    sed -i -e 's/40/80/g' src/context.c && \
-    ./bootstrap && \
-    ./configure && \
-    make
 RUN pip install \
       --upgrade pip \
       llvmcpy \
