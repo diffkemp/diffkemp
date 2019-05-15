@@ -227,7 +227,9 @@ def functions_diff(mod_first, mod_second,
                 if not fun_result.first.is_macro:
                     fun_result.diff = syntax_diff(fun_result.first.filename,
                                                   fun_result.second.filename,
-                                                  fun_result.first.name)
+                                                  fun_result.first.name,
+                                                  fun_pair[0].line,
+                                                  fun_pair[1].line)
                 else:
                     # Find the macro definitions
                     found = None

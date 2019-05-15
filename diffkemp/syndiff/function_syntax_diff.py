@@ -4,6 +4,9 @@ result.
 """
 from __future__ import absolute_import
 from subprocess import check_output, CalledProcessError
+from tempfile import mkdtemp
+
+import os
 
 
 def _is_alpha_or_underscore(char):
@@ -62,13 +65,49 @@ def _add_chunk_to_output(chunk, output):
     return output
 
 
-def syntax_diff(first_file, second_file, fun):
+def syntax_diff(first_file, second_file, fun, first_line, second_line):
     """Get diff of a C function fun between first_file and second_file"""
-    # Run diff with showing lines with function headers for each chunk
-    # However, the function headers may be incorrect in some cases, so we need
-    # some further processing below.
-    command = ["/diffutils/src/diff", first_file, second_file, "-C", "1", "-F",
-               br"^[[:alpha:]\$_][^:]*$"]
+    tmpdir = mkdtemp()
+    command = ["diff", "-C", "1", os.path.join(tmpdir, "1"),
+               os.path.join(tmpdir, "2")]
+
+    # Use the provided arguments "first_line" and "second_line" that contain
+    # the lines on which the function starts in each file to extract both
+    # functions into temporary files
+    for filename in [first_file, second_file]:
+        tmp_file = "1" if filename == first_file else "2"
+        with open(filename, "r") as input_file, \
+                open(os.path.join(tmpdir, tmp_file), "w") as output_file:
+            lines = input_file.readlines()
+            start = first_line if filename == first_file else second_line
+
+            # First the algorithm captures the function header using round
+            # brackets, then it switches over to curly brackets for the purpose
+            # of capturing the function body
+            bracket = 0
+            brackets = ("(", ")")
+            index = start - 1
+            switched = False
+            while bracket > 0 or index == (start - 1) or switched:
+                if switched:
+                    switched = False
+                bracket += (lines[index].count(brackets[0]) -
+                            lines[index].count(brackets[1]))
+                if brackets == ("(", ")") and bracket == 0:
+                    brackets = ("{", "}")
+                    # This very line can (and in most cases will) contain the
+                    # other bracket type straight away - this has to be caught
+                    # in order for the algorithm not to stop
+                    bracket += (lines[index].count(brackets[0]) -
+                                lines[index].count(brackets[1]))
+                    switched = True
+
+                output_file.write(lines[index])
+                index += 1
+
+    # check_output fails when the two files are different due to the error code
+    # (1), which in fact signalizes success; the exception has to be caught and
+    # the error code evaluated manually
     try:
         diff = check_output(command)
     except CalledProcessError as e:
@@ -77,51 +116,38 @@ def syntax_diff(first_file, second_file, fun):
         else:
             raise
 
-    # Filter only those lines that are in a diff chunk of the given function
-    output_diff = ""
-    function_chunk = ""
-    in_fun = False
-    lines_num = ""
-    for line in diff.splitlines():
-        # Store the line with lines numbers of the chunk
-        if line.startswith("*** "):
-            # Old file lines
-            lines_num = line
-        if line.startswith("---"):
-            # New file lines - if we are in a function chunk, the line will
-            # be included, no need to store it.
-            if not in_fun:
-                lines_num = line
-            else:
-                lines_num = ""
+    if diff.isspace() or diff == "":
+        # Empty diff
+        return diff
 
-        # New chunk begins
-        if line.startswith("***************"):
-            # Print the previous chunk if it corresponds to the given function
-            if in_fun:
-                output_diff = _add_chunk_to_output(function_chunk, output_diff)
-            function_chunk = ""
-            # Check if the new context function is the correct one
-            in_fun = _is_header_for_function(line, fun)
+    # Split off filename names and fix line numbers
+    diff_lines = diff.split('\n')[2:]
+    diff_lines_new = []
 
-        # Chunk contains a function header - the given context is incorrect
-        # We are truly in a chunk given by the header.
-        if _is_function_header(line):
-            # If the last chunk that was found this way (does not start
-            # with the context prefix), add it to the output.
-            if in_fun and not function_chunk.startswith("****"):
-                output_diff = _add_chunk_to_output(function_chunk, output_diff)
-            # New chunk does not contain the line number: initialize it
-            function_chunk = "{}\n".format(lines_num) if lines_num else ""
-            # Check if the new context function is the correct one
-            in_fun = _is_header_for_function(line, fun)
+    for line in diff_lines:
+        def fix_line(x):
+            offset = first_line if polarity == "*" else second_line
+            return str(int(x) + offset - 1)
 
-        # If inside a chunk for of compared function, store the line
-        if in_fun:
-            function_chunk += "{}\n".format(line)
+        # Add function header
+        if set(list(line)) == set(["*"]):
+            with open(os.path.join(tmpdir, "1"), "r") as extract:
+                line += " " + extract.readline().strip()
 
-    # Add the last chunk to the output if necessary
-    if in_fun:
-        output_diff = _add_chunk_to_output(function_chunk, output_diff)
+        # Check whether the line is a line number line
+        number_line_set = set([" ", "*", "-", ","] + map(str, range(0, 10)))
+        if ((not set(list(line)).issubset(number_line_set)) or
+                line.isspace() or line == ""):
+            diff_lines_new += [line]
+            continue
 
-    return output_diff
+        polarity = "*" if line.count("*") > 1 else "-"
+
+        line = line.replace("*", "").replace("-", "").replace(" ", "")
+        line = ",".join(map(fix_line, line.split(",")))
+        line = polarity * 3 + " " + line + " " + polarity * 3
+
+        diff_lines_new += [line]
+    diff = "\n".join(diff_lines_new)
+
+    return diff
