@@ -87,7 +87,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
     return Result(result_kind, first, second)
 
 
-def functions_semdiff(first, second, fun_first, fun_second, coupled, config):
+def functions_semdiff(first, second, fun_first, fun_second, config):
     """
     Compare two functions for semantic equality.
 
@@ -102,8 +102,6 @@ def functions_semdiff(first, second, fun_first, fun_second, coupled, config):
     :param second: File with the second LLVM module
     :param fun_first: Function from the first module to be compared
     :param fun_second: Function from the second module to be compared
-    :param coupled: List of coupled functions (functions that are supposed to
-                    correspond to each other in both modules)
     :param config: Configuration.
     """
     if fun_first == fun_second:
@@ -114,38 +112,16 @@ def functions_semdiff(first, second, fun_first, fun_second, coupled, config):
     sys.stdout.write("...")
     sys.stdout.flush()
 
-    # Get assumption levels from differences of coupled pairs of functions
-    assumption_levels = sorted(set([c.diff for c in coupled]))
-    if not assumption_levels:
-        assumption_levels = [0]
-
-    for assume_level in assumption_levels:
-        # Use all assumptions with the same or lower level
-        assumptions = [c for c in coupled if c.diff <= assume_level]
-        # Run the actual analysis
-        if config.semdiff_tool == "llreve":
-            result = _run_llreve_z3(first, second, fun_first, fun_second,
-                                    assumptions, config.timeout,
-                                    config.verbosity)
-        # On timeout, stop the analysis because for many assumption levels,
-        # this could run for a long time. Moreover, if the analysis times out
-        # once, there is a high chance it will time out with more strict
-        # assumptions as well.
-        if result.kind == Result.Kind.TIMEOUT:
-            break
-        # Stop the analysis when functions are proven to be equal
-        if result.kind == Result.Kind.EQUAL:
-            if assume_level > 0:
-                result.kind = Result.Kind.EQUAL_UNDER_ASSUMPTIONS
-            break
-
-    print result.kind
-    if result == Result.Kind.EQUAL_UNDER_ASSUMPTIONS:
-        print "    Used assumptions:"
-        for assume in [a for a in assumptions if a.diff > 0]:
-            print "      Functions {} and {} are same".format(assume.first,
-                                                              assume.second)
-    return result
+    # Run the actual analysis
+    if config.semdiff_tool == "llreve":
+        called_couplings = FunctionCouplings(first, second)
+        called_couplings.infer_called_by(fun_first, fun_second)
+        result = _run_llreve_z3(first, second, fun_first, fun_second,
+                                called_couplings.called, config.timeout,
+                                config.verbosity)
+        called_couplings.clean()
+        print result.kind
+        return result
 
 
 def functions_diff(mod_first, mod_second,
@@ -247,18 +223,10 @@ def functions_diff(mod_first, mod_second,
             # semantically. If these are all equal, then the originally
             # compared functions are equal as well.
             for fun_pair in funs_to_compare:
-                # Find couplings of funcions called by the compared
-                # functions
-                called_couplings = FunctionCouplings(first_simpl,
-                                                     second_simpl)
-                called_couplings.infer_called_by(fun_pair[0].name,
-                                                 fun_pair[1].name)
-                called_couplings.clean()
                 # Do semantic difference of functions
                 fun_result = functions_semdiff(first_simpl, second_simpl,
                                                fun_pair[0].name,
                                                fun_pair[1].name,
-                                               called_couplings.called,
                                                config)
                 result.add_inner(fun_result)
         if not config.syntax_only:

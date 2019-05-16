@@ -1,69 +1,26 @@
 """
 Computing couplings of functions. A coupled pair are two functions (one
 from each module) that are supposed to correspond to each other in both
-modules. These are especially useful fom functions without definitions, since
+modules. These are especially useful for functions without definitions, since
 for them, we have to assume some equivalence.
-Currently, function coupling is computed based on function names.
+Currently, function coupling is computed based on function name equality.
 """
 from __future__ import absolute_import
 
 from diffkemp.llvm_ir.function_collector import FunctionCollector
 
 
-# Rules defining similarity of function names, used for computing couplings.
-# Each rule returns a number that indicates how similar functions are. The
-# lower the number is, the higher similarity it represents.
-#   0 denotes identity,
-#  -1 denotes no similarity under that rule
-
-def same(name_first, name_second):
-    """Compares names for equality."""
-    if name_first == name_second:
-        return 0
-    return -1
-
-
-def substring(name_first, name_second):
+class FunCouple:
     """
-    Checks if one name is substring of another, returns number of characters in
-    which names differ.
+    A couple of functions that will be supposed to correspond to each other
+    during the analysis.
     """
-    if name_first in name_second:
-        return len(name_second) - len(name_first)
-    if name_second in name_first:
-        return len(name_first) - len(name_second)
-    return -1
-
-
-# Rules sorted by importance
-rules = [same, substring]
-
-
-class FunCouple():
-    """
-    A couple of functions with difference value (similarity). These functions
-    will be supposed to correspond to each other during the analysis.
-    """
-    def __init__(self, first, second, diff):
+    def __init__(self, first, second):
         self.first = first
         self.second = second
-        self.diff = diff
 
     def __hash__(self):
         return hash(self.first) ^ hash(self.second)
-
-
-def uncoupled(functions, couplings):
-    """
-    Determine which functions are not coupled with any other
-    :param functions: Set of functions to check
-    :param couplings: Existing couplings
-    """
-    coupled = set()
-    for c in couplings:
-        coupled.add(c.first)
-        coupled.add(c.second)
-    return functions - coupled
 
 
 class FunctionCouplings():
@@ -87,31 +44,10 @@ class FunctionCouplings():
 
     def _infer_from_sets(self, functions_first, functions_second):
         """
-        Find pairs of functions that correspond to each other between given
-        function sets
+        Find pairs of functions that have the same between the given sets.
         """
-        couplings = set()
-
-        uncoupled_first = functions_first
-        uncoupled_second = functions_second
-        # Apply rules by their priority until all functions are coupled or
-        # no more rules are left.
-        for rule in rules:
-            for fun in uncoupled_first:
-                # Compute the set of candidates as functions from the second
-                # module (f) that have similarity with fun under the rule
-                candidates = [(f, rule(fun, f)) for f in uncoupled_second if
-                              rule(fun, f) >= 0]
-                # A coupling is created only if there is a unique candidate
-                if len(candidates) == 1:
-                    couplings.add(FunCouple(fun, candidates[0][0],
-                                            candidates[0][1]))
-            uncoupled_first = uncoupled(uncoupled_first, couplings)
-            uncoupled_second = uncoupled(uncoupled_second, couplings)
-            if (not uncoupled_first or not uncoupled_second):
-                break
-
-        return couplings
+        return set([FunCouple(f, f)
+                    for f in functions_first & functions_second])
 
     def infer_for_param(self, param):
         """
@@ -124,8 +60,10 @@ class FunctionCouplings():
         main_second = self._fun_collector_second.using_param(param)
 
         self.main = self._infer_from_sets(main_first, main_second)
-        self.uncoupled_first = uncoupled(main_first, self.main)
-        self.uncoupled_second = uncoupled(main_second, self.main)
+        self.uncoupled_first = main_first - set([c.first
+                                                 for c in self.main])
+        self.uncoupled_second = main_second - set([c.second
+                                                   for c in self.main])
 
     def infer_called_by(self, fun_first, fun_second):
         """
@@ -138,4 +76,4 @@ class FunctionCouplings():
 
     def set_main(self, main_first, main_second):
         """Manually set main functions."""
-        self.main = [FunCouple(main_first, main_second, 0)]
+        self.main = [FunCouple(main_first, main_second)]
