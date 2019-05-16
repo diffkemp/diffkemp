@@ -88,6 +88,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
     const DataLayout &LayoutL, &LayoutR;
 
     ModuleComparator *ModComparator;
+
+    std::vector<SyntaxDifference> findAsmDifference(const Value *L,
+            const Value *R, const Function *ParentL, const Function *ParentR)
+            const;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H

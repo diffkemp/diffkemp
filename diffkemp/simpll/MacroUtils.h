@@ -39,14 +39,14 @@ struct MacroElement {
     std::string sourceFile;
 };
 
-/// Difference between macro in left module and the same macro in the right
-/// module.
-struct MacroDifference {
-	// Name of the macro.
-	std::string macroName;
+/// Syntactic difference between objects that cannot be found in the original
+/// source files
+struct SyntaxDifference {
+	// Name of the object.
+	std::string name;
 	// The difference.
 	std::string BodyL, BodyR;
-	// Stacks containing the differing macros and all other macros affected
+	// Stacks containing the differing objects and all other objects affected
 	// by the difference (again for both modules).
 	CallStack StackL, StackR;
 	// The function in which the difference was found
@@ -67,7 +67,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// This is used when a difference is suspected to be in a macro in order to
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
-std::vector<MacroDifference> findMacroDifferences(
+std::vector<SyntaxDifference> findMacroDifferences(
 		const Instruction *L, const Instruction *R);
 
 #endif // DIFFKEMP_SIMPLL_MACRO_UTILS_H

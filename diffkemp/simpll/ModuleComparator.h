@@ -34,8 +34,11 @@ class ModuleComparator {
     enum Result { EQUAL, NOT_EQUAL, UNKNOWN };
     /// Storing results of function comparisons.
     std::map<FunPair, Result> ComparedFuns;
-    /// Storing results from macro comparisons.
-    std::vector<MacroDifference> DifferingMacros;
+    /// Storing results from macro and asm comparisions.
+    std::vector<SyntaxDifference> DifferingObjects;
+    // Function abstraction to assembly string map.
+    StringMap<StringRef> AsmToStringMapL;
+    StringMap<StringRef> AsmToStringMapR;
 
     std::vector<ConstFunPair> MissingDefs;
 
@@ -43,9 +46,11 @@ class ModuleComparator {
     const DebugInfo *DI;
 
     ModuleComparator(Module &First, Module &Second, bool controlFlowOnly,
-                     const DebugInfo *DI)
+                     const DebugInfo *DI, StringMap<StringRef> &AsmToStringMapL,
+                     StringMap<StringRef> &AsmToStringMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-            GS(&First, &Second, this), DI(DI) {}
+            GS(&First, &Second, this), DI(DI), AsmToStringMapL(AsmToStringMapL),
+            AsmToStringMapR(AsmToStringMapR) {}
 
     /// Syntactically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.

@@ -26,7 +26,10 @@ class FunctionAbstractionsGenerator
         : public AnalysisInfoMixin<FunctionAbstractionsGenerator> {
   public:
     typedef StringMap<Function *> FunMap;
-    using Result = FunMap;
+    struct Result {
+        FunMap funAbstractions;
+        StringMap<StringRef> asmValueMap;
+    };
 
     Result run(Module &Mod,
                AnalysisManager<Module, Function *> &mam,

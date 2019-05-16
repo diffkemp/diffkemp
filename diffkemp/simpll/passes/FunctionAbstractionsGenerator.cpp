@@ -28,6 +28,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
         AnalysisManager<Module, Function *> &mam,
         Function *Main) {
     FunMap funAbstractions;
+    StringMap<StringRef> asmValueMap;
     int i = 0;
     std::vector<Instruction *> toErase;
 
@@ -73,6 +74,10 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                                 Function::ExternalLinkage,
                                 funName, &Mod);
                         funAbstractions.try_emplace(hash, newFun);
+                        if (auto assembly =
+                            dyn_cast<InlineAsm>(CallInstr->getCalledValue())) {
+                            asmValueMap[funName] = assembly->getAsmString();
+                        }
                     } else {
                         newFun = funAbstr->second;
                     }
@@ -87,6 +92,8 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                         args.push_back(CallInstr->getCalledValue());
                     auto newCall = CallInst::Create(newFun, args, "",
                                                     CallInstr);
+                    newCall->setDebugLoc(CallInstr->getDebugLoc());
+
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL, newCall->print(dbgs()));
                     CallInstr->replaceAllUsesWith(newCall);
                     toErase.push_back(&Instr);
@@ -97,7 +104,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
             toErase.clear();
         }
     }
-    return funAbstractions;
+    return FunctionAbstractionsGenerator::Result {funAbstractions, asmValueMap};
 }
 
 /// A hash that uniquely identifies an indirect function or an inline asm.

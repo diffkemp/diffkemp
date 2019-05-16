@@ -224,13 +224,13 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// This is used when a difference is suspected to be in a macro in order to
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
-std::vector<MacroDifference> findMacroDifferences(
+std::vector<SyntaxDifference> findMacroDifferences(
     const Instruction *L, const Instruction *R) {
     // Try to discover a macro difference
     auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
     auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
 
-    std::vector<MacroDifference> result;
+    std::vector<SyntaxDifference> result;
 
     for (auto Elem : MacrosL) {
         if (Elem.second.name == "<>")
@@ -293,7 +293,7 @@ std::vector<MacroDifference> findMacroDifferences(
                         << elem.line << "\n";
                 });
 
-            result.push_back(MacroDifference {
+            result.push_back(SyntaxDifference {
                 Elem.first, LValue->second.body, RValue->second.body,
                 StackL, StackR, L->getFunction()->getName()
             });
