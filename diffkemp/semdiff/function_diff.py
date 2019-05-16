@@ -193,41 +193,42 @@ def functions_diff(mod_first, mod_second,
 
         if not funs_to_compare:
             result.kind = Result.Kind.EQUAL_SYNTAX
-        elif config.syntax_only or config.semdiff_tool is None:
-            # Only display the syntax diff of the functions that are
-            # syntactically different.
+        else:
+            # If the functions are not syntactically equal, objects_to_compare
+            # contains a list of functions and macros that are different.
             for fun_pair in objects_to_compare:
-                fun_result = Result(Result.Kind.NOT_EQUAL, "", "")
+                if (not fun_pair[0].is_macro and
+                        config.semdiff_tool is not None):
+                    # If a semantic diff tool is set, use it for further
+                    # comparison of non-equal functions
+                    fun_result = functions_semdiff(first_simpl, second_simpl,
+                                                   fun_pair[0].name,
+                                                   fun_pair[1].name,
+                                                   config)
+                else:
+                    fun_result = Result(Result.Kind.NOT_EQUAL, "", "")
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
-                if not fun_result.first.is_macro:
-                    fun_result.diff = syntax_diff(fun_result.first.filename,
-                                                  fun_result.second.filename,
-                                                  fun_result.first.name,
-                                                  fun_pair[0].line,
-                                                  fun_pair[1].line)
-                else:
-                    # Find the macro definitions
-                    found = None
-                    for md in macro_defs:
-                        if md["name"] == fun_result.first.name:
-                            found = md
-                            break
-                    if found is not None:
-                        fun_result.diff = "  {}\n\n  {}\n".format(
-                            md["left-value"], md["right-value"])
-                result.add_inner(fun_result)
-        else:
-            # If the functions are not syntactically equal, funs_to_compare
-            # contains a list of functions that need to be compared
-            # semantically. If these are all equal, then the originally
-            # compared functions are equal as well.
-            for fun_pair in funs_to_compare:
-                # Do semantic difference of functions
-                fun_result = functions_semdiff(first_simpl, second_simpl,
-                                               fun_pair[0].name,
-                                               fun_pair[1].name,
-                                               config)
+                if (fun_result.kind == Result.Kind.NOT_EQUAL and
+                        config.syntax_only):
+                    if not fun_result.first.is_macro:
+                        # Get the syntactic diff of functions
+                        fun_result.diff = syntax_diff(
+                            fun_result.first.filename,
+                            fun_result.second.filename,
+                            fun_result.first.name,
+                            fun_pair[0].line,
+                            fun_pair[1].line)
+                    else:
+                        # Find the differing macro definitions and print them
+                        found = None
+                        for md in macro_defs:
+                            if md["name"] == fun_result.first.name:
+                                found = md
+                                break
+                        if found is not None:
+                            fun_result.diff = "  {}\n\n  {}\n".format(
+                                md["left-value"], md["right-value"])
                 result.add_inner(fun_result)
         if not config.syntax_only:
             print "      {}".format(result)
