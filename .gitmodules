@@ -1,4 +1,0 @@
-[submodule "llreve"]
-	path = diffkemp/llreve
-	url = https://github.com/viktormalik/llreve.git
-	branch = diffkemp
