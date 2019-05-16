@@ -15,7 +15,7 @@ jobs:
         - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then tests/regression/clean_test.sh all; fi
       script: 
         - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
-          "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release; ninja; cd .."
+          "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_LLREVE=ON; ninja; cd .."
         - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
           "pytest tests/unit_tests"
         - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
