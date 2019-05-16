@@ -9,62 +9,6 @@ from tempfile import mkdtemp
 import os
 
 
-def _is_alpha_or_underscore(char):
-    return char.isalpha() or char == "_"
-
-
-def _is_function_header(diff_line):
-    # Line is a function header if it starts with a letter or underscore and
-    # does not end with ':' (then its a label)
-    if len(diff_line) > 2:
-        return (_is_alpha_or_underscore(diff_line[2]) and
-                not diff_line.endswith(":"))
-    return False
-
-
-def _is_header_for_function(header, fun):
-    # Line is a header for a function fun if it contains fun which is not
-    # preceded of followed by a letter or by an underscore (then it's a header
-    # for a different function)
-    pos = header.find(fun)
-    return (pos > 0 and not _is_alpha_or_underscore(header[pos - 1]) and
-            not (len(header) > pos + len(fun) and
-                 _is_alpha_or_underscore(header[pos + len(fun)])))
-
-
-def _is_comments_only_chunk(chunk):
-    # Chunk contains only comments if all changed lines start with:
-    #   '/*': start multiline comment in the source
-    #   '*' :  continuation multiline comment in the source
-    #   '//': line comment in the source
-    # Note that in a chunk, the diff result is indented by 4 spaces and the
-    # original source code is moreover indented by 2 characters (the first of
-    # them can be '+', '-', or '!').
-    for line in chunk.splitlines():
-        # Ignore empty lines
-        if line.isspace():
-            continue
-        # Ignore diff-specific lines
-        if line.startswith("***") or line.startswith("---"):
-            continue
-        # Ignore unchanged lines
-        if not (line[0] == "+" or line[0] == "-" or line[0] == "!"):
-            continue
-        # If there is a non-comment line, return False
-        if not (line[2:].lstrip().startswith("/*") or
-                line[2:].lstrip().startswith("*") or
-                line[2:].lstrip().startswith("//")):
-            return False
-    return True
-
-
-def _add_chunk_to_output(chunk, output):
-    # Chunk is added to the output if it contains something else than comments
-    if not _is_comments_only_chunk(chunk):
-        output += chunk
-    return output
-
-
 def syntax_diff(first_file, second_file, fun, first_line, second_line):
     """Get diff of a C function fun between first_file and second_file"""
     tmpdir = mkdtemp()
