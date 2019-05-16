@@ -45,7 +45,7 @@ int main(int argc, const char **argv) {
 
     std::vector<FunPair> nonequalFuns;
     std::vector<ConstFunPair> missingDefs;
-    std::vector<MacroDifference> differingMacros;
+    std::vector<SyntaxDifference> differingMacros;
     simplifyModulesDiff(config, nonequalFuns, missingDefs, differingMacros);
 
     reportOutput(config, nonequalFuns, missingDefs, differingMacros);

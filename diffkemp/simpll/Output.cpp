@@ -143,7 +143,7 @@ struct MappingTraits<ResultReport> {
 void reportOutput(Config &config,
                   std::vector<FunPair> &nonequalFuns,
                   std::vector<ConstFunPair> &missingDefs,
-                  std::vector<MacroDifference> &differingMacros) {
+                  std::vector<SyntaxDifference> &differingMacros) {
     ResultReport report;
     for (auto &funPair : nonequalFuns) {
         report.diffFuns.push_back({
@@ -178,18 +178,18 @@ void reportOutput(Config &config,
                 toAppendRight.begin(), toAppendRight.end());
 
         report.diffFuns.push_back({
-               FunctionInfo(macroDiff.macroName,
+               FunctionInfo(macroDiff.name,
                             macroDiff.StackL[0].file,
                             macroDiff.StackL,
                             true),
-               FunctionInfo(macroDiff.macroName,
+               FunctionInfo(macroDiff.name,
                             macroDiff.StackR[0].file,
                             macroDiff.StackR,
                             true)
         });
 
         report.macroDefinitions.push_back(MacroBody {
-            macroDiff.macroName, macroDiff.BodyL, macroDiff.BodyR
+            macroDiff.name, macroDiff.BodyL, macroDiff.BodyR
         });
     }
     for (auto &funPair : missingDefs) {

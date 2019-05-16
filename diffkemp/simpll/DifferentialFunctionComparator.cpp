@@ -240,8 +240,8 @@ int DifferentialFunctionComparator::cmpOperations(
 
     if (Result) {
         auto macroDiffs = findMacroDifferences(L, R);
-        ModComparator->DifferingMacros.insert(
-            ModComparator->DifferingMacros.end(),
+        ModComparator->DifferingObjects.insert(
+            ModComparator->DifferingObjects.end(),
             macroDiffs.begin(), macroDiffs.end());
     }
 
@@ -332,8 +332,22 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
             for (unsigned i = 0, e = InstL->getNumOperands(); i != e; ++i) {
                 Value *OpL = InstL->getOperand(i);
                 Value *OpR = InstR->getOperand(i);
-                if (int Res = cmpValues(OpL, OpR))
+                if (int Res = cmpValues(OpL, OpR)) {
+                    // Try to find macros that could be causing the difference
+                    auto macroDiffs = findMacroDifferences(&*InstL, &*InstR);
+                    ModComparator->DifferingObjects.insert(
+                        ModComparator->DifferingObjects.end(),
+                        macroDiffs.begin(), macroDiffs.end());
+
+                    // Try to find assembly functions causing the difference
+                    auto asmDiffs = findAsmDifference(OpL, OpR,
+                        BBL->getParent(), BBR->getParent());
+                    ModComparator->DifferingObjects.insert(
+                        ModComparator->DifferingObjects.end(),
+                        asmDiffs.begin(), asmDiffs.end());
+
                     return Res;
+                }
                 // cmpValues should ensure this is true.
                 assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);
             }
@@ -348,6 +362,50 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
     if (InstL == InstLE && InstR != InstRE)
         return -1;
     return 0;
+}
+
+std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
+        const Value *L, const Value *R, const Function *ParentL,
+        const Function *ParentR) const {
+    auto FunL = dyn_cast<Function>(L);
+    auto FunR = dyn_cast<Function>(R);
+
+    if (!FunL || !FunR)
+        // Both values have to be functions
+        return {};
+
+    if (!FunL->getName().startswith("simpll__inlineasm") ||
+        !FunR->getName().startswith("simpll__inlineasm"))
+        // Both functions have to be assembly abstractions
+        return {};
+
+    StringRef AsmL = ModComparator->AsmToStringMapL[FunL->getName()];
+    StringRef AsmR = ModComparator->AsmToStringMapR[FunR->getName()];
+    if (AsmL == AsmR)
+        // The difference is somewhere else
+        return {};
+
+    // Create difference object.
+    // Note: the call stack is left empty here, it will be added in reportOutput
+    SyntaxDifference diff;
+    diff.BodyL = AsmL;
+    diff.BodyR = AsmR;
+    diff.StackL = CallStack();
+    diff.StackL.push_back(CallInfo {
+        "(generated assembly code)",
+        ParentL->getSubprogram()->getFilename(),
+        ParentL->getSubprogram()->getLine()
+    });
+    diff.StackR = CallStack();
+    diff.StackR.push_back(CallInfo {
+        "(generated assembly code)",
+        ParentR->getSubprogram()->getFilename(),
+        ParentR->getSubprogram()->getLine()
+    });
+    diff.function = ParentL->getName();
+    diff.name = "assembly code";
+
+    return {diff};
 }
 
 /// Handle values generated from macros and enums whose value changed.

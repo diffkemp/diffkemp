@@ -45,7 +45,7 @@ void preprocessModule(Module &Mod,
 void simplifyModulesDiff(Config &config,
                          std::vector<FunPair> &nonequalFuns,
                          std::vector<ConstFunPair> &missingDefs,
-                         std::vector<MacroDifference> &differingMacros);
+                         std::vector<SyntaxDifference> &differingMacros);
 
 /// Preprocessing transformations - run independently on each module at the
 /// end.

@@ -25,6 +25,6 @@
 void reportOutput(Config &config,
                   std::vector<FunPair> &nonequalFuns,
                   std::vector<ConstFunPair> &missingDefs,
-                  std::vector<MacroDifference> &differingMacros);
+                  std::vector<SyntaxDifference> &differingMacros);
 
 #endif // DIFFKEMP_SIMPLL_OUTPUT_H

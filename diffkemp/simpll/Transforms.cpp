@@ -103,18 +103,22 @@ void preprocessModule(Module &Mod,
 void simplifyModulesDiff(Config &config,
                          std::vector<FunPair> &nonequalFuns,
                          std::vector<ConstFunPair> &missingDefs,
-                         std::vector<MacroDifference> &differingMacros) {
+                         std::vector<SyntaxDifference> &differingMacros) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies. Then, unify the abstractions between the modules so that
     // the corresponding abstractions get the same name.
     AnalysisManager<Module, Function *> mam(false);
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
-    unifyFunctionAbstractions(
+
+    auto AbstractionGeneratorResultL =
             mam.getResult<FunctionAbstractionsGenerator>(*config.First,
-                                                         config.FirstFun),
+                    config.FirstFun);
+    auto AbstractionGeneratorResultR =
             mam.getResult<FunctionAbstractionsGenerator>(*config.Second,
-                                                         config.SecondFun));
+                    config.SecondFun);
+    unifyFunctionAbstractions(AbstractionGeneratorResultL.funAbstractions,
+                              AbstractionGeneratorResultR.funAbstractions);
 
     // Module passes
     PassManager<Module, AnalysisManager<Module, Function *>, Function *,
@@ -137,7 +141,9 @@ void simplifyModulesDiff(Config &config,
 
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First, *config.Second,
-                             config.ControlFlowOnly, &DI);
+                             config.ControlFlowOnly, &DI,
+                             AbstractionGeneratorResultL.asmValueMap,
+                             AbstractionGeneratorResultR.asmValueMap);
 
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
@@ -177,7 +183,7 @@ void simplifyModulesDiff(Config &config,
     }
 
     missingDefs = modComp.MissingDefs;
-    differingMacros = modComp.DifferingMacros;
+    differingMacros = modComp.DifferingObjects;
 }
 
 /// Recursively mark callees of a function with 'alwaysinline' attribute.
