@@ -81,29 +81,15 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
             lines = input_file.readlines()
             start = first_line if filename == first_file else second_line
 
-            # First the algorithm captures the function header using round
-            # brackets, then it switches over to curly brackets for the purpose
-            # of capturing the function body
-            bracket = 0
-            brackets = ("(", ")")
-            index = start - 1
-            switched = False
-            while bracket > 0 or index == (start - 1) or switched:
-                if switched:
-                    switched = False
-                bracket += (lines[index].count(brackets[0]) -
-                            lines[index].count(brackets[1]))
-                if brackets == ("(", ")") and bracket == 0:
-                    brackets = ("{", "}")
-                    # This very line can (and in most cases will) contain the
-                    # other bracket type straight away - this has to be caught
-                    # in order for the algorithm not to stop
-                    bracket += (lines[index].count(brackets[0]) -
-                                lines[index].count(brackets[1]))
-                    switched = True
-
-                output_file.write(lines[index])
-                index += 1
+            # The end of the function is detected as a line that contains
+            # nothing but an ending curly bracket
+            line_index = start - 1
+            line = lines[line_index]
+            while line.rstrip() != "}":
+                line_index += 1
+                output_file.write(line)
+                line = lines[line_index]
+            output_file.write(line)
 
     # check_output fails when the two files are different due to the error code
     # (1), which in fact signalizes success; the exception has to be caught and
