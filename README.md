@@ -74,12 +74,12 @@ KABI whitelist file to be present or a single function to be specified (in fact,
 the tool can be used to compare semantic difference of any function). The tool
 can be invoked as follows:
 
-    bin/diffkabi old-version new-version [-f function] [--control-flow-only] [--syntax-diff]
+    bin/diffkabi old-version new-version [-f function] [--control-flow-only] [--print-diff]
 
 By default, all functions from the `kabi_whitelist_x86_64` file are compared.
 `--control-flow-only` ignores changes in assignments, only checks for changes in
 the control flow - conditions, loops, function calls, goto.
-`--syntax-diff` displays the `diff` command result for functions that are
+`--print-diff` displays the `diff` command result for functions that are
 semantically different.
 
 ### DiffSysctl

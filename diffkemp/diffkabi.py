@@ -26,7 +26,7 @@ def __make_argument_parser():
                     function comparison")
     ap.add_argument("--report-stat", help="report statistics of the analysis",
                     action="store_true")
-    ap.add_argument("--syntax-diff", help="for functions that are \
+    ap.add_argument("--print-diff", help="for functions that are \
                     semantically different, show the result of diff",
                     action="store_true")
     ap.add_argument("--control-flow-only", help="see only control-flow \
@@ -69,7 +69,7 @@ def run_from_cli():
             kabi_funs_second = second_builder.get_kabi_whitelist()
 
         config = Config(first_builder, second_builder, args.timeout,
-                        args.syntax_diff, args.control_flow_only, args.verbose,
+                        args.print_diff, args.control_flow_only, args.verbose,
                         args.do_not_link, args.semdiff_tool)
 
         if args.log_files:
@@ -91,7 +91,7 @@ def run_from_cli():
 
                 fun_result = None
                 if mod_first.has_function(f):
-                    if not args.syntax_diff:
+                    if not args.print_diff:
                         print f
                     # Compare functions semantics
                     fun_result = functions_diff(
@@ -104,7 +104,7 @@ def run_from_cli():
                 elif args.include_globals:
                     # f is a global variable: compare semantics of all
                     # functions using the variable
-                    if not args.syntax_diff:
+                    if not args.print_diff:
                         print "{} (global variable)".format(f)
                         print "Comparing all functions using {}".format(f)
                     globvar = KernelParam(f)
@@ -113,21 +113,21 @@ def run_from_cli():
 
                 if fun_result is not None:
                     result.add_inner(fun_result)
-                    if args.syntax_diff:
-                        print_sytax_diff(args.src_version, args.dest_version,
-                                         first_builder.kernel_path,
-                                         second_builder.kernel_path,
-                                         f, fun_result, args.log_files,
-                                         args.show_empty_diff)
+                    if args.print_diff:
+                        print_syntax_diff(args.src_version, args.dest_version,
+                                          first_builder.kernel_path,
+                                          second_builder.kernel_path,
+                                          f, fun_result, args.log_files,
+                                          args.show_empty_diff)
                     else:
                         print "  {}".format(str(fun_result.kind).upper())
 
             except SourceNotFoundException as e:
-                if not args.syntax_diff:
+                if not args.print_diff:
                     sys.stderr.write("UNKNOWN: {}".format(str(e)))
                 result.add_inner(Result(Result.Kind.UNKNOWN, f, f))
             except Exception as e:
-                if not args.syntax_diff:
+                if not args.print_diff:
                     sys.stderr.write("  ERROR: {}\n".format(str(e)))
                 result.add_inner(Result(Result.Kind.ERROR, f, f))
             finally:
@@ -155,8 +155,8 @@ def logs_dirname(src_version, dest_version):
     return "kabi-diff-{}_{}".format(src_version, dest_version)
 
 
-def print_sytax_diff(src_version, dest_version, src_path, dest_path, fun,
-                     fun_result, log_files, print_empty_diffs=False):
+def print_syntax_diff(src_version, dest_version, src_path, dest_path, fun,
+                      fun_result, log_files, print_empty_diffs=False):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
