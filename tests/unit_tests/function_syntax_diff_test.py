@@ -29,7 +29,7 @@ def test_syntax_diff(builder_left, builder_right):
             '\tif (dio->end_io)\n! \t\tdio->end_io(dio->iocb, offset, ret, dio'
             '->private, 0, 0);\n  \n')
 
-    config = Config(builder_left, builder_right, timeout=15, syntax_only=True,
+    config = Config(builder_left, builder_right, timeout=15, print_diff=True,
                     control_flow_only=True, verbosity=False, do_not_link=False,
                     semdiff_tool=None)
     first = builder_left.build_file_for_symbol(f)

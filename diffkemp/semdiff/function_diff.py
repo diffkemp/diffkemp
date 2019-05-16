@@ -143,7 +143,7 @@ def functions_diff(mod_first, mod_second,
     """
     result = Result(Result.Kind.NONE, mod_first, mod_second)
     try:
-        if not config.syntax_only:
+        if not config.print_diff:
             if fun_first == fun_second:
                 fun_str = fun_first
             else:
@@ -210,7 +210,7 @@ def functions_diff(mod_first, mod_second,
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
                 if (fun_result.kind == Result.Kind.NOT_EQUAL and
-                        config.syntax_only):
+                        config.print_diff):
                     if not fun_result.first.is_macro:
                         # Get the syntactic diff of functions
                         fun_result.diff = syntax_diff(
@@ -230,7 +230,7 @@ def functions_diff(mod_first, mod_second,
                             fun_result.diff = "  {}\n\n  {}\n".format(
                                 md["left-value"], md["right-value"])
                 result.add_inner(fun_result)
-        if not config.syntax_only:
+        if not config.print_diff:
             print "      {}".format(result)
     except SimpLLException:
         print "    Simplifying has failed"
