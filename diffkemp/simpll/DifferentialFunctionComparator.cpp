@@ -204,11 +204,13 @@ int DifferentialFunctionComparator::cmpOperations(
             // If just one of the instructions is a call, it is possible that
             // some logic has been moved into a function. We'll try to inline
             // that function and compare again.
-            if (isa<CallInst>(L) && !dyn_cast<CallInst>(L)->
-                getCalledFunction()->getName().startswith("simpll"))
+            if (isa<CallInst>(L) && !getCalledFunction(
+                    dyn_cast<CallInst>(L)->getCalledValue())->getName().
+                    startswith("simpll"))
                 ModComparator->tryInline = {dyn_cast<CallInst>(L), nullptr};
-            else if (isa<CallInst>(R) && !dyn_cast<CallInst>(R)->
-                     getCalledFunction()->getName().startswith("simpll"))
+            else if (isa<CallInst>(R) && !getCalledFunction(
+                     dyn_cast<CallInst>(R)->getCalledValue())->getName().
+                     startswith("simpll"))
                 ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
         }
     }
