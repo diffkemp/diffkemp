@@ -42,6 +42,8 @@ def __make_argument_parser():
                     action="store_true")
     ap.add_argument("--show-empty-diff", help="shows difference in function \
                     when the syntactic diff is empty", action="store_true")
+    ap.add_argument("--semdiff-tool", help="tool to use for semantic \
+                    difference analysis", choices=["llreve"])
     return ap
 
 
@@ -68,7 +70,7 @@ def run_from_cli():
 
         config = Config(first_builder, second_builder, args.timeout,
                         args.syntax_diff, args.control_flow_only, args.verbose,
-                        args.do_not_link)
+                        args.do_not_link, args.semdiff_tool)
 
         if args.log_files:
             dirname = logs_dirname(args.src_version, args.dest_version)

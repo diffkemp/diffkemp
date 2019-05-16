@@ -26,7 +26,7 @@ class TaskSpec:
         self.new_builder = LlvmKernelBuilder(self.new_kernel, module_dir,
                                              debug=self.debug, rebuild=True)
         self.config = Config(self.old_builder, self.new_builder, 120, False,
-                             self.control_flow_only, False, False)
+                             self.control_flow_only, False, False, "llreve")
 
     def _file_name(self, suffix, ext, name=None):
         """

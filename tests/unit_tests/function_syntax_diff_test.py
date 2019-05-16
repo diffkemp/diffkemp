@@ -30,7 +30,8 @@ def test_syntax_diff(builder_left, builder_right):
             '->private, 0, 0);\n  \n')
 
     config = Config(builder_left, builder_right, timeout=15, syntax_only=True,
-                    control_flow_only=True, verbosity=False, do_not_link=False)
+                    control_flow_only=True, verbosity=False, do_not_link=False,
+                    semdiff_tool=None)
     first = builder_left.build_file_for_symbol(f)
     second = builder_right.build_file_for_symbol(f)
     fun_result = functions_diff(mod_first=first, mod_second=second,
