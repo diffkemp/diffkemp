@@ -28,6 +28,8 @@ def __make_argument_parser():
                     function comparison")
     ap.add_argument("--rebuild", help="force rebuild sources",
                     action="store_true")
+    ap.add_argument("--semdiff-tool", help="tool to use for semantic \
+                    difference analysis", choices=["llreve"])
     return ap
 
 
@@ -46,7 +48,7 @@ def run_from_cli():
                                            verbose=args.verbose)
 
         config = Config(first_builder, second_builder, args.timeout, False,
-                        False, args.verbose, True)
+                        False, args.verbose, True, args.semdiff_tool)
 
         sysctl_mod_first = first_builder.build_sysctl_module(args.sysctl)
         sysctl_mod_second = second_builder.build_sysctl_module(args.sysctl)

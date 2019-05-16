@@ -43,7 +43,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
         stderr = open('/dev/null', 'w')
 
     # Commands for running llreve and Z3 (output of llreve is piped into Z3)
-    command = ["build/diffkemp/llreve/reve/reve/llreve",
+    command = ["build/llreve/reve/reve/llreve",
                first, second,
                "--fun=" + funFirst + "," + funSecond,
                "-muz", "--ir-input", "--bitvect", "--infer-marks",
@@ -87,8 +87,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
     return Result(result_kind, first, second)
 
 
-def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
-                      verbose=False):
+def functions_semdiff(first, second, fun_first, fun_second, coupled, config):
     """
     Compare two functions for semantic equality.
 
@@ -101,17 +100,16 @@ def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
 
     :param first: File with the first LLVM module
     :param second: File with the second LLVM module
-    :param funFirst: Function from the first module to be compared
-    :param funSecond: Function from the second module to be compared
+    :param fun_first: Function from the first module to be compared
+    :param fun_second: Function from the second module to be compared
     :param coupled: List of coupled functions (functions that are supposed to
                     correspond to each other in both modules)
-    :param timeout: Timeout for analysis of a function pair (default is 40s)
-    :param verbose: Verbosity option
+    :param config: Configuration.
     """
-    if funFirst == funSecond:
-        fun_str = funFirst
+    if fun_first == fun_second:
+        fun_str = fun_first
     else:
-        fun_str = funSecond
+        fun_str = fun_second
     sys.stdout.write("      Semantic diff of {}".format(fun_str))
     sys.stdout.write("...")
     sys.stdout.flush()
@@ -125,8 +123,10 @@ def functions_semdiff(first, second, funFirst, funSecond, coupled, timeout,
         # Use all assumptions with the same or lower level
         assumptions = [c for c in coupled if c.diff <= assume_level]
         # Run the actual analysis
-        result = _run_llreve_z3(first, second, funFirst, funSecond,
-                                assumptions, timeout, verbose)
+        if config.semdiff_tool == "llreve":
+            result = _run_llreve_z3(first, second, fun_first, fun_second,
+                                    assumptions, config.timeout,
+                                    config.verbosity)
         # On timeout, stop the analysis because for many assumption levels,
         # this could run for a long time. Moreover, if the analysis times out
         # once, there is a high chance it will time out with more strict
@@ -217,7 +217,7 @@ def functions_diff(mod_first, mod_second,
 
         if not funs_to_compare:
             result.kind = Result.Kind.EQUAL_SYNTAX
-        elif config.syntax_only:
+        elif config.syntax_only or config.semdiff_tool is None:
             # Only display the syntax diff of the functions that are
             # syntactically different.
             for fun_pair in objects_to_compare:
@@ -259,8 +259,7 @@ def functions_diff(mod_first, mod_second,
                                                fun_pair[0].name,
                                                fun_pair[1].name,
                                                called_couplings.called,
-                                               config.timeout,
-                                               config.verbosity)
+                                               config)
                 result.add_inner(fun_result)
         if not config.syntax_only:
             print "      {}".format(result)

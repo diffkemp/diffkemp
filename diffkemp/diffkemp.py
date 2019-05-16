@@ -38,6 +38,8 @@ def __make_argument_parser():
     ap.add_argument("-t", "--timeout", help="timeout in seconds for a single \
                     parameter comparison")
     ap.add_argument("-s", "--function", help="analyse only specific function")
+    ap.add_argument("--semdiff-tool", help="tool to use for semantic \
+                    difference analysis", choices=["llreve"])
     return ap
 
 
@@ -90,7 +92,7 @@ def run_from_cli():
             return 0
 
         config = Config(first_builder, second_builder, args.timeout, False,
-                        False, args.verbose, True)
+                        False, args.verbose, True, args.semdiff_tool)
 
         print "Computing semantic difference of module parameters"
         print "--------------------------------------------------"
