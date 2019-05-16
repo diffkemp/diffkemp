@@ -11,13 +11,13 @@ import pytest
 @pytest.fixture(scope="module")
 def builder_left():
     """Create module builder that is shared among tests"""
-    return LlvmKernelBuilder("3.10.0-862.el7", None)
+    return LlvmKernelBuilder("3.10.0-862.el7", None, debug=True, rebuild=True)
 
 
 @pytest.fixture(scope="module")
 def builder_right():
     """Create module builder that is shared among tests"""
-    return LlvmKernelBuilder("3.10.0-957.el7", None)
+    return LlvmKernelBuilder("3.10.0-957.el7", None, debug=True, rebuild=True)
 
 
 def test_syntax_diff(builder_left, builder_right):
