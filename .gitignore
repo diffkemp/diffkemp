@@ -94,3 +94,6 @@ tests/regression/diffsysctl/kernel_modules
 
 # Kernel sources directory
 kernel/
+
+# LLReve tool
+llreve/
