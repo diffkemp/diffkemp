@@ -67,6 +67,7 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
         # Check whether the line is a line number line
         number_line_set = set([" ", "*", "-", ","] + map(str, range(0, 10)))
         if ((not set(list(line)).issubset(number_line_set)) or
+            (not any(char.isdigit() for char in line)) or
                 line.isspace() or line == ""):
             diff_lines_new += [line]
             continue
