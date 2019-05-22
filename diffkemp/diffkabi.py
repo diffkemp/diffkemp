@@ -11,6 +11,7 @@ from diffkemp.semdiff.result import Result
 import os
 import shutil
 import sys
+import re
 
 
 def __make_argument_parser():
@@ -44,6 +45,8 @@ def __make_argument_parser():
                     when the syntactic diff is empty", action="store_true")
     ap.add_argument("--semdiff-tool", help="tool to use for semantic \
                     difference analysis", choices=["llreve"])
+    ap.add_argument("--regex-filter", help="filter function diffs by the \
+                    specified regex")
     return ap
 
 
@@ -112,6 +115,14 @@ def run_from_cli():
                         glob_first=globvar, glob_second=globvar, config=config)
 
                 if fun_result is not None:
+                    if args.regex_filter is not None:
+                        pattern = re.compile(args.regex_filter)
+                        for called_res in fun_result.inner.itervalues():
+                            if pattern.search(called_res.diff):
+                                break
+                        else:
+                            fun_result.kind = Result.Kind.EQUAL_SYNTAX
+
                     result.add_inner(fun_result)
                     if args.print_diff:
                         print_syntax_diff(args.src_version, args.dest_version,
