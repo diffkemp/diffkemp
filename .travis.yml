@@ -1,30 +1,47 @@
-sudo: required
+language: python
+python: 2.7
+dist: xenial
 
-services:
-  - docker
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - bc
+      - clang-5.0
+      - cpio
+      - cscope
+      - gcc-7
+      - g++-7
+      - kmod
+      - libelf-dev
+      - libssl-dev
+      - llvm-5.0
+      - llvm-5.0-dev
+      - ninja-build
+      - rpm2cpio
 
-language: minimal
+before_install:
+  - sudo ln -s /usr/lib/llvm-5.0/include/llvm /usr/local/include/llvm
+  - sudo ln -s /usr/lib/llvm-5.0/include/llvm-c /usr/local/include/llvm-c
+  - sudo update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bin/llvm-config-5.0 100
+  - sudo update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-5.0 100
+  - sudo update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-5.0 100
+  - sudo update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-5.0 100
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+  - export PATH=`echo $PATH | sed -e 's#:/usr/local/clang-7.0.0/bin##'`
 
-jobs:
-  include:
-    - stage: build and test
-      before_install:
-        - docker pull viktormalik/diffkemp-devel
-      before_script:
-        - mkdir build
-        - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then tests/regression/clean_test.sh all; fi
-      script: 
-        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
-          "cd build; cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_LLREVE=ON; ninja; cd .."
-        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
-          "pytest tests/unit_tests"
-        - docker run -v $PWD:/diffkemp:Z -w /diffkemp viktormalik/diffkemp-devel /bin/bash -c \
-          "pytest tests/regression"
-    
-    - stage: linter
-      install:
-        - pip install --user flake8
-      script:
-        - flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
-        - flake8 tests
+install:
+  - mkdir build
+  - cd build
+  - cmake .. -GNinja
+  - ninja
+  - cd ..
+  - pip install -r requirements.txt
+  - pip install -e .
+
+script:
+  - pytest tests
+  - flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
+  - flake8 tests
 
