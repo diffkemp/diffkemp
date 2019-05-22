@@ -1,3 +1,4 @@
+disabled: true
 module: nf_nat_snmp_basic
 path: net/ipv4/netfilter
 filename: nf_nat_snmp_basic.c

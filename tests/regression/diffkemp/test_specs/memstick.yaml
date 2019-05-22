@@ -1,3 +1,4 @@
+disabled: true
 module: memstick
 path: drivers/memstick/core
 filename: memstick.c

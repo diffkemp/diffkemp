@@ -1,3 +1,4 @@
+disabled: true
 module: snd_usb_audio
 path: sound/usb
 filename: card.c

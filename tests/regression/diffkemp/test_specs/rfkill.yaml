@@ -1,3 +1,4 @@
+disabled: true
 module: rfkill
 path: net/rfkill
 filename: core.c

@@ -15,10 +15,6 @@ params:
 
   - param: port
     functions:
-      jtcp_rcv_established: equal
+      jtcp_rcv_established: none
       tcpprobe_init: equal_syntax
-
-  - param: full
-    functions:
-      jtcp_rcv_established: equal
 
