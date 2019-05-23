@@ -45,6 +45,5 @@ RUN pip install \
       enum34 \
       progressbar \
       pytest \
-  pyyaml
-ENV PYTHONPATH /diffkemp:/usr/lib/python2.7:/usr/lib/python3.6
-
+      pyyaml
+ENTRYPOINT pip install -e .; /bin/bash

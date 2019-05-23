@@ -8,5 +8,4 @@ docker run \
     --cpus 3 \
 	-v $PWD:/diffkemp:Z \
 	-w /diffkemp \
-	viktormalik/diffkemp-devel \
-	/bin/bash
+	viktormalik/diffkemp-devel
