@@ -81,7 +81,7 @@ def test_kbuild_module_fail(builder):
 def test_build_file(builder):
     """Building single object into LLVM."""
     mod = builder.build_file("init")
-    assert mod.llvm == "/diffkemp/kernel/linux-3.10/sound/core/init.ll"
+    assert mod.llvm == os.path.abspath("kernel/linux-3.10/sound/core/init.ll")
     assert os.path.isfile(mod.llvm)
     assert mod.kernel_object is None
 
@@ -100,7 +100,7 @@ def test_build_module(builder):
     mod = builder.build_module("oss/snd_pcm_oss")
     assert mod.name == "snd_pcm_oss"
 
-    module_path = "/diffkemp/kernel/linux-3.10/sound/core/oss/"
+    module_path = os.path.abspath("kernel/linux-3.10/sound/core/oss/")
     # Check if kernel object file exists and is correct in the module
     kernel_obj = os.path.join(module_path, "snd-pcm-oss.ko")
     assert os.path.isfile(kernel_obj)
