@@ -1,6 +1,6 @@
 # DiffKemp
 
-Tool for semantic **Diff**erence of **Ke**rnel **m**odule **p**arameters.
+Tool for semantic **Diff**erence of **Ke**rnel **m**odule and **p**arameters.
 
 ## About
 The tool uses static analysis methods to automatically determine how the effect
@@ -11,31 +11,29 @@ The analysis is composed of multiple steps:
 * The compared versions of the analysed sources are compiled into the LLVM
   internal representation (LLVM IR). 
 * The **SimpLL** component is used to simplify the programs and to compare them
-  syntactically. The list of functions that have different syntax are returned
-  from SimpLL.
-* The external **llreve** tool is used to generate a first order logic formula
-  expressing the fact that the remaining programs are semantically equal.
-* The generated formula is solved using an automatic SMT solver *Z3* and the
-  result determines whether the programs are semantically equal or not.
+  for syntax equality and simple semantic equality. The list of functions that
+  are compared as not equal are returned.
+* Optionally, external tools can be use for futher comparison of semantics.
+  Currently, we support the **LLReve** tool. It can be used to generate a first
+  order logic formula expressing the fact that the remaining programs are
+  semantically equal which is then solved using an automatic SMT solver *Z3* and
+  the result determines whether the programs are semantically equal or not.
 
 ## Components
 * SimpLL: Simplification of the compared programs for a subsequent comparison of
   their semantic equivalence. Mainly the following transformations are done:
   * Slicing out the code that is not influenced by the value of the given kernel
     parameter.
-  * Removing bodies of functions that are syntactically equal. The syntax
-    comparison is based on the LLVM's FunctionComparator with multiple custom
-    modifications and enhancements.
+  * Comparing programs for syntactic and simple semantic equality.
+  * Removing bodies of functions that are equal. The comparison is based on the
+    LLVM's FunctionComparator with multiple custom modifications and
+    enhancements.
 
-* llreve: A tool for regression verification of LLVM programs. It uses symbolic
+* LLReve: A tool for regression verification of LLVM programs. It uses symbolic
   execution and an external SMT solver (currently Z3) to prove that two
   functions have the same semantics.
-  Since llreve is maintained as a separate project, it is included as a GIT
-  submodule in this repo. Clone either with `--recurse-submodules` or run after
-  clone:
-
-        git submodule init
-        git submodule update
+  The tool is not used by default. It can be included by running `cmake` with
+  `-DBUILD_LLREVE`.
 
 ## Running environment
 
@@ -96,8 +94,7 @@ Currently, only supports a limited number of sysctl groups (`kernel.*`, `vm.*`,
 
 ## Development
 
-Since the tool uses some custom modifications of LLVM, it is recommended to use
-the prepared development container. The container image can be retrieved from
+There is a development container image prepared that can be retrieved from
 DockerHub:
 [https://hub.docker.com/r/viktormalik/diffkemp-devel/](https://hub.docker.com/r/viktormalik/diffkemp-devel/)
 
@@ -105,17 +102,30 @@ After that, the container can be run using
 
     docker/diffkemp-devel/run-container.sh
 
-The script mounts the current directory (the top DiffKemp directory) as a volume
-inside the container.
+The script mounts the current directory (the root DiffKemp directory) as a
+volume inside the container.
 
-## Build
+Building and running DiffKemp outside of the container requires the following
+dependencies:
+* LLVM 5.0
+* Ninja build system
+* CScope
+* cpio, rpm2cpio
+* Tools neccessary for building the kernels that will be compared.
+
+### Build
 	mkdir build
 	cd build
 	cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
     ninja
     cd ..
 
-## Tests
+Additionally if you are not using the development container:
+
+    pip install -r requirements.txt
+    pip install -e .
+
+### Tests
 
 The project contains unit and regression testing using pytest that can be run by:
 
