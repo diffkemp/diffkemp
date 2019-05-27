@@ -40,7 +40,8 @@ struct MacroElement {
 };
 
 /// Syntactic difference between objects that cannot be found in the original
-/// source files
+/// source files.
+/// Note: this can be either a macro difference or inline assembly difference.
 struct SyntaxDifference {
 	// Name of the object.
 	std::string name;

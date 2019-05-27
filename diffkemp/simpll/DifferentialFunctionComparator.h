@@ -89,6 +89,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     ModuleComparator *ModComparator;
 
+    /// Looks for inline assembly differences between the certain values.
+    /// Note: passing the parent function is necessary in order to properly
+    /// generate the SyntaxDifference object.
     std::vector<SyntaxDifference> findAsmDifference(const Value *L,
             const Value *R, const Function *ParentL, const Function *ParentR)
             const;

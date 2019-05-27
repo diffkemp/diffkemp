@@ -121,9 +121,9 @@ std::string FunctionAbstractionsGenerator::funHash(Value *Fun) {
 
 std::string FunctionAbstractionsGenerator::abstractionPrefix(Value *Fun) {
     if (isa<InlineAsm>(Fun))
-        return "simpll__inlineasm_";
+        return SimpllInlineAsmPrefix;
     else
-        return "simpll__indirect_";
+        return SimpllIndirectFunctionPrefix;
 }
 
 /// Swaps names of two functions in a module.
