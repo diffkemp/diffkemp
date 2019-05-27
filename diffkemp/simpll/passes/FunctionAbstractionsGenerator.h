@@ -18,6 +18,9 @@
 #include <llvm/IR/PassManager.h>
 #include <set>
 
+const std::string SimpllInlineAsmPrefix = "simpll__inlineasm_";
+const std::string SimpllIndirectFunctionPrefix = "simpll__indirect_";
+
 using namespace llvm;
 
 /// Generates abstractions for indirect function calls and for inline assemblies

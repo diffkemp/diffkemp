@@ -15,6 +15,7 @@
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
 #include "MacroUtils.h"
+#include "passes/FunctionAbstractionsGenerator.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -364,6 +365,9 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
     return 0;
 }
 
+/// Looks for inline assembly differences between the certain values.
+/// Note: passing the parent function is necessary in order to properly generate
+/// the SyntaxDifference object.
 std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
         const Value *L, const Value *R, const Function *ParentL,
         const Function *ParentR) const {
@@ -374,8 +378,8 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
         // Both values have to be functions
         return {};
 
-    if (!FunL->getName().startswith("simpll__inlineasm") ||
-        !FunR->getName().startswith("simpll__inlineasm"))
+    if (!FunL->getName().startswith(SimpllInlineAsmPrefix) ||
+        !FunR->getName().startswith(SimpllInlineAsmPrefix))
         // Both functions have to be assembly abstractions
         return {};
 
