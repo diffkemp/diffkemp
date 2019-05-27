@@ -93,7 +93,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         missingDefs.first = toInline;
                 } else {
                     InlineFunctionInfo ifi;
-                    if (InlineFunction(inlineFirst, ifi)) {
+                    if (InlineFunction(inlineFirst, ifi, nullptr, false)) {
                         simplifyFunction(FirstFun);
                         simplifyFunction(SecondFun);
                         inlined = true;
@@ -116,7 +116,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         missingDefs.second = toInline;
                 } else {
                     InlineFunctionInfo ifi;
-                    if (InlineFunction(inlineSecond, ifi)) {
+                    if (InlineFunction(inlineSecond, ifi, nullptr, false)) {
                         simplifyFunction(FirstFun);
                         simplifyFunction(SecondFun);
                         inlined = true;
