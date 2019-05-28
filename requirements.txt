@@ -1,4 +1,3 @@
-enum
 flake8
 llvmcpy
 progressbar

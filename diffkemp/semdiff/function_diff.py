@@ -1,5 +1,5 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
-from __future__ import division
+
 from diffkemp.llvm_ir.build_llvm import SourceNotFoundException
 from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
 from diffkemp.semdiff.function_coupling import FunctionCouplings
@@ -120,7 +120,7 @@ def functions_semdiff(first, second, fun_first, fun_second, config):
                                 called_couplings.called, config.timeout,
                                 config.verbosity)
         called_couplings.clean()
-        print result.kind
+        print(result.kind)
         return result
 
 
@@ -148,8 +148,8 @@ def functions_diff(mod_first, mod_second,
                 fun_str = fun_first
             else:
                 fun_str = "{} and {}".format(fun_first, fun_second)
-            print "    Syntactic diff of {} (in {})".format(fun_str,
-                                                            mod_first.llvm)
+            print("    Syntactic diff of {} (in {})".format(fun_str,
+                                                            mod_first.llvm))
 
         simplify = True
         while simplify:
@@ -163,8 +163,8 @@ def functions_diff(mod_first, mod_second,
                                       glob_var.name if glob_var else "simpl",
                                       config.control_flow_only,
                                       config.verbosity)
-            funs_to_compare = list(filter(lambda o: not o[0].is_macro,
-                                          objects_to_compare))
+            funs_to_compare = list([o for o in objects_to_compare
+                                    if not o[0].is_macro])
             if not config.do_not_link and funs_to_compare and missing_defs:
                 # If there are missing function definitions, try to find
                 # implementing them, link those to the current modules, and
@@ -231,8 +231,8 @@ def functions_diff(mod_first, mod_second,
                                 md["left-value"], md["right-value"])
                 result.add_inner(fun_result)
         if not config.print_diff:
-            print "      {}".format(result)
+            print("      {}".format(result))
     except SimpLLException:
-        print "    Simplifying has failed"
+        print("    Simplifying has failed")
         result.kind = Result.Kind.ERROR
     return result

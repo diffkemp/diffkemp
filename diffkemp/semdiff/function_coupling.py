@@ -5,8 +5,6 @@ modules. These are especially useful for functions without definitions, since
 for them, we have to assume some equivalence.
 Currently, function coupling is computed based on function name equality.
 """
-from __future__ import absolute_import
-
 from diffkemp.llvm_ir.function_collector import FunctionCollector
 
 

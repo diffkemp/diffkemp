@@ -2,7 +2,7 @@
 Syntax difference of two functions - using diff utility and filtering the
 result.
 """
-from __future__ import absolute_import
+
 from subprocess import check_output, CalledProcessError
 from tempfile import mkdtemp
 
@@ -39,10 +39,10 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
     # (1), which in fact signalizes success; the exception has to be caught and
     # the error code evaluated manually
     try:
-        diff = check_output(command)
+        diff = check_output(command).decode('utf-8')
     except CalledProcessError as e:
         if e.returncode == 1:
-            diff = e.output
+            diff = e.output.decode('utf-8')
         else:
             raise
 
@@ -65,7 +65,8 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
                 line += " " + extract.readline().strip()
 
         # Check whether the line is a line number line
-        number_line_set = set([" ", "*", "-", ","] + map(str, range(0, 10)))
+        number_line_set = set([" ", "*", "-", ","] +
+                              list(map(str, list(range(0, 10)))))
         if ((not set(list(line)).issubset(number_line_set)) or
             (not any(char.isdigit() for char in line)) or
                 line.isspace() or line == ""):

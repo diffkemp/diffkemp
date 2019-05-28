@@ -4,8 +4,6 @@ between two kernel versions.
 Compares semantics of invoked proc handler functions and of global variables
 affected by the value of the option.
 """
-from __future__ import absolute_import
-
 from argparse import ArgumentParser
 from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, BuildException
@@ -61,22 +59,22 @@ def run_from_cli():
                 continue
 
             sysctl_res = Result(Result.Kind.NONE, sysctl, sysctl)
-            print sysctl
+            print(sysctl)
             # Compare the proc handler function
             proc_fun_first = sysctl_mod_first.get_proc_fun(sysctl)
             proc_fun_second = sysctl_mod_second.get_proc_fun(sysctl)
             if proc_fun_first and proc_fun_second:
                 proc_result = Result(Result.Kind.NONE,
                                      proc_fun_first, proc_fun_second)
-                print "  Comparing proc handler functions"
+                print("  Comparing proc handler functions")
                 if proc_fun_first != proc_fun_second:
                     # Functions with different names are treated as unequal
-                    print "    different functions found"
+                    print("    different functions found")
                     proc_result.kind = Result.Kind.NOT_EQUAL
                 else:
                     if sysctl_mod_first.is_standard_proc_fun(proc_fun_first):
                         # Standard functions are treated as equal
-                        print "    equal syntax (generic)"
+                        print("    equal syntax (generic)")
                         proc_result.kind = Result.Kind.EQUAL_SYNTAX
                     else:
                         try:
@@ -92,29 +90,29 @@ def run_from_cli():
                             proc_result.first.name = proc_fun_first
                             proc_result.second.name = proc_fun_second
                         except BuildException as e:
-                            print e
+                            print(e)
                             proc_result.kind = Result.Kind.ERROR
                 sysctl_res.add_inner(proc_result)
             else:
-                print "  No proc handler function found"
+                print("  No proc handler function found")
 
             # Compare the data global variable affected by the sysctl value
             data_first = sysctl_mod_first.get_data(sysctl)
             data_second = sysctl_mod_second.get_data(sysctl)
             if data_first and data_second:
-                print "  Comparing functions using the data variable"
+                print("  Comparing functions using the data variable")
                 data_result = diff_all_modules_using_global(
                     glob_first=data_first, glob_second=data_second,
                     config=config)
                 sysctl_res.add_inner(data_result)
             else:
-                print "  No data variable found"
+                print("  No data variable found")
 
             result.add_inner(sysctl_res)
 
-        print ""
-        print "Statistics"
-        print "----------"
+        print("")
+        print("Statistics")
+        print("----------")
         result.report_stat()
         return 0
 

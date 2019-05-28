@@ -106,8 +106,8 @@ class FunctionCollector():
                     # Look whether the GEP references the desired index or not
                     if not self._indices_correspond(use.user, param.indices):
                         continue
-                if ".old" not in func.name:
-                    result.add(func.name)
+                if ".old" not in func.name.decode("utf-8"):
+                    result.add(func.name.decode("utf-8"))
             elif use.user.get_kind() == ConstantExprValueKind:
                 # Use is an Operator (typicalluy GEP)
                 for inner_use in use.user.iter_uses():
@@ -122,8 +122,8 @@ class FunctionCollector():
                             if not self._indices_correspond(use.user,
                                                             param.indices):
                                 continue
-                        if ".old" not in func.name:
-                            result.add(func.name)
+                        if ".old" not in func.name.decode("utf-8"):
+                            result.add(func.name.decode("utf-8"))
         return result
 
     def called_by(self, function_names):
@@ -147,5 +147,5 @@ class FunctionCollector():
         for fun_name in function_names:
             llvm_fun = self._module.get_named_function(fun_name)
             if llvm_fun.is_declaration():
-                result.add(llvm_fun.name)
+                result.add(llvm_fun.name.decode("utf-8"))
         return result

@@ -30,8 +30,8 @@ RUN dnf install -y \
       ninja-build \
       openssl-devel \
       patch \
-      python \
-      python-cffi \
+      python3 \
+      python3-cffi \
       rsync \
       texinfo \
       vim \
@@ -39,11 +39,10 @@ RUN dnf install -y \
       xz \
       z3 \
       z3-devel
-RUN pip install \
+RUN pip3 install \
       --upgrade pip \
       llvmcpy \
-      enum34 \
       progressbar \
       pytest \
       pyyaml
-ENTRYPOINT pip install -e .; /bin/bash
+ENTRYPOINT pip3 install -e .; /bin/bash

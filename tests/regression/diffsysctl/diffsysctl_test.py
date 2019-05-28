@@ -85,10 +85,10 @@ class DiffSysctlTaskSpec(TaskSpec):
         self.sysctl = spec["sysctl"]
         self.data = spec["data"]
         self.data_functions = list()
-        for function, result in spec["data_functions"].iteritems():
+        for function, result in spec["data_functions"].items():
             self.data_functions.append(FunctionSpec(function, result))
         self.proc_handler = list()
-        for function, result in spec["proc_handler"].iteritems():
+        for function, result in spec["proc_handler"].items():
             self.proc_handler = FunctionSpec(function, result)
 
 

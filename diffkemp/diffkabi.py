@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from argparse import ArgumentParser
 from diffkemp.config import Config
 from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, LlvmKernelModule
@@ -81,8 +79,8 @@ def run_from_cli():
                 shutil.rmtree(dirname)
             os.mkdir(dirname)
 
-        print "Computing semantic difference of functions on kabi whitelist"
-        print "------------------------------------------------------------"
+        print("Computing semantic difference of functions on kabi whitelist")
+        print("------------------------------------------------------------")
         result = Result(Result.Kind.NONE, args.src_version, args.dest_version)
         for f in kabi_funs_first:
             if f not in kabi_funs_second:
@@ -95,7 +93,7 @@ def run_from_cli():
                 fun_result = None
                 if mod_first.has_function(f):
                     if not args.print_diff:
-                        print f
+                        print(f)
                     # Compare functions semantics
                     fun_result = functions_diff(
                         mod_first=mod_first, mod_second=mod_second,
@@ -108,8 +106,8 @@ def run_from_cli():
                     # f is a global variable: compare semantics of all
                     # functions using the variable
                     if not args.print_diff:
-                        print "{} (global variable)".format(f)
-                        print "Comparing all functions using {}".format(f)
+                        print("{} (global variable)".format(f))
+                        print("Comparing all functions using {}".format(f))
                     globvar = KernelParam(f)
                     fun_result = diff_all_modules_using_global(
                         glob_first=globvar, glob_second=globvar, config=config)
@@ -117,7 +115,7 @@ def run_from_cli():
                 if fun_result is not None:
                     if args.regex_filter is not None:
                         pattern = re.compile(args.regex_filter)
-                        for called_res in fun_result.inner.itervalues():
+                        for called_res in fun_result.inner.values():
                             if pattern.search(called_res.diff):
                                 break
                         else:
@@ -131,7 +129,7 @@ def run_from_cli():
                                           f, fun_result, args.log_files,
                                           args.show_empty_diff)
                     else:
-                        print "  {}".format(str(fun_result.kind).upper())
+                        print("  {}".format(str(fun_result.kind).upper()))
 
             except SourceNotFoundException as e:
                 if not args.print_diff:
@@ -150,9 +148,9 @@ def run_from_cli():
                     pass
                 LlvmKernelModule.clean_all()
 
-        print ""
-        print "Statistics"
-        print "----------"
+        print("")
+        print("Statistics")
+        print("----------")
         result.report_stat()
         return 0
 
@@ -192,9 +190,9 @@ def print_syntax_diff(src_version, dest_version, src_path, dest_path, fun,
         else:
             output = sys.stdout
             indent = 4
-            print "{}:".format(fun)
+            print("{}:".format(fun))
 
-        for called_res in fun_result.inner.itervalues():
+        for called_res in fun_result.inner.values():
             if called_res.diff == "" and not print_empty_diffs:
                 # Do not print empty diffs
                 continue
@@ -203,7 +201,7 @@ def print_syntax_diff(src_version, dest_version, src_path, dest_path, fun,
                 text_indent("{} differs:\n".format(called_res.first.name),
                             indent - 2))
             if not log_files:
-                print "  {{{"
+                print("  {{{")
 
             if called_res.first.callstack:
                 output.write(
@@ -230,5 +228,5 @@ def print_syntax_diff(src_version, dest_version, src_path, dest_path, fun,
                 output.write(text_indent(
                     called_res.diff, indent))
             if not log_files:
-                print "  }}}"
+                print("  }}}")
             output.write("\n")

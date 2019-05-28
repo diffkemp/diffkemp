@@ -50,7 +50,7 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
 
         if verbose:
             simpll_command.append("--verbose")
-            print " ".join(simpll_command)
+            print(" ".join(simpll_command))
 
         simpll_out = check_output(simpll_command)
         check_call(["opt", "-S", "-deadargelim", "-o", first_out, first_out],

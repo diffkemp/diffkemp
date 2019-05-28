@@ -1,5 +1,5 @@
 """Result of difference analysis."""
-from __future__ import division
+
 from enum import IntEnum
 
 
@@ -68,25 +68,24 @@ class Result:
         percentage that each has from the total results.
         """
         total = len(self.inner)
-        eq_syn = len(filter(lambda r: r.kind == Result.Kind.EQUAL_SYNTAX,
-                            self.inner.itervalues()))
-        eq = len(filter(
-            lambda r: r.kind in [Result.Kind.EQUAL,
-                                 Result.Kind.EQUAL_UNDER_ASSUMPTIONS],
-            self.inner.itervalues())) + eq_syn
-        neq = len(filter(lambda r: r.kind == Result.Kind.NOT_EQUAL,
-                         self.inner.itervalues()))
-        unkwn = len(filter(lambda r: r.kind == Result.Kind.UNKNOWN,
-                           self.inner.itervalues()))
-        errs = len(filter(
-            lambda r: r.kind in [Result.Kind.ERROR, Result.Kind.TIMEOUT],
-            self.inner.itervalues()))
+        eq_syn = len([r for r in iter(self.inner.values())
+                      if r.kind == Result.Kind.EQUAL_SYNTAX])
+        eq = len([r for r in iter(self.inner.values())
+                  if r.kind in [Result.Kind.EQUAL,
+                                Result.Kind.EQUAL_UNDER_ASSUMPTIONS]]) + eq_syn
+        neq = len([r for r in iter(self.inner.values())
+                   if r.kind == Result.Kind.NOT_EQUAL])
+        unkwn = len([r for r in iter(self.inner.values())
+                     if r.kind == Result.Kind.UNKNOWN])
+        errs = len([r for r in iter(self.inner.values())
+                    if r.kind in [Result.Kind.ERROR, Result.Kind.TIMEOUT]])
         if total > 0:
-            print "Total params: {}".format(total)
-            print "Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100)
-            print " same syntax: {0}".format(eq_syn)
-            print "Not equal:    {0} ({1:.0f}%)".format(neq, neq / total * 100)
-            print "Unknown:      {0} ({1:.0f}%)".format(unkwn,
-                                                        unkwn / total * 100)
-            print "Errors:       {0} ({1:.0f}%)".format(errs,
-                                                        errs / total * 100)
+            print("Total params: {}".format(total))
+            print("Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100))
+            print(" same syntax: {0}".format(eq_syn))
+            print("Not equal:    {0} ({1:.0f}%)".format(
+                  neq, neq / total * 100))
+            print("Unknown:      {0} ({1:.0f}%)".format(unkwn,
+                                                        unkwn / total * 100))
+            print("Errors:       {0} ({1:.0f}%)".format(errs,
+                                                        errs / total * 100))

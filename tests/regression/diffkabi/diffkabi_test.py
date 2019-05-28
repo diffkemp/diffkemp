@@ -35,7 +35,7 @@ def collect_task_specs():
                 spec_yaml = yaml.safe_load(spec_file)
                 if "disabled" in spec_yaml and spec_yaml["disabled"] is True:
                     continue
-                for function, desc in spec_yaml["functions"].iteritems():
+                for function, desc in spec_yaml["functions"].items():
                     spec = dict(spec_yaml)
                     spec["function"] = function
                     spec["expected_result"] = desc

@@ -1,5 +1,5 @@
 language: python
-python: 2.7
+python: 3.6
 dist: xenial
 
 addons:
@@ -37,8 +37,8 @@ install:
   - cmake .. -GNinja
   - ninja
   - cd ..
-  - pip install -r requirements.txt
-  - pip install -e .
+  - pip3 install -r requirements.txt
+  - pip3 install -e .
 
 script:
   - pytest tests
