@@ -53,7 +53,8 @@ class LlvmKernelModule:
         """
         with open(os.devnull, "w") as stderr:
             modinfo = check_output(["modinfo", "-F", "depends",
-                                   self.kernel_object], stderr=stderr)
+                                   self.kernel_object], stderr=stderr).decode(
+                "utf-8")
             self.depends = modinfo.rstrip().split(",")
 
     def parse_module(self, force=False):
@@ -127,8 +128,9 @@ class LlvmKernelModule:
         :return Name of the variable
         """
         if param_var.get_kind() == GlobalVariableValueKind:
-            if ("__param_arr" in param_var.get_name() or
-                    "__param_string" in param_var.get_name()):
+            param_name = param_var.get_name().decode("utf-8")
+            if ("__param_arr" in param_name or
+                    "__param_string" in param_name):
                 # For array and string parameters, the actual variable is
                 # inside another structure as its last element
                 param_var_value = param_var.get_initializer()
@@ -137,7 +139,7 @@ class LlvmKernelModule:
                     param_var_value.get_num_operands() - 1)
                 return self._extract_param_name(var_expr)
             else:
-                return param_var.get_name()
+                return param_name
 
         if param_var.get_num_operands() == 1:
             # Variable can be inside bitcast or getelementptr, in both cases
@@ -179,7 +181,7 @@ class LlvmKernelModule:
         self.params = dict()
         with open(os.devnull, "w") as stderr:
             modinfo = check_output(["modinfo", "-p", self.kernel_object],
-                                   stderr=stderr)
+                                   stderr=stderr).decode("utf-8")
         lines = modinfo.splitlines()
         for line in lines:
             name, sep, rest = line.partition(":")

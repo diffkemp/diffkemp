@@ -85,7 +85,7 @@ class LlvmSysctlModule:
             # Sysctl option name is the first element of the entry
             # We need one more .get_operand(0) because of gep operator
             name = sysctl.get_operand(0).get_operand(0).get_initializer() \
-                .get_as_string(size)
+                .get_as_string(size).decode("utf-8")
             pattern = sysctl_pattern.split(".")[-1]
             if matches(name, pattern):
                 sysctl_name = sysctl_pattern.replace(pattern, name)
@@ -131,7 +131,7 @@ class LlvmSysctlModule:
             data = data.get_operand(0)
 
         if data.get_kind() == GlobalVariableValueKind:
-            data = data.get_name()
+            data = data.get_name().decode("utf-8")
             return KernelParam(data, indices)
         return None
 
@@ -145,7 +145,8 @@ class LlvmSysctlModule:
         # Proc handler function is the 6th element of the
         # "struct ctl_table" type.
         proc_handler = sysctl.get_operand(5)
-        return proc_handler.get_name() if not proc_handler.is_null() else None
+        return proc_handler.get_name().decode("utf-8") \
+            if not proc_handler.is_null() else None
 
     def get_child(self, sysctl_name):
         """Get name of the child node of the given sysctl table entry."""

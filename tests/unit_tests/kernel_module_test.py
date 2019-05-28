@@ -48,7 +48,7 @@ def test_set_param(builder):
     module = builder.build_module("snd")
     module.parse_module()
     module.set_param("cards_limit")
-    assert module.params.keys() == ["cards_limit"]
+    assert list(module.params.keys()) == ["cards_limit"]
 
 
 def test_set_param_fail(builder):

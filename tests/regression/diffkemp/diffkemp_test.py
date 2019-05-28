@@ -75,7 +75,7 @@ class DiffKempTaskSpec(TaskSpec):
         self.functions = dict()
         self.only_old = set()
         self.only_new = set()
-        for fun, desc in spec["functions"].iteritems():
+        for fun, desc in spec["functions"].items():
             # If only a single function is specified, both compared functions
             # are supposed to have the same name
             if isinstance(fun, str):
@@ -158,7 +158,7 @@ class TestClass(object):
         speed.
         """
         # Configuration (only set the timeout, the rest is not used).
-        for fun_pair, expected in task_spec.functions.iteritems():
+        for fun_pair, expected in task_spec.functions.items():
             if expected not in [Result.Kind.TIMEOUT, Result.Kind.NONE]:
                 result = functions_diff(mod_first=task_spec.old_module,
                                         mod_second=task_spec.new_module,

@@ -30,11 +30,11 @@ def test_get_data(module):
     # Data variable with GEP and bitcast
     data = module.get_data("message_burst")
     assert data.name == "net_ratelimit_state"
-    assert data.indices == [8L]
+    assert data.indices == [8]
     # Data variable with GEP (without bitcast)
     data = module.get_data("netdev_rss_key")
     assert data.name == "netdev_rss_key"
-    assert data.indices == [0L, 0L]
+    assert data.indices == [0, 0]
 
 
 def test_get_child():

@@ -3,7 +3,6 @@ Comparing two kernel modules in LLVM IR for semantic equivalence w.r.t. some
 global variable (parameter of modules). Each pair of corresponding functions
 using the given parameter is compared individually.
 """
-from __future__ import absolute_import
 
 from diffkemp.llvm_ir.build_llvm import BuildException
 from diffkemp.semdiff.function_coupling import FunctionCouplings
@@ -44,10 +43,10 @@ def diff_all_modules_using_global(glob_first, glob_second, config):
                             mod_first=mod_first, mod_second=mod_second,
                             glob_var=glob_first, fun=None,
                             config=config)
-                        for res in src_result.inner.itervalues():
+                        for res in src_result.inner.values():
                             result.add_inner(res)
                 except BuildException as e:
-                    print e
+                    print(e)
                     result.add_inner(Result(Result.Kind.ERROR, src, src))
         return result
 
@@ -74,7 +73,7 @@ def modules_diff(mod_first, mod_second, glob_var, fun, config):
                 continue
             if (not mod_first.has_function(fun) or not
                     mod_second.has_function(fun)):
-                print "    Given function not found in module"
+                print("    Given function not found in module")
                 result.kind = Result.Kind.ERROR
                 return result
 

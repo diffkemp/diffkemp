@@ -129,7 +129,7 @@ def test_build_modules_with_params():
     assert sorted(modules.keys()) == sorted(["snd_seq_midi", "snd_seq_dummy",
                                              "snd_seq", "snd_seq_oss"])
 
-    for n, m in modules.iteritems():
+    for n, m in modules.items():
         assert os.path.isfile(m.llvm)
 
 
@@ -142,7 +142,7 @@ def test_build_all_modules():
     modules = builder.build_all_modules()
     assert sorted(modules.keys()) == sorted(["snd-mixer-oss", "snd-pcm-oss"])
 
-    for n, m in modules.iteritems():
+    for n, m in modules.items():
         assert os.path.isfile(m.llvm)
 
 

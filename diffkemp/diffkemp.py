@@ -83,21 +83,21 @@ def run_from_cli():
             second_mods = second_builder.build_modules_with_params()
 
         if args.build_only:
-            print "Compiled modules in version {}:".format(args.src_version)
+            print("Compiled modules in version {}:".format(args.src_version))
             for mod_name in first_mods.keys():
-                print "{} ".format(mod_name)
-            print "Compiled modules in version {}:".format(args.dest_version)
+                print("{} ".format(mod_name))
+            print("Compiled modules in version {}:".format(args.dest_version))
             for mod_name in second_mods.keys():
-                print "{} ".format(mod_name)
+                print("{} ".format(mod_name))
             return 0
 
         config = Config(first_builder, second_builder, args.timeout, False,
                         False, args.verbose, True, args.semdiff_tool)
 
-        print "Computing semantic difference of module parameters"
-        print "--------------------------------------------------"
+        print("Computing semantic difference of module parameters")
+        print("--------------------------------------------------")
         result = Result(Result.Kind.NONE, args.src_version, args.dest_version)
-        for mod, first in first_mods.iteritems():
+        for mod, first in first_mods.items():
             if mod not in second_mods:
                 continue
             second = second_mods[mod]
@@ -113,18 +113,18 @@ def run_from_cli():
                 first.collect_all_parameters()
                 second.collect_all_parameters()
 
-            print mod
-            for name, param in first.params.iteritems():
+            print(mod)
+            for name, param in first.params.items():
                 if name not in second.params:
                     continue
-                print "  parameter {}".format(name)
+                print("  parameter {}".format(name))
                 # Compare modules
                 param_res = modules_diff(mod_first=first, mod_second=second,
                                          glob_var=param, fun=args.function,
                                          config=config)
                 param_res.first.name = param
                 param_res.second.name = param
-                print "    {}".format(str(param_res.kind).upper())
+                print("    {}".format(str(param_res.kind).upper()))
                 result.add_inner(param_res)
 
             # Clean LLVM modules (allow GC to collect the occupied memory)
@@ -132,9 +132,9 @@ def run_from_cli():
             second.clean_module()
             LlvmKernelModule.clean_all()
         if args.report_stat:
-            print ""
-            print "Statistics"
-            print "----------"
+            print("")
+            print("Statistics")
+            print("----------")
             result.report_stat()
         return 0
 

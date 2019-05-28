@@ -15,7 +15,7 @@ from progressbar import ProgressBar, Percentage, Bar
 import shutil
 from subprocess import CalledProcessError, call, check_call, check_output
 from subprocess import Popen, PIPE
-from urllib import urlretrieve
+from urllib.request import urlretrieve
 from tempfile import mkdtemp
 from socket import gethostbyname, error as socket_error
 
@@ -90,8 +90,8 @@ class LlvmKernelBuilder:
         """
         Download and configure kernel if kernel directory does not exist.
         """
-        print "Kernel version {}".format(self.kernel_version)
-        print "-------------------"
+        print("Kernel version {}".format(self.kernel_version))
+        print("-------------------")
         if not os.path.isdir(self.kernel_path):
             self._get_kernel_source()
             self._symlink_gcc_header(7)
@@ -139,7 +139,7 @@ class LlvmKernelBuilder:
         url += tarname
 
         # Download the tarball with kernel sources
-        print "Downloading kernel version {}".format(self.kernel_version)
+        print("Downloading kernel version {}".format(self.kernel_version))
         urlretrieve(url, os.path.join(self.kernel_base_path, tarname),
                     show_progress)
 
@@ -158,7 +158,7 @@ class LlvmKernelBuilder:
         rpmname = "kernel-{}.src.rpm".format(self.kernel_version)
         url += rpmname
         # Download the source RPM package
-        print "Downloading kernel version {}".format(self.kernel_version)
+        print("Downloading kernel version {}".format(self.kernel_version))
         urlretrieve(url, os.path.join(self.kernel_base_path, rpmname),
                     show_progress)
 
@@ -275,16 +275,16 @@ class LlvmKernelBuilder:
         """Extract kernel sources from .tar.xz file."""
         cwd = os.getcwd()
         os.chdir(self.kernel_base_path)
-        print "Extracting"
+        print("Extracting")
         check_call(["tar", "-xJf", tarname])
         os.remove(tarname)
         dirname = tarname[:-7]
         # If the produced directory does not have the expected name, rename it.
         if dirname != self.kernel_path:
             os.rename(dirname, self.kernel_path)
-        print "Done"
-        print("Kernel sources for version {} are in directory {}".format(
-            self.kernel_version, self.kernel_path))
+        print("Done")
+        print(("Kernel sources for version {} are in directory {}".format(
+            self.kernel_version, self.kernel_path)))
         os.chdir(cwd)
 
     def _symlink_gcc_header(self, major_version):
@@ -323,7 +323,7 @@ class LlvmKernelBuilder:
         """
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
-        print "Configuring and preparing modules"
+        print("Configuring and preparing modules")
         with open(os.devnull, 'w') as null:
             if self.configfile is not None:
                 os.rename(self.configfile, ".config")
@@ -394,13 +394,13 @@ class LlvmKernelBuilder:
         os.chdir(cwd)
 
     def _call_and_print(self, command, stdout=None, stderr=None):
-        print "  {}".format(" ".join(command))
+        print("  {}".format(" ".join(command)))
         check_call(command, stdout=stdout, stderr=stderr)
 
     def _call_output_and_print(self, command):
         with open(os.devnull) as stderr:
-            print "    {}".format(" ".join(command))
-            output = check_output(command, stderr=stderr)
+            print("    {}".format(" ".join(command)))
+            output = check_output(command, stderr=stderr).decode("utf-8")
             return output
 
     def _check_make_target(self, make_command):
@@ -445,9 +445,9 @@ class LlvmKernelBuilder:
         Remove quotes from gcc_param that represents a part of a shell command.
         """
         if "\'" in gcc_param:
-            return gcc_param.translate(None, "\'")
+            return gcc_param.replace("\'", "")
         else:
-            return gcc_param.translate(None, "\"")
+            return gcc_param.replace("\"", "")
 
     def _get_ko_name(self, mod):
         """Get name of an object file corresponding to a module"""
@@ -481,7 +481,8 @@ class LlvmKernelBuilder:
         with open(os.devnull, "w") as stderr:
             try:
                 output = check_output(["make", "V=1", object_file,
-                                       "--just-print"], stderr=stderr)
+                                       "--just-print"], stderr=stderr).decode(
+                    "utf-8")
             except CalledProcessError:
                 raise BuildException("Error compiling {}".format(object_file))
             finally:
@@ -715,7 +716,7 @@ class LlvmKernelBuilder:
         :param command: Command to be executed
         """
         if self.verbose:
-            print "    [{}] {}".format(command[0], file)
+            print("    [{}] {}".format(command[0], file))
         if self.rebuild or not os.path.isfile(file):
             with open(os.devnull, "w") as stderr:
                 try:
@@ -797,9 +798,9 @@ class LlvmKernelBuilder:
         :param modules: Dict of form name -> LlvmKernelModule.
         """
         if self.verbose:
-            print "Linking dependent modules"
+            print("Linking dependent modules")
         linked = set()
-        for name, mod in modules.iteritems():
+        for name, mod in modules.items():
             if mod.depends is None:
                 continue
             depmods = []
@@ -824,16 +825,17 @@ class LlvmKernelBuilder:
                             do_not_link.append(m.replace("-", "_"))
 
             if depmods:
-                to_link = [d for d in depmods if d.name not in do_not_link]
+                to_link = [d for d in depmods if d.name.decode("utf-8")
+                           not in do_not_link]
                 if self.verbose:
-                    print "  [llvm-link] {}".format(
-                        os.path.relpath(mod.llvm, self.kernel_path))
+                    print("  [llvm-link] {}".format(
+                        os.path.relpath(mod.llvm, self.kernel_path)))
                 mod.parse_module()
                 for m in to_link:
                     m.parse_module()
                 mod.link_modules(to_link)
                 linked.add(name)
-        for mod in modules.itervalues():
+        for mod in modules.values():
             mod.clean_module()
 
     def build_file(self, file_name):
@@ -895,7 +897,7 @@ class LlvmKernelBuilder:
         cwd = os.getcwd()
         os.chdir(self.kernel_path)
         if self.verbose:
-            print "Building all modules"
+            print("Building all modules")
         self._clean_all_modules()
 
         # Use Kbuild to build directory and extract names of built modules
@@ -932,8 +934,8 @@ class LlvmKernelBuilder:
         :return Dictionary of modules in form name -> module
         """
         if self.verbose:
-            print "Building all kernel modules having parameters"
-            print "  Collecting modules"
+            print("Building all kernel modules having parameters")
+            print("  Collecting modules")
         if self.rebuild:
             self._clean_all_modules()
         sources = self.source.get_sources_with_params(self.modules_path)
@@ -958,15 +960,15 @@ class LlvmKernelBuilder:
         llvm_modules = dict()
         for mod in modules:
             if self.verbose:
-                print "  {}".format(mod)
+                print("  {}".format(mod))
             try:
                 llvm_mod = self.build_module(mod, True)
                 llvm_modules[llvm_mod.name] = llvm_mod
             except BuildException as e:
                 if self.verbose:
-                    print "    {}".format(str(e))
+                    print("    {}".format(str(e)))
         if self.verbose:
-            print ""
+            print("")
         return llvm_modules
 
     def build_sysctl_module(self, sysctl):

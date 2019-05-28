@@ -92,7 +92,8 @@ class KernelSource:
                 command.append("-0")
             command.append(symbol)
             with open(os.devnull, "w") as devnull:
-                cscope_output = check_output(command, stderr=devnull)
+                cscope_output = check_output(command, stderr=devnull).decode(
+                    'utf-8')
             return [l for l in cscope_output.splitlines() if
                     l.split()[0].endswith("c")]
         except CalledProcessError:
@@ -164,34 +165,33 @@ class KernelSource:
         # highest priority).
         seen = set()
 
-        def prio_cmp(a, b):
-            if a.startswith("drivers/"):
-                return 1
-            if b.startswith("drivers/"):
-                return -1
-            if a.startswith("arch/"):
-                return 1
-            if b.startswith("arch/"):
-                return -1
-            return 0
+        def prio_key(item):
+            if item.startswith("drivers/"):
+                # Before any other string
+                return "_" + item
+            if item.startswith("arch/"):
+                # After any other string
+                return "}" + item
+            else:
+                return item
 
         files = sorted(
             [os.path.relpath(f, self.kernel_path)
              for f in [line.split()[0] for line in cscope_defs]
              if not (f in seen or seen.add(f))],
-            cmp=prio_cmp)
+            key=prio_key)
         files.extend(sorted(
             [os.path.relpath(f, self.kernel_path)
              for (f, scope) in [(line.split()[0], line.split()[1])
                                 for line in cscope_uses]
              if (scope == "<global>" and not (f in seen or seen.add(f)))],
-            cmp=prio_cmp))
+            key=prio_key))
         files.extend(sorted(
             [os.path.relpath(f, self.kernel_path)
              for (f, scope) in [(line.split()[0], line.split()[1])
                                 for line in cscope_uses]
              if (scope != "<global>" and not (f in seen or seen.add(f)))],
-            cmp=prio_cmp))
+            key=prio_key))
         return files
 
     def find_srcs_using_symbol(self, symbol):
