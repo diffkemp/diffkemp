@@ -17,10 +17,10 @@
 
 #include "DebugInfo.h"
 #include "DifferentialGlobalNumberState.h"
-#include "MacroUtils.h"
 #include "Utils.h"
 #include <llvm/IR/Module.h>
 #include <set>
+#include "SourceCodeUtils.h"
 
 using namespace llvm;
 

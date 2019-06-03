@@ -12,8 +12,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "SourceCodeUtils.h"
 #include "Config.h"
-#include "MacroUtils.h"
 #include "Utils.h"
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/LineIterator.h>
@@ -103,16 +103,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
     return usedMacroMap;
 }
 
-/// Gets all macros used on a certain DILocation in the form of a key to value
-/// map.
-std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-    DILocation *LineLoc, const Module *Mod) {
-    if (!LineLoc || LineLoc->getNumOperands() == 0) {
-        // DILocation has no scope or is not present - cannot get macro stack
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Scope for macro not found\n");
-        return std::unordered_map<std::string, MacroElement>();
-    }
-
+/// Extract the line corresponding to the DILocation from the C source file.
+std::string extractLineFromLocation(DILocation *LineLoc) {
     // Get the path of the source file corresponding to the module where the
     // difference was found
     auto sourcePath = getSourceFilePath(
@@ -121,9 +113,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
     // Open the C source file corresponding to the location and extract the line
     auto sourceFile = MemoryBuffer::getFile(Twine(sourcePath));
     if (sourceFile.getError()) {
-        // Source file was not found, return empty maps
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Source for macro not found\n");
-        return std::unordered_map<std::string, MacroElement>();
+        // Source file was not found, return empty string
+        return "";
     }
 
     // Read the source file by lines, stop at the right number (the line that
@@ -151,6 +142,25 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
         } while (!it.is_at_end() && (it->count('(') < it->count(')')));
     }
 
+    return line;
+}
+
+/// Gets all macros used on a certain DILocation in the form of a key to value
+/// map.
+std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
+    DILocation *LineLoc, const Module *Mod) {
+    if (!LineLoc || LineLoc->getNumOperands() == 0) {
+        // DILocation has no scope or is not present - cannot get macro stack
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Scope for macro not found\n");
+        return std::unordered_map<std::string, MacroElement>();
+    }
+
+    std::string line = extractLineFromLocation(LineLoc);
+    if (line == "") {
+        // Source file was not found
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Source for macro not found\n");
+        return std::unordered_map<std::string, MacroElement>();
+    }
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                     dbgs() << "Looking for all macros on line:" << line
@@ -211,9 +221,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
     // Add information about the original line to the map, then return the map
     auto macrosOnLine = getAllMacrosOnLine(line, macroMap);
-    if (macrosOnLine.size() == 0)
-        macrosOnLine = getAllMacrosOnLine(previousLine, macroMap);
-    macrosOnLine[" "].sourceFile = sourcePath;
+    macrosOnLine[" "].sourceFile = getSourceFilePath(
+            dyn_cast<DIScope>(LineLoc->getScope()));
     macrosOnLine[" "].line = LineLoc->getLine();
 
     return macrosOnLine;
@@ -298,6 +307,165 @@ std::vector<SyntaxDifference> findMacroDifferences(
                 StackL, StackR, L->getFunction()->getName()
             });
         }
+    }
+
+    return result;
+}
+
+/// Tries to convert C source syntax of inline ASM (the input may include other
+/// code, the inline asm is found and extracted) to the LLVM syntax.
+/// Returns a pair of strings - the first one contains the converted ASM, the
+/// second one contains (unparsed) arguments.
+std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
+        std::string input) {
+    int position = input.find("asm");
+
+    if (position == std::string::npos)
+        // No asm present
+        return {"", ""};
+
+    // Skip characters to the first bracket
+    while (input[position] != '(')
+        ++position;
+
+    // Extract the asm body
+    int bracketCounter = 0;
+    std::string extractedBody;
+    do {
+        if (input[position] == '(')
+            ++bracketCounter;
+        else if (input[position] == ')')
+            --bracketCounter;
+        extractedBody += input[position++];
+    } while (bracketCounter != 0);
+
+    // Remove the first and last bracket from the expression
+    extractedBody.erase(0, 1);
+    extractedBody.erase(extractedBody.size() - 2, 1);
+
+    // Do section joining
+    std::string newBody;
+    std::string arguments;
+    bool insideSection = false, argumentsFlag = false;
+    position = 0;
+    while (position < extractedBody.size()) {
+        if (argumentsFlag) {
+            arguments += extractedBody[position];
+            ++position;
+            continue;
+        } else if (!insideSection && extractedBody[position] == ':') {
+            argumentsFlag = true;
+            continue;
+        }
+
+        if (!insideSection && extractedBody[position] == '\"')
+            insideSection = true;
+        else if (insideSection && extractedBody[position] != '\"')
+            newBody += extractedBody[position];
+        else
+            insideSection = false;
+
+        ++position;
+    }
+
+    // Replaces inline asm argument syntax (assuming there are 20 or less
+    // arguments)
+    for (int i = 0; i < 20; i++)
+        findAndReplace(newBody, "%c" + std::to_string(i),
+                       "${" + std::to_string(i) + ":c}");
+    // Replace escape sequences
+    findAndReplace(newBody, "\\t", "\t");
+    findAndReplace(newBody, "\\n", "\n");
+
+    return {newBody, arguments};
+}
+
+/// Takes a LLVM inline assembly with the corresponding call location and
+/// retrieves the corresponding arguments in the C source code.
+std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
+        const Module *Mod, std::string inlineAsm) {
+    // The function searches for the inline asm at two locations - the first one
+    // is the line in the original C source code corresponding to the debug info
+    // location, the second one are macros used on that line.
+    std::string line = extractLineFromLocation(LineLoc);
+    if (line == "")
+        return {};
+    auto MacroMap = getAllMacrosAtLocation(LineLoc, Mod);
+
+    std::vector<std::string> inputs;
+    std::vector<std::pair<std::string, std::string>> candidates;
+
+    // Collect all inputs in which we want to search for the inline asm.
+    inputs.push_back(line);
+    for (auto Elem : MacroMap)
+        inputs.push_back(Elem.second.body);
+
+    // Extract the candidates (i.e. the inputs that contain inline asm).
+    for (auto input : inputs) {
+        auto output = convertInlineAsmToLLVMFormat(input);
+
+        if (output != std::pair<std::string, std::string> {"", ""})
+            candidates.push_back(output);
+    }
+
+    // If there is more than one candidate, compare the candidates character by
+    // character to the inline asm from LLVM IR and discards a candidate when
+    // its character at the current position does not correspond. This is
+    // repeated until one or no candidate is left.
+    int position = 0;
+    while (candidates.size() > 1) {
+        std::vector<int> toErase;
+        for (int i = 0; i < candidates.size(); i++) {
+            if (candidates[i].first[position] != inlineAsm[position])
+                toErase.push_back(i);
+        }
+
+        for (int i : toErase)
+            candidates.erase(candidates.begin() + i);
+
+        ++position;
+    }
+
+    // If there is no candidate, return empty vector
+    if (candidates.size() == 0)
+        return {};
+
+    std::string rawArguments = candidates[0].second;
+
+    // Get rid of prefix
+    int counter = 0;
+    while (!isValidCharForIdentifier(rawArguments[counter++]));
+    rawArguments.erase(0, counter - 2);
+
+    // Parse the arguments using a flag-controlled loop.
+    // The arguments are strings inside brackets - each outermost bracket pair
+    // contains one of them. The algorithm uses a bracket counter to record
+    // that.
+    std::vector<std::string> result;
+    std::string currentResult;
+    int bracketCounter = 0;
+    position = 0;
+
+    while (position < rawArguments.size()) {
+        if (rawArguments[position] == '(') {
+            ++bracketCounter;
+            if (bracketCounter == 1) {
+                // Do not record initial bracket
+                ++position;
+                continue;
+            }
+        } else if (rawArguments[position] == ')') {
+            --bracketCounter;
+            if (bracketCounter == 0) {
+                result.push_back(currentResult);
+                currentResult = "";
+            }
+        }
+
+        if (bracketCounter > 0)
+            currentResult += rawArguments[position];
+
+        ++position;
     }
 
     return result;

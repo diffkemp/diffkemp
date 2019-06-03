@@ -14,12 +14,12 @@
 
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
-#include "MacroUtils.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/raw_ostream.h>
+#include "SourceCodeUtils.h"
 
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
@@ -347,7 +347,37 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                         ModComparator->DifferingObjects.end(),
                         asmDiffs.begin(), asmDiffs.end());
 
-                    return Res;
+                    // Try to find C builtin that could be making this seem like
+                    // a difference
+                    if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
+                        const CallInst *CIL = dyn_cast<CallInst>(&*InstL);
+                        const CallInst *CIR = dyn_cast<CallInst>(&*InstR);
+                        const Function *CFL = getCalledFunction(
+                                CIL->getCalledValue());
+                        const Function *CFR = getCalledFunction(
+                                CIR->getCalledValue());
+
+                        auto ArgsL = findInlineAssemblySourceArguments(
+                            InstL->getDebugLoc(), InstL->getModule(),
+                            ModComparator->AsmToStringMapL[
+                                getCalledFunction(CFL)->getName()]);
+                        auto ArgsR = findInlineAssemblySourceArguments(
+                            InstR->getDebugLoc(), InstR->getModule(),
+                            ModComparator->AsmToStringMapR[
+                                getCalledFunction(CFR)->getName()]);
+
+                        if ((ArgsL.size() > i) && (ArgsR.size() > i) &&
+                            ArgsL[i] == "__COUNTER__" &&
+                            ArgsR[i] == "__COUNTER__") {
+                            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << "Comparing integers as equal because "
+                                << "of correspondence to __COUNTER__ macro\n");
+                            Res = 0;
+                        }
+                    }
+
+                    if (Res)
+                        return Res;
                 }
                 // cmpValues should ensure this is true.
                 assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);

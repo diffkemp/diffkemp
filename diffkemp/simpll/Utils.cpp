@@ -297,3 +297,15 @@ bool isValidCharForIdentifierStart(char ch) {
     else
         return false;
 }
+
+/// Finds the string given in the second argument and replaces it with the one
+/// given in the third argument.
+void findAndReplace(std::string &input, std::string find,
+        std::string replace) {
+    int position = 0;
+    while ((position = input.find(find, position)) !=
+            std::string::npos) {
+        input.replace(position, find.length(), replace);
+        position += replace.length();
+    }
+}
