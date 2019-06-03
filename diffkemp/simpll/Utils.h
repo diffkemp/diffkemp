@@ -99,4 +99,9 @@ bool isValidCharForIdentifier(char ch);
 /// a C identifier.
 bool isValidCharForIdentifierStart(char ch);
 
+/// Finds the string given in the second argument and replaces it with the one
+/// given in the third argument.
+void findAndReplace(std::string &input, std::string find,
+        std::string replace);
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H

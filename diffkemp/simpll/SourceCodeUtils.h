@@ -58,6 +58,9 @@ struct SyntaxDifference {
 std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
     StringRef line, StringMap<StringRef> macroMap);
 
+/// Extract the line corresponding to the DILocation from the C source file.
+std::string extractLineFromLocation(DILocation *LineLoc);
+
 /// Gets all macros used on a certain DILocation in the form of a key to value
 /// map.
 std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
@@ -70,5 +73,17 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// empty diff.
 std::vector<SyntaxDifference> findMacroDifferences(
 		const Instruction *L, const Instruction *R);
+
+/// Tries to convert C source syntax of inline ASM (the input may include other
+/// code, the inline asm is found and extracted) to the LLVM syntax.
+/// Returns a pair of strings - the first one contains the converted ASM, the
+/// second one contains (unparsed) arguments.
+std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
+        std::string input);
+
+/// Takes a LLVM inline assembly with the corresponding call location and
+/// retrieves the corresponding arguments in the C source code.
+std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
+        const Module *Mod, std::string inlineAsm);
 
 #endif // DIFFKEMP_SIMPLL_MACRO_UTILS_H
