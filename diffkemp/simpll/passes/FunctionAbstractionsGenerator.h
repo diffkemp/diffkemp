@@ -17,6 +17,7 @@
 
 #include <llvm/IR/PassManager.h>
 #include <set>
+#include <unordered_map>
 
 const std::string SimpllInlineAsmPrefix = "simpll__inlineasm_";
 const std::string SimpllIndirectFunctionPrefix = "simpll__indirect_";
@@ -28,7 +29,7 @@ using namespace llvm;
 class FunctionAbstractionsGenerator
         : public AnalysisInfoMixin<FunctionAbstractionsGenerator> {
   public:
-    typedef StringMap<Function *> FunMap;
+    typedef std::unordered_map<std::string, Function *> FunMap;
     struct Result {
         FunMap funAbstractions;
         StringMap<StringRef> asmValueMap;
@@ -55,7 +56,7 @@ class FunctionAbstractionsGenerator
 /// Unify function abstractions between modules. Makes sure that corresponding
 /// abstractions get the same name.
 void unifyFunctionAbstractions(
-        FunctionAbstractionsGenerator::FunMap &FirstMap,
-        FunctionAbstractionsGenerator::FunMap &SecondMap);
+        FunctionAbstractionsGenerator::Result &FirstResult,
+        FunctionAbstractionsGenerator::Result &SecondResult);
 
 #endif //DIFFKEMP_SIMPLL_FUNCTIONABSTRACTIONSGENERATOR_H

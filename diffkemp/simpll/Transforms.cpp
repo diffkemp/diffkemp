@@ -117,8 +117,8 @@ void simplifyModulesDiff(Config &config,
     auto AbstractionGeneratorResultR =
             mam.getResult<FunctionAbstractionsGenerator>(*config.Second,
                     config.SecondFun);
-    unifyFunctionAbstractions(AbstractionGeneratorResultL.funAbstractions,
-                              AbstractionGeneratorResultR.funAbstractions);
+    unifyFunctionAbstractions(AbstractionGeneratorResultL,
+                              AbstractionGeneratorResultR);
 
     // Module passes
     PassManager<Module, AnalysisManager<Module, Function *>, Function *,

@@ -73,7 +73,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                                 newFunType,
                                 Function::ExternalLinkage,
                                 funName, &Mod);
-                        funAbstractions.try_emplace(hash, newFun);
+                        funAbstractions.emplace(hash, newFun);
                         if (auto assembly =
                             dyn_cast<InlineAsm>(CallInstr->getCalledValue())) {
                             asmValueMap[funName] = assembly->getAsmString();
@@ -94,7 +94,6 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                                                     CallInstr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
 
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, newCall->print(dbgs()));
                     CallInstr->replaceAllUsesWith(newCall);
                     toErase.push_back(&Instr);
                 }
@@ -151,20 +150,43 @@ bool trySwap(FunctionAbstractionsGenerator::FunMap &Map,
 /// The unification is done by swapping name of one of the functions with
 /// another function having the desired name in the same module.
 void unifyFunctionAbstractions(
-        FunctionAbstractionsGenerator::FunMap &FirstMap,
-        FunctionAbstractionsGenerator::FunMap &SecondMap) {
-    for (auto &FirstFun : FirstMap) {
-        auto SecondFun = SecondMap.find(FirstFun.first());
+        FunctionAbstractionsGenerator::Result &FirstResult,
+        FunctionAbstractionsGenerator::Result &SecondResult) {
+    for (auto &FirstFun : FirstResult.funAbstractions) {
+        auto SecondFun = SecondResult.funAbstractions.find(FirstFun.first);
 
-        if (SecondFun == SecondMap.end())
+        if (SecondFun == SecondResult.funAbstractions.end())
             continue;
 
         if (FirstFun.second->getName() != SecondFun->second->getName()) {
-            if (!(trySwap(FirstMap, FirstFun.first(),
-                          SecondFun->second->getName()) ||
-                    trySwap(SecondMap, SecondFun->first(),
-                            FirstFun.second->getName()))) {
+            if (trySwap(FirstResult.funAbstractions, FirstFun.first,
+                        SecondFun->second->getName())) {
+                if (FirstFun.second->getName().startswith(
+                            SimpllInlineAsmPrefix) &&
+                        SecondFun->second->getName().startswith(
+                            SimpllInlineAsmPrefix)) {
+                    FirstResult.asmValueMap[SecondFun->second->getName()] =
+                    SecondResult.asmValueMap[SecondFun->second->getName()];
+                }
+            } else if (trySwap(SecondResult.funAbstractions, SecondFun->first,
+                               FirstFun.second->getName())) {
+                if (FirstFun.second->getName().startswith(
+                            SimpllInlineAsmPrefix) &&
+                        SecondFun->second->getName().startswith(
+                            SimpllInlineAsmPrefix)) {
+                    SecondResult.asmValueMap[FirstFun.second->getName()] =
+                    FirstResult.asmValueMap[FirstFun.second->getName()];
+                }
+            } else {
                 FirstFun.second->setName(SecondFun->second->getName());
+
+                if (FirstFun.second->getName().startswith(
+                            SimpllInlineAsmPrefix) &&
+                        SecondFun->second->getName().startswith(
+                            SimpllInlineAsmPrefix)) {
+                    FirstResult.asmValueMap[SecondFun->second->getName()] =
+                    SecondResult.asmValueMap[SecondFun->second->getName()];
+                }
             }
         }
     }
