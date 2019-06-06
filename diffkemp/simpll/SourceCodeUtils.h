@@ -86,4 +86,9 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
 std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
         const Module *Mod, std::string inlineAsm);
 
+/// Takes a function name with the corresponding call location and retrieves
+/// the corresponding arguments in the C source code.
+std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
+        const Module *Mod, std::string functionName);
+
 #endif // DIFFKEMP_SIMPLL_MACRO_UTILS_H

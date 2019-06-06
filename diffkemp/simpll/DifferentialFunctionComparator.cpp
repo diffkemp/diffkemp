@@ -14,12 +14,13 @@
 
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
+#include "SourceCodeUtils.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/raw_ostream.h>
-#include "SourceCodeUtils.h"
+#include <set>
 
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
@@ -297,6 +298,14 @@ bool mayIgnore(const Instruction *Inst) {
     return isa<AllocaInst>(Inst) || Inst->isCast();
 }
 
+bool mayIgnoreMacro(std::string macro) {
+    std::set<std::string> ignoredMacroList = {
+        "__COUNTER__", "__FILE__", "__LINE__", "__DATE__", "__TIME__"
+    };
+
+    return ignoredMacroList.find(macro) != ignoredMacroList.end();
+}
+
 /// Detect cast instructions and ignore them when comparing the control flow
 /// only.
 /// Note: this function was copied from FunctionComparator.
@@ -334,21 +343,12 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                 Value *OpL = InstL->getOperand(i);
                 Value *OpR = InstR->getOperand(i);
                 if (int Res = cmpValues(OpL, OpR)) {
-                    // Try to find macros that could be causing the difference
-                    auto macroDiffs = findMacroDifferences(&*InstL, &*InstR);
-                    ModComparator->DifferingObjects.insert(
-                        ModComparator->DifferingObjects.end(),
-                        macroDiffs.begin(), macroDiffs.end());
+                    // Try to compare operands with the help of C source code
+                    std::vector<std::string> CArgsL, CArgsR;
+                    // In case both instructions are call instructions, try to
+                    // prepare C source argument values to be used in operand
+                    // comparison.
 
-                    // Try to find assembly functions causing the difference
-                    auto asmDiffs = findAsmDifference(OpL, OpR,
-                        BBL->getParent(), BBR->getParent());
-                    ModComparator->DifferingObjects.insert(
-                        ModComparator->DifferingObjects.end(),
-                        asmDiffs.begin(), asmDiffs.end());
-
-                    // Try to find C builtin that could be making this seem like
-                    // a difference
                     if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
                         const CallInst *CIL = dyn_cast<CallInst>(&*InstL);
                         const CallInst *CIR = dyn_cast<CallInst>(&*InstR);
@@ -357,27 +357,83 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                         const Function *CFR = getCalledFunction(
                                 CIR->getCalledValue());
 
-                        auto ArgsL = findInlineAssemblySourceArguments(
-                            InstL->getDebugLoc(), InstL->getModule(),
-                            ModComparator->AsmToStringMapL[
-                                getCalledFunction(CFL)->getName()]);
-                        auto ArgsR = findInlineAssemblySourceArguments(
-                            InstR->getDebugLoc(), InstR->getModule(),
-                            ModComparator->AsmToStringMapR[
-                                getCalledFunction(CFR)->getName()]);
+                        // Use the appropriate C source call argument extraction
+                        // function depending on whether it is an inline asm
+                        // call or not.
+                        if (CFL->getName().startswith(SimpllInlineAsmPrefix))
+                            CArgsL = findInlineAssemblySourceArguments(
+                                InstL->getDebugLoc(), InstL->getModule(),
+                                ModComparator->AsmToStringMapL[CFL->getName()]);
+                        else
+                            CArgsL = findFunctionCallSourceArguments(
+                                InstL->getDebugLoc(), InstL->getModule(),
+                                CFL->getName());
 
-                        if ((ArgsL.size() > i) && (ArgsR.size() > i) &&
-                            ArgsL[i] == "__COUNTER__" &&
-                            ArgsR[i] == "__COUNTER__") {
+                        if (CFR->getName().startswith(SimpllInlineAsmPrefix))
+                            CArgsR = findInlineAssemblySourceArguments(
+                                InstR->getDebugLoc(), InstR->getModule(),
+                                ModComparator->AsmToStringMapR[CFR->getName()]);
+                        else
+                            CArgsR = findFunctionCallSourceArguments(
+                                InstL->getDebugLoc(), InstL->getModule(),
+                                CFL->getName());
+                    }
+
+                    if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
+                        if (mayIgnoreMacro(CArgsL[i]) &&
+                                mayIgnoreMacro(CArgsR[i]) &&
+                                (CArgsL[i] == CArgsR[i])) {
                             DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Comparing integers as equal because "
-                                << "of correspondence to __COUNTER__ macro\n");
+                                dbgs() << "Comparing integers as equal "
+                                << "because of correspondence to an ignored "
+                                << "macro\n");
                             Res = 0;
+                        }
+
+                        if (StringRef(CArgsL[i]).startswith("sizeof") &&
+                            StringRef(CArgsR[i]).startswith("sizeof") &&
+                            isa<ConstantInt>(OpL) && isa<ConstantInt>(OpR)) {
+                            // Both arguments are sizeofs; look whether they
+                            // correspond to a changed size of the same
+                            // structure
+                            int IntL =
+                                dyn_cast<ConstantInt>(OpL)->getZExtValue();
+                            int IntR =
+                                dyn_cast<ConstantInt>(OpR)->getZExtValue();
+                            auto SizeL = ModComparator->StructSizeMapL.find(
+                                IntL);
+                            auto SizeR = ModComparator->StructSizeMapR.find(
+                                IntR);
+
+                            if (SizeL != ModComparator->StructSizeMapL.end() &&
+                                SizeR != ModComparator->StructSizeMapR.end() &&
+                                SizeL->second == SizeR->second) {
+                                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << "Comparing integers as equal "
+                                << "because of correspondence to structure type"
+                                << " sizes \n");
+                                Res = 0;
+                            }
                         }
                     }
 
-                    if (Res)
+                    if (Res) {
+                        // Try to find macros that could be causing the
+                        // difference
+                        auto macroDiffs = findMacroDifferences(&*InstL, &*InstR);
+                        ModComparator->DifferingObjects.insert(
+                            ModComparator->DifferingObjects.end(),
+                            macroDiffs.begin(), macroDiffs.end());
+
+                        // Try to find assembly functions causing the difference
+                        auto asmDiffs = findAsmDifference(OpL, OpR,
+                            BBL->getParent(), BBR->getParent());
+                        ModComparator->DifferingObjects.insert(
+                            ModComparator->DifferingObjects.end(),
+                            asmDiffs.begin(), asmDiffs.end());
+
                         return Res;
+                    }
                 }
                 // cmpValues should ensure this is true.
                 assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);

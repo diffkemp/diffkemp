@@ -107,6 +107,10 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
 std::string extractLineFromLocation(DILocation *LineLoc) {
     // Get the path of the source file corresponding to the module where the
     // difference was found
+    if (LineLoc == nullptr)
+        // Line location was not found
+        return "";
+
     auto sourcePath = getSourceFilePath(
             dyn_cast<DIScope>(LineLoc->getScope()));
 
@@ -325,8 +329,12 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
         return {"", ""};
 
     // Skip characters to the first bracket
-    while (input[position] != '(')
+    while (position != input.size() && input[position] != '(')
         ++position;
+
+    // Opening bracket not found
+    if (position == input.size())
+        return {"", ""};
 
     // Extract the asm body
     int bracketCounter = 0;
@@ -337,7 +345,13 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
         else if (input[position] == ')')
             --bracketCounter;
         extractedBody += input[position++];
-    } while (bracketCounter != 0);
+    } while (position != input.size() && bracketCounter != 0);
+
+    // Closing bracket not found
+    // Note: there is a (currently unfixed) case when the inline asm is split
+    // onto multiple lines and is not joined properly.
+    if (position == input.size())
+        return {"", ""};
 
     // Remove the first and last bracket from the expression
     extractedBody.erase(0, 1);
@@ -469,4 +483,91 @@ std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
     }
 
     return result;
+}
+
+/// Takes a function name with the corresponding call location and retrieves
+/// the corresponding arguments in the C source code.
+std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
+        const Module *Mod, std::string functionName) {
+    // The function searches for the function call at two locations - the first
+    // one is the line in the original C source code corresponding to the debug
+    // info location, the second one are macros used on that line.
+    std::string line = extractLineFromLocation(LineLoc);
+    if (line == "")
+        return {};
+    auto MacroMap = getAllMacrosAtLocation(LineLoc, Mod);
+
+    std::vector<std::string> inputs;
+    std::string argumentString;
+
+    // Collect all inputs in which we want to search for the function call.
+    inputs.push_back(line);
+    for (auto Elem : MacroMap)
+        inputs.push_back(Elem.second.body);
+
+    // Extract the function calls from them
+    for (auto input : inputs) {
+        std::string identifier, result;
+        bool loadingIdentifier = false;
+        int i = 0;
+        for (; i < input.size(); i++) {
+            if (isValidCharForIdentifier(input[i]))
+                loadingIdentifier = true;
+            else if (loadingIdentifier) {
+                loadingIdentifier = false;
+                if (identifier == functionName)
+                    break;
+                else
+                    identifier = "";
+            }
+            if (loadingIdentifier)
+                identifier += input[i];
+        }
+
+        if (identifier != functionName)
+            continue;
+
+        argumentString = "";
+        int bracketCounter = 0;
+        do {
+            if (input[i] == '(')
+                ++bracketCounter;
+            else if (input[i] == ')')
+                --bracketCounter;
+            argumentString += input[i++];
+        } while (i < input.size() && bracketCounter != 0);
+    }
+
+    // Parse the function call arguments
+    std::vector<std::string> unstrippedArguments;
+    std::string currentArgument;
+    int bracketCounter = 0, position = 1;
+    while (position < argumentString.size()) {
+        if (argumentString[position] == '(')
+            ++bracketCounter;
+        else if (argumentString[position] == ')')
+            --bracketCounter;
+        if ((bracketCounter == 0 && (argumentString[position] == ',')) ||
+             bracketCounter == -1) {
+            // Next argument
+            unstrippedArguments.push_back(currentArgument);
+            currentArgument = "";
+            ++position; continue;
+        } else {
+            currentArgument += argumentString[position++];
+            continue;
+        }
+    }
+
+    // Remove whitespace from arguments
+    std::vector<std::string> arguments;
+    for (std::string arg : unstrippedArguments) {
+        if (arg.find_first_not_of(" ") == std::string::npos)
+            arguments.push_back(arg);
+        else
+            arguments.push_back(arg.substr(arg.find_first_not_of(" "),
+               arg.find_last_not_of(" ") - arg.find_first_not_of(" ") + 1));
+    }
+
+    return arguments;
 }

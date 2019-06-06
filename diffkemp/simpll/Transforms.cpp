@@ -26,6 +26,7 @@
 #include "passes/RemoveUnusedReturnValuesPass.h"
 #include "passes/SimplifyKernelFunctionCallsPass.h"
 #include "passes/SimplifyKernelGlobalsPass.h"
+#include "passes/StructureSizeAnalysis.h"
 #include "passes/UnifyMemcpyPass.h"
 #include "passes/VarDependencySlicer.h"
 #include <llvm/IR/PassManager.h>
@@ -110,6 +111,7 @@ void simplifyModulesDiff(Config &config,
     AnalysisManager<Module, Function *> mam(false);
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
+    mam.registerPass([] { return StructureSizeAnalysis(); });
 
     auto AbstractionGeneratorResultL =
             mam.getResult<FunctionAbstractionsGenerator>(*config.First,
@@ -119,6 +121,11 @@ void simplifyModulesDiff(Config &config,
                     config.SecondFun);
     unifyFunctionAbstractions(AbstractionGeneratorResultL,
                               AbstractionGeneratorResultR);
+
+    auto StructSizeMapL = mam.getResult<StructureSizeAnalysis>(*config.First,
+            config.FirstFun);
+    auto StructSizeMapR = mam.getResult<StructureSizeAnalysis>(*config.Second,
+            config.SecondFun);
 
     // Module passes
     PassManager<Module, AnalysisManager<Module, Function *>, Function *,
@@ -143,7 +150,8 @@ void simplifyModulesDiff(Config &config,
     ModuleComparator modComp(*config.First, *config.Second,
                              config.ControlFlowOnly, &DI,
                              AbstractionGeneratorResultL.asmValueMap,
-                             AbstractionGeneratorResultR.asmValueMap);
+                             AbstractionGeneratorResultR.asmValueMap,
+                             StructSizeMapL, StructSizeMapR);
 
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
