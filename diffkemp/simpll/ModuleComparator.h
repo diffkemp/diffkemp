@@ -17,10 +17,11 @@
 
 #include "DebugInfo.h"
 #include "DifferentialGlobalNumberState.h"
+#include "SourceCodeUtils.h"
+#include "passes/StructureSizeAnalysis.h"
 #include "Utils.h"
 #include <llvm/IR/Module.h>
 #include <set>
-#include "SourceCodeUtils.h"
 
 using namespace llvm;
 
@@ -39,6 +40,9 @@ class ModuleComparator {
     // Function abstraction to assembly string map.
     StringMap<StringRef> AsmToStringMapL;
     StringMap<StringRef> AsmToStringMapR;
+    // Structure size to structure name map.
+    StructureSizeAnalysis::Result &StructSizeMapL;
+    StructureSizeAnalysis::Result &StructSizeMapR;
 
     std::vector<ConstFunPair> MissingDefs;
 
@@ -47,10 +51,13 @@ class ModuleComparator {
 
     ModuleComparator(Module &First, Module &Second, bool controlFlowOnly,
                      const DebugInfo *DI, StringMap<StringRef> &AsmToStringMapL,
-                     StringMap<StringRef> &AsmToStringMapR)
+                     StringMap<StringRef> &AsmToStringMapR,
+                     StructureSizeAnalysis::Result &StructSizeMapL,
+                     StructureSizeAnalysis::Result &StructSizeMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
             GS(&First, &Second, this), DI(DI), AsmToStringMapL(AsmToStringMapL),
-            AsmToStringMapR(AsmToStringMapR) {}
+            AsmToStringMapR(AsmToStringMapR), StructSizeMapL(StructSizeMapL),
+            StructSizeMapR(StructSizeMapR) {}
 
     /// Syntactically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.
