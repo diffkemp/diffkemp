@@ -227,9 +227,6 @@ int DifferentialFunctionComparator::cmpOperations(
                     std::string NameR = getCalledFunction(
                             dyn_cast<CallInst>(R)->getCalledValue())->getName();
 
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "LineL: " << LineL
-                            << "\nLineR: " << LineR << "\n");
-
                     // Note: the line has to actually have been found for the
                     // comparison to make sense.
                     if ((LineL != "") && (LineR != "") && (LineL == LineR) &&
@@ -242,12 +239,17 @@ int DifferentialFunctionComparator::cmpOperations(
                              MacrosR.find(NameL) != MacrosR.end())) {
                             trueName = NameL;
                             NameR = NameL + " (macro)";
+                            ModComparator->tryInline =
+                                {dyn_cast<CallInst>(L), nullptr};
                         } else {
                             trueName = NameR;
                             NameL = NameR + " (macro)";
+                            ModComparator->tryInline =
+                                {nullptr, dyn_cast<CallInst>(R)};
                         }
+
                         DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() <<
-                                "Writing syntactic difference\n");
+                            "Writing function-macro syntactic difference\n");
 
                         SyntaxDifference diff;
                         diff.function = L->getFunction()->getName();
