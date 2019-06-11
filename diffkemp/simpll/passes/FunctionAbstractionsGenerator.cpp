@@ -17,6 +17,7 @@
 #include "Utils.h"
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/ADT/Hashing.h>
 #include <Config.h>
 
 AnalysisKey FunctionAbstractionsGenerator::Key;
@@ -66,9 +67,15 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                         auto newFunType = FunctionType::get(
                                 FunType->getReturnType(), newParamTypes, false);
 
+                        uint64_t hashNumber = hash_value(hash);
+                        while (Mod.getFunction(abstractionPrefix(
+                                CallInstr->getCalledValue()) +
+                                std::to_string(hashNumber)) != nullptr)
+                            hashNumber++;
                         const std::string funName =
                                 abstractionPrefix(CallInstr->getCalledValue()) +
-                                        std::to_string(i++);
+                                std::to_string(hashNumber);
+
                         newFun = Function::Create(
                                 newFunType,
                                 Function::ExternalLinkage,
@@ -184,8 +191,8 @@ void unifyFunctionAbstractions(
                             SimpllInlineAsmPrefix) &&
                         SecondFun->second->getName().startswith(
                             SimpllInlineAsmPrefix)) {
-                    FirstResult.asmValueMap[SecondFun->second->getName()] =
-                    SecondResult.asmValueMap[SecondFun->second->getName()];
+                    SecondResult.asmValueMap[SecondFun->second->getName()] =
+                    FirstResult.asmValueMap[SecondFun->second->getName()];
                 }
             }
         }
