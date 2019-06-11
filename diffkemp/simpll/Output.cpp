@@ -160,6 +160,37 @@ void reportOutput(Config &config,
         });
     }
     for (auto &macroDiff : differingMacros) {
+        // Look whether the function the syntactic difference was found in is
+        // among functions declared as non-equal.
+        // In case it is not, then the syntax difference should not be shown,
+        // since the function in which it was found is equal.
+        bool skipMacroDiff = false;
+
+        if (nonequalFuns.size() > 0) {
+            // The case when nonequalFuns is empty is uninteresting - no diff is
+            // shown in that case, therefore it is not necessary to delete
+            // anything; moreover this causes problems when getting modules.
+            auto ModuleL = nonequalFuns[0].first->getParent();
+            auto ModuleR = nonequalFuns[0].second->getParent();
+
+            std::set<StringRef> differingFunsSet;
+            for (FunPair FP : nonequalFuns) {
+                differingFunsSet.insert(FP.first->getName());
+                differingFunsSet.insert(FP.second->getName());
+            }
+
+            // Function has to exist in both modules to prevent mistakes.
+            if ((ModuleL->getFunction(macroDiff.function) == nullptr) ||
+                (ModuleR->getFunction(macroDiff.function) == nullptr))
+                continue;
+
+            if (differingFunsSet.find(macroDiff.function) ==
+                differingFunsSet.end()) {
+                skipMacroDiff = true;
+            }
+        }
+
+
         // Try to append call stack of function to the macro stack if possible
         CallStack toAppendLeft, toAppendRight;
         for (auto &diff : report.diffFuns) {
@@ -176,6 +207,9 @@ void reportOutput(Config &config,
         if (toAppendRight.size() > 0)
             macroDiff.StackR.insert(macroDiff.StackR.begin(),
                 toAppendRight.begin(), toAppendRight.end());
+
+        if (skipMacroDiff)
+            continue;
 
         report.diffFuns.push_back({
                FunctionInfo(macroDiff.name,
