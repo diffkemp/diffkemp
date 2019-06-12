@@ -316,71 +316,77 @@ std::vector<SyntaxDifference> findMacroDifferences(
     return result;
 }
 
+// Takes a string and the position of the first bracket and returns the
+// substring in the brackets.
+std::string getSubstringToMatchingBracket(std::string str, size_t position) {
+    int bracketCounter = 0;
+    std::string output;
+
+    do {
+        if (str[position] == '(')
+            ++bracketCounter;
+        else if (str[position] == ')')
+            --bracketCounter;
+        output += str[position++];
+    } while (position < str.size() && bracketCounter != 0);
+
+    if (position > str.size())
+        return "";
+    else
+        return output;
+}
+
 /// Tries to convert C source syntax of inline ASM (the input may include other
 /// code, the inline asm is found and extracted) to the LLVM syntax.
 /// Returns a pair of strings - the first one contains the converted ASM, the
 /// second one contains (unparsed) arguments.
 std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
         std::string input) {
-    int position = input.find("asm");
+    size_t position = input.find("asm");
 
     if (position == std::string::npos)
         // No asm present
         return {"", ""};
 
-    // Skip characters to the first bracket
-    while (position != input.size() && input[position] != '(')
-        ++position;
+    // Find the first bracket
+    position = input.find('(', position);
 
     // Opening bracket not found
-    if (position == input.size())
+    if (position == std::string::npos)
         return {"", ""};
 
     // Extract the asm body
-    int bracketCounter = 0;
-    std::string extractedBody;
-    do {
-        if (input[position] == '(')
-            ++bracketCounter;
-        else if (input[position] == ')')
-            --bracketCounter;
-        extractedBody += input[position++];
-    } while (position != input.size() && bracketCounter != 0);
+    std::string extractedBody = getSubstringToMatchingBracket(input, position);
 
     // Closing bracket not found
     // Note: there is a (currently unfixed) case when the inline asm is split
     // onto multiple lines and is not joined properly.
-    if (position == input.size())
+    if (extractedBody == "")
         return {"", ""};
 
     // Remove the first and last bracket from the expression
-    extractedBody.erase(0, 1);
-    extractedBody.erase(extractedBody.size() - 2, 1);
+    extractedBody = extractedBody.substr(1, extractedBody.size() - 2);
 
-    // Do section joining
+    // Do section joining.
+    // Note: a section is a substring inside quotation marks and we want to
+    // stop the extraction once a colon is reached.
     std::string newBody;
-    std::string arguments;
-    bool insideSection = false, argumentsFlag = false;
-    position = 0;
-    while (position < extractedBody.size()) {
-        if (argumentsFlag) {
-            arguments += extractedBody[position];
-            ++position;
-            continue;
-        } else if (!insideSection && extractedBody[position] == ':') {
-            argumentsFlag = true;
-            continue;
-        }
+    int firstQuotationMark;
+    int lastQuotationMark = -1;
 
-        if (!insideSection && extractedBody[position] == '\"')
-            insideSection = true;
-        else if (insideSection && extractedBody[position] != '\"')
-            newBody += extractedBody[position];
-        else
-            insideSection = false;
-
-        ++position;
+    while (extractedBody.find('\"', lastQuotationMark + 1) !=
+           std::string::npos &&
+           extractedBody.find(':', lastQuotationMark + 1) >
+           extractedBody.find('\"', lastQuotationMark + 1)) {
+        firstQuotationMark = extractedBody.find('\"', lastQuotationMark + 1);
+        lastQuotationMark = extractedBody.find('\"', firstQuotationMark + 1);
+        newBody += extractedBody.substr(firstQuotationMark + 1,
+                lastQuotationMark - firstQuotationMark - 1);
     }
+
+    // Extract arguments
+    std::string arguments = extractedBody.substr(
+            extractedBody.find(':', lastQuotationMark + 1));
 
     // Replaces inline asm argument syntax (assuming there are 20 or less
     // arguments)
@@ -398,6 +404,10 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
 /// retrieves the corresponding arguments in the C source code.
 std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
         const Module *Mod, std::string inlineAsm) {
+    // Empty inline asm string cannot be found by the function
+    if (inlineAsm == "")
+        return {};
+
     // The function searches for the inline asm at two locations - the first one
     // is the line in the original C source code corresponding to the debug info
     // location, the second one are macros used on that line.
@@ -428,14 +438,12 @@ std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
     // repeated until one or no candidate is left.
     int position = 0;
     while (candidates.size() > 1) {
-        std::vector<int> toErase;
-        for (int i = 0; i < candidates.size(); i++) {
-            if (candidates[i].first[position] != inlineAsm[position])
-                toErase.push_back(i);
-        }
-
-        for (int i : toErase)
-            candidates.erase(candidates.begin() + i);
+        auto it = std::remove_if(candidates.begin(), candidates.end(),
+            [&position, &inlineAsm] (auto &candidate) {
+                return candidate.first[position] != inlineAsm[position] ||
+                       candidate.first == "";
+        });
+        candidates.erase(it, candidates.end());
 
         ++position;
     }
@@ -446,43 +454,61 @@ std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
 
     std::string rawArguments = candidates[0].second;
 
-    // Get rid of prefix
-    int counter = 0;
-    while (!isValidCharForIdentifier(rawArguments[counter++]));
-    rawArguments.erase(0, counter - 2);
-
-    // Parse the arguments using a flag-controlled loop.
+    // Parse the argument list.
     // The arguments are strings inside brackets - each outermost bracket pair
-    // contains one of them. The algorithm uses a bracket counter to record
-    // that.
+    // contains one of them. getSubstringToMatchingBracket is used to extract
+    // them.
     std::vector<std::string> result;
-    std::string currentResult;
-    int bracketCounter = 0;
-    position = 0;
+    position = -1;
 
-    while (position < rawArguments.size()) {
-        if (rawArguments[position] == '(') {
-            ++bracketCounter;
-            if (bracketCounter == 1) {
-                // Do not record initial bracket
-                ++position;
-                continue;
-            }
-        } else if (rawArguments[position] == ')') {
-            --bracketCounter;
-            if (bracketCounter == 0) {
-                result.push_back(currentResult);
-                currentResult = "";
-            }
+    while (position < int(rawArguments.size())) {
+        position = rawArguments.find('(', position + 1);
+        std::string argument =
+                getSubstringToMatchingBracket(rawArguments, position);
+        if (argument.empty() || (argument.size() == 1 && argument[0] == 0)) {
+            // Parsing failed, probably because of invalid input
+            return {};
         }
-
-        if (bracketCounter > 0)
-            currentResult += rawArguments[position];
-
-        ++position;
+        position += argument.size();
+        result.push_back(argument.substr(1, argument.size() - 2));
     }
 
     return result;
+}
+
+// Takes in a string with C function call arguments and splits it into a vector.
+std::vector<std::string> splitArgumentsList(std::string argumentString) {
+    std::vector<std::string> unstrippedArguments;
+    std::string currentArgument;
+
+    int bracketCounter = 0, position = 1;
+    while (position < argumentString.size()) {
+        if (argumentString[position] == '(')
+            ++bracketCounter;
+        else if (argumentString[position] == ')')
+            --bracketCounter;
+        if ((bracketCounter == 0 && (argumentString[position] == ',')) ||
+             bracketCounter == -1) {
+            // Next argument
+            unstrippedArguments.push_back(currentArgument);
+            currentArgument = "";
+            ++position;
+        } else {
+            currentArgument += argumentString[position++];
+        }
+    }
+
+    // Remove whitespace from beginning and end of arguments
+    std::vector<std::string> arguments;
+    for (std::string arg : unstrippedArguments) {
+        if (arg.find_first_not_of(" ") == std::string::npos)
+            arguments.push_back(arg);
+        else
+            arguments.push_back(arg.substr(arg.find_first_not_of(" "),
+               arg.find_last_not_of(" ") - arg.find_first_not_of(" ") + 1));
+    }
+
+    return arguments;
 }
 
 /// Takes a function name with the corresponding call location and retrieves
@@ -508,66 +534,14 @@ std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
     // Extract the function calls from them
     for (auto input : inputs) {
         std::string identifier, result;
-        bool loadingIdentifier = false;
-        int i = 0;
-        for (; i < input.size(); i++) {
-            if (isValidCharForIdentifier(input[i]))
-                loadingIdentifier = true;
-            else if (loadingIdentifier) {
-                loadingIdentifier = false;
-                if (identifier == functionName)
-                    break;
-                else
-                    identifier = "";
-            }
-            if (loadingIdentifier)
-                identifier += input[i];
-        }
+        int i = input.find(functionName);
 
-        if (identifier != functionName)
+        if (i == std::string::npos)
             continue;
 
-        argumentString = "";
-        int bracketCounter = 0;
-        do {
-            if (input[i] == '(')
-                ++bracketCounter;
-            else if (input[i] == ')')
-                --bracketCounter;
-            argumentString += input[i++];
-        } while (i < input.size() && bracketCounter != 0);
+        argumentString = getSubstringToMatchingBracket(input,
+                input.find('(', i));
     }
 
-    // Parse the function call arguments
-    std::vector<std::string> unstrippedArguments;
-    std::string currentArgument;
-    int bracketCounter = 0, position = 1;
-    while (position < argumentString.size()) {
-        if (argumentString[position] == '(')
-            ++bracketCounter;
-        else if (argumentString[position] == ')')
-            --bracketCounter;
-        if ((bracketCounter == 0 && (argumentString[position] == ',')) ||
-             bracketCounter == -1) {
-            // Next argument
-            unstrippedArguments.push_back(currentArgument);
-            currentArgument = "";
-            ++position; continue;
-        } else {
-            currentArgument += argumentString[position++];
-            continue;
-        }
-    }
-
-    // Remove whitespace from arguments
-    std::vector<std::string> arguments;
-    for (std::string arg : unstrippedArguments) {
-        if (arg.find_first_not_of(" ") == std::string::npos)
-            arguments.push_back(arg);
-        else
-            arguments.push_back(arg.substr(arg.find_first_not_of(" "),
-               arg.find_last_not_of(" ") - arg.find_first_not_of(" ") + 1));
-    }
-
-    return arguments;
+    return splitArgumentsList(argumentString);
 }

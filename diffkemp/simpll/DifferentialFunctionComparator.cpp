@@ -22,6 +22,12 @@
 #include <llvm/Support/raw_ostream.h>
 #include <set>
 
+// If a operand of a call instruction is detected to be generated from one of
+// these macros, it should be always compared as equal.
+std::set<std::string> ignoredMacroList = {
+        "__COUNTER__", "__FILE__", "__LINE__", "__DATE__", "__TIME__"
+};
+
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
@@ -299,10 +305,6 @@ bool mayIgnore(const Instruction *Inst) {
 }
 
 bool mayIgnoreMacro(std::string macro) {
-    std::set<std::string> ignoredMacroList = {
-        "__COUNTER__", "__FILE__", "__LINE__", "__DATE__", "__TIME__"
-    };
-
     return ignoredMacroList.find(macro) != ignoredMacroList.end();
 }
 
@@ -375,7 +377,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                                 ModComparator->AsmToStringMapR[CFR->getName()]);
                         else
                             CArgsR = findFunctionCallSourceArguments(
-                                InstL->getDebugLoc(), InstL->getModule(),
+                                InstR->getDebugLoc(), InstR->getModule(),
                                 CFL->getName());
                     }
 
@@ -385,8 +387,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                                 (CArgsL[i] == CArgsR[i])) {
                             DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << "Comparing integers as equal "
-                                << "because of correspondence to an ignored "
-                                << "macro\n");
+                                       << "because of correspondence to an "
+                                       << "ignored macro\n");
                             Res = 0;
                         }
 
@@ -409,9 +411,9 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                                 SizeR != ModComparator->StructSizeMapR.end() &&
                                 SizeL->second == SizeR->second) {
                                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Comparing integers as equal "
-                                << "because of correspondence to structure type"
-                                << " sizes \n");
+                                    dbgs() << "Comparing integers as equal "
+                                           << "because of correspondence to "
+                                           << "structure type sizes \n");
                                 Res = 0;
                             }
                         }
