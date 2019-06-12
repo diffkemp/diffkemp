@@ -74,6 +74,10 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 std::vector<SyntaxDifference> findMacroDifferences(
 		const Instruction *L, const Instruction *R);
 
+// Takes a string and the position of the first bracket and returns the
+// substring in the brackets.
+std::string getSubstringToMatchingBracket(std::string str, size_t position);
+
 /// Tries to convert C source syntax of inline ASM (the input may include other
 /// code, the inline asm is found and extracted) to the LLVM syntax.
 /// Returns a pair of strings - the first one contains the converted ASM, the
@@ -85,6 +89,9 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
 /// retrieves the corresponding arguments in the C source code.
 std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
         const Module *Mod, std::string inlineAsm);
+
+// Takes in a string with C function call arguments and splits it into a vector.
+std::vector<std::string> splitArgumentsList(std::string argumentString);
 
 /// Takes a function name with the corresponding call location and retrieves
 /// the corresponding arguments in the C source code.
