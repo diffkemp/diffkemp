@@ -58,9 +58,6 @@ def __make_argument_parser():
     compare_ap.add_argument("--control-flow-only",
                             help=SUPPRESS,
                             action="store_true")
-    compare_ap.add_argument("--show-empty-diff",
-                            help=SUPPRESS,
-                            action="store_true")
     compare_ap.add_argument("--semdiff-tool",
                             help=SUPPRESS,
                             choices=["llreve"])
@@ -168,7 +165,7 @@ def compare(args):
                 print_syntax_diff(args.snapshot_dir_old,
                                   args.snapshot_dir_new,
                                   fun, fun_result, False,
-                                  args.show_diff, args.show_empty_diff)
+                                  args.show_diff)
 
         # Clean LLVM modules (allow GC to collect the occupied memory)
         old_mod.clean_module()
@@ -189,7 +186,7 @@ def logs_dirname(src_version, dest_version):
 
 
 def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, log_files,
-                      show_diff, print_empty_diffs=False):
+                      show_diff):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
@@ -216,7 +213,7 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, log_files,
             print("{}:".format(fun))
 
         for called_res in fun_result.inner.values():
-            if called_res.diff == "" and not print_empty_diffs:
+            if called_res.diff == "" and called_res.first.covered_by_syn_diff:
                 # Do not print empty diffs
                 continue
 

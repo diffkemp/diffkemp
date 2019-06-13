@@ -33,12 +33,13 @@ class Result:
         If it is a function, it contains the file of the function.
         """
         def __init__(self, name, filename=None, line=None, callstack=None,
-                     is_macro=False):
+                     is_macro=False, covered_by_syn_diff=False):
             self.name = name
             self.filename = filename
             self.line = line
             self.callstack = callstack
             self.is_macro = is_macro
+            self.covered_by_syn_diff = covered_by_syn_diff
 
     def __init__(self, kind, first_name, second_name):
         self.kind = kind

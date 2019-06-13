@@ -40,6 +40,7 @@ struct FunctionInfo {
     int line;
     CallStack callstack;
     bool isMacro;
+    bool coveredBySynDiff;
 
     // Default constructor is needed for YAML serialisation so that the struct
     // can be used as an optional YAML field.
@@ -48,9 +49,10 @@ struct FunctionInfo {
                  const std::string &file,
                  const CallStack &callstack,
                  bool isMacro = false,
-                 int line = 0)
+                 int line = 0,
+                 bool coveredBySynDiff = false)
             : name(name), file(file), line(line), callstack(callstack),
-              isMacro(isMacro) {}
+              isMacro(isMacro), coveredBySynDiff(coveredBySynDiff) {}
 };
 
 // Macro body
@@ -84,6 +86,7 @@ struct MappingTraits<FunctionInfo> {
             io.mapOptional("line", info.line);
         io.mapOptional("callstack", info.callstack);
         io.mapRequired("is-macro", info.isMacro);
+        io.mapRequired("covered-by-syn-diff", info.coveredBySynDiff);
     }
 };
 }
@@ -145,20 +148,9 @@ void reportOutput(Config &config,
                   std::vector<ConstFunPair> &missingDefs,
                   std::vector<SyntaxDifference> &differingMacros) {
     ResultReport report;
-    for (auto &funPair : nonequalFuns) {
-        report.diffFuns.push_back({
-                FunctionInfo(funPair.first->getName(),
-                             getFileForFun(funPair.first),
-                             getCallStack(*config.FirstFun, *funPair.first),
-                             false, funPair.first->getSubprogram() ?
-                             funPair.first->getSubprogram()->getLine() : 0),
-                FunctionInfo(funPair.second->getName(),
-                             getFileForFun(funPair.second),
-                             getCallStack(*config.SecondFun, *funPair.second),
-                             false, funPair.second->getSubprogram() ?
-                             funPair.second->getSubprogram()->getLine() : 0)
-        });
-    }
+    // Set to store functions covered by syntax differences
+    std::set<std::string> syntaxDiffCoveredFunctions;
+
     for (auto &macroDiff : differingMacros) {
         // Look whether the function the syntactic difference was found in is
         // among functions declared as non-equal.
@@ -167,9 +159,8 @@ void reportOutput(Config &config,
         bool skipMacroDiff = false;
 
         if (nonequalFuns.size() > 0) {
-            // The case when nonequalFuns is empty is uninteresting - no diff is
-            // shown in that case, therefore it is not necessary to delete
-            // anything; moreover this causes problems when getting modules.
+            // The case when nonequalFuns is empty is uninteresting - in that
+            // case macro differences are irrelevant
             auto ModuleL = nonequalFuns[0].first->getParent();
             auto ModuleR = nonequalFuns[0].second->getParent();
 
@@ -188,8 +179,12 @@ void reportOutput(Config &config,
                 differingFunsSet.end()) {
                 skipMacroDiff = true;
             }
+        } else {
+            skipMacroDiff = true;
         }
 
+        if (skipMacroDiff)
+            continue;
 
         // Try to append call stack of function to the macro stack if possible
         CallStack toAppendLeft, toAppendRight;
@@ -208,8 +203,13 @@ void reportOutput(Config &config,
             macroDiff.StackR.insert(macroDiff.StackR.begin(),
                 toAppendRight.begin(), toAppendRight.end());
 
-        if (skipMacroDiff)
-            continue;
+        // Add functions used in call stack to set (also include the parent
+        // function)
+        for (CallInfo CI : macroDiff.StackL)
+            syntaxDiffCoveredFunctions.insert(CI.fun);
+        for (CallInfo CI : macroDiff.StackR)
+            syntaxDiffCoveredFunctions.insert(CI.fun);
+        syntaxDiffCoveredFunctions.insert(macroDiff.function);
 
         report.diffFuns.push_back({
                FunctionInfo(macroDiff.name,
@@ -224,6 +224,24 @@ void reportOutput(Config &config,
 
         report.macroDefinitions.push_back(MacroBody {
             macroDiff.name, macroDiff.BodyL, macroDiff.BodyR
+        });
+    }
+    for (auto &funPair : nonequalFuns) {
+        bool coveredBySyntaxDiff =  syntaxDiffCoveredFunctions.find(
+                funPair.first->getName()) != syntaxDiffCoveredFunctions.end();
+        report.diffFuns.push_back({
+                FunctionInfo(funPair.first->getName(),
+                             getFileForFun(funPair.first),
+                             getCallStack(*config.FirstFun, *funPair.first),
+                             false, funPair.first->getSubprogram() ?
+                             funPair.first->getSubprogram()->getLine() : 0,
+                             coveredBySyntaxDiff),
+                FunctionInfo(funPair.second->getName(),
+                             getFileForFun(funPair.second),
+                             getCallStack(*config.SecondFun, *funPair.second),
+                             false, funPair.second->getSubprogram() ?
+                             funPair.second->getSubprogram()->getLine() : 0,
+                             coveredBySyntaxDiff)
         });
     }
     for (auto &funPair : missingDefs) {

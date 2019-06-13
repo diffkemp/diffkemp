@@ -83,7 +83,8 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                                                           call["line"])
                                      for call in fun["callstack"]])
                                 if "callstack" in fun else "",
-                                fun["is-macro"]
+                                fun["is-macro"],
+                                fun["covered-by-syn-diff"]
                             )
                             for fun in [fun_pair_yaml["first"],
                                         fun_pair_yaml["second"]]
