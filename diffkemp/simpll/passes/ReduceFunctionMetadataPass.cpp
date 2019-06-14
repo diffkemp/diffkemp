@@ -22,5 +22,9 @@ PreservedAnalyses ReduceFunctionMetadataPass::run(
     if (Fun.hasSection())
         Fun.setSection("");
 
+    // Distinguishing linkage type is pointless, because it would only cause
+    // function inlining, discarding the attribute.
+    Fun.setLinkage(GlobalValue::LinkageTypes::ExternalLinkage);
+
     return PreservedAnalyses();
 }
