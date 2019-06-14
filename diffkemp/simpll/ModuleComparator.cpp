@@ -1,4 +1,4 @@
-//===----------- ModuleComparator.cpp - Numbering global symbols ----------===//
+//===------------ ModuleComparator.cpp - Comparing LLVM modules -----------===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //

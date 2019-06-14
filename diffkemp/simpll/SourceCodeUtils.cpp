@@ -1,4 +1,4 @@
-//===--------- MacroUtils.cpp - Functions for working with macros ----------==//
+//===---- SourceCodeUtils.cpp - Functions for working with C source code ---==//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -7,8 +7,8 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// This file contains implementation of functions working with macros and their
-/// differences.
+/// This file contains implementation of functions working with various things
+/// related to C source code analysis.
 ///
 //===----------------------------------------------------------------------===//
 
