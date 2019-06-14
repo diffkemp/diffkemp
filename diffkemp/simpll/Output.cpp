@@ -39,7 +39,7 @@ struct FunctionInfo {
     std::string file;
     int line;
     CallStack callstack;
-    bool isMacro;
+    bool isSynDiff;
     bool coveredBySynDiff;
 
     // Default constructor is needed for YAML serialisation so that the struct
@@ -52,19 +52,19 @@ struct FunctionInfo {
                  int line = 0,
                  bool coveredBySynDiff = false)
             : name(name), file(file), line(line), callstack(callstack),
-              isMacro(isMacro), coveredBySynDiff(coveredBySynDiff) {}
+              isSynDiff(isMacro), coveredBySynDiff(coveredBySynDiff) {}
 };
 
-// Macro body
-struct MacroBody {
+// Syntactic diff body
+struct SyndiffBody {
     std::string name, LBody, RBody;
 };
 
-// MacroBody to YAML
+// SyndiffBody to YAML
 namespace llvm::yaml {
 template<>
-struct MappingTraits<MacroBody> {
-    static void mapping(IO &io, MacroBody &body) {
+struct MappingTraits<SyndiffBody> {
+    static void mapping(IO &io, SyndiffBody &body) {
         io.mapRequired("name", body.name);
         io.mapRequired("left-value", body.LBody);
         io.mapRequired("right-value", body.RBody);
@@ -73,7 +73,7 @@ struct MappingTraits<MacroBody> {
 }
 
 // Vector of MacroBody to YAML
-LLVM_YAML_IS_SEQUENCE_VECTOR(MacroBody);
+LLVM_YAML_IS_SEQUENCE_VECTOR(SyndiffBody);
 
 // FunctionInfo to YAML
 namespace llvm::yaml {
@@ -85,7 +85,7 @@ struct MappingTraits<FunctionInfo> {
         if (info.line != 0)
             io.mapOptional("line", info.line);
         io.mapOptional("callstack", info.callstack);
-        io.mapRequired("is-macro", info.isMacro);
+        io.mapRequired("is-syn-diff", info.isSynDiff);
         io.mapRequired("covered-by-syn-diff", info.coveredBySynDiff);
     }
 };
@@ -128,7 +128,7 @@ struct MappingTraits<MissingDefPair> {
 struct ResultReport {
     std::vector<DiffFunPair> diffFuns;
     std::vector<MissingDefPair> missingDefs;
-    std::vector<MacroBody> macroDefinitions;
+    std::vector<SyndiffBody> syndiffBodies;
 };
 
 // Report to YAML
@@ -138,7 +138,7 @@ struct MappingTraits<ResultReport> {
     static void mapping(IO &io, ResultReport &result) {
         io.mapOptional("diff-functions", result.diffFuns);
         io.mapOptional("missing-defs", result.missingDefs);
-        io.mapOptional("macro-defs", result.macroDefinitions);
+        io.mapOptional("syndiff-defs", result.syndiffBodies);
     }
 };
 }
@@ -151,12 +151,12 @@ void reportOutput(Config &config,
     // Set to store functions covered by syntax differences
     std::set<std::string> syntaxDiffCoveredFunctions;
 
-    for (auto &macroDiff : differingMacros) {
+    for (auto &synDiff : differingMacros) {
         // Look whether the function the syntactic difference was found in is
         // among functions declared as non-equal.
         // In case it is not, then the syntax difference should not be shown,
         // since the function in which it was found is equal.
-        bool skipMacroDiff = false;
+        bool skipSynDiff = false;
 
         if (nonequalFuns.size() > 0) {
             // The case when nonequalFuns is empty is uninteresting - in that
@@ -171,59 +171,59 @@ void reportOutput(Config &config,
             }
 
             // Function has to exist in both modules to prevent mistakes.
-            if ((ModuleL->getFunction(macroDiff.function) == nullptr) ||
-                (ModuleR->getFunction(macroDiff.function) == nullptr))
+            if ((ModuleL->getFunction(synDiff.function) == nullptr) ||
+                (ModuleR->getFunction(synDiff.function) == nullptr))
                 continue;
 
-            if (differingFunsSet.find(macroDiff.function) ==
+            if (differingFunsSet.find(synDiff.function) ==
                 differingFunsSet.end()) {
-                skipMacroDiff = true;
+                skipSynDiff = true;
             }
         } else {
-            skipMacroDiff = true;
+            skipSynDiff = true;
         }
 
-        if (skipMacroDiff)
+        if (skipSynDiff)
             continue;
 
-        // Try to append call stack of function to the macro stack if possible
+        // Try to append call stack of function to the syndiff stack if possible
         CallStack toAppendLeft, toAppendRight;
         for (auto &diff : report.diffFuns) {
-            if (diff.first.name == macroDiff.function &&
+            if (diff.first.name == synDiff.function &&
                 diff.first.callstack.size() > 0)
                 toAppendLeft = diff.first.callstack;
-            if (diff.second.name == macroDiff.function &&
+            if (diff.second.name == synDiff.function &&
                 diff.second.callstack.size() > 0)
                 toAppendRight = diff.second.callstack;
         }
         if (toAppendLeft.size() > 0)
-            macroDiff.StackL.insert(macroDiff.StackL.begin(),
+            synDiff.StackL.insert(synDiff.StackL.begin(),
                 toAppendLeft.begin(), toAppendLeft.end());
         if (toAppendRight.size() > 0)
-            macroDiff.StackR.insert(macroDiff.StackR.begin(),
+            synDiff.StackR.insert(synDiff.StackR.begin(),
                 toAppendRight.begin(), toAppendRight.end());
 
         // Add functions used in call stack to set (also include the parent
         // function)
-        for (CallInfo CI : macroDiff.StackL)
+        for (CallInfo CI : synDiff.StackL)
             syntaxDiffCoveredFunctions.insert(CI.fun);
-        for (CallInfo CI : macroDiff.StackR)
+        for (CallInfo CI : synDiff.StackR)
             syntaxDiffCoveredFunctions.insert(CI.fun);
-        syntaxDiffCoveredFunctions.insert(macroDiff.function);
+        syntaxDiffCoveredFunctions.insert(synDiff.function);
 
         report.diffFuns.push_back({
-               FunctionInfo(macroDiff.name,
-                            macroDiff.StackL[0].file,
-                            macroDiff.StackL,
+               FunctionInfo(synDiff.name,
+                            synDiff.StackL[0].file,
+                            synDiff.StackL,
                             true),
-               FunctionInfo(macroDiff.name,
-                            macroDiff.StackR[0].file,
-                            macroDiff.StackR,
+               FunctionInfo(synDiff.name,
+                            synDiff.StackR[0].file,
+                            synDiff.StackR,
                             true)
         });
 
-        report.macroDefinitions.push_back(MacroBody {
-            macroDiff.name, macroDiff.BodyL, macroDiff.BodyR
+        report.syndiffBodies.push_back(SyndiffBody {
+            synDiff.name, synDiff.BodyL, synDiff.BodyR
         });
     }
     for (auto &funPair : nonequalFuns) {
