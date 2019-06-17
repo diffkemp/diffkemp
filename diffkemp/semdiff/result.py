@@ -90,3 +90,16 @@ class Result:
                                                         unkwn / total * 100))
             print("Errors:       {0} ({1:.0f}%)".format(errs,
                                                         errs / total * 100))
+
+        if unkwn > 0:
+            print("\nFunctions that are unknown: ")
+            for f, r in iter(self.inner.items()):
+                if r.kind == Result.Kind.UNKNOWN:
+                    print(f)
+            print()
+        if errs > 0:
+            print("\nFunctions whose comparison ended with an error: ")
+            for f, r in iter(self.inner.items()):
+                if r.kind == Result.Kind.ERROR:
+                    print(f)
+            print()
