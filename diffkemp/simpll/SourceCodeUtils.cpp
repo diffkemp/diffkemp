@@ -374,6 +374,11 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
     int firstQuotationMark;
     int lastQuotationMark = -1;
 
+    // Check if the string has a even number of quotes (if not, it is somehow
+    // malformed and should not be analyzed)
+    if (std::count(extractedBody.begin(), extractedBody.end(), '\"') % 2 == 1)
+        return {"", ""};
+
     while (extractedBody.find('\"', lastQuotationMark + 1) !=
            std::string::npos &&
            extractedBody.find(':', lastQuotationMark + 1) >
@@ -384,10 +389,6 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
                 lastQuotationMark - firstQuotationMark - 1);
     }
 
-    // Extract arguments
-    std::string arguments = extractedBody.substr(
-            extractedBody.find(':', lastQuotationMark + 1));
-
     // Replaces inline asm argument syntax (assuming there are 20 or less
     // arguments)
     for (int i = 0; i < 20; i++)
@@ -396,6 +397,13 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
     // Replace escape sequences
     findAndReplace(newBody, "\\t", "\t");
     findAndReplace(newBody, "\\n", "\n");
+
+    // Extract arguments
+    auto colon = extractedBody.find(':', lastQuotationMark + 1);
+    if (colon == std::string::npos)
+        // No colon - no arguments
+        return {newBody, ""};
+    std::string arguments = extractedBody.substr(colon);
 
     return {newBody, arguments};
 }
