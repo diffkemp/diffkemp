@@ -143,7 +143,8 @@ std::string extractLineFromLocation(DILocation *LineLoc) {
         do {
             ++it;
             line += it->str();
-        } while (!it.is_at_end() && (it->count('(') < it->count(')')));
+        } while (!it.is_at_end() && (StringRef(line).count(')') <
+                StringRef(line).count('(')));
     }
 
     return line;
