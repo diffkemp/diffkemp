@@ -689,6 +689,33 @@ int DifferentialFunctionComparator::cmpCallsWithExtraArg(
 /// Compares array types with equivalent element types as equal when
 /// comparing the control flow only.
 int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
+    // Compare union as equal to another type in case it is at least of the same
+    // size.
+    // Note: a union type is represented in Clang-generated LLVM IR by a
+    // structure type.
+    if (L->isStructTy() || R->isStructTy()) {
+        Type *Ty;
+        StructType *StrTy;
+        const DataLayout *TyLayout, *StrTyLayout;
+        if (L->isStructTy()) {
+            StrTy = dyn_cast<StructType>(L);
+            Ty = R;
+            StrTyLayout = &LayoutL;
+            TyLayout = &LayoutR;
+        } else {
+            StrTy = dyn_cast<StructType>(R);
+            Ty = L;
+            StrTyLayout = &LayoutR;
+            TyLayout = &LayoutL;
+        }
+
+        if (StrTy->getStructName().startswith("union") &&
+            (StrTyLayout->getTypeAllocSize(StrTy) >=
+                TyLayout->getTypeAllocSize(Ty))) {
+            return 0;
+        }
+    }
+
     // Compare integer types as the same when comparing the control flow only.
     if (L->isIntegerTy() && R->isIntegerTy() && controlFlowOnly)
         return 0;
