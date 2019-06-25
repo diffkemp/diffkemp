@@ -61,6 +61,10 @@ def __make_argument_parser():
     compare_ap.add_argument("--semdiff-tool",
                             help=SUPPRESS,
                             choices=["llreve"])
+    compare_ap.add_argument("--show-errors",
+                            help="show functions that are either unknown or \
+                            ended with an error in statistics",
+                            action="store_true")
     compare_ap.set_defaults(func=compare)
     return ap
 
@@ -176,7 +180,7 @@ def compare(args):
         print("")
         print("Statistics")
         print("----------")
-        result.report_stat()
+        result.report_stat(args.show_errors)
     return 0
 
 
