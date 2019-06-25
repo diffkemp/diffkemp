@@ -62,7 +62,7 @@ class Result:
         # a higher priority is chosen from the two).
         self.kind = Result.Kind(max(int(self.kind), int(result.kind)))
 
-    def report_stat(self):
+    def report_stat(self, show_errors=False):
         """
         Report statistics.
         Print numbers of equal, non-equal, unknown, and error results with
@@ -80,26 +80,32 @@ class Result:
                      if r.kind == Result.Kind.UNKNOWN])
         errs = len([r for r in iter(self.inner.values())
                     if r.kind in [Result.Kind.ERROR, Result.Kind.TIMEOUT]])
+        empty_diff = len([r for r in iter(self.inner.values()) if all(map(
+            lambda x: x.diff == "", r.inner.values())) and
+            r.kind == Result.Kind.NOT_EQUAL])
         if total > 0:
             print("Total params: {}".format(total))
             print("Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100))
             print(" same syntax: {0}".format(eq_syn))
             print("Not equal:    {0} ({1:.0f}%)".format(
                   neq, neq / total * 100))
+            print("(empty diff): {0} ({1:.0f}%)".format(
+                  empty_diff, empty_diff / total * 100))
             print("Unknown:      {0} ({1:.0f}%)".format(unkwn,
                                                         unkwn / total * 100))
             print("Errors:       {0} ({1:.0f}%)".format(errs,
                                                         errs / total * 100))
 
-        if unkwn > 0:
-            print("\nFunctions that are unknown: ")
-            for f, r in iter(self.inner.items()):
-                if r.kind == Result.Kind.UNKNOWN:
-                    print(f)
-            print()
-        if errs > 0:
-            print("\nFunctions whose comparison ended with an error: ")
-            for f, r in iter(self.inner.items()):
-                if r.kind == Result.Kind.ERROR:
-                    print(f)
-            print()
+        if show_errors:
+            if unkwn > 0:
+                print("\nFunctions that are unknown: ")
+                for f, r in iter(self.inner.items()):
+                    if r.kind == Result.Kind.UNKNOWN:
+                        print(f)
+                print()
+            if errs > 0:
+                print("\nFunctions whose comparison ended with an error: ")
+                for f, r in iter(self.inner.items()):
+                    if r.kind == Result.Kind.ERROR:
+                        print(f)
+                print()

@@ -141,7 +141,7 @@ def functions_diff(mod_first, mod_second,
     :param glob_var: Global variable whose effect on the functions to compare
     :param config: Configuration
     """
-    result = Result(Result.Kind.NONE, mod_first, mod_second)
+    result = Result(Result.Kind.NONE, fun_first, fun_second)
     try:
         if config.verbosity:
             if fun_first == fun_second:
