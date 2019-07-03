@@ -82,12 +82,19 @@ std::string dropSuffix(std::string Name) {
     return Name.substr(0, Name.find_last_of('.'));
 }
 
+/// Join directory path with a filename in case the filename does not already
+/// contain the directory.
+std::string joinPath(StringRef DirName, StringRef FileName) {
+    return FileName.startswith(DirName) ?
+           FileName.str() :
+           DirName.str() + sys::path::get_separator().str() + FileName.str();
+}
+
 /// Extracts file name and directory name from the DebugInfo
 std::string getFileForFun(Function *Fun) {
     if (auto *SubProgram = Fun->getSubprogram()) {
-        if (auto *File = SubProgram->getFile()) {
-            return File->getDirectory().str() + "/" + File->getFilename().str();
-        }
+        if (auto *File = SubProgram->getFile())
+            return joinPath(File->getDirectory(), File->getFilename());
     }
     return "";
 }
@@ -273,11 +280,7 @@ CallInst *findCallInst(const CallInst *Call, Function *Fun) {
 
 /// Gets C source file from a DIScope and the module.
 std::string getSourceFilePath(DIScope *Scope) {
-    std::string sourceFilePath = Scope->getFile()->getDirectory().str() +
-                                 llvm::sys::path::get_separator().str() +
-                                 Scope->getFile()->getFilename().str();
-
-    return sourceFilePath;
+    return joinPath(Scope->getDirectory(), Scope->getFilename());
 }
 
 /// Checks whether the character is valid for a C identifier.
