@@ -5,7 +5,6 @@ using the given parameter is compared individually.
 """
 
 from diffkemp.llvm_ir.build_llvm import BuildException
-from diffkemp.semdiff.function_coupling import FunctionCouplings
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 
@@ -62,23 +61,28 @@ def modules_diff(mod_first, mod_second, glob_var, fun, config):
     :param config: Configuration.
     """
     result = Result(Result.Kind.NONE, mod_first, mod_second)
-    couplings = FunctionCouplings(mod_first.llvm, mod_second.llvm)
-    if glob_var:
-        couplings.infer_for_param(glob_var)
+
+    if fun:
+        funs_first = {fun}
+        funs_second = {fun}
+    elif glob_var:
+        funs_first = mod_first.get_functions_using_param(glob_var)
+        funs_second = mod_second.get_functions_using_param(glob_var)
     else:
-        couplings.set_main(fun, fun)
-    for c in couplings.main:
-        if fun:
-            if not fun == c.first and not fun == c.second:
-                continue
-            if (not mod_first.has_function(fun) or not
-                    mod_second.has_function(fun)):
-                print("    Given function not found in module")
-                result.kind = Result.Kind.ERROR
-                return result
+        funs_first = []
+        funs_second = []
+
+    for fun in funs_first:
+        if fun not in funs_second:
+            continue
+        if (not mod_first.has_function(fun) or not
+                mod_second.has_function(fun)):
+            print("    Given function not found in module")
+            result.kind = Result.Kind.ERROR
+            return result
 
         fun_result = functions_diff(mod_first=mod_first, mod_second=mod_second,
-                                    fun_first=c.first, fun_second=c.second,
+                                    fun_first=fun, fun_second=fun,
                                     glob_var=glob_var, config=config)
         result.add_inner(fun_result)
 
