@@ -1,0 +1,8 @@
+old_kernel: kernel/linux-3.10.0-514.el7
+new_kernel: kernel/linux-3.10.0-693.el7
+
+control_flow_only: true
+
+functions:
+        debugfs_create_u32: equal_syntax
+
