@@ -121,7 +121,8 @@ class LlvmKernelModule:
             else:
                 return param_name
 
-        if param_var.get_num_operands() == 1:
+        if (param_var.get_kind() == ConstantExprValueKind and
+                param_var.get_num_operands() >= 1):
             # Variable can be inside bitcast or getelementptr, in both cases
             # it is inside the first operand of the expression
             return self._extract_param_name(param_var.get_operand(0))
@@ -136,9 +137,10 @@ class LlvmKernelModule:
         Information about the variable is stored inside the last element of the
         structure assigned to the '__param_#name' variable (#name is the name
         of param).
-        :param param
-        :return Name of the global variable corresponding to param
+        :param param Parameter name
+        :return Name of the global variable corresponding to the parameter
         """
+        self.parse_module()
         glob = self.llvm_module.get_named_global("__param_{}".format(param))
         if not glob:
             return None
@@ -154,17 +156,20 @@ class LlvmKernelModule:
 
     def has_function(self, fun):
         """Check if module contains a function definition."""
+        self.parse_module()
         llvm_fun = self.llvm_module.get_named_function(fun)
         return llvm_fun is not None and not llvm_fun.is_declaration()
 
     def has_global(self, glob):
         """Check if module contains a global variable with the given name."""
+        self.parse_module()
         return self.llvm_module.get_named_global(glob) is not None
 
     def is_declaration(self, fun):
         """
         Check if the given function is a declaration (does not have body).
         """
+        self.parse_module()
         llvm_fun = self.llvm_module.get_named_function(fun)
         return (llvm_fun.get_kind() == FunctionValueKind and
                 llvm_fun.is_declaration())
