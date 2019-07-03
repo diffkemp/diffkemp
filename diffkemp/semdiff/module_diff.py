@@ -22,33 +22,33 @@ def diff_all_modules_using_global(glob_first, glob_second, config):
     if glob_first.name != glob_second.name:
         # Variables with different names are treated as unequal
         result.kind = Result.Kind.NOT_EQUAL
-    else:
-        srcs_first = config.builder_first.source.find_srcs_using_symbol(
-            glob_first.name)
-        srcs_second = config.builder_second.source.find_srcs_using_symbol(
-            glob_second.name)
-        # Compare all sources containing functions using the variable
-        for src in srcs_first:
-            if src not in srcs_second:
-                result.add_inner(Result(Result.Kind.NOT_EQUAL, src, src))
-            else:
-                try:
-                    mod_first = config.builder_first.build_file(src)
-                    mod_second = config.builder_second.build_file(src)
-                    mod_first.parse_module()
-                    mod_second.parse_module()
-                    if (mod_first.has_global(glob_first.name) and
-                            mod_second.has_global(glob_second.name)):
-                        src_result = modules_diff(
-                            mod_first=mod_first, mod_second=mod_second,
-                            glob_var=glob_first, fun=None,
-                            config=config)
-                        for res in src_result.inner.values():
-                            result.add_inner(res)
-                except BuildException as e:
-                    print(e)
-                    result.add_inner(Result(Result.Kind.ERROR, src, src))
         return result
+
+    srcs_first = config.source_first.find_srcs_using_symbol(glob_first.name)
+    srcs_second = config.source_second.find_srcs_using_symbol(glob_second.name)
+    # Compare all sources containing functions using the variable
+    for src in srcs_first:
+        if src not in srcs_second:
+            result.add_inner(Result(Result.Kind.NOT_EQUAL, src, src))
+        else:
+            try:
+                mod_first = config.source_first.get_module_from_source(src)
+                mod_second = config.source_second.get_module_from_source(src)
+                mod_first.parse_module()
+                mod_second.parse_module()
+                if (mod_first.has_global(glob_first.name) and
+                        mod_second.has_global(glob_second.name)):
+                    src_result = modules_diff(
+                        mod_first=mod_first, mod_second=mod_second,
+                        glob_var=glob_first, fun=None,
+                        config=config)
+                    for res in src_result.inner.values():
+                        result.add_inner(res)
+            except BuildException as e:
+                if config.verbosity:
+                    print(e)
+                result.add_inner(Result(Result.Kind.ERROR, src, src))
+    return result
 
 
 def modules_diff(mod_first, mod_second, glob_var, fun, config):

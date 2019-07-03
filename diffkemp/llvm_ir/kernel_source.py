@@ -2,7 +2,12 @@
 Browsing kernel sources.
 Functions for searching function definitions, kernel modules, etc.
 """
+from diffkemp.llvm_ir.build_llvm import LlvmKernelBuilder, BuildException
+from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
+from diffkemp.llvm_ir.llvm_sysctl_module import LlvmSysctlModule
+import errno
 import os
+import shutil
 from subprocess import CalledProcessError, check_call, check_output
 
 
@@ -21,8 +26,24 @@ class KernelSource:
     modules, and others.
     """
 
-    def __init__(self, path):
-        self.kernel_path = path
+    def __init__(self, kernel_dir, with_builder=False):
+        self.kernel_dir = os.path.abspath(kernel_dir)
+        self.builder = LlvmKernelBuilder(kernel_dir) if with_builder else None
+        self.modules = dict()
+
+    def initialize(self):
+        """
+        Prepare the kernel builder.
+        This is done automatically on in LlvmKernelBuilder constructor but it
+        may be useful to re-initialize the builder after finalize was called.
+        """
+        if self.builder:
+            self.builder.initialize()
+
+    def finalize(self):
+        """Restore the kernel builder state."""
+        if self.builder:
+            self.builder.finalize()
 
     def get_sources_with_params(self, directory):
         """
@@ -30,7 +51,7 @@ class KernelSource:
         that contain definitions of module parameters (contain call to
         module_param macro).
         """
-        path = os.path.join(self.kernel_path, directory)
+        path = os.path.join(self.kernel_dir, directory)
         result = list()
         for f in os.listdir(path):
             file = os.path.join(path, f)
@@ -51,13 +72,13 @@ class KernelSource:
         source files with symbol definitions.
         """
         # If the database exists, do not rebuild it
-        if "cscope.files" in os.listdir(self.kernel_path):
+        if "cscope.files" in os.listdir(self.kernel_dir):
             return
 
         # Write all files that need to be scanned into cscope.files
-        with open(os.path.join(self.kernel_path, "cscope.files"), "w") \
+        with open(os.path.join(self.kernel_dir, "cscope.files"), "w") \
                 as cscope_file:
-            for root, dirs, files in os.walk(self.kernel_path):
+            for root, dirs, files in os.walk(self.kernel_dir):
                 if ("/Documentation/" in root or
                         "/scripts/" in root or
                         "/tmp" in root):
@@ -66,12 +87,14 @@ class KernelSource:
                 for f in files:
                     if os.path.islink(os.path.join(root, f)):
                         continue
-                    if (f.endswith((".c", ".h", ".x", ".s", ".S"))):
-                        cscope_file.write("{}\n".format(os.path.join(root, f)))
+                    if f.endswith((".c", ".h", ".x", ".s", ".S")):
+                        path = os.path.relpath(os.path.join(root, f),
+                                               self.kernel_dir)
+                        cscope_file.write("{}\n".format(path))
 
         # Build cscope database
         cwd = os.getcwd()
-        os.chdir(self.kernel_path)
+        os.chdir(self.kernel_dir)
         check_call(["cscope", "-b", "-q", "-k"])
         os.chdir(cwd)
 
@@ -107,8 +130,8 @@ class KernelSource:
         """
         macro_argument = symbol[len("__tracepoint_"):]
         candidates = self._cscope_run("EXPORT_TRACEPOINT_SYMBOL", False)
-        return filter(lambda c: c.endswith("(" + macro_argument + ");"),
-                      candidates)
+        return list(filter(lambda c: c.endswith("(" + macro_argument + ");"),
+                           candidates))
 
     def find_srcs_with_symbol_def(self, symbol):
         """
@@ -117,7 +140,7 @@ class KernelSource:
         :return List of source files potentially containing the definition.
         """
         cwd = os.getcwd()
-        os.chdir(self.kernel_path)
+        os.chdir(self.kernel_dir)
         try:
             cscope_defs = self._cscope_run(symbol, True)
 
@@ -134,8 +157,7 @@ class KernelSource:
             if any([symbol.startswith(s) for s in
                     ["param_get_", "param_set_", "param_ops_"]]):
                 # Symbol param_* are created in kernel/params.c using a macro
-                cscope_defs = [os.path.join(self.kernel_path,
-                                            "kernel/params.c")] + cscope_defs
+                cscope_defs = ["kernel/params.c"] + cscope_defs
             elif symbol.startswith("__tracepoint_"):
                 # Functions starting with __tracepoint_ are created by a macro
                 # in include/kernel/tracepoint.h; the corresponding usage of
@@ -148,7 +170,7 @@ class KernelSource:
         except SourceNotFoundException:
             if symbol == "vfree":
                 cscope_uses = []
-                cscope_defs = [os.path.join(self.kernel_path, "mm/vmalloc.c")]
+                cscope_defs = ["mm/vmalloc.c"]
             else:
                 raise
         finally:
@@ -176,20 +198,17 @@ class KernelSource:
                 return item
 
         files = sorted(
-            [os.path.relpath(f, self.kernel_path)
-             for f in [line.split()[0] for line in cscope_defs]
+            [f for f in [line.split()[0] for line in cscope_defs]
              if not (f in seen or seen.add(f))],
             key=prio_key)
         files.extend(sorted(
-            [os.path.relpath(f, self.kernel_path)
-             for (f, scope) in [(line.split()[0], line.split()[1])
-                                for line in cscope_uses]
+            [f for (f, scope) in [(line.split()[0], line.split()[1])
+                                  for line in cscope_uses]
              if (scope == "<global>" and not (f in seen or seen.add(f)))],
             key=prio_key))
         files.extend(sorted(
-            [os.path.relpath(f, self.kernel_path)
-             for (f, scope) in [(line.split()[0], line.split()[1])
-                                for line in cscope_uses]
+            [f for (f, scope) in [(line.split()[0], line.split()[1])
+                                  for line in cscope_uses]
              if (scope != "<global>" and not (f in seen or seen.add(f)))],
             key=prio_key))
         return files
@@ -201,7 +220,7 @@ class KernelSource:
         :return List of source files containing functions that use the symbol.
         """
         cwd = os.getcwd()
-        os.chdir(self.kernel_path)
+        os.chdir(self.kernel_dir)
         try:
             cscope_out = self._cscope_run(symbol, False)
             if len(cscope_out) == 0:
@@ -212,9 +231,123 @@ class KernelSource:
                     continue
                 if line.split()[1] == "<global>":
                     continue
-                files.add(os.path.relpath(line.split()[0], self.kernel_path))
+                files.add(os.path.relpath(line.split()[0], self.kernel_dir))
             return files
         except SourceNotFoundException:
             raise
         finally:
             os.chdir(cwd)
+
+    def get_module_from_source(self, source_path):
+        """
+        Create an LLVM module from a source file.
+        Builds the source into LLVM IR if needed.
+        :param source_path: Relative path to the file
+        :returns Instance of LlvmKernelModule
+        """
+        name = source_path[:-2] if source_path.endswith(".c") else source_path
+        # If the module has already been created, return it
+        if name in self.modules:
+            return self.modules[name]
+
+        llvm_file = os.path.join(self.kernel_dir, "{}.ll".format(name))
+        source_file = os.path.join(self.kernel_dir, source_path)
+        if self.builder:
+            try:
+                self.builder.build_source_to_llvm(source_file, llvm_file)
+            except BuildException:
+                pass
+
+        if not os.path.isfile(llvm_file):
+            return None
+
+        mod = LlvmKernelModule(llvm_file, source_file)
+        self.modules[name] = mod
+        return mod
+
+    def get_module_for_symbol(self, symbol):
+        """
+        Looks up files containing definition of a symbol using CScope, then
+        transforms them into LLVM modules and looks whether the symbol is
+        actually defined in the created module.
+        In case there are multiple files containing the definition, the first
+        module containing the function definition is returned.
+        :param symbol: Name of the function to look up.
+        :returns LLVM module containing the specified function.
+        """
+        mod = None
+
+        srcs = self.find_srcs_with_symbol_def(symbol)
+        for src in srcs:
+            mod = self.get_module_from_source(src)
+            if mod:
+                mod.parse_module()
+                if not (mod.has_function(symbol) or mod.has_global(symbol)):
+                    mod.clean_module()
+                    mod = None
+                else:
+                    break
+        if not mod:
+            raise SourceNotFoundException(symbol)
+
+        return mod
+
+    @staticmethod
+    def create_dir_with_parents(directory):
+        """
+        Create a directory with all parent directories.
+        Implements bash `mkdir -p`.
+        :param directory: Path to the directory to create.
+        """
+        if not os.path.isdir(directory):
+            try:
+                os.makedirs(directory)
+            except OSError as e:
+                if e.errno == errno.EEXIST and os.path.isdir(directory):
+                    pass
+                else:
+                    raise
+
+    def copy_source_files(self, modules, target_dir):
+        """
+        Copy C and LLVM source files of given modules from this kernel into
+        a different directory.
+        Preserves the directory structure.
+        Also copies all headers included by the modules.
+        :param modules: List of modules to copy.
+        :param target_dir: Destination directory (subfolders will be created
+                           corresponding to the sources structure).
+        """
+        for mod in modules:
+            src_dir = os.path.dirname(
+                os.path.relpath(mod.llvm, self.kernel_dir))
+            target_src_dir = os.path.join(target_dir, src_dir)
+            self.create_dir_with_parents(target_src_dir)
+
+            # Copy headers.
+            for header in mod.get_included_headers():
+                if header.startswith(self.kernel_dir):
+                    src_header = header
+                    dest_header = os.path.join(
+                        target_dir, os.path.relpath(header, self.kernel_dir))
+                else:
+                    src_header = os.path.join(self.kernel_dir, header)
+                    dest_header = os.path.join(target_dir, header)
+                if not os.path.isfile(dest_header):
+                    self.create_dir_with_parents(os.path.dirname(dest_header))
+                    shutil.copyfile(src_header, dest_header)
+
+            mod.move_to_other_root_dir(self.kernel_dir, target_dir)
+
+    def copy_cscope_files(self, target_dir):
+        """
+        Copy CScope database into a different directory. Since CScope files
+        contain paths relative to the kernel root, it can be used in the
+        target directory in case it contains the same directory structure
+        as this kernel does.
+        :param target_dir: Target directory.
+        """
+        shutil.copy(os.path.join(self.kernel_dir, "cscope.files"), target_dir)
+        shutil.copy(os.path.join(self.kernel_dir, "cscope.in.out"), target_dir)
+        shutil.copy(os.path.join(self.kernel_dir, "cscope.out"), target_dir)
+        shutil.copy(os.path.join(self.kernel_dir, "cscope.po.out"), target_dir)

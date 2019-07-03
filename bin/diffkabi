@@ -1,6 +1,0 @@
-#! /usr/bin/env python3
-
-from diffkemp import diffkabi
-
-if __name__ == "__main__":
-	diffkabi.run_from_cli()
