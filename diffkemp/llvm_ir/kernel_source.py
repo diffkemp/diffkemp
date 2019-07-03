@@ -292,6 +292,60 @@ class KernelSource:
 
         return mod
 
+    def get_sysctl_module(self, sysctl):
+        """
+        Get the LLVM module containing the definition of a sysctl option.
+        :param sysctl: sysctl option to search for
+        :return: Instance of LlvmSysctlModule.
+        """
+        # The sysctl is composed of entries separated by dots. Entries form
+        # a hierarchy - each entry is a child of its predecessor (i.e. all
+        # entries except the last one point to sysctl tables). We follow
+        # the hierarchy and build the source containing the parent table of
+        # the last entry.
+        entries = sysctl.split(".")
+        if entries[0] in ["kernel", "vm", "fs", "debug", "dev"]:
+            src = "kernel/sysctl.c"
+            table = "sysctl_base_table"
+        elif entries[0] == "net":
+            if entries[1] == "ipv4":
+                if entries[2] == "conf":
+                    src = "net/ipv4/devinet.c"
+                    table = "devinet_sysctl.1"
+                    entries = entries[4:]
+                else:
+                    src = "net/ipv4/sysctl_net_ipv4.c"
+                    table = "ipv4_table"
+                    entries = entries[2:]
+            if entries[1] == "core":
+                src = "net/core/sysctl_net_core.c"
+                table = "net_core_table"
+                entries = entries[2:]
+        else:
+            raise SourceNotFoundException(sysctl)
+
+        for (i, entry) in enumerate(entries):
+            # Build the file normally and then create a corresponding
+            # LlvmSysctlModule with the obtained sysctl table.
+            kernel_mod = self.get_module_from_source(src)
+            sysctl_mod = LlvmSysctlModule(kernel_mod, table)
+
+            if i == len(entries) - 1:
+                return sysctl_mod
+            table = sysctl_mod.get_child(entry).name
+            src = self.find_srcs_with_symbol_def(table)[0]
+        return None
+
+    def get_module_for_kernel_mod(self, mod_dir, mod_name):
+        """
+        Get LLVM module for a kernel module.
+        :param mod_dir: Kernel module directory.
+        :param mod_name: Kernel module name.
+        :return: LlvmKernelModule containing the built LLVM file.
+        """
+        llvm_file = self.builder.build_kernel_mod_to_llvm(mod_dir, mod_name)
+        return LlvmKernelModule(os.path.join(self.kernel_dir, llvm_file))
+
     @staticmethod
     def create_dir_with_parents(directory):
         """

@@ -289,3 +289,44 @@ class LlvmKernelBuilder:
                 raise
             finally:
                 os.chdir(cwd)
+
+    def build_kernel_mod_to_llvm(self, mod_dir, mod_name):
+        """
+        Build a kernel module into LLVM IR.
+        This is done by retrieving commands that would be run by KBuild to
+        build the given module, transforming them into corresponding clang/LLVM
+        commands, and running them.
+        :param mod_dir: Kernel module directory.
+        :param mod_name: Kernel module name.
+        :return: Name of the LLVM IR file built.
+        """
+        cwd = os.getcwd()
+        os.chdir(self.kernel_dir)
+        try:
+            file_name, gcc_commands = self.kbuild_module_commands(mod_dir,
+                                                                  mod_name)
+            llvm_commands = self.kbuild_to_llvm_commands(gcc_commands,
+                                                         file_name)
+            with open(os.devnull, "w") as stderr:
+                built = False
+                for c in llvm_commands:
+                    if c[0] == "clang":
+                        src = self._get_build_source(c)
+                        obj = self._get_build_object(c)
+                        if (not os.path.isfile(obj) or
+                                os.path.getmtime(obj) < os.path.getmtime(src)):
+                            built = True
+                            check_call(c, stderr=stderr)
+                    elif c[0] == "llvm-link":
+                        obj = self._get_build_object(c)
+                        if not os.path.isfile(obj) or built:
+                            check_call(c, stderr=stderr)
+            llvm_file = os.path.join(mod_dir, "{}.ll".format(file_name))
+            self.opt_llvm(llvm_file)
+            return llvm_file
+        except CalledProcessError:
+            raise BuildException("Could not build {}".format(mod_name))
+        except BuildException:
+            raise
+        finally:
+            os.chdir(cwd)
