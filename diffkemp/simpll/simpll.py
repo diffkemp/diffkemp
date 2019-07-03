@@ -2,6 +2,7 @@
 Simplifying LLVM modules with the SimpLL tool.
 """
 from diffkemp.semdiff.result import Result
+from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 import os
 from subprocess import check_call, check_output, CalledProcessError
 import yaml
@@ -26,8 +27,8 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
     if not verbose:
         stderr = open(os.devnull, "w")
 
-    first_out = add_suffix(first, suffix) if suffix else first
-    second_out = add_suffix(second, suffix) if suffix else second
+    first_out_name = add_suffix(first, suffix) if suffix else first
+    second_out_name = add_suffix(second, suffix) if suffix else second
 
     try:
         simpll_command = ["build/diffkemp/simpll/simpll", first, second,
@@ -53,10 +54,15 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
             print(" ".join(simpll_command))
 
         simpll_out = check_output(simpll_command)
-        check_call(["opt", "-S", "-deadargelim", "-o", first_out, first_out],
+        check_call(["opt", "-S", "-deadargelim", "-o", first_out_name,
+                    first_out_name],
                    stderr=stderr)
-        check_call(["opt", "-S", "-deadargelim", "-o", second_out, second_out],
+        check_call(["opt", "-S", "-deadargelim", "-o", second_out_name,
+                    second_out_name],
                    stderr=stderr)
+
+        first_out = LlvmKernelModule(first_out_name)
+        second_out = LlvmKernelModule(second_out_name)
 
         objects_to_compare = []
         missing_defs = None
