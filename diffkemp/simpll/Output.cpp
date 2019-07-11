@@ -146,12 +146,19 @@ struct MappingTraits<ResultReport> {
 void reportOutput(Config &config,
                   std::vector<FunPair> &nonequalFuns,
                   std::vector<ConstFunPair> &missingDefs,
-                  std::vector<SyntaxDifference> &differingMacros) {
+                  std::vector<SyntaxDifference> &differingSynDiffs) {
     ResultReport report;
     // Set to store functions covered by syntax differences
     std::set<std::string> syntaxDiffCoveredFunctions;
 
-    for (auto &synDiff : differingMacros) {
+    // Transform non-equal functions into a function name set
+    std::set<StringRef> differingFunsSet;
+    for (FunPair FP : nonequalFuns) {
+        differingFunsSet.insert(FP.first->getName());
+        differingFunsSet.insert(FP.second->getName());
+    }
+
+    for (auto &synDiff : differingSynDiffs) {
         // Look whether the function the syntactic difference was found in is
         // among functions declared as non-equal.
         // In case it is not, then the syntax difference should not be shown,
@@ -163,12 +170,6 @@ void reportOutput(Config &config,
             // case macro differences are irrelevant
             auto ModuleL = nonequalFuns[0].first->getParent();
             auto ModuleR = nonequalFuns[0].second->getParent();
-
-            std::set<StringRef> differingFunsSet;
-            for (FunPair FP : nonequalFuns) {
-                differingFunsSet.insert(FP.first->getName());
-                differingFunsSet.insert(FP.second->getName());
-            }
 
             // Function has to exist in both modules to prevent mistakes.
             if ((ModuleL->getFunction(synDiff.function) == nullptr) ||
