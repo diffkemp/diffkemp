@@ -7,4 +7,4 @@ setup(name="DiffKemp",
       author_email="vmalik@redhat.com",
       url="https://github.com/viktormalik/diffkemp",
       packages=["diffkemp"],
-      install_requires=["llvmcpy", "progressbar", "pyyaml"])
+      install_requires=["llvmcpy", "pyyaml"])

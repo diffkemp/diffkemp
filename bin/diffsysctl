@@ -1,6 +1,0 @@
-#! /usr/bin/env python3
-
-from diffkemp import diffsysctl
-
-if __name__ == "__main__":
-    diffsysctl.run_from_cli()

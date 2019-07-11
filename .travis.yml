@@ -40,6 +40,16 @@ install:
   - pip3 install -r requirements.txt
   - pip3 install -e .
 
+before_script:
+  - git clone https://github.com/viktormalik/rhel-kernel-get.git
+  - pip3 install -r rhel-kernel-get/requirements.txt
+  - rhel-kernel-get/rhel-kernel-get.py 3.10.0-514.el7 --output-dir kernel --kabi
+  - rhel-kernel-get/rhel-kernel-get.py 3.10.0-693.el7 --output-dir kernel --kabi
+  - rhel-kernel-get/rhel-kernel-get.py 3.10.0-862.el7 --output-dir kernel --kabi
+  - rhel-kernel-get/rhel-kernel-get.py 3.10.0-957.el7 --output-dir kernel --kabi
+  - rhel-kernel-get/rhel-kernel-get.py 3.10 --output-dir kernel
+  - rhel-kernel-get/rhel-kernel-get.py 4.11 --output-dir kernel
+
 script:
   - pytest tests
   - flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504

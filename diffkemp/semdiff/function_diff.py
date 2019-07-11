@@ -1,8 +1,6 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
-
-from diffkemp.llvm_ir.build_llvm import SourceNotFoundException
+from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
 from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
-from diffkemp.semdiff.function_coupling import FunctionCouplings
 from diffkemp.semdiff.result import Result
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
@@ -49,7 +47,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
                "-muz", "--ir-input", "--bitvect", "--infer-marks",
                "--disable-auto-coupling"]
     for c in coupled:
-        command.append("--couple-functions={},{}".format(c.first, c.second))
+        command.append("--couple-functions={},{}".format(c[0], c[1]))
 
     if verbose:
         sys.stderr.write(" ".join(command) + "\n")
@@ -114,13 +112,15 @@ def functions_semdiff(first, second, fun_first, fun_second, config):
 
     # Run the actual analysis
     if config.semdiff_tool == "llreve":
-        called_couplings = FunctionCouplings(first, second)
-        called_couplings.infer_called_by(fun_first, fun_second)
-        result = _run_llreve_z3(first, second, fun_first, fun_second,
-                                called_couplings.called, config.timeout,
+        called_first = first.get_functions_called_by(fun_first)
+        called_second = second.get_functions_called_by(fun_second)
+        called_couplings = [(f, s) for f in called_first for s in called_second
+                            if f == s]
+        result = _run_llreve_z3(first.llvm, second.llvm, fun_first, fun_second,
+                                called_couplings, config.timeout,
                                 config.verbosity)
-        called_couplings.clean()
-        print(result.kind)
+        first.clean_module()
+        second.clean_module()
         return result
 
 
@@ -143,13 +143,13 @@ def functions_diff(mod_first, mod_second,
     """
     result = Result(Result.Kind.NONE, mod_first, mod_second)
     try:
-        if not config.print_diff:
+        if config.verbosity:
             if fun_first == fun_second:
                 fun_str = fun_first
             else:
                 fun_str = "{} and {}".format(fun_first, fun_second)
-            print("    Syntactic diff of {} (in {})".format(fun_str,
-                                                            mod_first.llvm))
+            print("Syntactic diff of {} (in {})".format(fun_str,
+                                                        mod_first.llvm))
 
         simplify = True
         while simplify:
@@ -165,15 +165,15 @@ def functions_diff(mod_first, mod_second,
                                       config.verbosity)
             funs_to_compare = list([o for o in objects_to_compare
                                     if not o[0].is_macro])
-            if not config.do_not_link and funs_to_compare and missing_defs:
+            if funs_to_compare and missing_defs:
                 # If there are missing function definitions, try to find
                 # implementing them, link those to the current modules, and
                 # rerun the simplification.
                 for fun_pair in missing_defs:
                     if "first" in fun_pair:
                         try:
-                            new_mod = config.builder_first \
-                                .build_file_for_symbol(fun_pair["first"])
+                            new_mod = config.source_first \
+                                .get_module_for_symbol(fun_pair["first"])
                             if mod_first.link_modules([new_mod]):
                                 simplify = True
                             new_mod.clean_module()
@@ -181,8 +181,8 @@ def functions_diff(mod_first, mod_second,
                             pass
                     if "second" in fun_pair:
                         try:
-                            new_mod = config.builder_second \
-                                .build_file_for_symbol(fun_pair["second"])
+                            new_mod = config.source_second \
+                                .get_module_for_symbol(fun_pair["second"])
                             if mod_second.link_modules([new_mod]):
                                 simplify = True
                             new_mod.clean_module()
@@ -210,7 +210,7 @@ def functions_diff(mod_first, mod_second,
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
                 if (fun_result.kind == Result.Kind.NOT_EQUAL and
-                        config.print_diff):
+                        config.show_diff):
                     if not fun_result.first.is_macro:
                         # Get the syntactic diff of functions
                         fun_result.diff = syntax_diff(
@@ -230,9 +230,10 @@ def functions_diff(mod_first, mod_second,
                             fun_result.diff = "  {}\n\n  {}\n".format(
                                 md["left-value"], md["right-value"])
                 result.add_inner(fun_result)
-        if not config.print_diff:
-            print("      {}".format(result))
-    except SimpLLException:
-        print("    Simplifying has failed")
+        if config.verbosity:
+            print("  {}".format(result))
+    except SimpLLException as e:
+        if config.verbosity:
+            print(e)
         result.kind = Result.Kind.ERROR
     return result

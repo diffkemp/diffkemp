@@ -26,12 +26,14 @@ RUN dnf install -y \
       help2man \
       llvm \
       llvm-devel \
+      make \
       module-init-tools \
       ninja-build \
       openssl-devel \
       patch \
       python3 \
       python3-cffi \
+      python3-pytest \
       rsync \
       texinfo \
       vim \
@@ -42,7 +44,8 @@ RUN dnf install -y \
 RUN pip3 install \
       --upgrade pip \
       llvmcpy \
-      progressbar \
       pytest \
       pyyaml
+RUN git clone https://github.com/viktormalik/rhel-kernel-get.git && \
+    pip3 install -r rhel-kernel-get/requirements.txt
 ENTRYPOINT pip3 install -e .; /bin/bash

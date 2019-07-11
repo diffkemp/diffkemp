@@ -1,5 +1,4 @@
 flake8
 llvmcpy
-progressbar
 pytest
 pyyaml

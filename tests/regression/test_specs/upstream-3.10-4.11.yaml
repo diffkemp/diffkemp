@@ -1,0 +1,51 @@
+old_kernel: kernel/linux-3.10
+new_kernel: kernel/linux-4.11
+
+modules:
+  - dir: drivers/firewire
+    mod: firewire-sbp2
+    params:
+      - name: workarounds
+        functions:
+          sbp2_init_workarounds: equal_syntax
+
+  - dir: drivers/input/joystick
+    mod: gamecon
+    params:
+      - name: psx_delay
+        functions:
+          gc_psx_read_packet: equal_syntax
+          gc_psx_command: equal_syntax
+
+  - dir: drivers/media/pci/ivtv
+    mod: ivtv
+    params:
+      - name: pal
+        functions:
+          ivtv_parse_std: equal_syntax
+      - name: secam
+        functions:
+          ivtv_parse_std: equal_syntax
+
+  - dir: drivers/tty
+    mod: mxser
+    params:
+      - name: ttymajor
+        functions:
+          mxser_ioctl_special: none
+          mxser_module_init: equal_syntax
+
+  - dir: sound/core
+    mod: snd
+    params:
+      - name: cards_limit
+        functions:
+          alsa_sound_init: equal_syntax
+          snd_request_card: equal_syntax
+
+  - dir: drivers/media/usb/uvc
+    mod: uvcvideo
+    params:
+      - name: quirks
+        functions:
+          uvc_probe: equal_syntax

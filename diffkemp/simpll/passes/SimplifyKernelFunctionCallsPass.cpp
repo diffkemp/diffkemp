@@ -110,6 +110,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                         CalledFun->getName() == "warn_slowpath_fmt" ||
                         CalledFun->getName() == "__might_sleep" ||
                         CalledFun->getName() == "acpi_ut_predefined_warning") {
+                    replaceArgByNull(CallInstr, 0);
                     replaceArgByZero(CallInstr, 1);
                 }
             }
