@@ -189,13 +189,18 @@ void reportOutput(Config &config,
 
         // Try to append call stack of function to the syndiff stack if possible
         CallStack toAppendLeft, toAppendRight;
-        for (auto &diff : report.diffFuns) {
-            if (diff.first.name == synDiff.function &&
-                diff.first.callstack.size() > 0)
-                toAppendLeft = diff.first.callstack;
-            if (diff.second.name == synDiff.function &&
-                diff.second.callstack.size() > 0)
-                toAppendRight = diff.second.callstack;
+        for (auto &diff : nonequalFuns) {
+            // Find the right function diff
+            if (diff.first->getName() == synDiff.function) {
+                CallStack CS = getCallStack(*config.FirstFun, *diff.first);
+                if (!CS.empty())
+                    toAppendLeft = CS;
+            }
+            if (diff.second->getName() == synDiff.function) {
+                CallStack CS = getCallStack(*config.SecondFun, *diff.second);
+                if (!CS.empty())
+                    toAppendRight = CS;
+            }
         }
         if (toAppendLeft.size() > 0)
             synDiff.StackL.insert(synDiff.StackL.begin(),
