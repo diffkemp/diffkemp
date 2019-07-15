@@ -379,7 +379,7 @@ class KernelSource:
             self.create_dir_with_parents(target_src_dir)
 
             # Copy headers.
-            for header in mod.get_included_headers():
+            for header in mod.get_included_sources():
                 if header.startswith(self.kernel_dir):
                     src_header = header
                     dest_header = os.path.join(

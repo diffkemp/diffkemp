@@ -99,9 +99,11 @@ def test_move_to_other_root_dir(source):
 def test_get_included_headers(source):
     """Test finding the list of included header files."""
     mod = source.get_module_from_source("arch/cris/arch-v10/lib/memset.c")
-    headers = mod.get_included_headers()
-    assert headers == {"././include/linux/kconfig.h",
-                       "include/generated/autoconf.h"}
+    headers = mod.get_included_sources()
+    assert headers == {
+        os.path.join(source.kernel_dir, "arch/cris/arch-v10/lib/memset.c"),
+        "././include/linux/kconfig.h",
+        "include/generated/autoconf.h"}
 
 
 def test_get_functions_using_param(mod):

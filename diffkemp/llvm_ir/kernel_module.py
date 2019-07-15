@@ -217,7 +217,7 @@ class LlvmKernelModule:
             shutil.copyfile(self.source, dest_source)
             self.source = dest_source
 
-    def get_included_headers(self):
+    def get_included_sources(self):
         """
         Get the list of headers that this module includes.
         Requires debugging information.
@@ -228,7 +228,8 @@ class LlvmKernelModule:
         with open(self.llvm, "r") as llvm:
             for line in llvm.readlines():
                 s = pattern.search(line)
-                if s and s.group(1).endswith(".h"):
+                if (s and (s.group(1).endswith(".h") or
+                           s.group(1).endswith(".c"))):
                     result.add(s.group(1))
         return result
 
