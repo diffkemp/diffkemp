@@ -378,18 +378,14 @@ class KernelSource:
             target_src_dir = os.path.join(target_dir, src_dir)
             self.create_dir_with_parents(target_src_dir)
 
-            # Copy headers.
-            for header in mod.get_included_sources():
-                if header.startswith(self.kernel_dir):
-                    src_header = header
-                    dest_header = os.path.join(
-                        target_dir, os.path.relpath(header, self.kernel_dir))
-                else:
-                    src_header = os.path.join(self.kernel_dir, header)
-                    dest_header = os.path.join(target_dir, header)
-                if not os.path.isfile(dest_header):
-                    self.create_dir_with_parents(os.path.dirname(dest_header))
-                    shutil.copyfile(src_header, dest_header)
+            # Copy linked sources and headers.
+            for source in mod.get_included_sources():
+                src_source = source
+                dest_source = os.path.join(
+                    target_dir, os.path.relpath(source, self.kernel_dir))
+                if not os.path.isfile(dest_source):
+                    self.create_dir_with_parents(os.path.dirname(dest_source))
+                    shutil.copyfile(src_source, dest_source)
 
             mod.move_to_other_root_dir(self.kernel_dir, target_dir)
 
