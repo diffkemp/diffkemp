@@ -30,10 +30,9 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL, Call->print(dbgs()));
                     // Replace call to __memcpy by llvm.memcpy intrinsic
                     IRBuilder<> builder(&Instr);
-                    auto newCall = builder.CreateMemCpy(Call->getArgOperand(0),
-                                                        Call->getArgOperand(1),
-                                                        Call->getArgOperand(2),
-                                                        0);
+                    builder.CreateMemCpy(Call->getArgOperand(0), 0,
+                                         Call->getArgOperand(1), 0,
+                                         Call->getArgOperand(2));
                     // __memcpy returns pointer to the destination
                     Call->replaceAllUsesWith(Call->getArgOperand(1));
                     toRemove.push_back(Call);

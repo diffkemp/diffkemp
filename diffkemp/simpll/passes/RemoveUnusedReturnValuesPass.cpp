@@ -14,8 +14,9 @@
 #include "CalledFunctionsAnalysis.h"
 #include "RemoveUnusedReturnValuesPass.h"
 #include "Utils.h"
-#include <llvm/IR/Instructions.h>
 #include <Config.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
 
 PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Module &Mod,
