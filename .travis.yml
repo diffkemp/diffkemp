@@ -6,9 +6,11 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
+        key_url: "https://apt.llvm.org/llvm-snapshot.gpg.key"
     packages:
       - bc
-      - clang-5.0
+      - clang-8
       - cpio
       - cscope
       - gcc-7
@@ -16,18 +18,18 @@ addons:
       - kmod
       - libelf-dev
       - libssl-dev
-      - llvm-5.0
-      - llvm-5.0-dev
+      - llvm-8
+      - llvm-8-dev
       - ninja-build
       - rpm2cpio
 
 before_install:
-  - sudo ln -s /usr/lib/llvm-5.0/include/llvm /usr/local/include/llvm
-  - sudo ln -s /usr/lib/llvm-5.0/include/llvm-c /usr/local/include/llvm-c
-  - sudo update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bin/llvm-config-5.0 100
-  - sudo update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-5.0 100
-  - sudo update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-5.0 100
-  - sudo update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-5.0 100
+  - sudo ln -s /usr/lib/llvm-8/include/llvm /usr/local/include/llvm
+  - sudo ln -s /usr/lib/llvm-8/include/llvm-c /usr/local/include/llvm-c
+  - sudo update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bin/llvm-config-8 100
+  - sudo update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-8 100
+  - sudo update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-8 100
+  - sudo update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-8 100
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 --slave /usr/bin/g++ g++ /usr/bin/g++-7
   - export PATH=`echo $PATH | sed -e 's#:/usr/local/clang-7.0.0/bin##'`
 
