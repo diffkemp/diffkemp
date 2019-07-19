@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.5)
 
-find_package(LLVM 5.0 REQUIRED CONFIG)
+find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})

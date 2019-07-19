@@ -111,7 +111,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                                                 : *includedSucc.begin();
 
             // Notify successors about removing some branches
-            for (auto TermSucc : Term->successors()) {
+            for (auto TermSucc : successors(Term)) {
                 if (TermSucc != NewSucc)
                     TermSucc->removePredecessor(&BB, true);
             }
@@ -350,8 +350,8 @@ bool VarDependencySlicer::addAllOpsToIncluded(
 /// We include a successor if there exists an included basic block that is
 /// reachable only via this successor.
 std::set<BasicBlock *> VarDependencySlicer::includedSuccessors(
-        TerminatorInst &Terminator,
-        const BasicBlock *ExitBlock) {
+    Instruction &Terminator,
+    const BasicBlock *ExitBlock) {
 
     // If block has multiple successors, choose which must be included
     if (Terminator.getNumSuccessors() == 0)
@@ -438,7 +438,7 @@ bool VarDependencySlicer::canRemoveBlock(const BasicBlock *bb) {
 // The first block cannot be removed if it has a successor that is included
 // and has incoming edges (since first block cannot have incoming edges).
 bool VarDependencySlicer::canRemoveFirstBlock(const BasicBlock *bb) {
-    for (const auto &Succ : bb->getTerminator()->successors()) {
+    for (const auto &Succ : successors(bb)) {
         if (isIncluded(Succ) && pred_begin(Succ) != pred_end(Succ))
             return false;
     }
@@ -460,7 +460,7 @@ std::set<const BasicBlock *> VarDependencySlicer::reachableBlocks(
 /// Calculate a set of all basic blocks that are reachable via a successor of
 /// a terminator instruction.
 std::set<const BasicBlock *> VarDependencySlicer::reachableBlocksThroughSucc(
-        TerminatorInst *Terminator, BasicBlock *Succ) {
+    Instruction *Terminator, BasicBlock *Succ) {
     // Replace terminator by unconditional branch and find all blocks reachable
     // through the new branch (one that omits all other successors)
     auto NewBranch = BranchInst::Create(Succ, Terminator);

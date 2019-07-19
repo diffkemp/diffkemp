@@ -112,6 +112,7 @@ void simplifyModulesDiff(Config &config,
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
     mam.registerPass([] { return StructureSizeAnalysis(); });
+    mam.registerPass([] { return PassInstrumentationAnalysis(); });
 
     auto AbstractionGeneratorResultL =
             mam.getResult<FunctionAbstractionsGenerator>(*config.First,
