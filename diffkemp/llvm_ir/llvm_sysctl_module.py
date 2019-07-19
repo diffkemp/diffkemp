@@ -81,11 +81,13 @@ class LlvmSysctlModule:
             sysctl = sysctl_list.get_operand(i)
             if sysctl.get_num_operands() == 0:
                 continue
-            size = ffi.new("size_t *")
             # Sysctl option name is the first element of the entry
             # We need one more .get_operand(0) because of gep operator
             name = sysctl.get_operand(0).get_operand(0).get_initializer() \
-                .get_as_string(size).decode("utf-8")
+                .get_as_string()
+            if name.endswith("\x00"):
+                name = name[:-1]
+
             pattern = sysctl_pattern.split(".")[-1]
             if matches(name, pattern):
                 sysctl_name = sysctl_pattern.replace(pattern, name)
