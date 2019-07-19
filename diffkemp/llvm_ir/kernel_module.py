@@ -219,18 +219,19 @@ class LlvmKernelModule:
 
     def get_included_sources(self):
         """
-        Get the list of headers that this module includes.
+        Get the list of source files that this module includes.
         Requires debugging information.
         """
         # Search for all .h files mentioned in the debug info.
-        pattern = re.compile(r"filename:\s*\"([^\"]*)\"")
+        pattern = re.compile(r"filename:\s*\"([^\"]*)\", "
+                             r"directory:\s*\"([^\"]*)\"")
         result = set()
         with open(self.llvm, "r") as llvm:
             for line in llvm.readlines():
                 s = pattern.search(line)
                 if (s and (s.group(1).endswith(".h") or
                            s.group(1).endswith(".c"))):
-                    result.add(s.group(1))
+                    result.add(os.path.join(s.group(2), s.group(1)))
         return result
 
     @staticmethod
