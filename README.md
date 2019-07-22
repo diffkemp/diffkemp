@@ -9,8 +9,9 @@ First, generate snapshots for each kernel version that you need to compare:
     bin/diffkemp generate KERNEL_DIR SNAPSHOT_DIR FUNCTION_LIST
 
 The command creates a DiffKemp snapshot for semantic diff of functions from
-`FUNCTION_LIST` for the kernel located in `KERNEL_DIR` and stores it into
-`SNAPSHOT_DIR`. 
+`FUNCTION_LIST` for the kernel located in `KERNEL_DIR`. The snapshot is stored
+as a directory `SNAPSHOT_DIR`. Warning - if `SNAPSHOT_DIR` exists, it will be
+rewritten.
 
 After that, run the actual semantic comparison:
 
@@ -66,8 +67,8 @@ The analysis is composed of multiple steps:
 ## Running environment
 
 Currently, DiffKemp runs on Linux and needs the following software installed:
-* LLVM 5.0 (currently the only supported version)
-* Python 3 with CFFI
+* LLVM 8.0 (currently the only supported version)
+* Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 * Python packages from `requirements.txt`
 * CScope
 
