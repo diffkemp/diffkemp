@@ -95,6 +95,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
     std::vector<SyntaxDifference> findAsmDifference(const Value *L,
             const Value *R, const Function *ParentL, const Function *ParentR)
             const;
+    /// Detects a change from a function to a macro between two instructions.
+    /// This is necessary because such a change isn't visible in C source.
+    void findMacroFunctionDifference(const Instruction *L,
+            const Instruction *R) const;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
