@@ -92,9 +92,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Looks for inline assembly differences between the certain values.
     /// Note: passing the parent function is necessary in order to properly
     /// generate the SyntaxDifference object.
-    std::vector<SyntaxDifference> findAsmDifference(const Value *L,
-            const Value *R, const Function *ParentL, const Function *ParentR)
-            const;
+    std::vector<SyntaxDifference> findAsmDifference(const CallInst *IL,
+            const CallInst *IR) const;
+
     /// Detects a change from a function to a macro between two instructions.
     /// This is necessary because such a change isn't visible in C source.
     void findMacroFunctionDifference(const Instruction *L,
