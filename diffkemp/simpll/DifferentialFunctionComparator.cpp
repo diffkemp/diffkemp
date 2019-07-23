@@ -210,63 +210,8 @@ int DifferentialFunctionComparator::cmpOperations(
                             !CalledR->getName().startswith("simpll"))
                         ModComparator->tryInline = {CL, CR};
 
-                    // When trying to inline, it is possible that in one of the
-                    // versions a function correspond to a macro in the other.
-                    // This is fixed by inlining when the code is actually
-                    // equal, but would lead to a difference being reported in a
-                    // function in which there is no apparent syntactic one. For
-                    // this reason a SyntaxDifference object is generated to
-                    // report the difference between the function and the macro.
-
-                    // First look whether this is the case described above.
-                    auto LineL = extractLineFromLocation(L->getDebugLoc());
-                    auto LineR = extractLineFromLocation(R->getDebugLoc());
-                    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(),
-                            L->getModule());
-                    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(),
-                            R->getModule());
-                    std::string NameL = getCalledFunction(
-                            dyn_cast<CallInst>(L)->getCalledValue())->getName();
-                    std::string NameR = getCalledFunction(
-                            dyn_cast<CallInst>(R)->getCalledValue())->getName();
-
-                    // Note: the line has to actually have been found for the
-                    // comparison to make sense.
-                    if ((LineL != "") && (LineR != "") && (LineL == LineR) &&
-                        ((MacrosL.find(NameL) == MacrosL.end() &&
-                          MacrosR.find(NameL) != MacrosR.end()) ||
-                         (MacrosL.find(NameR) != MacrosL.end() &&
-                          MacrosR.find(NameR) == MacrosR.end()))) {
-                        std::string trueName;
-                        if ((MacrosL.find(NameL) == MacrosL.end() &&
-                             MacrosR.find(NameL) != MacrosR.end())) {
-                            trueName = NameL;
-                            NameR = NameL + " (macro)";
-                            ModComparator->tryInline =
-                                {dyn_cast<CallInst>(L), nullptr};
-                        } else {
-                            trueName = NameR;
-                            NameL = NameR + " (macro)";
-                            ModComparator->tryInline =
-                                {nullptr, dyn_cast<CallInst>(R)};
-                        }
-
-                        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() <<
-                            "Writing function-macro syntactic difference\n");
-
-                        SyntaxDifference diff;
-                        diff.function = L->getFunction()->getName();
-                        diff.name = trueName;
-                        diff.BodyL = "[macro function difference]";
-                        diff.BodyR = "[macro function difference]";
-                        diff.StackL = CallStack {CallInfo {NameL,
-                            L->getDebugLoc()->getFile()->getFilename(),
-                            L->getDebugLoc()->getLine()}};
-                        diff.StackR = CallStack {CallInfo {NameR,
-                            R->getDebugLoc()->getFile()->getFilename(),
-                            R->getDebugLoc()->getLine()}};
-                        ModComparator->DifferingObjects.push_back(diff);
-                    }
+                    // Look for a macro-function difference.
+                    findMacroFunctionDifference(L, R);
                 }
             }
         } else {
@@ -282,66 +227,8 @@ int DifferentialFunctionComparator::cmpOperations(
                      startswith("simpll"))
                 ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
 
-            // The equivalent of the case above (function changed to a macro)
-            // can also happen in a way that will result in only one function
-            // call (for example when the macro does not start with a call
-            // instruction).
-            auto LineL = extractLineFromLocation(L->getDebugLoc());
-            auto LineR = extractLineFromLocation(R->getDebugLoc());
-            auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(),
-                    L->getModule());
-            auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(),
-                    R->getModule());
-
-            if (isa<CallInst>(L)) {
-                std::string Name = getCalledFunction(
-                        dyn_cast<CallInst>(L)->getCalledValue())->getName();
-                if ((LineL != "") && (LineR != "") && (LineL == LineR) &&
-                    (MacrosL.find(Name) == MacrosL.end()) &&
-                    (MacrosR.find(Name) != MacrosR.end())) {
-                    ModComparator->tryInline = {dyn_cast<CallInst>(L), nullptr};
-
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() <<
-                        "Writing function-macro syntactic difference\n");
-
-                    SyntaxDifference diff;
-                    diff.function = L->getFunction()->getName();
-                    diff.name = Name;
-                    diff.BodyL = "[macro function difference]";
-                    diff.BodyR = "[macro function difference]";
-                    diff.StackL = CallStack {CallInfo {Name,
-                        L->getDebugLoc()->getFile()->getFilename(),
-                        L->getDebugLoc()->getLine()}};
-                    diff.StackR = CallStack {CallInfo {Name + " (macro)",
-                        R->getDebugLoc()->getFile()->getFilename(),
-                        R->getDebugLoc()->getLine()}};
-                    ModComparator->DifferingObjects.push_back(diff);
-                }
-            } else {
-                std::string Name = getCalledFunction(
-                        dyn_cast<CallInst>(R)->getCalledValue())->getName();
-                if ((LineL != "") && (LineR != "") && (LineL == LineR) &&
-                    (MacrosL.find(Name) != MacrosL.end()) &&
-                    (MacrosR.find(Name) == MacrosR.end())) {
-                    ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
-
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() <<
-                        "Writing function-macro syntactic difference\n");
-
-                    SyntaxDifference diff;
-                    diff.function = L->getFunction()->getName();
-                    diff.name = Name;
-                    diff.BodyL = "[macro function difference]";
-                    diff.BodyR = "[macro function difference]";
-                    diff.StackL = CallStack {CallInfo {Name + " (macro)",
-                        L->getDebugLoc()->getFile()->getFilename(),
-                        L->getDebugLoc()->getLine()}};
-                    diff.StackR = CallStack {CallInfo {Name,
-                        R->getDebugLoc()->getFile()->getFilename(),
-                        R->getDebugLoc()->getLine()}};
-                    ModComparator->DifferingObjects.push_back(diff);
-                }
-            }
+            // Look for a macro-function difference.
+            findMacroFunctionDifference(L, R);
         }
     }
     if (Result) {
@@ -376,6 +263,72 @@ int DifferentialFunctionComparator::cmpOperations(
     }
 
     return Result;
+}
+
+/// Detects a change from a function to a macro between two instructions.
+/// This is necessary because such a change isn't visible in C source.
+void DifferentialFunctionComparator::findMacroFunctionDifference(
+        const Instruction *L, const Instruction *R) const {
+    // When trying to inline, it is possible that in one of the versions
+    // a function correspond to a macro in the other. This is fixed by inlining
+    // when the code is actually equal, but would lead to a difference being
+    // reported in a function in which there is no apparent syntactic one. For
+    // this reason a SyntaxDifference object is generated to report
+    // the difference between the function and the macro.
+
+    // First look whether this is the case described above.
+    auto LineL = extractLineFromLocation(L->getDebugLoc());
+    auto LineR = extractLineFromLocation(R->getDebugLoc());
+    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(),
+            L->getModule());
+    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(),
+            R->getModule());
+    std::string NameL;
+    std::string NameR;
+    if (isa<CallInst>(L))
+        NameL = getCalledFunction(
+            dyn_cast<CallInst>(L)->getCalledValue())->getName();
+    if (isa<CallInst>(R))
+        NameR = getCalledFunction(
+            dyn_cast<CallInst>(R)->getCalledValue())->getName();
+
+    // Note: the line has to actually have been found for the comparison to make
+    // sense.
+    if ((LineL != "") && (LineR != "") && (LineL == LineR) &&
+        ((MacrosL.find(NameL) == MacrosL.end() &&
+          MacrosR.find(NameL) != MacrosR.end()) ||
+         (MacrosL.find(NameR) != MacrosL.end() &&
+          MacrosR.find(NameR) == MacrosR.end()))) {
+        std::string trueName;
+        if ((MacrosL.find(NameL) == MacrosL.end() &&
+             MacrosR.find(NameL) != MacrosR.end())) {
+            trueName = NameL;
+            NameR = NameL + " (macro)";
+            ModComparator->tryInline =
+                {dyn_cast<CallInst>(L), nullptr};
+        } else {
+            trueName = NameR;
+            NameL = NameR + " (macro)";
+            ModComparator->tryInline =
+                {nullptr, dyn_cast<CallInst>(R)};
+        }
+
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() <<
+            "Writing function-macro syntactic difference\n");
+
+        SyntaxDifference diff;
+        diff.function = L->getFunction()->getName();
+        diff.name = trueName;
+        diff.BodyL = "[macro function difference]";
+        diff.BodyR = "[macro function difference]";
+        diff.StackL = CallStack {CallInfo {NameL,
+            L->getDebugLoc()->getFile()->getFilename(),
+            L->getDebugLoc()->getLine()}};
+        diff.StackR = CallStack {CallInfo {NameR,
+            R->getDebugLoc()->getFile()->getFilename(),
+            R->getDebugLoc()->getLine()}};
+        ModComparator->DifferingObjects.push_back(diff);
+    }
 }
 
 /// Compare structure size with a constant.
