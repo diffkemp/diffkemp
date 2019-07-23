@@ -43,6 +43,8 @@ class ModuleComparator {
     // Structure size to structure name map.
     StructureSizeAnalysis::Result &StructSizeMapL;
     StructureSizeAnalysis::Result &StructSizeMapR;
+    // Counter of assembly diffs
+    int asmDifferenceCounter = 0;
 
     std::vector<ConstFunPair> MissingDefs;
 

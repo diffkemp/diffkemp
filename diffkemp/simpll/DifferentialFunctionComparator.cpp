@@ -127,7 +127,7 @@ int DifferentialFunctionComparator::cmpGEPs(
         // Just the index itself is compared.
         return cmpValues(GEPL->getOperand(1), GEPR->getOperand(1));
     } else
-        // Indicies can't be compared by name, because they are not constant
+        // Indices can't be compared by name, because they are not constant
         return OriginalResult;
 
     return 0;
@@ -503,11 +503,14 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             macroDiffs.begin(), macroDiffs.end());
 
                         // Try to find assembly functions causing the difference
-                        auto asmDiffs = findAsmDifference(OpL, OpR,
-                            BBL->getParent(), BBR->getParent());
-                        ModComparator->DifferingObjects.insert(
-                            ModComparator->DifferingObjects.end(),
-                            asmDiffs.begin(), asmDiffs.end());
+                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
+                            auto asmDiffs = findAsmDifference(
+                                    dyn_cast<CallInst>(&*InstL),
+                                    dyn_cast<CallInst>(&*InstR));
+                            ModComparator->DifferingObjects.insert(
+                                ModComparator->DifferingObjects.end(),
+                                asmDiffs.begin(), asmDiffs.end());
+                        }
 
                         return Res;
                     }
@@ -528,14 +531,15 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
     return 0;
 }
 
-/// Looks for inline assembly differences between the certain values.
+/// Looks for inline assembly differences between the call instructions.
 /// Note: passing the parent function is necessary in order to properly generate
 /// the SyntaxDifference object.
 std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
-        const Value *L, const Value *R, const Function *ParentL,
-        const Function *ParentR) const {
-    auto FunL = dyn_cast<Function>(L);
-    auto FunR = dyn_cast<Function>(R);
+        const CallInst *IL, const CallInst *IR) const {
+    auto FunL = getCalledFunction(IL->getCalledValue());
+    auto FunR = getCalledFunction(IR->getCalledValue());
+    auto ParentL = IL->getFunction();
+    auto ParentR = IR->getFunction();
 
     if (!FunL || !FunR)
         // Both values have to be functions
@@ -552,11 +556,29 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
         // The difference is somewhere else
         return {};
 
+    std::string argumentNamesL, argumentNamesR;
+    for (auto T : {std::make_tuple(IL, &argumentNamesL),
+                   std::make_tuple(IR, &argumentNamesR)}) {
+        const CallInst *I = std::get<0>(T);
+        std::string *argumentNames = std::get<1>(T);
+
+        for (int i = 0; i < I->getNumArgOperands(); i++) {
+            const Value *Op = I->getArgOperand(i);
+            std::string OpName = getIdentifierForValue(Op, DI->StructFieldNames,
+                    I->getFunction());
+
+            if (*argumentNames == "")
+                *argumentNames += OpName;
+            else
+                *argumentNames += ", " + OpName;
+        }
+    }
+
     // Create difference object.
     // Note: the call stack is left empty here, it will be added in reportOutput
     SyntaxDifference diff;
-    diff.BodyL = AsmL;
-    diff.BodyR = AsmR;
+    diff.BodyL = AsmL.str() + " (args: " + argumentNamesL + ")";
+    diff.BodyR = AsmR.str() + " (args: " + argumentNamesR + ")";
     diff.StackL = CallStack();
     diff.StackL.push_back(CallInfo {
         "(generated assembly code)",
@@ -570,7 +592,8 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
         ParentR->getSubprogram()->getLine()
     });
     diff.function = ParentL->getName();
-    diff.name = "assembly code";
+    diff.name = "assembly code " +
+            std::to_string(++ModComparator->asmDifferenceCounter);
 
     return {diff};
 }

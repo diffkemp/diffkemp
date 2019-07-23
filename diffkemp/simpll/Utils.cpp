@@ -21,6 +21,7 @@
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_ostream.h>
 #include <set>
+#include <sstream>
 #include <iostream>
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
@@ -311,4 +312,202 @@ void findAndReplace(std::string &input, std::string find,
         input.replace(position, find.length(), replace);
         position += replace.length();
     }
+}
+
+/// Convert constant expression to instruction. (Copied from LLVM and modified)
+/// Note: this is for constant ConstantExpr pointers; for non-constant ones,
+/// the built-in getAsInstruction method is sufficient.
+const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
+    SmallVector<Value *, 4> ValueOperands(CEx->op_begin(), CEx->op_end());
+    ArrayRef<Value*> Ops(ValueOperands);
+
+    switch (CEx->getOpcode()) {
+    case Instruction::Trunc:
+    case Instruction::ZExt:
+    case Instruction::SExt:
+    case Instruction::FPTrunc:
+    case Instruction::FPExt:
+    case Instruction::UIToFP:
+    case Instruction::SIToFP:
+    case Instruction::FPToUI:
+    case Instruction::FPToSI:
+    case Instruction::PtrToInt:
+    case Instruction::IntToPtr:
+    case Instruction::BitCast:
+    case Instruction::AddrSpaceCast:
+        return CastInst::Create((Instruction::CastOps) CEx->getOpcode(), Ops[0],
+                CEx->getType());
+    case Instruction::Select:
+        return SelectInst::Create(Ops[0], Ops[1], Ops[2]);
+    case Instruction::InsertElement:
+        return InsertElementInst::Create(Ops[0], Ops[1], Ops[2]);
+    case Instruction::ExtractElement:
+        return ExtractElementInst::Create(Ops[0], Ops[1]);
+    case Instruction::InsertValue:
+        return InsertValueInst::Create(Ops[0], Ops[1], CEx->getIndices());
+    case Instruction::ExtractValue:
+        return ExtractValueInst::Create(Ops[0], CEx->getIndices());
+    case Instruction::ShuffleVector:
+        return new ShuffleVectorInst(Ops[0], Ops[1], Ops[2]);
+
+    case Instruction::GetElementPtr: {
+        const auto *GO = cast<GEPOperator>(CEx);
+        if (GO->isInBounds())
+            return GetElementPtrInst::CreateInBounds(GO->getSourceElementType(),
+                    Ops[0], Ops.slice(1));
+        return GetElementPtrInst::Create(GO->getSourceElementType(), Ops[0],
+                Ops.slice(1));
+    }
+    case Instruction::ICmp:
+    case Instruction::FCmp:
+        return CmpInst::Create((Instruction::OtherOps) CEx->getOpcode(),
+                (CmpInst::Predicate) CEx->getPredicate(), Ops[0], Ops[1]);
+
+    default:
+        assert(CEx->getNumOperands() == 2 && "Must be binary operator?");
+        BinaryOperator *BO = BinaryOperator::Create(
+                (Instruction::BinaryOps) CEx->getOpcode(), Ops[0], Ops[1]);
+        if (isa<OverflowingBinaryOperator>(BO)) {
+            BO->setHasNoUnsignedWrap(
+                    CEx->getRawSubclassOptionalData()
+                            & OverflowingBinaryOperator::NoUnsignedWrap);
+            BO->setHasNoSignedWrap(
+                    CEx->getRawSubclassOptionalData()
+                            & OverflowingBinaryOperator::NoSignedWrap);
+        }
+        if (isa<PossiblyExactOperator>(BO))
+            BO->setIsExact(
+                    CEx->getRawSubclassOptionalData()
+                            & PossiblyExactOperator::IsExact);
+        return BO;
+    }
+}
+
+/// Generates human-readable C-like identifier for value.
+std::string getIdentifierForValue(const Value *Val,
+        const std::map<std::pair<StructType *, uint64_t>, StringRef>
+        &StructFieldNames, const Function *Parent) {
+    // This function uses a different approach for different types of values.
+    if (auto GEPi = dyn_cast<GetElementPtrInst>(Val)) {
+        // GEP instruction.
+        // First find the original variable name, then try to append the names
+        // of all indices.
+        std::string name = getIdentifierForValue(GEPi->getOperand(0),
+                StructFieldNames, Parent);
+
+        std::vector<Value *> Indices;
+
+        for (auto idx = GEPi->idx_begin(); idx != GEPi->idx_end(); ++idx) {
+            auto ValueType = GEPi->getIndexedType(GEPi->getSourceElementType(),
+                                                  ArrayRef<Value *>(Indices));
+            Value *Index = idx->get();
+
+            if (isa<ConstantInt>(Index) && (dyn_cast<ConstantInt>(Index)->
+                    getValue().getZExtValue() == 0) &&
+                    (idx == GEPi->idx_begin())) {
+                // Do not print the first zero index
+                continue;
+            }
+
+            if (isa<StructType>(ValueType)) {
+                // Structure type indexing
+                auto NumericIndex =
+                        dyn_cast<ConstantInt>(Index)->getValue();
+                auto IndexName = StructFieldNames.find({
+                    dyn_cast<StructType>(ValueType),
+                    NumericIndex.getZExtValue()
+                });
+                if (IndexName != StructFieldNames.end()) {
+                    // We can use the index name to create a C-like syntax.
+                    name += "->" + IndexName->second.str();
+                } else {
+                    name += "->" +
+                            std::to_string(NumericIndex.getZExtValue());
+                }
+            } else {
+                // Array type indexing (the index doesn't have to be constant)
+                std::string IdxName = getIdentifierForValue(Index,
+                        StructFieldNames, Parent);
+
+                // Remove reference operator to match C syntax
+                name = name.substr(2, name.size() - 3);
+
+                if (IdxName != "") {
+                    name += "[" + IdxName + "]";
+                } else {
+                    name += "[<unknown>]";
+                }
+            }
+
+            // We get the pointer to the data, not the data itself.
+            name = "&(" + name + ")";
+        }
+
+        return name;
+    } else if (auto CEx = dyn_cast<ConstantExpr>(Val)) {
+        // Constant expressions are converted to instructions.
+        return getIdentifierForValue(getConstExprAsInstruction(CEx),
+                StructFieldNames, Parent);
+    } else if (auto BitCast = dyn_cast<BitCastInst>(Val)) {
+        // Bit casts are expanded to C-like cast syntax.
+        std::string Casted = getIdentifierForValue(BitCast->getOperand(0),
+                StructFieldNames, Parent);
+        return "((" + typeName(BitCast->getDestTy()) + ") " + Casted + ")";
+    } else if (auto ZExt = dyn_cast<ZExtInst>(Val)) {
+        // ZExt is treated the same as a statement without it
+        return getIdentifierForValue(ZExt->getOperand(0), StructFieldNames,
+                Parent);
+    } else if (auto Load = dyn_cast<LoadInst>(Val)) {
+        // Load instruction is treated as the dereference operator
+        std::string Internal = getIdentifierForValue(Load->getOperand(0),
+                StructFieldNames, Parent);
+
+        if (Internal[0] == '&')
+            // Reference and dereference operator cancel out.
+            // (delete & and parethenses)
+            return Internal.substr(2, Internal.size() - 3);
+        else
+            return "*(" + Internal + ")";
+    } else if (Val->hasName()) {
+        // If everything fails, try to get the name directly from the value
+        return Val->getName().str();
+    } else if (auto Const = dyn_cast<Constant>(Val)) {
+        // Constant to string is already implemented in a different function
+        return valueAsString(Const);
+    } else if (Parent) {
+        // Check if the value is a function argument - in case it is, extract
+        // the argument name.
+        int idx = 0;
+
+        // Extract register number
+        std::string ValDump; llvm::raw_string_ostream ValDumStrm(ValDump);
+        Val->print(ValDumStrm);
+        std::string RegName = ValDump.substr(ValDump.find_last_of('%') + 1,
+                std::string::npos);
+        int RegNum;
+        std::istringstream Iss(RegName);
+        Iss >> RegNum;
+        if (Iss.fail())
+            return "<unknown>";
+
+        // Find the argument name
+        if (RegNum >= Parent->arg_size())
+            // Not a function argument
+            return "<unknown>";
+
+        DISubprogram *Sub = Parent->getSubprogram();
+        DINodeArray funArgs = Sub->getRetainedNodes();
+        for (DINode *Node : funArgs) {
+            if (idx == RegNum) {
+                DILocalVariable *LocVar = dyn_cast<DILocalVariable>(Node);
+                if (!LocVar)
+                    return "<unknown>";
+                return LocVar->getName().str();
+            }
+            ++idx;
+        }
+
+        return "<unknown>";
+    } else
+        return "<unknown>";
 }

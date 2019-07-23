@@ -14,6 +14,7 @@
 #ifndef DIFFKEMP_SIMPLL_UTILS_H
 #define DIFFKEMP_SIMPLL_UTILS_H
 
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Function.h>
 #include <unordered_map>
@@ -103,5 +104,15 @@ bool isValidCharForIdentifierStart(char ch);
 /// given in the third argument.
 void findAndReplace(std::string &input, std::string find,
         std::string replace);
+
+/// Convert constant expression to instruction. (Copied from LLVM and modified)
+/// Note: this is for constant ConstantExpr pointers; for non-constant ones,
+/// the built-in getAsInstruction method is sufficient.
+const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx);
+
+/// Finds the name of a value (in case there exists one).
+std::string getIdentifierForValue(const Value *Val,
+        const std::map<std::pair<StructType *, uint64_t>, StringRef>
+        &StructFieldNames, const Function *Parent = nullptr);
 
 #endif //DIFFKEMP_SIMPLL_UTILS_H
