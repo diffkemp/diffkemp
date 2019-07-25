@@ -383,6 +383,31 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
     }
 }
 
+/// Generates human-readable C-like identifier for type.
+std::string getIdentifierForType(Type *Ty) {
+    if (auto STy = dyn_cast<StructType>(Ty)) {
+        // Remove prefix and append "struct"
+        if (STy->getStructName().startswith("union"))
+            return "union " + STy->getStructName().str().substr(6);
+        else if (STy->getStructName().startswith("struct"))
+            return "struct " + STy->getStructName().str().substr(7);
+        else
+            return "<unknown>";
+    } else if (auto IntTy = dyn_cast<IntegerType>(Ty)) {
+        if (IntTy->getBitWidth() == 1)
+            return "bool";
+        else
+            return "int" + std::to_string(IntTy->getBitWidth()) + "_t";
+    } else if (auto ArrTy = dyn_cast<ArrayType>(Ty)) {
+        return getIdentifierForType(ArrTy->getElementType()) + "[]";
+    } else if (Ty->isVoidTy()) {
+        return "void";
+    } else if (auto PointTy = dyn_cast<PointerType>(Ty)) {
+        return getIdentifierForType(PointTy->getElementType()) + " *";
+    } else
+        return "<unknown>";
+}
+
 /// Generates human-readable C-like identifier for value.
 std::string getIdentifierForValue(const Value *Val,
         const std::map<std::pair<StructType *, uint64_t>, StringRef>
@@ -452,7 +477,8 @@ std::string getIdentifierForValue(const Value *Val,
         // Bit casts are expanded to C-like cast syntax.
         std::string Casted = getIdentifierForValue(BitCast->getOperand(0),
                 StructFieldNames, Parent);
-        return "((" + typeName(BitCast->getDestTy()) + ") " + Casted + ")";
+        return "((" + getIdentifierForType(BitCast->getDestTy()) + ") " + Casted
+                + ")";
     } else if (auto ZExt = dyn_cast<ZExtInst>(Val)) {
         // ZExt is treated the same as a statement without it
         return getIdentifierForValue(ZExt->getOperand(0), StructFieldNames,

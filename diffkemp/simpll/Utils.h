@@ -110,6 +110,9 @@ void findAndReplace(std::string &input, std::string find,
 /// the built-in getAsInstruction method is sufficient.
 const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx);
 
+/// Generates human-readable C-like identifier for type.
+std::string getIdentifierForType(Type *Ty);
+
 /// Finds the name of a value (in case there exists one).
 std::string getIdentifierForValue(const Value *Val,
         const std::map<std::pair<StructType *, uint64_t>, StringRef>
