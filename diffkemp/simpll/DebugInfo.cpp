@@ -154,19 +154,22 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                 int indexSecond = getTypeMemberIndex(*TypeDISecond,
                                                      elementName);
 
-                // If indices do not match, align the first one to
-                // be the same as the second one
-                if (indexSecond > 0 && indexFirst != indexSecond) {
-                    indexMap.at(indexFirst) =
-                            (unsigned) indexSecond;
-                    setNewAlignmentOfIndex(
-                            *GEP, indices.size(),
-                            (unsigned) indexSecond,
-                            IndexConstant->getBitWidth(),
-                            ModFirst.getContext());
+                if (indexSecond > 0) {
+                    if (indexFirst != indexSecond) {
+                        // If indices do not match, align the first one to
+                        // be the same as the second one
+                        indexMap.at(indexFirst) =
+                                (unsigned) indexSecond;
+                        setNewAlignmentOfIndex(
+                                *GEP, indices.size(),
+                                (unsigned) indexSecond,
+                                IndexConstant->getBitWidth(),
+                                ModFirst.getContext());
+                    }
 
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL, GEP->print(dbgs()));
 
+                    // Insert the names of the indices into StructFieldNames.
                     StructFieldNames.insert(
                         {{dyn_cast<StructType>(indexedType),
                             indexFirst}, elementName});
