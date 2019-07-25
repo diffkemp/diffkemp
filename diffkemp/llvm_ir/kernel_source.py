@@ -281,9 +281,7 @@ class KernelSource:
         for src in srcs:
             mod = self.get_module_from_source(src)
             if mod:
-                mod.parse_module()
                 if not (mod.has_function(symbol) or mod.has_global(symbol)):
-                    mod.clean_module()
                     mod = None
                 else:
                     break

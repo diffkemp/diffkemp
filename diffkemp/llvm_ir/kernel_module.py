@@ -156,14 +156,15 @@ class LlvmKernelModule:
 
     def has_function(self, fun):
         """Check if module contains a function definition."""
-        self.parse_module()
-        llvm_fun = self.llvm_module.get_named_function(fun)
-        return llvm_fun is not None and not llvm_fun.is_declaration()
+        pattern = re.compile(r"^define.*@{}".format(fun), flags=re.MULTILINE)
+        with open(self.llvm, "r") as llvm_file:
+            return pattern.search(llvm_file.read()) is not None
 
     def has_global(self, glob):
         """Check if module contains a global variable with the given name."""
-        self.parse_module()
-        return self.llvm_module.get_named_global(glob) is not None
+        pattern = re.compile(r"^@{}\s*=".format(glob), flags=re.MULTILINE)
+        with open(self.llvm, "r") as llvm_file:
+            return pattern.search(llvm_file.read()) is not None
 
     def is_declaration(self, fun):
         """
