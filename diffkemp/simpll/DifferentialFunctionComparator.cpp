@@ -532,8 +532,6 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
 }
 
 /// Looks for inline assembly differences between the call instructions.
-/// Note: passing the parent function is necessary in order to properly generate
-/// the SyntaxDifference object.
 std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
         const CallInst *IL, const CallInst *IR) const {
     auto FunL = getCalledFunction(IL->getCalledValue());
@@ -556,9 +554,18 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
         // The difference is somewhere else
         return {};
 
+    // Iterate over inline asm operands and generate a C-like identifier for
+    // every one of them.
+    // Note: because this function's main purpose is to show inline assembly
+    // differences in cases when the original macro containing them cannot be
+    // found by SourceCodeUtils, the original arguments in the C source code
+    // also cannot be localed, therefore the C-like identifier is used instead.
     std::string argumentNamesL, argumentNamesR;
     for (auto T : {std::make_tuple(IL, &argumentNamesL),
                    std::make_tuple(IR, &argumentNamesR)}) {
+        // The identifier generation is done separately for the left and right
+        // call instruction; vector of tuples and pointers are used in order to
+        // re-use the code for both.
         const CallInst *I = std::get<0>(T);
         std::string *argumentNames = std::get<1>(T);
 

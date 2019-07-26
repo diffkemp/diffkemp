@@ -314,7 +314,10 @@ void findAndReplace(std::string &input, std::string find,
     }
 }
 
-/// Convert constant expression to instruction. (Copied from LLVM and modified)
+/// Convert constant expression to instruction. (Copied from LLVM and modified
+/// to work outside the ConstantExpr class; otherwise the function is the same,
+/// the only purpose of copying the function is making it work on constant
+/// input.)
 /// Note: this is for constant ConstantExpr pointers; for non-constant ones,
 /// the built-in getAsInstruction method is sufficient.
 const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
