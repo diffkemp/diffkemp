@@ -28,6 +28,7 @@
 #include "passes/SimplifyKernelGlobalsPass.h"
 #include "passes/StructureSizeAnalysis.h"
 #include "passes/UnifyMemcpyPass.h"
+#include "passes/UnionHashGeneratorPass.h"
 #include "passes/VarDependencySlicer.h"
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
@@ -86,6 +87,7 @@ void preprocessModule(Module &Mod,
 
     mpm.addPass(SimplifyKernelGlobalsPass {});
     mpm.addPass(RemoveLifetimeCallsPass {});
+    mpm.addPass(UnionHashGeneratorPass {});
 
     mpm.run(Mod, mam);
 }
