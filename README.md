@@ -21,6 +21,25 @@ The command compares functions from function lists stored inside the snapshots
 pairwise and prints syntactic diffs (thanks to the `--syntax-diff` option) of
 functions that are semantically different.
 
+### Comparing sysctl options
+
+Apart from comparing specific functions, DiffKemp supports comparison of
+semantics of sysctl options. List of the options to compare can be passed as the
+`FUNCTION_LIST` in the `generate` command. In such case, use `--sysctl` switch
+to generate snapshot for sysctl parameter comparison. The `compare` command is
+used in normal way.
+
+Sysctl option comparison compares semantics of the proc handler function and
+semantics of all functions using the data variable that the sysctl option sets.
+
+It is possible to use patterns to specify a number of multiple sysctl options at
+once such as:
+* `kernel.*`
+* `kernel.{sysctl-1|sysctl-2}`
+
+Currently, these sysctl option groups are supported: `kernel.*`,
+`vm.*`, `fs.*`, `net.core.*`, `net.ipv4.conf.*`.
+
 ## About
 The tool uses static analysis methods to automatically determine how the effect
 of a chosen kernel function or option (module parameter, sysctl) changed between
