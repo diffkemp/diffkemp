@@ -65,7 +65,7 @@ class LlvmSysctlModule:
         # sysctl table is a global variable
         table = self.mod.llvm_module.get_named_global(ctl_table[0])
         if not table:
-            return None
+            return []
 
         # Get global variable initializer. If sysctl_name contains some indices
         # follow them to get the actual table.
@@ -73,7 +73,7 @@ class LlvmSysctlModule:
         for i in ctl_table[1:]:
             sysctl_list = sysctl_list.get_operand(int(i))
         if not sysctl_list:
-            return None
+            return []
 
         names = []
         # Iterate all entries in the table

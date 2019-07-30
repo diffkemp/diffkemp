@@ -262,6 +262,8 @@ class LlvmKernelModule:
         """
         self.parse_module()
         glob = self.llvm_module.get_named_global(param.name)
+        if not glob:
+            return set()
         result = set()
         for use in glob.iter_uses():
             if use.user.get_kind() == InstructionValueKind:

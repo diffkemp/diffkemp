@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, SUPPRESS
 from diffkemp.config import Config
 from diffkemp.function_list import FunctionList
-from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
+from diffkemp.llvm_ir.kernel_module import KernelParam, LlvmKernelModule
 from diffkemp.llvm_ir.kernel_source import KernelSource, \
     SourceNotFoundException
 from diffkemp.semdiff.function_diff import functions_diff
@@ -32,6 +32,9 @@ def __make_argument_parser():
                              help="output directory of the snapshot")
     generate_ap.add_argument("functions_list",
                              help="list of functions to compare")
+    generate_ap.add_argument("--sysctl", action="store_true",
+                             help="function list is a list of function "
+                                  "parameters")
     generate_ap.set_defaults(func=generate)
 
     # "compare" sub-command
@@ -87,26 +90,101 @@ def generate(args):
     """
     source = KernelSource(args.kernel_dir, True)
     args.output_dir = os.path.abspath(args.output_dir)
-    fun_list = FunctionList(args.output_dir)
+
+    kind = "sysctl" if args.sysctl else None
+    fun_list = FunctionList(args.output_dir, kind)
+    if kind is None:
+        fun_list.add_none_group()
 
     # Cleanup or create the output directory
     if os.path.isdir(args.output_dir):
         shutil.rmtree(args.output_dir)
     os.mkdir(args.output_dir)
 
-    # Build sources for functions from the list into LLVM IR
+    # Build sources for symbols from the list into LLVM IR
     with open(args.functions_list, "r") as fun_list_file:
         for line in fun_list_file.readlines():
-            fun = line.strip()
-            if not fun or not (fun[0].isalpha() or fun[0] == "_"):
+            symbol = line.strip()
+            if not symbol or not (symbol[0].isalpha() or symbol[0] == "_"):
                 continue
-            sys.stdout.write("{}: ".format(fun))
-            try:
-                llvm_mod = source.get_module_for_symbol(fun)
-                print(os.path.relpath(llvm_mod.llvm, args.kernel_dir))
-                fun_list.add(fun, llvm_mod)
-            except SourceNotFoundException:
-                print("source not found")
+            if args.sysctl:
+                # For a sysctl parameter, we have to:
+                #  - get LLVM of a file which defines the sysctl option
+                #  - find and compile proc handler function and add it to the
+                #    snapshot
+                #  - find sysctl data variable
+                #  - find, complile, and add to snapshot all functions that
+                #    use the data variable
+
+                # Get module with sysctl definitions
+                try:
+                    sysctl_mod = source.get_sysctl_module(symbol)
+                except SourceNotFoundException:
+                    print("{}: sysctl not supported".format(symbol))
+
+                # Iterate all sysctls represented by the symbol (it can be
+                # a pattern).
+                sysctl_list = sysctl_mod.parse_sysctls(symbol)
+                if not sysctl_list:
+                    print("{}: no sysctl found".format(symbol))
+                for sysctl in sysctl_list:
+                    print("{}:".format(sysctl))
+                    # New group in function list for the sysctl
+                    fun_list.add_group(sysctl)
+
+                    # Proc handler function for sysctl
+                    proc_fun = sysctl_mod.get_proc_fun(sysctl)
+                    if proc_fun:
+                        try:
+                            proc_fun_mod = source.get_module_for_symbol(
+                                proc_fun)
+                            fun_list.add(name=proc_fun,
+                                         llvm_mod=proc_fun_mod,
+                                         glob_var=None,
+                                         tag="proc handler function",
+                                         group=sysctl)
+                            print("  {}: {} (proc handler)".format(
+                                proc_fun,
+                                os.path.relpath(proc_fun_mod.llvm,
+                                                args.kernel_dir)))
+                        except SourceNotFoundException:
+                            print("  could not build proc handler")
+
+                    # Functions using the sysctl data variable
+                    data = sysctl_mod.get_data(sysctl)
+                    if not data:
+                        continue
+                    for data_src in source.find_srcs_using_symbol(data.name):
+                        data_mod = source.get_module_from_source(data_src)
+                        if not data_mod:
+                            continue
+                        for data_fun in \
+                                data_mod.get_functions_using_param(data):
+                            if data_fun == proc_fun:
+                                continue
+                            fun_list.add(
+                                name=data_fun,
+                                llvm_mod=data_mod,
+                                glob_var=data.name,
+                                tag="function using sysctl data "
+                                "variable \"{}\"".format(data.name),
+                                group=sysctl)
+                            print(
+                                "  {}: {} (using data variable \"{}\")".format(
+                                    data_fun,
+                                    os.path.relpath(data_mod.llvm,
+                                                    args.kernel_dir),
+                                    data.name))
+            else:
+                try:
+                    # For a normal function, we compile its source and include
+                    # it into the snapshot
+                    sys.stdout.write("{}: ".format(symbol))
+                    llvm_mod = source.get_module_for_symbol(symbol)
+                    print(os.path.relpath(llvm_mod.llvm, args.kernel_dir))
+                    fun_list.add(symbol, llvm_mod)
+                except SourceNotFoundException:
+                    print("source not found")
 
     # Copy LLVM files to the snapshot
     source.copy_source_files(fun_list.modules(), args.output_dir)
@@ -121,11 +199,18 @@ def generate(args):
 
 
 def compare(args):
+    """
+    Compare snapshots of linux kernels. Runs the semantic comparison and shows
+    information about the compared functions that are semantically different.
+    """
+    # Parse old snapshot
     old_functions = FunctionList(args.snapshot_dir_old)
     with open(os.path.join(args.snapshot_dir_old, "functions.yaml"),
               "r") as fun_list_yaml:
         old_functions.from_yaml(fun_list_yaml.read())
     old_source = KernelSource(args.snapshot_dir_old)
+
+    # Parse new snapshot
     new_functions = FunctionList(args.snapshot_dir_new)
     with open(os.path.join(args.snapshot_dir_new, "functions.yaml"),
               "r") as fun_list_yaml:
@@ -142,39 +227,59 @@ def compare(args):
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old)
 
-    for fun, old_mod in sorted(old_functions.functions.items()):
-        new_mod = new_functions.get_by_name(fun)
-        if not (old_mod.has_function(fun) and new_mod.has_function(fun)):
-            continue
+    for group_name, group in sorted(old_functions.groups.items()):
+        group_printed = False
 
-        fun_result = functions_diff(
-            mod_first=old_mod, mod_second=new_mod,
-            fun_first=fun, fun_second=fun,
-            glob_var=None, config=config)
+        for fun, old_fun_desc in sorted(group.functions.items()):
+            # Check if the function exists in the other snapshot
+            new_fun_desc = new_functions.get_by_name(fun, group_name)
+            if not (new_fun_desc and
+                    old_fun_desc.mod.has_function(fun) and
+                    new_fun_desc.mod.has_function(fun)):
+                continue
 
-        if fun_result is not None:
-            if args.regex_filter is not None:
-                # Filter results by regex
-                pattern = re.compile(args.regex_filter)
-                for called_res in fun_result.inner.values():
-                    if pattern.search(called_res.diff):
-                        break
-                else:
-                    fun_result.kind = Result.Kind.EQUAL_SYNTAX
+            # If function has a global variable, set it
+            glob_var = KernelParam(old_fun_desc.glob_var) \
+                if old_fun_desc.glob_var else None
 
-            result.add_inner(fun_result)
-            if fun_result.kind in [Result.Kind.ERROR, Result.Kind.UNKNOWN]:
-                print("{}: {}".format(fun, str(fun_result.kind)))
-            elif fun_result.kind == Result.Kind.NOT_EQUAL:
-                print_syntax_diff(args.snapshot_dir_old,
-                                  args.snapshot_dir_new,
-                                  fun, fun_result, False,
-                                  args.show_diff)
+            # Run the semantic diff
+            fun_result = functions_diff(
+                mod_first=old_fun_desc.mod, mod_second=new_fun_desc.mod,
+                fun_first=fun, fun_second=fun,
+                glob_var=glob_var, config=config)
 
-        # Clean LLVM modules (allow GC to collect the occupied memory)
-        old_mod.clean_module()
-        new_mod.clean_module()
-        LlvmKernelModule.clean_all()
+            if fun_result is not None:
+                if args.regex_filter is not None:
+                    # Filter results by regex
+                    pattern = re.compile(args.regex_filter)
+                    for called_res in fun_result.inner.values():
+                        if pattern.search(called_res.diff):
+                            break
+                    else:
+                        fun_result.kind = Result.Kind.EQUAL_SYNTAX
+
+                result.add_inner(fun_result)
+
+                # Printing information about failures and non-equal functions.
+                if fun_result.kind in [Result.Kind.NOT_EQUAL,
+                                       Result.Kind.ERROR, Result.Kind.UNKNOWN]:
+                    if group_name is not None and not group_printed:
+                        print("{}:".format(group_name))
+                        group_printed = True
+                    if fun_result.kind == Result.Kind.NOT_EQUAL:
+                        print_syntax_diff(args.snapshot_dir_old,
+                                          args.snapshot_dir_new,
+                                          fun, fun_result, old_fun_desc.tag,
+                                          False,
+                                          args.show_diff,
+                                          0 if group_name is None else 2)
+                    else:
+                        print("{}: {}".format(fun, str(fun_result.kind)))
+
+            # Clean LLVM modules (allow GC to collect the occupied memory)
+            old_fun_desc.mod.clean_module()
+            new_fun_desc.mod.clean_module()
+            LlvmKernelModule.clean_all()
 
     if args.report_stat:
         print("")
@@ -189,8 +294,8 @@ def logs_dirname(src_version, dest_version):
     return "kabi-diff-{}_{}".format(src_version, dest_version)
 
 
-def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, log_files,
-                      show_diff):
+def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
+                      log_files, show_diff, initial_indent):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
@@ -199,7 +304,8 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, log_files,
     :param fun: Name of the analysed function
     :param fun_result: Result of the analysis
     :param log_files: True if the output is to be written into a file
-    :param print_empty_diffs: Print empty syntax diffs.
+    :param show_diff: Print syntax diffs.
+    :param initial_indent: Initial indentation of printed messages
     """
     def text_indent(text, width):
         """Indent each line in the text by a number of spaces given by width"""
@@ -210,11 +316,12 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, log_files,
             output = open(
                 os.path.join(logs_dirname(snapshot_old, snapshot_new),
                              "{}.diff".format(fun)), 'w')
-            indent = 2
+            indent = initial_indent + 2
         else:
             output = sys.stdout
-            indent = 4
-            print("{}:".format(fun))
+            output.write(text_indent("{} ({}):\n".format(fun, fun_tag),
+                                     initial_indent))
+            indent = initial_indent + 4
 
         for called_res in fun_result.inner.values():
             if called_res.diff == "" and called_res.first.covered_by_syn_diff:
@@ -225,7 +332,7 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, log_files,
                 text_indent("{} differs:\n".format(called_res.first.name),
                             indent - 2))
             if not log_files:
-                print("  {{{")
+                output.write(text_indent("{{{\n", indent - 2))
 
             if called_res.first.callstack:
                 output.write(
@@ -257,5 +364,5 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, log_files,
                         called_res.diff, indent))
 
             if not log_files:
-                print("  }}}")
+                output.write(text_indent("}}}\n", indent - 2))
             output.write("\n")
