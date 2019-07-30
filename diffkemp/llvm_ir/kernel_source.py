@@ -315,10 +315,12 @@ class KernelSource:
                     src = "net/ipv4/sysctl_net_ipv4.c"
                     table = "ipv4_table"
                     entries = entries[2:]
-            if entries[1] == "core":
+            elif entries[1] == "core":
                 src = "net/core/sysctl_net_core.c"
                 table = "net_core_table"
                 entries = entries[2:]
+            else:
+                raise SourceNotFoundException(sysctl)
         else:
             raise SourceNotFoundException(sysctl)
 
@@ -332,7 +334,7 @@ class KernelSource:
                 return sysctl_mod
             table = sysctl_mod.get_child(entry).name
             src = self.find_srcs_with_symbol_def(table)[0]
-        return None
+        raise SourceNotFoundException(sysctl)
 
     def get_module_for_kernel_mod(self, mod_dir, mod_name):
         """
