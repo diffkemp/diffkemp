@@ -28,7 +28,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
     // with a space as its key, making it an invalid identifier for a macro.
     std::unordered_map<std::string, MacroElement> usedMacroMap;
     bool mapChanged = true;
-    usedMacroMap[" "] = MacroElement {"<>", line, StringRef(""), 0, ""};
+    usedMacroMap[" "] = MacroElement {"<>", "<>", line, StringRef(""), 0, ""};
 
     // The bodies of all macros currently present in usedMacroMap are examined;
     // every time another macro is found in it, it is added to the map.
@@ -73,6 +73,26 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
                         // the map.
                         MacroElement macro = potentialMacro->second;
                         macro.parentMacro = Entry.first;
+
+                        // Retrieve macro arguments
+                        std::string rawArguments =
+                                getSubstringToMatchingBracket(macroBody, i);
+                        if (macro.fullName.find("(") != std::string::npos) {
+                            // Replace parameters from the parent macro with
+                            // arguments
+                            std::string rawParameters =
+                                    getSubstringToMatchingBracket(
+                                            macro.fullName,
+                                            macro.fullName.find("("));
+                            macro.params = splitArgumentsList(
+                                    rawParameters);
+                        }
+                        if (!Entry.second.params.empty())
+                            rawArguments = expandMacros(pairZip(
+                                    Entry.second.params, Entry.second.args),
+                                    rawArguments);
+                        macro.args = splitArgumentsList(rawArguments);
+
                         entriesToAdd.push_back({potentialMacro->first(),
                                                 macro});
                     }
@@ -216,6 +236,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
                 MacroElement element;
                 element.name = macroName;
+                element.fullName = Macro->getName();
                 element.body = Macro->getValue();
                 element.parentMacro = "N/A";
                 element.sourceFile = MF->getFile()->getFilename().str();
@@ -553,4 +574,15 @@ std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
     }
 
     return splitArgumentsList(argumentString);
+}
+
+/// Expand simple non-argument macros in string. The macros are determined by
+/// macro-body pairs.
+std::string expandMacros(std::vector<std::pair<std::string, std::string>>
+        Macros, std::string Input) {
+    std::string Output = Input;
+    for (auto Pair : Macros) {
+        findAndReplace(Output, Pair.first, Pair.second);
+    }
+    return Output;
 }

@@ -31,12 +31,16 @@ struct MacroElement {
     // string, because otherwise the content would be dropped on leaving the
     // block in which the shortening is done.
     std::string name;
+    // Full macro name. (Used for extracting parameters.)
+    std::string fullName;
     // The body is in DebugInfo, parentMacro is a key in the map, therefore
     // both can be stored by reference.
     StringRef body, parentMacro;
     // This is the line in the C source code on which the macro is located.
     int line;
     std::string sourceFile;
+    // This is a list of the arguments of the macro and its parameters.
+    std::vector<std::string> args, params;
 };
 
 /// Syntactic difference between objects that cannot be found in the original
@@ -97,5 +101,10 @@ std::vector<std::string> splitArgumentsList(std::string argumentString);
 /// the corresponding arguments in the C source code.
 std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
         const Module *Mod, std::string functionName);
+
+/// Expand simple non-argument macros in string. The macros are determined by
+/// macro-body pairs.
+std::string expandMacros(std::vector<std::pair<std::string, std::string>>
+        Macros, std::string Input);
 
 #endif // DIFFKEMP_SIMPLL_MACRO_UTILS_H

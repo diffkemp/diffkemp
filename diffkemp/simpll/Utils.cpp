@@ -306,6 +306,9 @@ bool isValidCharForIdentifierStart(char ch) {
 /// given in the third argument.
 void findAndReplace(std::string &input, std::string find,
         std::string replace) {
+    if (find == "")
+        return;
+
     int position = 0;
     while ((position = input.find(find, position)) !=
             std::string::npos) {
