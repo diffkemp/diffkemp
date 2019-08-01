@@ -1,3 +1,11 @@
+# Create symlinks to a correct version of FunctionComparator based on LLVM version
+execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+  llvm-lib/${LLVM_VERSION_MAJOR}/FunctionComparator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/FunctionComparator.h)
+execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+  llvm-lib/${LLVM_VERSION_MAJOR}/FunctionComparator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/FunctionComparator.cpp)
+
 file(GLOB srcs *.cpp)
 file(GLOB passes passes/*.cpp)
 
