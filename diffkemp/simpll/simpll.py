@@ -19,7 +19,8 @@ def add_suffix(file, suffix):
 
 
 def simplify_modules_diff(first, second, fun_first, fun_second, var,
-                          suffix=None, control_flow_only=False, verbose=False):
+                          suffix=None, control_flow_only=False,
+                          print_asm_diffs=False, verbose=False):
     """
     Simplify modules to ease their semantic difference. Uses the SimpLL tool.
     """
@@ -48,6 +49,9 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
 
         if control_flow_only:
             simpll_command.append("--control-flow")
+
+        if print_asm_diffs:
+            simpll_command.append("--print-asm-diffs")
 
         if verbose:
             simpll_command.append("--verbose")

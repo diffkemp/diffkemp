@@ -153,7 +153,7 @@ void simplifyModulesDiff(Config &config,
 
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First, *config.Second,
-                             config.ControlFlowOnly, &DI,
+                             config.ControlFlowOnly, config.PrintAsmDiffs, &DI,
                              AbstractionGeneratorResultL.asmValueMap,
                              AbstractionGeneratorResultR.asmValueMap,
                              StructSizeMapL, StructSizeMapR);

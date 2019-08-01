@@ -162,6 +162,7 @@ def functions_diff(mod_first, mod_second,
                                       glob_var.name if glob_var else None,
                                       glob_var.name if glob_var else "simpl",
                                       config.control_flow_only,
+                                      config.print_asm_diffs,
                                       config.verbosity)
             funs_to_compare = list([o for o in objects_to_compare
                                     if not o[0].is_syn_diff])

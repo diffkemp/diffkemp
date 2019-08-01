@@ -60,6 +60,8 @@ class Config {
 
     // Keep only control-flow related instructions
     bool ControlFlowOnly;
+    // Print raw differences in inline assembly.
+    bool PrintAsmDiffs;
     // Show call stacks for non-equal functions
     bool PrintCallStacks;
 

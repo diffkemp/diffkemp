@@ -47,7 +47,7 @@ class TaskSpec:
         self.old_kernel = KernelSource(self.old_kernel_dir, True)
         self.new_kernel = KernelSource(self.new_kernel_dir, True)
         self.config = Config(self.old_kernel, self.new_kernel, False,
-                             self.control_flow_only, False, None)
+                             self.control_flow_only, False, False, None)
 
         self.functions = dict()
 

@@ -59,7 +59,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
     // Comparing functions with bodies using custom FunctionComparator.
     DifferentialFunctionComparator fComp(FirstFun, SecondFun, controlFlowOnly,
-                                         &GS, DI, this);
+                                         showAsmDiffs, &GS, DI, this);
     if (fComp.compare() == 0) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "Function " << FirstFun->getName()
@@ -137,6 +137,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // Re-run the comparison
             DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
                                                        controlFlowOnly,
+                                                       showAsmDiffs,
                                                        &GS, DI, this);
             if (fCompSecond.compare() == 0) {
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;

@@ -28,7 +28,7 @@ using namespace llvm;
 class ModuleComparator {
     Module &First;
     Module &Second;
-    bool controlFlowOnly;
+    bool controlFlowOnly, showAsmDiffs;
 
   public:
     /// Possible results of syntactical function comparison.
@@ -52,14 +52,15 @@ class ModuleComparator {
     const DebugInfo *DI;
 
     ModuleComparator(Module &First, Module &Second, bool controlFlowOnly,
-                     const DebugInfo *DI, StringMap<StringRef> &AsmToStringMapL,
+                     bool showAsmDiffs, const DebugInfo *DI,
+                     StringMap<StringRef> &AsmToStringMapL,
                      StringMap<StringRef> &AsmToStringMapR,
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-            GS(&First, &Second, this), DI(DI), AsmToStringMapL(AsmToStringMapL),
-            AsmToStringMapR(AsmToStringMapR), StructSizeMapL(StructSizeMapL),
-            StructSizeMapR(StructSizeMapR) {}
+            showAsmDiffs(showAsmDiffs), GS(&First, &Second, this), DI(DI),
+            AsmToStringMapL(AsmToStringMapL), AsmToStringMapR(AsmToStringMapR),
+            StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR) {}
 
     /// Syntactically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.
