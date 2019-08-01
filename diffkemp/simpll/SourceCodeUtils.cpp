@@ -50,6 +50,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
             // from the left, record all such substrings and test them using the
             // macro map provided in the function arguments.
             std::string macroBody = Entry.second.body.str();
+            expandCompositeMacroNames(pairZip(Entry.second.params,
+                                Entry.second.args), macroBody);
             std::string potentialMacroName;
 
             for (int i = 0; i < macroBody.size(); i++) {
@@ -78,8 +80,10 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
                         std::string rawArguments =
                                 getSubstringToMatchingBracket(macroBody, i);
                         if (macro.fullName.find("(") != std::string::npos) {
-                            // Replace parameters from the parent macro with
-                            // arguments
+                            // If the full name of the macro contains the
+                            // opening bracket, it means the macro has
+                            // parameters that can be parsed and put into the
+                            // MacroElement structure.
                             std::string rawParameters =
                                     getSubstringToMatchingBracket(
                                             macro.fullName,
@@ -87,6 +91,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
                             macro.params = splitArgumentsList(
                                     rawParameters);
                         }
+                        // Replace parameters from the parent macro with
+                        // arguments if the parent macro has parameters.
                         if (!Entry.second.params.empty())
                             rawArguments = expandMacros(pairZip(
                                     Entry.second.params, Entry.second.args),
@@ -121,6 +127,23 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
     }
 
     return usedMacroMap;
+}
+
+/// Takes a list of parameter-argument pairs and expand them on places where
+/// are a part of a composite macro name joined by ##.
+void expandCompositeMacroNames(std::vector<std::pair<std::string, std::string>>
+        args, std::string &body) {
+    for (auto arg : args) {
+        int position = 0;
+        while ((position = body.find(arg.first + "##", position)) !=
+                std::string::npos) {
+            if (position != 0 && isValidCharForIdentifier(body[position - 1]))
+                // Do not replace parts of identifiers.
+                continue;
+            body.replace(position, arg.first.length() + 2, arg.second);
+            position += arg.second.length() + 2;
+        }
+    }
 }
 
 /// Extract the line corresponding to the DILocation from the C source file.

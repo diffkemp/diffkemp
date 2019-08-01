@@ -62,6 +62,11 @@ struct SyntaxDifference {
 std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
     StringRef line, StringMap<StringRef> macroMap);
 
+/// Takes a list of parameter-argument pairs and expand them on places where
+/// are a part of a composite macro name joined by ##.
+void expandCompositeMacroNames(std::vector<std::pair<std::string, std::string>>
+        args, std::string &body);
+
 /// Extract the line corresponding to the DILocation from the C source file.
 std::string extractLineFromLocation(DILocation *LineLoc);
 
