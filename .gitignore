@@ -113,3 +113,7 @@ snapshots/
 
 # LLReve tool
 llreve/
+
+# Symlinks created dynamically by CMake
+diffkemp/simpll/FunctionComparator.h
+diffkemp/simpll/FunctionComparator.cpp
