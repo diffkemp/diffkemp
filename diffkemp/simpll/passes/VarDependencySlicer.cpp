@@ -98,7 +98,9 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     RetBB = unifyExitPass.getReturnBlock();
 
     for (auto &BB : Fun) {
-        auto Term = BB.getTerminator();
+        auto Term = dyn_cast<BranchInst>(BB.getTerminator());
+        if (!Term)
+            continue;
         if (isDependent(Term))
             continue;
         if (Term->getNumSuccessors() == 0)
@@ -111,7 +113,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                                                 : *includedSucc.begin();
 
             // Notify successors about removing some branches
-            for (auto TermSucc : successors(Term)) {
+            for (auto TermSucc : successors(&BB)) {
                 if (TermSucc != NewSucc)
                     TermSucc->removePredecessor(&BB, true);
             }
@@ -350,7 +352,7 @@ bool VarDependencySlicer::addAllOpsToIncluded(
 /// We include a successor if there exists an included basic block that is
 /// reachable only via this successor.
 std::set<BasicBlock *> VarDependencySlicer::includedSuccessors(
-    Instruction &Terminator,
+    BranchInst &Terminator,
     const BasicBlock *ExitBlock) {
 
     // If block has multiple successors, choose which must be included

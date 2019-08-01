@@ -65,7 +65,7 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
 
     // Computing affected and included basic blocks
     std::vector<const BasicBlock *> affectedBasicBlocks(BranchInst *Branch);
-    std::set<BasicBlock *> includedSuccessors(Instruction &Terminator,
+    std::set<BasicBlock *> includedSuccessors(BranchInst &Terminator,
                                               const BasicBlock *ExitBlock);
 
     bool checkPhiDependency(const PHINode &Phi);
