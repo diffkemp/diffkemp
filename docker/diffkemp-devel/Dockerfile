@@ -1,12 +1,11 @@
 FROM ubuntu:xenial
 MAINTAINER Viktor Malik <vmalik@redhat.com>
-RUN apt-get update
-RUN apt-get install -y software-properties-common wget
+RUN apt-get update && apt-get install -y software-properties-common wget
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     add-apt-repository ppa:ubuntu-toolchain-r/test && \
-    add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main" && \
-    apt-get update
-RUN apt-get install -y \
+    add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main" 
+RUN apt-get update && \
+    apt-get install -y \
       autoconf \
       bc \
       bison \
@@ -36,6 +35,7 @@ RUN apt-get install -y \
       python3-cffi \
       python3-pip \
       python3-pytest \
+      rpm2cpio \
       vim \
       xz-utils \
       z3
