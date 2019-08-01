@@ -68,12 +68,12 @@ void expandCompositeMacroNames(std::vector<std::pair<std::string, std::string>>
         args, std::string &body);
 
 /// Extract the line corresponding to the DILocation from the C source file.
-std::string extractLineFromLocation(DILocation *LineLoc);
+std::string extractLineFromLocation(DILocation *LineLoc, int offset = 0);
 
 /// Gets all macros used on a certain DILocation in the form of a key to value
 /// map.
 std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-    DILocation *LineLoc, const Module *Mod);
+    DILocation *LineLoc, const Module *Mod, int lineOffset = 0);
 
 /// Finds macro differences at the locations of the instructions L and R and
 /// return them as a vector.
@@ -81,7 +81,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
 std::vector<SyntaxDifference> findMacroDifferences(
-		const Instruction *L, const Instruction *R);
+		const Instruction *L, const Instruction *R, int lineOffset = 0);
 
 // Takes a string and the position of the first bracket and returns the
 // substring in the brackets.
