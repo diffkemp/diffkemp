@@ -33,6 +33,9 @@ cl::opt<bool> PrintCallstacksOpt("print-callstacks", cl::desc(
         "Print call stacks for non-equal functions."));
 cl::opt<bool> VerboseOpt("verbose", cl::desc(
         "Show verbose output (debugging information)."));
+cl::opt<bool> PrintAsmDiffsOpt("print-asm-diffs", cl::desc(
+        "Print raw differences in inline assembly code "
+        "(does not apply to macros)."));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -48,6 +51,7 @@ Config::Config() : First(parseIRFile(FirstFileOpt, err, context_first)),
                    Second(parseIRFile(SecondFileOpt, err, context_second)),
                    FirstOutFile(FirstFileOpt), SecondOutFile(SecondFileOpt),
                    ControlFlowOnly(ControlFlowOpt),
+                   PrintAsmDiffs(PrintAsmDiffsOpt),
                    PrintCallStacks(PrintCallstacksOpt) {
     if (!FunctionOpt.empty()) {
         // Parse --fun option - find functions with given names.

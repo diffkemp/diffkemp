@@ -61,6 +61,10 @@ def __make_argument_parser():
     compare_ap.add_argument("--control-flow-only",
                             help=SUPPRESS,
                             action="store_true")
+    compare_ap.add_argument("--print-asm-diffs",
+                            help="print raw inline assembly differences (does \
+                            not apply to macros)",
+                            action="store_true")
     compare_ap.add_argument("--semdiff-tool",
                             help=SUPPRESS,
                             choices=["llreve"])
@@ -222,7 +226,7 @@ def compare(args):
         new_functions.filter([args.function])
 
     config = Config(old_source, new_source, args.show_diff,
-                    args.control_flow_only, args.verbose,
+                    args.control_flow_only, args.print_asm_diffs, args.verbose,
                     args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old)

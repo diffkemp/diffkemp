@@ -503,7 +503,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             macroDiffs.begin(), macroDiffs.end());
 
                         // Try to find assembly functions causing the difference
-                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
+                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR) &&
+                                showAsmDiff) {
                             auto asmDiffs = findAsmDifference(
                                     dyn_cast<CallInst>(&*InstL),
                                     dyn_cast<CallInst>(&*InstR));
