@@ -525,7 +525,11 @@ std::string getIdentifierForValue(const Value *Val,
             return "<unknown>";
 
         DISubprogram *Sub = Parent->getSubprogram();
+#if LLVM_VERSION_MAJOR < 7
+        DINodeArray funArgs = Sub->getVariables();
+#else
         DINodeArray funArgs = Sub->getRetainedNodes();
+#endif
         for (DINode *Node : funArgs) {
             if (idx == RegNum) {
                 DILocalVariable *LocVar = dyn_cast<DILocalVariable>(Node);

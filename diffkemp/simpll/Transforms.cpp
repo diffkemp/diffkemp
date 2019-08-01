@@ -114,7 +114,9 @@ void simplifyModulesDiff(Config &config,
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
     mam.registerPass([] { return StructureSizeAnalysis(); });
+#if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
+#endif
 
     auto AbstractionGeneratorResultL =
             mam.getResult<FunctionAbstractionsGenerator>(*config.First,
