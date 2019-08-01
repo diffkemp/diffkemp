@@ -147,7 +147,7 @@ void expandCompositeMacroNames(std::vector<std::pair<std::string, std::string>>
 }
 
 /// Extract the line corresponding to the DILocation from the C source file.
-std::string extractLineFromLocation(DILocation *LineLoc) {
+std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
     // Get the path of the source file corresponding to the module where the
     // difference was found
     if (LineLoc == nullptr)
@@ -171,7 +171,8 @@ std::string extractLineFromLocation(DILocation *LineLoc) {
     // the other parts are added to it.
     line_iterator it(**sourceFile);
     std::string line, previousLine;
-    while (!it.is_at_end() && it.line_number() != (LineLoc->getLine())) {
+    while (!it.is_at_end() && it.line_number() != (LineLoc->getLine() + offset))
+    {
         ++it;
         if (it->count('(') < it->count(')'))
             // The line is a continuation of the previous one
@@ -196,14 +197,14 @@ std::string extractLineFromLocation(DILocation *LineLoc) {
 /// Gets all macros used on a certain DILocation in the form of a key to value
 /// map.
 std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-    DILocation *LineLoc, const Module *Mod) {
+    DILocation *LineLoc, const Module *Mod, int lineOffset) {
     if (!LineLoc || LineLoc->getNumOperands() == 0) {
         // DILocation has no scope or is not present - cannot get macro stack
         DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Scope for macro not found\n");
         return std::unordered_map<std::string, MacroElement>();
     }
 
-    std::string line = extractLineFromLocation(LineLoc);
+    std::string line = extractLineFromLocation(LineLoc, lineOffset);
     if (line == "") {
         // Source file was not found
         DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Source for macro not found\n");
@@ -268,6 +269,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
             }
     }
 
+
     // Add information about the original line to the map, then return the map
     auto macrosOnLine = getAllMacrosOnLine(line, macroMap);
     macrosOnLine[" "].sourceFile = getSourceFilePath(
@@ -283,10 +285,12 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
 std::vector<SyntaxDifference> findMacroDifferences(
-    const Instruction *L, const Instruction *R) {
+    const Instruction *L, const Instruction *R, int lineOffset) {
     // Try to discover a macro difference
-    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
-    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
+    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule(),
+            lineOffset);
+    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule(),
+            lineOffset);
 
     std::vector<SyntaxDifference> result;
 
@@ -357,6 +361,13 @@ std::vector<SyntaxDifference> findMacroDifferences(
             });
         }
     }
+
+    if (result.empty() && lineOffset == 0)
+        // There are some cases in which the code cause a difference not on the
+        // line where it is, but on the next line (typically volatile vs
+        // non-volatile inline assembly). For these cases try comparing the
+        // previous line.
+        return findMacroDifferences(L, R, -1);
 
     return result;
 }
