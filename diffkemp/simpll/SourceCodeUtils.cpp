@@ -15,6 +15,7 @@
 #include "SourceCodeUtils.h"
 #include "Config.h"
 #include "Utils.h"
+#include <llvm/ADT/STLExtras.h>
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/LineIterator.h>
 #include <llvm/Support/raw_ostream.h>
@@ -50,8 +51,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
             // from the left, record all such substrings and test them using the
             // macro map provided in the function arguments.
             std::string macroBody = Entry.second.body.str();
-            expandCompositeMacroNames(pairZip(Entry.second.params,
-                                Entry.second.args), macroBody);
+            expandCompositeMacroNames(Entry.second.params, Entry.second.args,
+                                      macroBody);
             std::string potentialMacroName;
 
             for (int i = 0; i < macroBody.size(); i++) {
@@ -94,9 +95,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
                         // Replace parameters from the parent macro with
                         // arguments if the parent macro has parameters.
                         if (!Entry.second.params.empty())
-                            rawArguments = expandMacros(pairZip(
-                                    Entry.second.params, Entry.second.args),
-                                    rawArguments);
+                            rawArguments = expandMacros(Entry.second.params,
+                                    Entry.second.args, rawArguments);
                         macro.args = splitArgumentsList(rawArguments);
 
                         entriesToAdd.push_back({potentialMacro->first(),
@@ -131,17 +131,19 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
 
 /// Takes a list of parameter-argument pairs and expand them on places where
 /// are a part of a composite macro name joined by ##.
-void expandCompositeMacroNames(std::vector<std::pair<std::string, std::string>>
-        args, std::string &body) {
-    for (auto arg : args) {
+void expandCompositeMacroNames(std::vector<std::string> params,
+                               std::vector<std::string> args,
+                               std::string &body) {
+    for (auto arg : zip(params, args)) {
         int position = 0;
-        while ((position = body.find(arg.first + "##", position)) !=
+        while ((position = body.find(std::get<0>(arg) + "##", position)) !=
                 std::string::npos) {
             if (position != 0 && isValidCharForIdentifier(body[position - 1]))
                 // Do not replace parts of identifiers.
                 continue;
-            body.replace(position, arg.first.length() + 2, arg.second);
-            position += arg.second.length() + 2;
+            body.replace(position, std::get<0>(arg).length() + 2,
+                         std::get<1>(arg));
+            position += std::get<1>(arg).length() + 2;
         }
     }
 }
@@ -612,11 +614,11 @@ std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
 
 /// Expand simple non-argument macros in string. The macros are determined by
 /// macro-body pairs.
-std::string expandMacros(std::vector<std::pair<std::string, std::string>>
-        Macros, std::string Input) {
+std::string expandMacros(std::vector<std::string> macros,
+                         std::vector<std::string> bodies, std::string Input) {
     std::string Output = Input;
-    for (auto Pair : Macros) {
-        findAndReplace(Output, Pair.first, Pair.second);
+    for (auto Pair : zip(macros, bodies)) {
+        findAndReplace(Output, std::get<0>(Pair), std::get<1>(Pair));
     }
     return Output;
 }

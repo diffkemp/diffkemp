@@ -64,8 +64,9 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
 
 /// Takes a list of parameter-argument pairs and expand them on places where
 /// are a part of a composite macro name joined by ##.
-void expandCompositeMacroNames(std::vector<std::pair<std::string, std::string>>
-        args, std::string &body);
+void expandCompositeMacroNames(std::vector<std::string> params,
+                               std::vector<std::string> args,
+                               std::string &body);
 
 /// Extract the line corresponding to the DILocation from the C source file.
 std::string extractLineFromLocation(DILocation *LineLoc, int offset = 0);
@@ -109,7 +110,7 @@ std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
 
 /// Expand simple non-argument macros in string. The macros are determined by
 /// macro-body pairs.
-std::string expandMacros(std::vector<std::pair<std::string, std::string>>
-        Macros, std::string Input);
+std::string expandMacros(std::vector<std::string> macros,
+                         std::vector<std::string> bodies, std::string Input);
 
 #endif // DIFFKEMP_SIMPLL_MACRO_UTILS_H
