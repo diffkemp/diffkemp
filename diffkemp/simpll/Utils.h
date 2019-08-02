@@ -118,15 +118,4 @@ std::string getIdentifierForValue(const Value *Val,
         const std::map<std::pair<StructType *, uint64_t>, StringRef>
         &StructFieldNames, const Function *Parent = nullptr);
 
-/// Takes two vectors and creates a vector of pairs from them.
-template<typename T> std::vector<std::pair<T, T>> pairZip(std::vector<T> A,
-        std::vector<T> B) {
-    std::vector<std::pair<T, T>> Result;
-    for (auto Ai = A.begin(), Bi = B.begin(); Ai != A.end() && Bi != B.end();
-         ++Ai, ++Bi) {
-        Result.push_back(std::pair<T, T> {*Ai, *Bi});
-    }
-    return Result;
-}
-
 #endif //DIFFKEMP_SIMPLL_UTILS_H
