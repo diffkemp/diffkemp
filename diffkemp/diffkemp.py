@@ -323,8 +323,11 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
             indent = initial_indent + 2
         else:
             output = sys.stdout
-            output.write(text_indent("{} ({}):\n".format(fun, fun_tag),
-                                     initial_indent))
+            if fun_tag is not None:
+                output.write(text_indent("{} ({}):\n".format(fun, fun_tag),
+                                         initial_indent))
+            else:
+                output.write(text_indent("{}:\n".format(fun), initial_indent))
             indent = initial_indent + 4
 
         for called_res in fun_result.inner.values():
