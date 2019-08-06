@@ -156,7 +156,7 @@ class LlvmKernelModule:
 
     def has_function(self, fun):
         """Check if module contains a function definition."""
-        pattern = re.compile(r"^define.*@{}".format(fun), flags=re.MULTILINE)
+        pattern = re.compile(r"^define.*@{}\(".format(fun), flags=re.MULTILINE)
         with open(self.llvm, "r") as llvm_file:
             return pattern.search(llvm_file.read()) is not None
 
