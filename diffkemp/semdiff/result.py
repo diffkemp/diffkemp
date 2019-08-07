@@ -62,9 +62,9 @@ class Result:
         # a higher priority is chosen from the two).
         self.kind = Result.Kind(max(int(self.kind), int(result.kind)))
 
-    def report_stat(self, show_errors=False):
+    def report_symbol_stat(self, show_errors=False):
         """
-        Report statistics.
+        Report symbol statistics.
         Print numbers of equal, non-equal, unknown, and error results with
         percentage that each has from the total results.
         """
@@ -84,18 +84,17 @@ class Result:
             lambda x: x.diff == "", r.inner.values())) and
             r.kind == Result.Kind.NOT_EQUAL])
         if total > 0:
-            print("Total params: {}".format(total))
-            print("Equal:        {0} ({1:.0f}%)".format(eq, eq / total * 100))
-            print(" same syntax: {0}".format(eq_syn))
-            print("Not equal:    {0} ({1:.0f}%)".format(
+            print("Total symbols: {}".format(total))
+            print("Equal:         {0} ({1:.0f}%)".format(eq, eq / total * 100))
+            print(" same syntax:  {0}".format(eq_syn))
+            print("Not equal:     {0} ({1:.0f}%)".format(
                   neq, neq / total * 100))
-            print("(empty diff): {0} ({1:.0f}%)".format(
+            print("(empty diff):  {0} ({1:.0f}%)".format(
                   empty_diff, empty_diff / total * 100))
-            print("Unknown:      {0} ({1:.0f}%)".format(unkwn,
-                                                        unkwn / total * 100))
-            print("Errors:       {0} ({1:.0f}%)".format(errs,
-                                                        errs / total * 100))
-
+            print("Unknown:       {0} ({1:.0f}%)".format(unkwn,
+                                                         unkwn / total * 100))
+            print("Errors:        {0} ({1:.0f}%)".format(errs,
+                                                         errs / total * 100))
         if show_errors:
             if unkwn > 0:
                 print("\nFunctions that are unknown: ")
@@ -109,3 +108,60 @@ class Result:
                     if r.kind == Result.Kind.ERROR:
                         print(f)
                 print()
+
+    def report_object_stat(self):
+        """
+        Report detailed statistics about compared objects.
+        Prints the total count of unique non-equal objects (inner diffs)
+        excluding those covered by syntax diffs.
+        Also prints the count and percentage of those which are function diffs,
+        macro diffs, inline asm diffs and empty diffs.
+        """
+        # Wrapper class to store in set
+        class UniqueDiff:
+            def __init__(self, res):
+                self.res = res
+
+            def __eq__(self, other):
+                return self.res.first.name == other.res.first.name
+
+            def __hash__(self):
+                return hash(self.res.first.name)
+
+        # Convert inner result to set of unique diffs
+        unique_diffs = set()
+        for _, inner_res_out in self.inner.items():
+            for _, inner_res in inner_res_out.inner.items():
+                if (inner_res.diff == "" and
+                        inner_res.first.covered_by_syn_diff):
+                    continue
+                unique_diffs.add(UniqueDiff(inner_res))
+
+        # Generate counts
+        total = len(unique_diffs)
+        functions = len([r for r in unique_diffs
+                         if not r.res.first.is_syn_diff])
+        macros = len([r for r in unique_diffs
+                      if (r.res.first.is_syn_diff and
+                          not r.res.first.name.startswith("assembly code"))])
+        asm = len([r for r in unique_diffs
+                  if (r.res.first.is_syn_diff and
+                      r.res.first.name.startswith("assembly code"))])
+        empty = len([r for r in unique_diffs if r.res.diff == ""])
+
+        # Print statistics
+        print("Total differences:  {}".format(total))
+        print("In functions:       {0} ({1:.0f}%)".format(functions,
+              functions / total * 100))
+        print("In macros:          {0} ({1:.0f}%)".format(macros,
+              macros / total * 100))
+        print("In inline assembly: {0} ({1:.0f}%)".format(asm,
+              asm / total * 100))
+        print("Empty:              {0} ({1:.0f}%)".format(empty,
+              empty / total * 100))
+
+    def report_stat(self, show_errors=False):
+        """Reports all statistics."""
+        self.report_symbol_stat(show_errors)
+        print("")
+        self.report_object_stat()
