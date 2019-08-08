@@ -210,8 +210,7 @@ def functions_diff(mod_first, mod_second,
                     fun_result = Result(Result.Kind.NOT_EQUAL, "", "")
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
-                if (fun_result.kind == Result.Kind.NOT_EQUAL and
-                        config.show_diff):
+                if fun_result.kind == Result.Kind.NOT_EQUAL:
                     if not fun_result.first.is_syn_diff:
                         # Get the syntactic diff of functions
                         fun_result.diff = syntax_diff(
