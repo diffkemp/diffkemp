@@ -547,3 +547,13 @@ std::string getIdentifierForValue(const Value *Val,
     } else
         return "<unknown>";
 }
+
+/// Converts value to its string representation.
+/// Note: Currently the only place that calls this is returns.gdb, which lacks
+/// the ability to directly dump values because GDB can't call the corresponding
+/// methods.
+std::string valueToString(const Value *Val) {
+    std::string ValDump; llvm::raw_string_ostream DumpStrm(ValDump);
+    Val->print(DumpStrm);
+    return DumpStrm.str();
+}
