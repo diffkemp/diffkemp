@@ -147,7 +147,7 @@ class Result:
         empty = len([r for r in unique_diffs if r.res.diff == ""])
 
         # Print statistics
-        print("Total differences:  {}".format(total))
+        print("Total differences:       {}".format(total))
         print("In functions:            {0} ({1:.0f}%)".format(functions,
               functions / total * 100))
         print("In macros:               {0} ({1:.0f}%)".format(macros,
