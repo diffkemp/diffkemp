@@ -17,11 +17,10 @@ class Result:
         NONE = 0
         EQUAL_SYNTAX = 1
         EQUAL = 2
-        EQUAL_UNDER_ASSUMPTIONS = 3
-        NOT_EQUAL = 4
-        UNKNOWN = 5
-        TIMEOUT = 6
-        ERROR = 7
+        NOT_EQUAL = 3
+        UNKNOWN = 4
+        TIMEOUT = 5
+        ERROR = 6
 
         def __str__(self):
             return self.name.lower().replace("_", " ")
@@ -70,8 +69,7 @@ class Result:
         """
         total = len(self.inner)
         eq = len([r for r in iter(self.inner.values())
-                  if r.kind in [Result.Kind.EQUAL,
-                                Result.Kind.EQUAL_UNDER_ASSUMPTIONS]])
+                  if r.kind in [Result.Kind.EQUAL, Result.Kind.EQUAL_SYNTAX]])
         neq = len([r for r in iter(self.inner.values())
                    if r.kind == Result.Kind.NOT_EQUAL])
         unkwn = len([r for r in iter(self.inner.values())
@@ -148,6 +146,8 @@ class Result:
 
         # Print statistics
         print("Total differences:       {}".format(total))
+        if total == 0:
+            return
         print("In functions:            {0} ({1:.0f}%)".format(functions,
               functions / total * 100))
         print("In macros:               {0} ({1:.0f}%)".format(macros,
