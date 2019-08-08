@@ -118,4 +118,10 @@ std::string getIdentifierForValue(const Value *Val,
         const std::map<std::pair<StructType *, uint64_t>, StringRef>
         &StructFieldNames, const Function *Parent = nullptr);
 
+/// Converts value to its string representation.
+/// Note: Currently the only place that calls this is returns.gdb, which lacks
+/// the ability to directly dump values because GDB can't call the corresponding
+/// methods.
+std::string valueToString(const Value *Val);
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H
