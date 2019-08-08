@@ -184,13 +184,27 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
             line = it->str();
         }
     }
+
+    // Detect and fix unfinished bracket expressions.
     if (StringRef(line).count('(') > StringRef(line).count(')')) {
-        // Unfinished line
         do {
             ++it;
             line += it->str();
         } while (!it.is_at_end() && (StringRef(line).count(')') <
                 StringRef(line).count('(')));
+    }
+
+    // Detect and fix unfinished return expressions.
+    std::string lineWithoutWhitespace = line;
+    findAndReplace(lineWithoutWhitespace, " ", "");
+    findAndReplace(lineWithoutWhitespace, "\t", "");
+
+    if (StringRef(lineWithoutWhitespace).startswith("return") &&
+            !StringRef(line).contains(";")) {
+        do {
+            ++it;
+            line += it->str();
+        } while (!it.is_at_end() && !StringRef(line).contains(";"));
     }
 
     return line;
