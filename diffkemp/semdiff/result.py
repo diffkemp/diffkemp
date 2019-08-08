@@ -69,11 +69,9 @@ class Result:
         percentage that each has from the total results.
         """
         total = len(self.inner)
-        eq_syn = len([r for r in iter(self.inner.values())
-                      if r.kind == Result.Kind.EQUAL_SYNTAX])
         eq = len([r for r in iter(self.inner.values())
                   if r.kind in [Result.Kind.EQUAL,
-                                Result.Kind.EQUAL_UNDER_ASSUMPTIONS]]) + eq_syn
+                                Result.Kind.EQUAL_UNDER_ASSUMPTIONS]])
         neq = len([r for r in iter(self.inner.values())
                    if r.kind == Result.Kind.NOT_EQUAL])
         unkwn = len([r for r in iter(self.inner.values())
@@ -86,7 +84,6 @@ class Result:
         if total > 0:
             print("Total symbols: {}".format(total))
             print("Equal:         {0} ({1:.0f}%)".format(eq, eq / total * 100))
-            print(" same syntax:  {0}".format(eq_syn))
             print("Not equal:     {0} ({1:.0f}%)".format(
                   neq, neq / total * 100))
             print("(empty diff):  {0} ({1:.0f}%)".format(
@@ -151,13 +148,13 @@ class Result:
 
         # Print statistics
         print("Total differences:  {}".format(total))
-        print("In functions:       {0} ({1:.0f}%)".format(functions,
+        print("In functions:            {0} ({1:.0f}%)".format(functions,
               functions / total * 100))
-        print("In macros:          {0} ({1:.0f}%)".format(macros,
+        print("In macros:               {0} ({1:.0f}%)".format(macros,
               macros / total * 100))
-        print("In inline assembly: {0} ({1:.0f}%)".format(asm,
+        print("In inline assembly code: {0} ({1:.0f}%)".format(asm,
               asm / total * 100))
-        print("Empty:              {0} ({1:.0f}%)".format(empty,
+        print("Empty diffs:             {0} ({1:.0f}%)".format(empty,
               empty / total * 100))
 
     def report_stat(self, show_errors=False):
