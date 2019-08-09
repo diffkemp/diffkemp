@@ -21,7 +21,7 @@ The command compares functions from function lists stored inside the snapshots
 pairwise and prints syntactic diffs (thanks to the `--syntax-diff` option) of
 functions that are semantically different.
 
-Note: if `FUNCTION_LIST` contains any other symbols than functions (e.g. global
+Note: if `FUNCTION_LIST` contains any symbols other than functions (e.g. global
 variables), they will be ignored.
 
 ### Comparing sysctl options
