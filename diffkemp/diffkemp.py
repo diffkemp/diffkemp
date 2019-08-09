@@ -189,6 +189,7 @@ def generate(args):
                     fun_list.add(symbol, llvm_mod)
                 except SourceNotFoundException:
                     print("source not found")
+                    fun_list.add(symbol, None)
 
     # Copy LLVM files to the snapshot
     source.copy_source_files(fun_list.modules(), args.output_dir)
@@ -237,8 +238,17 @@ def compare(args):
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
             new_fun_desc = new_functions.get_by_name(fun, group_name)
-            if not (new_fun_desc and
-                    old_fun_desc.mod.has_function(fun) and
+            if not new_fun_desc:
+                continue
+
+            # Check if the module exists in both snapshots
+            if old_fun_desc.mod is None or new_fun_desc.mod is None:
+                result.add_inner(Result(Result.Kind.UNKNOWN, fun, fun))
+                print("{}: unknown".format(fun))
+                continue
+
+            # Check if the function exists in both modules
+            if not (old_fun_desc.mod.has_function(fun) and
                     new_fun_desc.mod.has_function(fun)):
                 continue
 

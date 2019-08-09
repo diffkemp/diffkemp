@@ -48,8 +48,9 @@ class FunctionList:
 
     def modules(self):
         """Get the set of all LLVM modules of all functions in the list."""
-        return set([fun.mod for group in self.groups.values() for fun in
-                    group.functions.values()])
+        return set([fun.mod for group in self.groups.values()
+                    for fun in group.functions.values()
+                    if fun.mod is not None])
 
     def get_by_name(self, name, group=None):
         """
@@ -77,7 +78,8 @@ class FunctionList:
             for f in functions:
                 self.add(f["name"],
                          LlvmKernelModule(
-                             os.path.join(self.root_dir, f["llvm"])),
+                             os.path.join(self.root_dir, f["llvm"]))
+                         if f["llvm"] else None,
                          f["glob_var"],
                          f["tag"],
                          group)
@@ -91,7 +93,8 @@ class FunctionList:
         if None in self.groups:
             yaml_dict = [{
                 "name": name,
-                "llvm": os.path.relpath(desc.mod.llvm, self.root_dir),
+                "llvm": os.path.relpath(desc.mod.llvm, self.root_dir)
+                if desc.mod else None,
                 "glob_var": desc.glob_var,
                 "tag": desc.tag
             } for name, desc in self.groups[None].functions.items()]
@@ -101,7 +104,8 @@ class FunctionList:
                  "functions": [
                      {"name": fun_name,
                       "llvm": os.path.relpath(fun_desc.mod.llvm,
-                                              self.root_dir),
+                                              self.root_dir)
+                      if fun_desc.mod else None,
                       "glob_var": fun_desc.glob_var,
                       "tag": fun_desc.tag}
                      for fun_name, fun_desc in g.functions.items()]
