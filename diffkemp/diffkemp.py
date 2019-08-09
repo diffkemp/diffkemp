@@ -185,6 +185,9 @@ def generate(args):
                     # it into the snapshot
                     sys.stdout.write("{}: ".format(symbol))
                     llvm_mod = source.get_module_for_symbol(symbol)
+                    if not llvm_mod.has_function(symbol):
+                        print("unsupported")
+                        continue
                     print(os.path.relpath(llvm_mod.llvm, args.kernel_dir))
                     fun_list.add(symbol, llvm_mod)
                 except SourceNotFoundException:
@@ -245,11 +248,6 @@ def compare(args):
             if old_fun_desc.mod is None or new_fun_desc.mod is None:
                 result.add_inner(Result(Result.Kind.UNKNOWN, fun, fun))
                 print("{}: unknown".format(fun))
-                continue
-
-            # Check if the function exists in both modules
-            if not (old_fun_desc.mod.has_function(fun) and
-                    new_fun_desc.mod.has_function(fun)):
                 continue
 
             # If function has a global variable, set it
