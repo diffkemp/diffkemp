@@ -21,6 +21,9 @@ The command compares functions from function lists stored inside the snapshots
 pairwise and prints syntactic diffs (thanks to the `--syntax-diff` option) of
 functions that are semantically different.
 
+Note: if `FUNCTION_LIST` contains any other symbols than functions (e.g. global
+variables), they will be ignored.
+
 ### Comparing sysctl options
 
 Apart from comparing specific functions, DiffKemp supports comparison of
@@ -86,7 +89,7 @@ The analysis is composed of multiple steps:
 ## Running environment
 
 Currently, DiffKemp runs on Linux and needs the following software installed:
-* LLVM 8.0 (currently the only supported version)
+* LLVM (supported versions are 5, 6, 7 and 8)
 * Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 * Python packages from `requirements.txt`
 * CScope
