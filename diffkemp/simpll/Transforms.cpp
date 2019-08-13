@@ -26,16 +26,15 @@
 #include "passes/RemoveUnusedReturnValuesPass.h"
 #include "passes/SimplifyKernelFunctionCallsPass.h"
 #include "passes/SimplifyKernelGlobalsPass.h"
+#include "passes/StructHashGeneratorPass.h"
 #include "passes/StructureSizeAnalysis.h"
 #include "passes/UnifyMemcpyPass.h"
-#include "passes/UnionHashGeneratorPass.h"
 #include "passes/VarDependencySlicer.h"
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
 #include <llvm/Transforms/Scalar/DCE.h>
 #include <llvm/Transforms/Scalar/LowerExpectIntrinsic.h>
-
 /// Preprocessing functions run on each module at the beginning.
 /// The following transformations are applied:
 /// 1. Slicing of program w.r.t. to the value of some global variable.
@@ -87,7 +86,7 @@ void preprocessModule(Module &Mod,
 
     mpm.addPass(SimplifyKernelGlobalsPass {});
     mpm.addPass(RemoveLifetimeCallsPass {});
-    mpm.addPass(UnionHashGeneratorPass {});
+    mpm.addPass(StructHashGeneratorPass {});
 
     mpm.run(Mod, mam);
 }
