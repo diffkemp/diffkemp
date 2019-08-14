@@ -84,8 +84,7 @@ class LlvmKernelModule:
         link_command = ["llvm-link", "-S", self.llvm]
         link_command.extend([m.llvm for m in link_llvm_modules])
         link_command.extend(["-o", new_llvm])
-        opt_command = ["opt", "-S", "-constmerge", "-mergefunc", new_llvm,
-                       "-o", new_llvm]
+        opt_command = ["opt", "-S", "-constmerge", new_llvm, "-o", new_llvm]
         with open(os.devnull, "w") as devnull:
             try:
                 check_call(link_command, stdout=devnull, stderr=devnull)
