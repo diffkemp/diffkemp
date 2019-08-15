@@ -410,6 +410,38 @@ void DebugInfo::collectMacrosWithValue(const Constant *Val) {
     }
 }
 
+/// Find all local variables and create a map from their names to their
+/// values.
+void DebugInfo::collectLocalVariables(std::set<const Function *> &Called,
+        std::unordered_map<std::string, const Value *> &Map) {
+    for (auto Fun : Called) {
+        for (auto &BB : *Fun) {
+            for (auto &Inst : BB) {
+                if (!isa<CallInst>(Inst))
+                    continue;
+                auto CInst = dyn_cast<CallInst>(&Inst);
+                if (!getCalledFunction(CInst->getCalledValue())->getName().
+                        startswith("llvm.dbg"))
+                    continue;
+
+                // Get the value name and the value itself.
+                auto WrappedVal = CInst->getOperand(0);
+                auto ValMD = dyn_cast<MetadataAsValue>(WrappedVal)->
+                        getMetadata();
+                auto Val = dyn_cast<ValueAsMetadata>(ValMD);
+                if (!Val)
+                    continue;
+
+                auto DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(1));
+                auto DI = dyn_cast<DILocalVariable>(DIVal->getMetadata());
+                auto Name = Fun->getName().str() + "::" + DI->getName().str();
+
+                Map[Name] = Val->getValue();
+            }
+        }
+    }
+}
+
 /// Add alignment for the given macro name and value from the second module.
 /// Checks if a macro with the given name was used in the first module (by
 /// querying the MacroUsageMap). If yes, and the macro value is different in
