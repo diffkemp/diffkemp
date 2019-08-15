@@ -13,6 +13,7 @@
 
 #include "Utils.h"
 #include "Config.h"
+#include <algorithm>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
@@ -20,6 +21,7 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_ostream.h>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <iostream>
@@ -546,6 +548,58 @@ std::string getIdentifierForValue(const Value *Val,
         return "<unknown>";
     } else
         return "<unknown>";
+}
+
+/// Retrieves the type of the value based its C source code expression.
+Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
+        const std::unordered_map<std::string, const Value *>
+        &LocalVariableMap) {
+    // First we have to remove pointer operators from the call.
+    if (expr[0] == '*') {
+        // Dereference operator. Return the original type.
+        Type *Ty = getCSourceIdentifierType(expr.substr(1), Parent,
+                LocalVariableMap);
+        if (!Ty)
+            return nullptr;
+
+        dbgs() << *Ty << "\n";
+        PointerType *PTy = dyn_cast<PointerType>(Ty);
+        return PTy->getElementType();
+    } else if (expr[0] == '&') {
+        // Reference operator. Return a pointer type.
+        Type *InnerTy = getCSourceIdentifierType(expr.substr(1), Parent,
+                LocalVariableMap);
+
+        // Note: assuming von Neumann architecture with single address space.
+        if (!InnerTy)
+            return nullptr;
+        else
+            return PointerType::get(InnerTy, 0);
+    } else {
+        // Determine whether the expression is an identifier at this point.
+        // If not, it is not supported.
+        std::vector<bool> Tmp;
+        std::transform(expr.begin(), expr.end(), std::back_inserter(Tmp),
+                       isValidCharForIdentifier);
+        if (!std::accumulate(Tmp.begin(), Tmp.end(), true,
+             [](auto a, auto b){ return a && b; })) {
+            // There are some characters that are not allowed in an identifier.
+            return nullptr;
+        }
+
+        // Now try to look up the identifier first in global variables, then in
+        // local variables.
+        auto Glob = Parent->getParent()->getGlobalVariable(expr);
+        if (Glob)
+            return Glob->getValueType();
+
+        auto Loc = LocalVariableMap.find(Parent->getName().str() + "::" + expr);
+        if (Loc != LocalVariableMap.end())
+            return Loc->second->getType();
+
+        // If everything failed, return null.
+        return nullptr;
+    }
 }
 
 /// Converts value to its string representation.
