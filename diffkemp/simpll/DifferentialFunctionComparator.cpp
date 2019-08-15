@@ -482,9 +482,45 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             auto SizeR = ModComparator->StructSizeMapR.find(
                                 IntR);
 
-                            if (SizeL != ModComparator->StructSizeMapL.end() &&
-                                SizeR != ModComparator->StructSizeMapR.end() &&
-                                SizeL->second == SizeR->second) {
+                            // Extract the identifiers inside sizeofs
+                            auto IdL = getSubstringToMatchingBracket(CArgsL[i],
+                                    6);
+                            auto IdR = getSubstringToMatchingBracket(CArgsR[i],
+                                    6);
+                            IdL = IdL.substr(1, IdL.size() - 2);
+                            IdR = IdR.substr(1, IdR.size() - 2);
+
+                            auto TyIdL = getCSourceIdentifierType(IdL,
+                                    BBL->getParent(), DI->LocalVariableMapL);
+                            auto TyIdR = getCSourceIdentifierType(IdR,
+                                    BBR->getParent(), DI->LocalVariableMapR);
+
+                            // If the types are structure types, prepare their
+                            // names for comparison. (Use different generic
+                            // names for non-structure types.)
+                            // Note: since the sizeof is different the types
+                            // would likely be also compared as different
+                            // using cmpTypes.
+                            auto TyIdLName = TyIdL->isStructTy() ?
+                                             dyn_cast<StructType>(TyIdL)->
+                                                 getStructName() :
+                                             "Type 1";
+                            auto TyIdRName = TyIdR->isStructTy() ?
+                                             dyn_cast<StructType>(TyIdR)->
+                                                 getStructName() :
+                                             "Type 2";
+
+                            // In case both values belong to the sizes of the
+                            // same structure or the original types were found
+                            // and their names (in the case of
+                            // structure types) are the same, compare the sizeof
+                            // as equal.
+                            if ((SizeL != ModComparator->StructSizeMapL.end() &&
+                                 SizeR != ModComparator->StructSizeMapR.end() &&
+                                 SizeL->second == SizeR->second) ||
+                                 (TyIdL != nullptr && TyIdR != nullptr &&
+                                  (!cmpTypes(TyIdL, TyIdR) ||
+                                   TyIdLName == TyIdRName))) {
                                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << "Comparing integers as equal "
                                            << "because of correspondence to "
