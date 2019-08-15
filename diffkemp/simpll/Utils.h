@@ -110,6 +110,11 @@ void findAndReplace(std::string &input, std::string find,
 /// the built-in getAsInstruction method is sufficient.
 const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx);
 
+/// Retrives type of the value based its C source code identifier.
+Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
+        const std::unordered_map<std::string, const Value *>
+        &LocalVariableMap);
+
 /// Generates human-readable C-like identifier for type.
 std::string getIdentifierForType(Type *Ty);
 
