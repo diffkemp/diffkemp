@@ -38,15 +38,18 @@ class DebugInfo {
                                          StringRef>;
     DebugInfo(Module &modFirst, Module &modSecond,
               Function *funFirst, Function *funSecond,
-              std::set<const Function *> &CalledFirst) :
+              std::set<const Function *> &CalledFirst,
+              std::set<const Function *> &CalledSecond) :
             FunFirst(funFirst), FunSecond(funSecond),
             ModFirst(modFirst), ModSecond(modSecond),
-            CalledFirst(CalledFirst) {
+            CalledFirst(CalledFirst), CalledSecond(CalledSecond) {
         DebugInfoFirst.processModule(ModFirst);
         DebugInfoSecond.processModule(ModSecond);
         // Use debug info to gather useful information
         calculateGEPIndexAlignments();
         calculateMacroAlignments();
+        collectLocalVariables(CalledFirst, LocalVariableMapL);
+        collectLocalVariables(CalledSecond, LocalVariableMapR);
         // Remove calls to debug info intrinsics from the functions - it may
         // cause some non-equalities in FunctionComparator.
         removeFunctionsDebugInfo(modFirst);
@@ -60,6 +63,10 @@ class DebugInfo {
     /// to corresponding values in the second module.
     std::map<const Constant *, std::string> MacroConstantMap;
 
+    /// Maps local variable names to their values.
+    std::unordered_map<std::string, const Value *> LocalVariableMapL,
+                                                   LocalVariableMapR;
+
   private:
     Function *FunFirst;
     Function *FunSecond;
@@ -67,7 +74,7 @@ class DebugInfo {
     Module &ModSecond;
     DebugInfoFinder DebugInfoFirst;
     DebugInfoFinder DebugInfoSecond;
-    std::set<const Function *> &CalledFirst;
+    std::set<const Function *> &CalledFirst, &CalledSecond;
 
     /// Mapping struct types to index maps that contain pairs of corresponding
     /// indices.
@@ -90,6 +97,11 @@ class DebugInfo {
 
     /// Find all macros in the first module having the given value
     void collectMacrosWithValue(const Constant *Val);
+
+    /// Find all local variables and create a map from their names to their
+    /// values.
+    void collectLocalVariables(std::set<const Function *> &Called,
+            std::unordered_map<std::string, const Value *> &Map);
 
     /// Add an alignment of macros if it exists
     /// \param MacroName Name of the macro in the second module

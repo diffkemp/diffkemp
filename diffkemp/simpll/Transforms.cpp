@@ -145,7 +145,9 @@ void simplifyModulesDiff(Config &config,
     DebugInfo DI(*config.First, *config.Second,
                  config.FirstFun, config.SecondFun,
                  mam.getResult<CalledFunctionsAnalysis>(*config.First,
-                                                        config.FirstFun));
+                                                        config.FirstFun),
+                 mam.getResult<CalledFunctionsAnalysis>(*config.Second,
+                                                        config.SecondFun));
     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                     dbgs() << "StructFieldNames size: "
                            << DI.StructFieldNames.size() << "\n");
