@@ -37,6 +37,8 @@ const Function *getCalledFunction(const Value *CalledValue) {
     if (!fun) {
         if (auto BitCast = dyn_cast<BitCastOperator>(CalledValue)) {
             fun = dyn_cast<Function>(BitCast->getOperand(0));
+        } else if (auto Alias = dyn_cast<GlobalAlias>(CalledValue)) {
+            fun = getCalledFunction(Alias->getAliasee());
         }
     }
     return fun;
