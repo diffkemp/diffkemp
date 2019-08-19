@@ -562,7 +562,6 @@ Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
         if (!Ty)
             return nullptr;
 
-        dbgs() << *Ty << "\n";
         PointerType *PTy = dyn_cast<PointerType>(Ty);
         return PTy->getElementType();
     } else if (expr[0] == '&') {
