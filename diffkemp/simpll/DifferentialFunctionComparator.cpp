@@ -665,7 +665,8 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
             NameL = NameL.substr(0, NameL.find_last_of("."));
         if (hasSuffix(NameR))
             NameR = NameR.substr(0, NameR.find_last_of("."));
-        if (NameL == NameR) {
+        if (NameL == NameR || (isPrintFunction(NameL) &&
+                isPrintFunction(NameR))) {
             if (isa<Function>(L) && isa<Function>(R)) {
                 // Functions compared as being the same have to be also compared
                 // by ModuleComparator.
@@ -676,7 +677,9 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                 if (!FunL->getName().startswith("simpll_") &&
                     !FunR->getName().startswith("simpll_") &&
                     (ModComparator->ComparedFuns.find({FunL, FunR}) ==
-                        ModComparator->ComparedFuns.end())) {
+                        ModComparator->ComparedFuns.end()) &&
+                    (!isPrintFunction(L->getName()) &&
+                     !isPrintFunction(R->getName()))) {
                     ModComparator->compareFunctions(FunL, FunR);
                 }
             }
