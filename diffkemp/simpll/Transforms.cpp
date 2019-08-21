@@ -14,7 +14,6 @@
 
 #include "Transforms.h"
 #include "DebugInfo.h"
-#include "DifferentialGlobalNumberState.h"
 #include "DifferentialFunctionComparator.h"
 #include "ModuleComparator.h"
 #include "Utils.h"

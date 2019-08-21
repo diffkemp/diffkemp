@@ -642,6 +642,51 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
     return {diff};
 }
 
+/// Implement comparison of global values that does not use a
+/// GlobalNumberState object, since that approach does not fit the use case
+/// of comparing functions in two different modules.
+int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
+                                                    GlobalValue *R) const {
+    auto GVarL = dyn_cast<GlobalVariable>(L);
+    auto GVarR = dyn_cast<GlobalVariable>(R);
+
+    if (GVarL && GVarR && GVarL->hasInitializer() && GVarR->hasInitializer() &&
+        GVarL->isConstant() && GVarR->isConstant()) {
+        // Constant global variables are compared using their initializers.
+        return cmpConstants(GVarL->getInitializer(),
+                            GVarR->getInitializer());
+    } else if (L->hasName() && R->hasName()) {
+        // Both values are named, compare them by names
+        auto NameL = L->getName();
+        auto NameR = R->getName();
+
+        // Remove number suffixes
+        if (hasSuffix(NameL))
+            NameL = NameL.substr(0, NameL.find_last_of("."));
+        if (hasSuffix(NameR))
+            NameR = NameR.substr(0, NameR.find_last_of("."));
+        if (NameL == NameR) {
+            if (isa<Function>(L) && isa<Function>(R)) {
+                // Functions compared as being the same have to be also compared
+                // by ModuleComparator.
+                auto FunL = dyn_cast<Function>(L);
+                auto FunR = dyn_cast<Function>(R);
+
+                // Do not compare SimpLL abstractions.
+                if (!FunL->getName().startswith("simpll_") &&
+                    !FunR->getName().startswith("simpll_") &&
+                    (ModComparator->ComparedFuns.find({FunL, FunR}) ==
+                        ModComparator->ComparedFuns.end())) {
+                    ModComparator->compareFunctions(FunL, FunR);
+                }
+            }
+            return 0;
+        } else
+            return 1;
+    } else
+        return L != R;
+}
+
 /// Handle values generated from macros and enums whose value changed.
 /// The new values are pre-computed by DebugInfo.
 /// Also handles comparing in case at least one of the values is a cast -

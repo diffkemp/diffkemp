@@ -33,10 +33,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    bool controlFlowOnly,
                                    bool showAsmDiff,
-                                   GlobalNumberState *GN,
                                    const DebugInfo *DI,
                                    ModuleComparator *MC)
-            : FunctionComparator(F1, F2, GN), DI(DI),
+            : FunctionComparator(F1, F2, nullptr), DI(DI),
               controlFlowOnly(controlFlowOnly), showAsmDiff(showAsmDiff),
               LayoutL(F1->getParent()->getDataLayout()),
               LayoutR(F2->getParent()->getDataLayout()),
@@ -70,6 +69,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// only. (The rest is the same as in LLVM.)
     int cmpBasicBlocks(const BasicBlock *BBL, const BasicBlock *BBR)
         const override;
+    /// Implement comparison of global values that does not use a
+    /// GlobalNumberState object, since that approach does not fit the use case
+    /// of comparing functions in two different modules.
+    int cmpGlobalValues(GlobalValue *L, GlobalValue *R) const override;
     /// Specific comparing of values. Handles values generated from macros
     /// whose value changed and values where at least one of them is a cast.
     int cmpValues(const Value *L, const Value *R) const override;
