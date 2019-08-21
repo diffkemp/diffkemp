@@ -19,9 +19,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "SimplifyKernelFunctionCallsPass.h"
+#include "Utils.h"
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/Instructions.h>
+#include <set>
 
 /// Replace an argument of a call instruction by 0.
 /// Checks if the argument is of integer type.
@@ -85,10 +87,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
                     CallInstr->replaceAllUsesWith(newCall);
                     toRemove.push_back(&Instr);
-                } else if (CalledFun->getName() == "_dev_info" ||
-                           CalledFun->getName() == "dev_warn" ||
-                           CalledFun->getName() == "dev_err" ||
-                           CalledFun->getName() == "sprintf") {
+                } else if (isPrintFunction(CalledFun->getName())) {
                     // Functions with 2 mandatory arguments
                     auto Op0Type = dyn_cast<PointerType>(
                             CallInstr->getOperand(0)->getType());
