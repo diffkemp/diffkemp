@@ -92,7 +92,8 @@ void UnifyGlobalsNumberingPass::fixStaticVariablesNumbering(Module &Mod) {
     // Go through all static variables in map and number them according to the
     // order of the numbers assigned in the previous step.
     for (auto Elem : Map) {
-        std::sort(Elem.second.begin(), Elem.second.end());
+        std::sort(Elem.second.begin(), Elem.second.end(), [](auto L, auto R) ->
+                bool { return L.second < R.second; });
         int counter = 0;
         for (auto Pair : Elem.second) {
             Pair.first->setName(Elem.first + "." + std::to_string(counter++));
