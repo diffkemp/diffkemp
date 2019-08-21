@@ -16,7 +16,6 @@
 #define DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
 
 #include "DebugInfo.h"
-#include "DifferentialGlobalNumberState.h"
 #include "SourceCodeUtils.h"
 #include "passes/StructureSizeAnalysis.h"
 #include "Utils.h"
@@ -58,7 +57,7 @@ class ModuleComparator {
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-            showAsmDiffs(showAsmDiffs), GS(&First, &Second, this), DI(DI),
+            showAsmDiffs(showAsmDiffs), DI(DI),
             AsmToStringMapL(AsmToStringMapL), AsmToStringMapR(AsmToStringMapR),
             StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR) {}
 
@@ -69,9 +68,6 @@ class ModuleComparator {
     /// Pointer to a function that is called just by one of the compared
     /// functions and needs to be inlined.
     std::pair<const CallInst *, const CallInst*> tryInline = {nullptr, nullptr};
-
-  private:
-    DifferentialGlobalNumberState GS;
 };
 
 #endif //DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
