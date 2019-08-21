@@ -28,6 +28,7 @@
 #include "passes/SimplifyKernelGlobalsPass.h"
 #include "passes/StructHashGeneratorPass.h"
 #include "passes/StructureSizeAnalysis.h"
+#include "passes/UnifyGlobalsNumberingPass.h"
 #include "passes/UnifyMemcpyPass.h"
 #include "passes/VarDependencySlicer.h"
 #include <llvm/IR/PassManager.h>
@@ -135,6 +136,7 @@ void simplifyModulesDiff(Config &config,
     PassManager<Module, AnalysisManager<Module, Function *>, Function *,
         Module *> mpm;
     mpm.addPass(RemoveUnusedReturnValuesPass {});
+    mpm.addPass(UnifyGlobalsNumberingPass {});
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
