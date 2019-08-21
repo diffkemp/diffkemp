@@ -313,8 +313,9 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
                 {nullptr, dyn_cast<CallInst>(R)};
         }
 
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() <<
-            "Writing function-macro syntactic difference\n");
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent() << "Writing function-macro "
+                               << "syntactic difference\n");
 
         SyntaxDifference diff;
         diff.function = L->getFunction()->getName();
@@ -461,7 +462,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                                 mayIgnoreMacro(CArgsR[i]) &&
                                 (CArgsL[i] == CArgsR[i])) {
                             DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Comparing integers as equal "
+                                dbgs() << getDebugIndent()
+                                       << "Comparing integers as equal "
                                        << "because of correspondence to an "
                                        << "ignored macro\n");
                             Res = 0;
@@ -522,7 +524,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                                   (!cmpTypes(TyIdL, TyIdR) ||
                                    TyIdLName == TyIdRName))) {
                                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << "Comparing integers as equal "
+                                    dbgs() << getDebugIndent()
+                                           << "Comparing integers as equal "
                                            << "because of correspondence to "
                                            << "structure type sizes \n");
                                 Res = 0;

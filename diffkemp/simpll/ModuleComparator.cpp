@@ -26,8 +26,10 @@
 void ModuleComparator::compareFunctions(Function *FirstFun,
                                         Function *SecondFun) {
     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "Comparing " << FirstFun->getName() << " and "
-                           << SecondFun->getName() << "\n");
+                    dbgs() << getDebugIndent() << "Comparing "
+                           << FirstFun->getName() << " and "
+                           << SecondFun->getName() << "\n";
+                    increaseIndentLevel());
     ComparedFuns.emplace(std::make_pair(FirstFun, SecondFun), Result::UNKNOWN);
 
     // Comparing function declarations (function without bodies).
@@ -54,6 +56,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     this->MissingDefs.push_back({nullptr, SecondFun});
             }
         }
+
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseIndentLevel());
         return;
     }
 
@@ -62,7 +66,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                                          showAsmDiffs, DI, this);
     if (fComp.compare() == 0) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << "Function " << FirstFun->getName()
+                        dbgs() << getDebugIndent(-1) << "Function "
+                               << FirstFun->getName()
                                << " is same in both modules\n");
         ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
     } else {
@@ -81,12 +86,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 const Function *toInline =
                         getCalledFunction(inlineFirst->getCalledValue());
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Try to inline "
+                                dbgs() << getDebugIndent() << "Try to inline "
                                        << toInline->getName()
                                        << " in first.\n");
                 if (toInline->isDeclaration()) {
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << "Missing definition\n");
+                                    dbgs() << getDebugIndent()
+                                           << "Missing definition\n");
                     if (!toInline->isIntrinsic()
                             && toInline->getName().find("simpll__")
                                     == std::string::npos)
@@ -104,12 +110,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 const Function *toInline =
                         getCalledFunction(inlineSecond->getCalledValue());
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Try to inline "
+                                dbgs() << getDebugIndent() << "Try to inline "
                                        << toInline->getName()
                                        << " in second.\n");
                 if (toInline->isDeclaration()) {
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << "Missing definition\n");
+                                    dbgs() << getDebugIndent()
+                                           << "Missing definition\n");
                     if (!toInline->isIntrinsic()
                             && toInline->getName().find("simpll__")
                                     == std::string::npos)
@@ -146,4 +153,6 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             }
         }
     }
+
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseIndentLevel());
 }
