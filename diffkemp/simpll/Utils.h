@@ -132,4 +132,15 @@ std::string getIdentifierForValue(const Value *Val,
 /// methods.
 std::string valueToString(const Value *Val);
 
+/// Get a string matching the current indentation level.
+/// \param offset Indentation level offset to use, defaults to zero.
+/// \param prefixChar Indentation prefix character, defaults to space.
+std::string getDebugIndent(const int offset = 0, const char prefixChar = ' ');
+
+/// Increase the level of debug indentation by one.
+void increaseIndentLevel();
+
+/// Decrease the level of debug indentation by one.
+void decreaseIndentLevel();
+
 #endif //DIFFKEMP_SIMPLL_UTILS_H

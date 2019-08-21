@@ -116,9 +116,10 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
             if (usedMacroMap.find(Entry.first.str()) == usedMacroMap.end()) {
                 usedMacroMap[Entry.first.str()] = Entry.second;
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Adding macro " << Entry.first <<
-                                " : " << Entry.second.body << ", parent macro "
-                                << Entry.second.parentMacro << "\n");
+                                dbgs() << getDebugIndent() << "Adding macro "
+                                       << Entry.first << " : "
+                                       << Entry.second.body << ", parent macro "
+                                       << Entry.second.parentMacro << "\n");
             }
         }
 
@@ -220,20 +221,25 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
     if (!LineLoc || LineLoc->getNumOperands() == 0) {
         // DILocation has no scope or is not present - cannot get macro stack
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Scope for macro not found\n");
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "Scope for macro not found\n");
         return std::unordered_map<std::string, MacroElement>();
     }
 
     std::string line = extractLineFromLocation(LineLoc, lineOffset);
     if (line == "") {
         // Source file was not found
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Source for macro not found\n");
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "Source for macro not found\n");
         return std::unordered_map<std::string, MacroElement>();
     }
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "Looking for all macros on line:" << line
-                    << "\n");
+                    dbgs() << getDebugIndent()
+                           << "Looking for all macros on line:"
+                           << line << "\n");
 
     // Get macro array from debug info
     DISubprogram *Sub = LineLoc->getScope()->getSubprogram();
@@ -367,22 +373,20 @@ std::vector<SyntaxDifference> findMacroDifferences(
             std::reverse(StackR.begin(), StackR.end());
 
             DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                dbgs() << "Left stack:\n\t";
-                dbgs() << LValue->second.body << "\n";
+                dbgs() << getDebugIndent() << "Left stack:\n\t";
+                dbgs() << getDebugIndent() << LValue->second.body << "\n";
                 for (CallInfo &elem : StackL) {
-                    dbgs() << "\t\tfrom " << elem.fun <<
-                        " in file " <<
-                        elem.file << " on line "
-                        << elem.line << "\n";
+                    dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
+                           << " in file " << elem.file << " on line "
+                           << elem.line << "\n";
                 });
             DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                dbgs() << "Right stack:\n\t";
-                dbgs() << RValue->second.body << "\n";
+                dbgs() << getDebugIndent() << "Right stack:\n\t";
+                dbgs() << getDebugIndent() << RValue->second.body << "\n";
                 for (CallInfo &elem : StackR) {
-                    dbgs() << "\t\tfrom " << elem.fun <<
-                        " in file " <<
-                        elem.file << " on line "
-                        << elem.line << "\n";
+                    dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
+                           << " in file " << elem.file << " on line "
+                           << elem.line << "\n";
                 });
 
             result.push_back(SyntaxDifference {
