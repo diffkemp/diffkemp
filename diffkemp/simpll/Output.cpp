@@ -80,7 +80,12 @@ namespace llvm::yaml {
 template<>
 struct MappingTraits<FunctionInfo> {
     static void mapping(IO &io, FunctionInfo &info) {
-        io.mapRequired("function", info.name);
+        std::string name = info.name;
+        if (hasSuffix(name)) {
+            // Remove LLVM suffix.
+            name = name.substr(0, name.find("."));
+        }
+        io.mapRequired("function", name);
         io.mapOptional("file", info.file);
         if (info.line != 0)
             io.mapOptional("line", info.line);
