@@ -29,7 +29,7 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
             # nothing but an ending curly bracket
             line_index = start - 1
             line = lines[line_index]
-            while line.rstrip() != "}":
+            while line.rstrip() != "}" and line.rstrip() != ");":
                 line_index += 1
                 output_file.write(line)
                 line = lines[line_index]
