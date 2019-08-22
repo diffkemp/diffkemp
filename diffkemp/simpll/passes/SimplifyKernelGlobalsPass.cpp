@@ -38,16 +38,6 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
     std::vector<GlobalVariable *> kSymstoDelete;
 
     for (auto &Glob : Mod.globals()) {
-        std::string Name = Glob.getName();
-        if (canMergeGlobalWithName(Name) && hasSuffix(Name)) {
-            std::string OrigName = dropSuffix(Name);
-            auto *GlobalOrig = Mod.getNamedGlobal(OrigName);
-            if (GlobalOrig)
-                Glob.replaceAllUsesWith(GlobalOrig);
-            else
-                Glob.setName(OrigName);
-        }
-
         // Set kernel symbol to be removed
         if (Glob.hasName() &&
             Glob.getName().startswith("__ksym") && isa<GlobalVariable>(Glob)) {
