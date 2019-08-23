@@ -33,7 +33,7 @@
 #include <llvm/Transforms/Utils/Cloning.h>
 
 /// Level of debug indentation. Each level corresponds to two characters.
-static int debugIndentLevel = 0;
+static unsigned int debugIndentLevel = 0;
 
 /// Extract called function from a called value Handles situation when the
 /// called value is a bitcast.
@@ -626,18 +626,18 @@ std::string valueToString(const Value *Val) {
 }
 
 /// Get a string matching the current indentation level.
-/// \param offset Indentation level offset to use, defaults to zero.
 /// \param prefix Indentation prefix character, defaults to space.
-std::string getDebugIndent(const int offset, const char prefixChar) {
-    return std::string((debugIndentLevel + offset) * 2, prefixChar);
+std::string getDebugIndent(const char prefixChar) {
+    return std::string(debugIndentLevel * 2, prefixChar);
 }
 
 /// Increase the level of debug indentation by one.
-void increaseIndentLevel() {
+void increaseDebugIndentLevel() {
     debugIndentLevel++;
 }
 
 /// Decrease the level of debug indentation by one.
-void decreaseIndentLevel() {
+void decreaseDebugIndentLevel() {
+    assert(debugIndentLevel > 0);
     debugIndentLevel--;
 }
