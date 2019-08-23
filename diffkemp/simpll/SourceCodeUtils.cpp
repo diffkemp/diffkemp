@@ -214,6 +214,10 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
 /// map.
 std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
     DILocation *LineLoc, const Module *Mod, int lineOffset) {
+    // Store generated macro maps for modules to avoid having to regenerate them
+    // many times when comparing a module that has to be inlined a lot.
+    static std::map<const Module *, StringMap<MacroElement>> MacroMapCache;
+
     if (!LineLoc || LineLoc->getNumOperands() == 0) {
         // DILocation has no scope or is not present - cannot get macro stack
         DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Scope for macro not found\n");
@@ -237,54 +241,64 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
     // Create a map from macro identifiers to their values.
     StringMap<MacroElement> macroMap;
-    StringMap<const DIMacroFile *> macroFileMap;
-    std::vector<const DIMacroFile *> macroFileStack;
 
-    // First all DIMacroFiles (these represent directly included headers) are
-    // added to a stack.
-    for (const DIMacroNode *Node : RawMacros) {
-        if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
-            macroFileStack.push_back(File);
+    // Try loading macro map from cache.
+    if (MacroMapCache.find(Mod) != MacroMapCache.end())
+        macroMap = MacroMapCache[Mod];
+    else {
+        // Map is not in cache, generate it.
+
+        StringMap<const DIMacroFile *> macroFileMap;
+        std::vector<const DIMacroFile *> macroFileStack;
+
+        // First all DIMacroFiles (these represent directly included headers)
+        // are added to a stack.
+        for (const DIMacroNode *Node : RawMacros) {
+           if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+               macroFileStack.push_back(File);
+        }
+
+        // Next a DFS algorithm (using the stack created in the previous
+        // step) used to add all macros that are found inside the file on
+        // the top of the stack to a map and to add all macro files
+        // referenced from the top macro file to the stack (these represent
+        // indirectly included headers).
+        while (!macroFileStack.empty()) {
+           const DIMacroFile *MF = macroFileStack.back();
+           DIMacroNodeArray A = MF->getElements();
+           macroFileStack.pop_back();
+
+           for (const DIMacroNode *Node : A)
+               if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+                   // The macro node is another macro file - add it to the
+                   // stack
+                   macroFileStack.push_back(File);
+               else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
+                   // The macro node is an actual macro - add an object
+                   // representing it (containing its full name) with its
+                   // shortened name as the key.
+                   std::string macroName = Macro->getName().str();
+
+                   // If the macro name contains arguments, remove them for
+                   // the purpose of the map key.
+                   auto position = macroName.find('(');
+                   if (position != std::string::npos) {
+                       macroName = macroName.substr(0, position);
+                   }
+
+                   MacroElement element;
+                   element.name = macroName;
+                   element.fullName = Macro->getName();
+                   element.body = Macro->getValue();
+                   element.parentMacro = "N/A";
+                   element.sourceFile = MF->getFile()->getFilename().str();
+                   element.line = Macro->getLine();
+                   macroMap[macroName] = element;
+               }
+        }
+        // Put map into cache.
+        MacroMapCache[Mod] = macroMap;
     }
-
-    // Next a DFS algorithm (using the stack created in the previous step) is
-    // used to add all macros that are found inside the file on the top of the
-    // stack to a map and to add all macro files referenced from the top macro
-    // file to the stack (these represent indirectly included headers).
-    while (!macroFileStack.empty()) {
-        const DIMacroFile *MF = macroFileStack.back();
-        DIMacroNodeArray A = MF->getElements();
-        macroFileStack.pop_back();
-
-        for (const DIMacroNode *Node : A)
-            if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
-                // The macro node is another macro file - add it to the
-                // stack
-                macroFileStack.push_back(File);
-            else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
-                // The macro node is an actual macro - add an object
-                // representing it (containing its full name) with its shortened
-                // name as the key.
-                std::string macroName = Macro->getName().str();
-
-                // If the macro name contains arguments, remove them for the
-                // purpose of the map key.
-                auto position = macroName.find('(');
-                if (position != std::string::npos) {
-                    macroName = macroName.substr(0, position);
-                }
-
-                MacroElement element;
-                element.name = macroName;
-                element.fullName = Macro->getName();
-                element.body = Macro->getValue();
-                element.parentMacro = "N/A";
-                element.sourceFile = MF->getFile()->getFilename().str();
-                element.line = Macro->getLine();
-                macroMap[macroName] = element;
-            }
-    }
-
 
     // Add information about the original line to the map, then return the map
     auto macrosOnLine = getAllMacrosOnLine(line, macroMap);
