@@ -73,6 +73,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// GlobalNumberState object, since that approach does not fit the use case
     /// of comparing functions in two different modules.
     int cmpGlobalValues(GlobalValue *L, GlobalValue *R) const override;
+    /// Specific comparing of structure field access.
+    int cmpFieldAccess(const Function *L, const Function *R) const;
     /// Specific comparing of values. Handles values generated from macros
     /// whose value changed and values where at least one of them is a cast.
     int cmpValues(const Value *L, const Value *R) const override;
@@ -103,6 +105,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// This is necessary because such a change isn't visible in C source.
     void findMacroFunctionDifference(const Instruction *L,
             const Instruction *R) const;
+
+    // Takes all GEPs in a basic block and computes the sum of their offsets if
+    // constant (if not, it returns false).
+    bool accumulateAllOffsets(const BasicBlock &BB, uint64_t &Offset) const;
 };
 
 #endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H

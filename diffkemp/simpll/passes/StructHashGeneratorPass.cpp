@@ -37,8 +37,8 @@ PreservedAnalyses StructHashGeneratorPass::run (
                 continue;
             std::string TypeDecl = TypeDump.substr(pos);
             std::string NewTypeName =
-                    STy->getStructName().startswith("union.anon") ?
-                            "union.anon." : "struct.anon:" +
+                    (STy->getStructName().startswith("union.anon") ?
+                            "union.anon." : "struct.anon.") +
                     std::to_string(hash_value(TypeDecl));
 
             // Rename the type
