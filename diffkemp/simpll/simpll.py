@@ -32,8 +32,15 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
     second_out_name = add_suffix(second, suffix) if suffix else second
 
     try:
-        simpll_command = ["build/diffkemp/simpll/simpll", first, second,
-                          "--print-callstacks"]
+        # Determine the SimpLL binary to use.
+        # The manually built one has priority over the installed one.
+        if os.path.isfile("build/diffkemp/simpll/diffkemp-simpll"):
+            simpll_bin = "build/diffkemp/simpll/diffkemp-simpll"
+        else:
+            simpll_bin = "diffkemp-simpll"
+        # SimpLL command
+        simpll_command = list([simpll_bin, first, second,
+                               "--print-callstacks"])
         # Main (analysed) functions
         simpll_command.append("--fun")
         if fun_first != fun_second:
