@@ -6,7 +6,7 @@ key in the YAML spec file.
 """
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
-from tests.regression.task_spec import SysctlTaskSpec, specs_path, tasks_path
+from .task_spec import SysctlTaskSpec, specs_path, tasks_path
 import glob
 import os
 import pytest
