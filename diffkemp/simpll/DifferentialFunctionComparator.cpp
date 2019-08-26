@@ -15,6 +15,7 @@
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
 #include "SourceCodeUtils.h"
+#include "passes/FieldAccessFunctionGenerator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
@@ -205,9 +206,9 @@ int DifferentialFunctionComparator::cmpOperations(
                     // doesn't compare the called functions) or the called
                     // functions have different names, try inlining them.
                     // (except for case when one of the function is a SimpLL
-                    // abstraction)
-                    if (!CalledL->getName().startswith("simpll") &&
-                            !CalledR->getName().startswith("simpll"))
+                    // abstraction).
+                    if (!isSimpllAbstractionDeclaration(CalledL) &&
+                            !isSimpllAbstractionDeclaration(CalledR))
                         ModComparator->tryInline = {CL, CR};
 
                     // Look for a macro-function difference.
@@ -218,13 +219,11 @@ int DifferentialFunctionComparator::cmpOperations(
             // If just one of the instructions is a call, it is possible that
             // some logic has been moved into a function. We'll try to inline
             // that function and compare again.
-            if (isa<CallInst>(L) && !getCalledFunction(
-                    dyn_cast<CallInst>(L)->getCalledValue())->getName().
-                    startswith("simpll"))
+            if (isa<CallInst>(L) && !isSimpllAbstractionDeclaration(
+                    getCalledFunction(dyn_cast<CallInst>(L)->getCalledValue())))
                 ModComparator->tryInline = {dyn_cast<CallInst>(L), nullptr};
-            else if (isa<CallInst>(R) && !getCalledFunction(
-                     dyn_cast<CallInst>(R)->getCalledValue())->getName().
-                     startswith("simpll"))
+            else if (isa<CallInst>(R) && !isSimpllAbstractionDeclaration(
+                    getCalledFunction(dyn_cast<CallInst>(R)->getCalledValue())))
                 ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
 
             // Look for a macro-function difference.
@@ -685,12 +684,62 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                      !isPrintFunction(R->getName()))) {
                     ModComparator->compareFunctions(FunL, FunR);
                 }
+
+                if (FunL->getName().startswith(SimpllFieldAccessFunName) &&
+                    FunR->getName().startswith(SimpllFieldAccessFunName)) {
+                    // Compare field access abstractions using a special
+                    // method.
+                    return cmpFieldAccess(FunL, FunR);
+                }
             }
             return 0;
         } else
             return 1;
     } else
         return L != R;
+}
+
+// Takes all GEPs in a basic block and computes the sum of their offsets if
+// constant (if not, it returns false).
+bool DifferentialFunctionComparator::accumulateAllOffsets(
+        const BasicBlock &BB, uint64_t &Offset) const {
+    for (auto &Inst : BB) {
+        if (auto GEP = dyn_cast<GetElementPtrInst>(&Inst)) {
+            APInt Offset;
+            if (!GEP->accumulateConstantOffset(
+                    BB.getModule()->getDataLayout(), Offset))
+                return false;
+            Offset += Offset.getZExtValue();
+        }
+    }
+    return true;
+}
+
+/// Specific comparing of structure field access.
+int DifferentialFunctionComparator::cmpFieldAccess(const Function *L,
+                                                   const Function *R) const {
+    // First compute the complete offset of all GEPs in both functions.
+    // It is possible that although the process contains unpacking several
+    // anonymous unions and structs, the offset stays the same, which means that
+    // without a doubt this is semantically equal (and probably would, in fact,
+    // be also equal in machine code).
+    uint64_t OffsetL = 0, OffsetR = 0;
+
+    if (!accumulateAllOffsets(L->front(), OffsetL) ||
+        !accumulateAllOffsets(L->front(), OffsetR))
+        return 1;
+
+    if (OffsetL == OffsetR)
+        // If the complete offsets are the same, the field accesses are
+        // semantically also the same (the source and target type are compared
+        // in cmpOperations and cmpBasicBlocks as the instruction type and
+        // operand type).
+        return 0;
+
+    // If all of the specific comparisons failed, report non-equal, which will
+    // lead to inling of the abstractions and comparing the instuction the
+    // usual way.
+    return 1;
 }
 
 /// Handle values generated from macros and enums whose value changed.
