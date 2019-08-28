@@ -8,4 +8,5 @@ functions:
         dev_trans_start: equal_syntax
         single_open: equal_syntax
         netif_free_tx_queues: equal_syntax
+        skb_queue_head: equal_syntax
 
