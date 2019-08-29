@@ -7,6 +7,8 @@
 
 # First set up the class.
 python
+def parse_raw_dump(input):
+    return input[input.find('"') + 1:input.rfind('"')]
 class PrintReturnValueBreakpoint (gdb.FinishBreakpoint):
     def __init__(self, left_val, right_val, function):
         # Breakpoint declared as internal to avoid unnecessary output which
@@ -30,9 +32,7 @@ class PrintReturnValueBreakpoint (gdb.FinishBreakpoint):
         # Print only functions that ended with a value different than zero.
         # This is to avoid priting too much output.
         if gdb.parse_and_eval("$eax") != 0:
-            # First print the return value.
-            print("Function %s returned %s." % (self.function,
-                  gdb.parse_and_eval("$eax")))
+            retval = gdb.parse_and_eval("$eax")
 
             # Dump the values.
             command_l = "p valueToString(%s)" % str(self.left_val)
@@ -40,13 +40,24 @@ class PrintReturnValueBreakpoint (gdb.FinishBreakpoint):
             raw_dump_l = gdb.execute(command_l, to_string=True).rstrip()
             raw_dump_r = gdb.execute(command_r, to_string=True).rstrip()
 
+            # Get the indentation.
+            indent_cmd = "p getDebugIndent(' ')"
+            indent_raw = gdb.execute(indent_cmd, to_string=True).rstrip()
+            indent = parse_raw_dump(indent_raw)
+
+            # Then print the return value.
+            print(indent, end='')
+            print("Function %s returned %s." % (self.function, retval))
+
             # Parse the raw output.
             # Note: The raw output looks like $<number> = "<dump>".
-            value_l = raw_dump_l[raw_dump_l.find('"') + 1:raw_dump_l.rfind('"')]
-            value_r = raw_dump_r[raw_dump_r.find('"') + 1:raw_dump_r.rfind('"')]
+            value_l = parse_raw_dump(raw_dump_l)
+            value_r = parse_raw_dump(raw_dump_r)
 
             # Print the values.
+            print(indent, end='')
             print("\tL: %s" % value_l)
+            print(indent, end='')
             print("\tR: %s" % value_r)
         # Do not pause execution.
         return False
