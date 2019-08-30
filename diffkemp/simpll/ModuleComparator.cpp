@@ -115,11 +115,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         missingDefs.first = toInline;
                 } else {
                     InlineFunctionInfo ifi;
-                    if (InlineFunction(inlineFirst, ifi, nullptr, false)) {
-                        simplifyFunction(FirstFun);
-                        simplifyFunction(SecondFun);
+                    if (InlineFunction(inlineFirst, ifi, nullptr, false))
                         inlined = true;
-                    }
                 }
             }
             if (inlineSecond) {
@@ -139,11 +136,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         missingDefs.second = toInline;
                 } else {
                     InlineFunctionInfo ifi;
-                    if (InlineFunction(inlineSecond, ifi, nullptr, false)) {
-                        simplifyFunction(FirstFun);
-                        simplifyFunction(SecondFun);
+                    if (InlineFunction(inlineSecond, ifi, nullptr, false))
                         inlined = true;
-                    }
                 }
             }
             // If some function to be inlined does not have a declaration,
@@ -157,6 +151,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
                 break;
             }
+            simplifyFunction(FirstFun);
+            simplifyFunction(SecondFun);
             // Reset the function diff result
             ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
             // Re-run the comparison
