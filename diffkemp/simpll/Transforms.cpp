@@ -107,8 +107,7 @@ void simplifyModulesDiff(Config &config,
                          std::vector<ConstFunPair> &missingDefs,
                          std::vector<SyntaxDifference> &differingMacros) {
     // Generate abstractions of indirect function calls and for inline
-    // assemblies. Then, unify the abstractions between the modules so that
-    // the corresponding abstractions get the same name.
+    // assemblies.
     AnalysisManager<Module, Function *> mam(false);
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
@@ -123,8 +122,6 @@ void simplifyModulesDiff(Config &config,
     auto AbstractionGeneratorResultR =
             mam.getResult<FunctionAbstractionsGenerator>(*config.Second,
                     config.SecondFun);
-    unifyFunctionAbstractions(AbstractionGeneratorResultL,
-                              AbstractionGeneratorResultR);
 
     auto StructSizeMapL = mam.getResult<StructureSizeAnalysis>(*config.First,
             config.FirstFun);
