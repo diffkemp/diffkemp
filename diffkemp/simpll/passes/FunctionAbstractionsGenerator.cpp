@@ -67,14 +67,8 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                         auto newFunType = FunctionType::get(
                                 FunType->getReturnType(), newParamTypes, false);
 
-                        uint64_t hashNumber = hash_value(hash);
-                        while (Mod.getFunction(abstractionPrefix(
-                                CallInstr->getCalledValue()) +
-                                std::to_string(hashNumber)) != nullptr)
-                            hashNumber++;
                         const std::string funName =
-                                abstractionPrefix(CallInstr->getCalledValue()) +
-                                std::to_string(hashNumber);
+                                abstractionPrefix(CallInstr->getCalledValue());
 
                         newFun = Function::Create(
                                 newFunType,
