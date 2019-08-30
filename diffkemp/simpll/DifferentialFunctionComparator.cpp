@@ -690,6 +690,10 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                     // Compare field access abstractions using a special
                     // method.
                     return cmpFieldAccess(FunL, FunR);
+                } else if (FunL->getName().startswith(SimpllInlineAsmPrefix) &&
+                           FunR->getName().startswith(SimpllInlineAsmPrefix)) {
+                    return ModComparator->AsmToStringMapL[FunL->getName()] !=
+                           ModComparator->AsmToStringMapR[FunR->getName()];
                 }
             }
             return 0;
