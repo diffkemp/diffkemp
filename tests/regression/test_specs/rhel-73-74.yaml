@@ -5,4 +5,5 @@ control_flow_only: true
 
 functions:
         debugfs_create_u32: equal_syntax
+        up_read: equal_syntax
 
