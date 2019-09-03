@@ -153,16 +153,20 @@ void FieldAccessFunctionGenerator::processStack(
             // The last instruction needs special processing, because it will
             // be replaced with the function call in the original function.
             Instruction *Clone = Inst->clone();
-            Clone->setDebugLoc(DebugLoc());
+            Clone->setDebugLoc(DebugLoc(Abstraction->getMetadata(
+                                        SimpllFieldAccessMetadata)));
             auto CallInst = CallInst::Create(FT, Abstraction,
                     {Stack.front()->getOperand(0)});
             CallInst->insertAfter(Inst);
+            CallInst->setDebugLoc(DebugLoc(Abstraction->getMetadata(
+                                           SimpllFieldAccessMetadata)));
             Inst->replaceAllUsesWith(CallInst);
             Inst->removeFromParent();
             BB->getInstList().push_back(Clone);
         } else {
             Inst->removeFromParent();
-            Inst->setDebugLoc(DebugLoc());
+            Inst->setDebugLoc(DebugLoc(Abstraction->getMetadata(
+                                       SimpllFieldAccessMetadata)));
             BB->getInstList().push_back(Inst);
         }
     }
