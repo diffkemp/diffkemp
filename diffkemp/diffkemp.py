@@ -196,7 +196,9 @@ def generate(args):
 
     # Copy LLVM files to the snapshot
     source.copy_source_files(fun_list.modules(), args.output_dir)
-    source.copy_cscope_files(args.output_dir)
+
+    snapshot = KernelSource(args.output_dir)
+    snapshot.build_cscope_database()
 
     # Create YAML with functions list
     with open(os.path.join(args.output_dir, "functions.yaml"),
