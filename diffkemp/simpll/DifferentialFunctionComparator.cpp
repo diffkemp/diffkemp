@@ -201,7 +201,7 @@ int DifferentialFunctionComparator::cmpOperations(
                         return cmpCallsWithExtraArg(CL, CR);
                     }
                 }
-                if (Result || CalledL->getName() != CalledR->getName()) {
+                if (Result) {
                     // If the call instructions are different (cmpOperations
                     // doesn't compare the called functions) or the called
                     // functions have different names, try inlining them.
@@ -549,6 +549,25 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             ModComparator->DifferingObjects.insert(
                                 ModComparator->DifferingObjects.end(),
                                 asmDiffs.begin(), asmDiffs.end());
+                        }
+
+                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
+                            // If the instructions are call instructions, try
+                            // to inline the functions.
+                            auto CL = dyn_cast<CallInst>(&*InstL);
+                            auto CR = dyn_cast<CallInst>(&*InstR);
+                            auto CalledL = getCalledFunction(
+                                    CL->getCalledValue());
+                            auto CalledR = getCalledFunction(
+                                    CR->getCalledValue());
+
+
+                            if (!isSimpllAbstractionDeclaration(CalledL) &&
+                                    !isSimpllAbstractionDeclaration(CalledR))
+                                ModComparator->tryInline = {CL, CR};
+
+                            // Look for a macro-function difference.
+                            findMacroFunctionDifference(&*InstL, &*InstR);
                         }
 
                         return Res;
