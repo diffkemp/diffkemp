@@ -31,6 +31,8 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
             line = lines[line_index]
             while line.rstrip() != "}" and line.rstrip() != ");":
                 line_index += 1
+                if line_index == len(lines):
+                    return "Error: cannot get diff\n"
                 output_file.write(line)
                 line = lines[line_index]
             output_file.write(line)
