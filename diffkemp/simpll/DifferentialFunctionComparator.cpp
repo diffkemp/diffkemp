@@ -134,32 +134,10 @@ int DifferentialFunctionComparator::cmpGEPs(
     return 0;
 }
 
-
-/// Remove chosen attributes from the attribute set at the given index of
-/// the given attribute list. Since attribute lists are immutable, they must be
-/// copied all over.
-AttributeList cleanAttributes(AttributeList AS, unsigned Idx, LLVMContext &C) {
-    AttributeList result = AS;
-    result = result.removeAttribute(C, Idx, Attribute::AttrKind::AlwaysInline);
-    result = result.removeAttribute(C, Idx, Attribute::AttrKind::InlineHint);
-    result = result.removeAttribute(C, Idx, Attribute::AttrKind::NoInline);
-    result = result.removeAttribute(C, Idx, Attribute::AttrKind::NoUnwind);
-    return result;
-}
-
+/// Ignore differences in attributes.
 int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
                                              const AttributeList R) const {
-    AttributeList LNew = L;
-    AttributeList RNew = R;
-    for (unsigned i = L.index_begin(), e = L.index_end(); i != e; ++i) {
-        LNew = cleanAttributes(LNew, i, LNew.getContext());
-    }
-    for (unsigned i = R.index_begin(), e = R.index_end(); i != e; ++i) {
-        RNew = cleanAttributes(RNew, i, RNew.getContext());
-    }
-    LNew = cleanAttributeList(LNew);
-    RNew = cleanAttributeList(RNew);
-    return FunctionComparator::cmpAttrs(LNew, RNew);
+    return 0;
 }
 
 /// Compare allocation instructions using separate cmpAllocs function in case
