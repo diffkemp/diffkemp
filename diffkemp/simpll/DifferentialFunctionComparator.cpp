@@ -901,9 +901,13 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
         }
     }
 
-    // Compare integer types as the same when comparing the control flow only.
-    if (L->isIntegerTy() && R->isIntegerTy() && controlFlowOnly)
+    // Compare integer types (except the boolean type) as the same when
+    // comparing the control flow only.
+    if (L->isIntegerTy() && R->isIntegerTy() && controlFlowOnly) {
+        if (L->getIntegerBitWidth() == 1 || R->getIntegerBitWidth() == 1)
+            return !(L->getIntegerBitWidth() == R->getIntegerBitWidth());
         return 0;
+    }
 
     if (!L->isArrayTy() || !R->isArrayTy() || !controlFlowOnly)
         return FunctionComparator::cmpTypes(L, R);
