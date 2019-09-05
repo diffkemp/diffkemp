@@ -182,18 +182,19 @@ class KernelSource:
         #   2. Files marked by cscope as using the symbol in <global> scope.
         #   3. Files marked by cscope as using the symbol in other scope.
         # Each group is also partially sorted - sources from the drivers/ and
-        # the arch/ directories occur later than the others (using prio_cmp).
+        # the arch/ directories occur later than the others (using prio_key).
         # Moreover, each file occurs in the list just once (in place of its
         # highest priority).
         seen = set()
 
         def prio_key(item):
             if item.startswith("drivers/"):
-                # Before any other string
-                return "_" + item
-            if item.startswith("arch/"):
-                # After any other string
                 return "}" + item
+            if item.startswith("arch/x86"):
+                # x86 has priority over other architectures
+                return "}}" + item
+            if item.startswith("arch/"):
+                return "}}}" + item
             else:
                 return item
 
