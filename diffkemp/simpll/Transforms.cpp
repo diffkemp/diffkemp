@@ -21,6 +21,7 @@
 #include "passes/ControlFlowSlicer.h"
 #include "passes/FieldAccessFunctionGenerator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
+#include "passes/MergeNumberedFunctionsPass.h"
 #include "passes/ReduceFunctionMetadataPass.h"
 #include "passes/RemoveLifetimeCallsPass.h"
 #include "passes/RemoveUnusedReturnValuesPass.h"
@@ -84,6 +85,7 @@ void preprocessModule(Module &Mod,
     ModuleAnalysisManager mam(false);
     pb.registerModuleAnalyses(mam);
 
+    mpm.addPass(MergeNumberedFunctionsPass {});
     mpm.addPass(SimplifyKernelGlobalsPass {});
     mpm.addPass(RemoveLifetimeCallsPass {});
     mpm.addPass(StructHashGeneratorPass {});
