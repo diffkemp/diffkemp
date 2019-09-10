@@ -3,8 +3,6 @@ MAINTAINER Viktor Malik <vmalik@redhat.com>
 RUN apt-get update && apt-get install -y software-properties-common wget
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     add-apt-repository ppa:ubuntu-toolchain-r/test && \
-    add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main" && \
-    add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main" && \
     add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main" && \
     add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
 RUN apt-get update && \
