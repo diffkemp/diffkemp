@@ -132,6 +132,9 @@ std::string getIdentifierForValue(const Value *Val,
 /// methods.
 std::string valueToString(const Value *Val);
 
+/// Converts type to its (LLVM IR) string representation.
+std::string typeToString(Type *Ty);
+
 /// Get a string matching the current indentation level.
 /// \param prefixChar Indentation prefix character, defaults to space.
 std::string getDebugIndent(const char prefixChar = ' ');

@@ -625,6 +625,13 @@ std::string valueToString(const Value *Val) {
     return DumpStrm.str();
 }
 
+/// Converts type to its (LLVM IR) string representation.
+std::string typeToString(Type *Ty) {
+    std::string TyDump; llvm::raw_string_ostream DumpStrm(TyDump);
+    Ty->print(DumpStrm);
+    return DumpStrm.str();
+}
+
 /// Get a string matching the current indentation level.
 /// \param prefix Indentation prefix character, defaults to space.
 std::string getDebugIndent(const char prefixChar) {
