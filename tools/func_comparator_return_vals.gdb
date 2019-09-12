@@ -35,8 +35,12 @@ class PrintReturnValueBreakpoint (gdb.FinishBreakpoint):
             retval = gdb.parse_and_eval("$eax")
 
             # Dump the values.
-            command_l = "p valueToString(%s)" % str(self.left_val)
-            command_r = "p valueToString(%s)" % str(self.right_val)
+            if self.function != "cmpTypes":
+                command_l = "p valueToString(%s)" % str(self.left_val)
+                command_r = "p valueToString(%s)" % str(self.right_val)
+            else:
+                command_l = "p typeToString(%s)" % str(self.left_val)
+                command_r = "p typeToString(%s)" % str(self.right_val)
             raw_dump_l = gdb.execute(command_l, to_string=True).rstrip()
             raw_dump_r = gdb.execute(command_r, to_string=True).rstrip()
 
@@ -64,8 +68,9 @@ class PrintReturnValueBreakpoint (gdb.FinishBreakpoint):
 end
 
 # Then set up the breakpoints.
-break FunctionComparator::cmpValues
-break FunctionComparator::cmpOperations
+break DifferentialFunctionComparator::cmpValues
+break DifferentialFunctionComparator::cmpOperations
+break DifferentialFunctionComparator::cmpTypes
 
 # On the breakpoint, set up the finish breakpoint defined above.
 commands 1
@@ -79,6 +84,13 @@ commands 2
   silent
   py PrintReturnValueBreakpoint(gdb.parse_and_eval("L"), \
                                 gdb.parse_and_eval("R"), "cmpOperations")
+  continue
+end
+
+commands 3
+  silent
+  py PrintReturnValueBreakpoint(gdb.parse_and_eval("L"), \
+                                gdb.parse_and_eval("R"), "cmpTypes")
   continue
 end
 
