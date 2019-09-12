@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "CalledFunctionsAnalysis.h"
+#include "FunctionAbstractionsGenerator.h"
 #include "RemoveUnusedReturnValuesPass.h"
 #include "Utils.h"
 #include <Config.h>
@@ -56,14 +57,17 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         if (Fun->getReturnType()->isVoidTy())
             continue;
 
-        if (!ModOther->getFunction(Fun->getName()))
-            continue;
+        if (!isSimpllAbstractionDeclaration(Fun)) {
+            if (!ModOther->getFunction(Fun->getName()))
+                continue;
 
-        if (!ModOther->getFunction(Fun->getName())->getReturnType()->isVoidTy())
-            continue;
+            if (!ModOther->getFunction(Fun->getName())->getReturnType()->
+                    isVoidTy())
+                continue;
 
-        if (CalledFuns.find(Fun) == CalledFuns.end())
-            continue;
+            if (CalledFuns.find(Fun) == CalledFuns.end())
+                continue;
+        }
 
         std::vector<Instruction *> toReplace;
 
@@ -97,6 +101,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         // this is an easier solution.)
         ValueToValueMapTy Map;
         std::string OriginalName = Fun->getName();
+        if (hasSuffix(OriginalName))
+            OriginalName = dropSuffix(OriginalName);
         Fun->setName("");
         Function *Fun_Clone;
         if (!Fun->isDeclaration())
@@ -141,7 +147,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             cleanAttributeList(Fun_New->getAttributes()));
 
         // Set the right function name and subprogram
-        Fun_New->takeName(Fun_Clone);
+        Fun_New->setName(OriginalName);
         Fun_New->setSubprogram(Fun->getSubprogram());
 
         // Set the names of all arguments of the new function
