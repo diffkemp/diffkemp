@@ -33,6 +33,9 @@ class CalledFunctionsAnalysis
     /// \param Fun
     /// \param Called Resulting set of collected functions.
     void collectCalled(const Function *Fun, Result &Called);
+    /// Looks for functions in a value (either a function itself, or a composite
+    /// type constant).
+    void processValue(const Value *Val, Result &Called);
 
   private:
     friend AnalysisInfoMixin<CalledFunctionsAnalysis>;
