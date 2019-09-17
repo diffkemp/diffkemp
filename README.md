@@ -21,6 +21,11 @@ The command compares functions from function lists stored inside the snapshots
 pairwise and prints syntactic diffs (thanks to the `--syntax-diff` option) of
 functions that are semantically different.
 
+The diffs are stored in separate files (one file for each compared function that
+is different) in a newly created directory. The name of the directory can be
+specified using the `-o` option, otherwise it is generated automatically. Using
+the `--stdout` option causes the diffs to be printed to standard output.
+
 Note: if `FUNCTION_LIST` contains any symbols other than functions (e.g. global
 variables), they will be ignored.
 
