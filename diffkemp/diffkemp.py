@@ -6,6 +6,7 @@ from diffkemp.llvm_ir.kernel_source import KernelSource, \
     SourceNotFoundException
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
+import errno
 import os
 import re
 import shutil
@@ -50,6 +51,10 @@ def __make_argument_parser():
                             action="store_true")
     compare_ap.add_argument("--regex-filter",
                             help="filter function diffs by given regex")
+    compare_ap.add_argument("--output-dir", "-o",
+                            help="name of the output directory")
+    compare_ap.add_argument("--stdout", help="print results to stdout",
+                            action="store_true")
     compare_ap.add_argument("--report-stat",
                             help="report statistics of the analysis",
                             action="store_true")
@@ -227,6 +232,19 @@ def compare(args):
         new_functions.from_yaml(fun_list_yaml.read())
     new_source = KernelSource(args.snapshot_dir_new)
 
+    # Set the output directory
+    if not args.stdout:
+        if args.output_dir:
+            output_dir = args.output_dir
+            if os.path.isdir(output_dir):
+                sys.stderr.write("Error: output directory exists\n")
+                sys.exit(errno.EEXIST)
+        else:
+            output_dir = default_output_dir(args.snapshot_dir_old,
+                                            args.snapshot_dir_new)
+    else:
+        output_dir = None
+
     if args.function:
         old_functions.filter([args.function])
         new_functions.filter([args.function])
@@ -240,6 +258,12 @@ def compare(args):
     for group_name, group in sorted(old_functions.groups.items()):
         group_printed = False
 
+        # Set the group directory
+        if output_dir is not None and group_name is not None:
+            group_dir = os.path.join(output_dir, group_name)
+        else:
+            group_dir = None
+
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
             new_fun_desc = new_functions.get_by_name(fun, group_name)
@@ -249,6 +273,9 @@ def compare(args):
             # Check if the module exists in both snapshots
             if old_fun_desc.mod is None or new_fun_desc.mod is None:
                 result.add_inner(Result(Result.Kind.UNKNOWN, fun, fun))
+                if group_name is not None and not group_printed:
+                    print("{}:".format(group_name))
+                    group_printed = True
                 print("{}: unknown".format(fun))
                 continue
 
@@ -277,23 +304,43 @@ def compare(args):
                 # Printing information about failures and non-equal functions.
                 if fun_result.kind in [Result.Kind.NOT_EQUAL,
                                        Result.Kind.ERROR, Result.Kind.UNKNOWN]:
-                    if group_name is not None and not group_printed:
-                        print("{}:".format(group_name))
-                        group_printed = True
                     if fun_result.kind == Result.Kind.NOT_EQUAL:
-                        print_syntax_diff(args.snapshot_dir_old,
-                                          args.snapshot_dir_new,
-                                          fun, fun_result, old_fun_desc.tag,
-                                          False,
-                                          args.show_diff,
-                                          0 if group_name is None else 2)
+                        # Create the output directory if needed
+                        if output_dir is not None:
+                            if not os.path.isdir(output_dir):
+                                os.mkdir(output_dir)
+                        # Create the group directory or print the group name
+                        # if needed
+                        if group_dir is not None:
+                            if not os.path.isdir(group_dir):
+                                os.mkdir(group_dir)
+                        elif group_name is not None and not group_printed:
+                            print("{}:".format(group_name))
+                            group_printed = True
+                        print_syntax_diff(
+                            snapshot_old=args.snapshot_dir_old,
+                            snapshot_new=args.snapshot_dir_new,
+                            fun=fun,
+                            fun_result=fun_result,
+                            fun_tag=old_fun_desc.tag,
+                            output_dir=group_dir if group_dir else output_dir,
+                            show_diff=args.show_diff,
+                            initial_indent=2 if (group_name is not None and
+                                                 group_dir is None) else 0)
                     else:
+                        # Print the group name if needed
+                        if group_name is not None and not group_printed:
+                            print("{}:".format(group_name))
+                            group_printed = True
                         print("{}: {}".format(fun, str(fun_result.kind)))
 
             # Clean LLVM modules (allow GC to collect the occupied memory)
             old_fun_desc.mod.clean_module()
             new_fun_desc.mod.clean_module()
             LlvmKernelModule.clean_all()
+
+    if output_dir is not None and os.path.isdir(output_dir):
+        print("Differences stored in {}/".format(output_dir))
 
     if args.report_stat:
         print("")
@@ -303,13 +350,23 @@ def compare(args):
     return 0
 
 
-def logs_dirname(src_version, dest_version):
+def default_output_dir(src_snapshot, dest_snapshot):
     """Name of the directory to put log files into."""
-    return "kabi-diff-{}_{}".format(src_version, dest_version)
+    base_dirname = "diff-{}-{}".format(
+        os.path.basename(os.path.normpath(src_snapshot)),
+        os.path.basename(os.path.normpath(dest_snapshot)))
+    if os.path.isdir(base_dirname):
+        suffix = 0
+        dirname = base_dirname
+        while os.path.isdir(dirname):
+            dirname = "{}-{}".format(base_dirname, suffix)
+            suffix += 1
+        return dirname
+    return base_dirname
 
 
 def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
-                      log_files, show_diff, initial_indent):
+                      output_dir, show_diff, initial_indent):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
@@ -317,7 +374,7 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
     :param snapshot_new: New snapshot directory
     :param fun: Name of the analysed function
     :param fun_result: Result of the analysis
-    :param log_files: True if the output is to be written into a file
+    :param output_dir: True if the output is to be written into a file
     :param show_diff: Print syntax diffs.
     :param initial_indent: Initial indentation of printed messages
     """
@@ -326,10 +383,13 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
         return ''.join(" " * width + line for line in text.splitlines(True))
 
     if fun_result.kind == Result.Kind.NOT_EQUAL:
-        if log_files:
-            output = open(
-                os.path.join(logs_dirname(snapshot_old, snapshot_new),
-                             "{}.diff".format(fun)), 'w')
+        if output_dir:
+            output = open(os.path.join(output_dir, "{}.diff".format(fun)), "w")
+            output.write(
+                "Found differences in functions called by {}".format(fun))
+            if fun_tag is not None:
+                output.write(" ({})".format(fun_tag))
+            output.write("\n\n")
             indent = initial_indent + 2
         else:
             output = sys.stdout
@@ -348,7 +408,7 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
             output.write(
                 text_indent("{} differs:\n".format(called_res.first.name),
                             indent - 2))
-            if not log_files:
+            if not output_dir:
                 output.write(text_indent("{{{\n", indent - 2))
 
             if called_res.first.callstack:
@@ -380,6 +440,6 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
                     output.write(text_indent(
                         called_res.diff, indent))
 
-            if not log_files:
+            if not output_dir:
                 output.write(text_indent("}}}\n", indent - 2))
             output.write("\n")
