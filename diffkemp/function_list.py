@@ -57,7 +57,8 @@ class FunctionList:
         Get module for the function with the given name in the given group.
         """
         return self.groups[group].functions[name] \
-            if name in self.groups[group].functions else None
+            if group in self.groups and name in self.groups[group].functions \
+            else None
 
     def from_yaml(self, yaml_file):
         """
