@@ -21,7 +21,8 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
     for filename in [first_file, second_file]:
         tmp_file = "1" if filename == first_file else "2"
         with open(filename, "r", encoding='utf-8') as input_file, \
-                open(os.path.join(tmpdir, tmp_file), "w") as output_file:
+                open(os.path.join(tmpdir, tmp_file), "w",
+                     encoding='utf-8') as output_file:
             lines = input_file.readlines()
             start = first_line if filename == first_file else second_line
 
