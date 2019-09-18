@@ -401,7 +401,7 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
             indent = initial_indent + 4
 
         for called_res in fun_result.inner.values():
-            if called_res.diff == "" and called_res.first.covered_by_syn_diff:
+            if called_res.diff == "" and called_res.first.covered:
                 # Do not print empty diffs
                 continue
 

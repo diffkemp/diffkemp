@@ -40,7 +40,7 @@ struct FunctionInfo {
     int line;
     CallStack callstack;
     bool isSynDiff;
-    bool coveredBySynDiff;
+    bool covered;
 
     // Default constructor is needed for YAML serialisation so that the struct
     // can be used as an optional YAML field.
@@ -50,9 +50,9 @@ struct FunctionInfo {
                  const CallStack &callstack,
                  bool isMacro = false,
                  int line = 0,
-                 bool coveredBySynDiff = false)
+                 bool covered = false)
             : name(name), file(file), line(line), callstack(callstack),
-              isSynDiff(isMacro), coveredBySynDiff(coveredBySynDiff) {}
+              isSynDiff(isMacro), covered(covered) {}
 };
 
 // Syntactic diff body
@@ -91,7 +91,7 @@ struct MappingTraits<FunctionInfo> {
             io.mapOptional("line", info.line);
         io.mapOptional("callstack", info.callstack);
         io.mapRequired("is-syn-diff", info.isSynDiff);
-        io.mapRequired("covered-by-syn-diff", info.coveredBySynDiff);
+        io.mapRequired("covered", info.covered);
     }
 };
 }
@@ -148,33 +148,28 @@ struct MappingTraits<ResultReport> {
 };
 }
 
-void reportOutput(Config &config,
-                  std::vector<FunPair> &nonequalFuns,
-                  std::vector<ConstFunPair> &missingDefs,
-                  std::vector<SyntaxDifference> &differingSynDiffs) {
+void reportOutput(Config &config, ComparisonResult &Result) {
     ResultReport report;
-    // Set to store functions covered by syntax differences
-    std::set<std::string> syntaxDiffCoveredFunctions;
 
     // Transform non-equal functions into a function name set
     std::set<StringRef> differingFunsSet;
-    for (FunPair FP : nonequalFuns) {
+    for (FunPair FP : Result.nonequalFuns) {
         differingFunsSet.insert(FP.first->getName());
         differingFunsSet.insert(FP.second->getName());
     }
 
-    for (auto &synDiff : differingSynDiffs) {
+    for (auto &synDiff : Result.differingSynDiffs) {
         // Look whether the function the syntactic difference was found in is
         // among functions declared as non-equal.
         // In case it is not, then the syntax difference should not be shown,
         // since the function in which it was found is equal.
         bool skipSynDiff = false;
 
-        if (nonequalFuns.size() > 0) {
+        if (Result.nonequalFuns.size() > 0) {
             // The case when nonequalFuns is empty is uninteresting - in that
             // case macro differences are irrelevant
-            auto ModuleL = nonequalFuns[0].first->getParent();
-            auto ModuleR = nonequalFuns[0].second->getParent();
+            auto ModuleL = Result.nonequalFuns[0].first->getParent();
+            auto ModuleR = Result.nonequalFuns[0].second->getParent();
 
             // Function has to exist in both modules to prevent mistakes.
             if ((ModuleL->getFunction(synDiff.function) == nullptr) ||
@@ -194,7 +189,7 @@ void reportOutput(Config &config,
 
         // Try to append call stack of function to the syndiff stack if possible
         CallStack toAppendLeft, toAppendRight;
-        for (auto &diff : nonequalFuns) {
+        for (auto &diff : Result.nonequalFuns) {
             // Find the right function diff
             if (diff.first->getName() == synDiff.function) {
                 CallStack CS = getCallStack(*config.FirstFun, *diff.first);
@@ -217,10 +212,10 @@ void reportOutput(Config &config,
         // Add functions used in call stack to set (also include the parent
         // function)
         for (CallInfo CI : synDiff.StackL)
-            syntaxDiffCoveredFunctions.insert(CI.fun);
+            Result.coveredFuns.insert(CI.fun);
         for (CallInfo CI : synDiff.StackR)
-            syntaxDiffCoveredFunctions.insert(CI.fun);
-        syntaxDiffCoveredFunctions.insert(synDiff.function);
+            Result.coveredFuns.insert(CI.fun);
+        Result.coveredFuns.insert(synDiff.function);
 
         report.diffFuns.push_back({
                FunctionInfo(synDiff.name,
@@ -237,25 +232,25 @@ void reportOutput(Config &config,
             synDiff.name, synDiff.BodyL, synDiff.BodyR
         });
     }
-    for (auto &funPair : nonequalFuns) {
-        bool coveredBySyntaxDiff =  syntaxDiffCoveredFunctions.find(
-                funPair.first->getName()) != syntaxDiffCoveredFunctions.end();
+    for (auto &funPair : Result.nonequalFuns) {
+        bool covered = Result.coveredFuns.find(funPair.first->getName()) !=
+                       Result.coveredFuns.end();
         report.diffFuns.push_back({
                 FunctionInfo(funPair.first->getName(),
                              getFileForFun(funPair.first),
                              getCallStack(*config.FirstFun, *funPair.first),
                              false, funPair.first->getSubprogram() ?
                              funPair.first->getSubprogram()->getLine() : 0,
-                             coveredBySyntaxDiff),
+                             covered),
                 FunctionInfo(funPair.second->getName(),
                              getFileForFun(funPair.second),
                              getCallStack(*config.SecondFun, *funPair.second),
                              false, funPair.second->getSubprogram() ?
                              funPair.second->getSubprogram()->getLine() : 0,
-                             coveredBySyntaxDiff)
+                             covered)
         });
     }
-    for (auto &funPair : missingDefs) {
+    for (auto &funPair : Result.missingDefs) {
         report.missingDefs.emplace_back(
                 funPair.first ? funPair.first->getName() : "",
                 funPair.second ? funPair.second->getName() : "");

@@ -36,6 +36,9 @@ class ModuleComparator {
     std::map<FunPair, Result> ComparedFuns;
     /// Storing results from macro and asm comparisions.
     std::vector<SyntaxDifference> DifferingObjects;
+    /// Storing covered functions names.
+    /// Note: currently only from inlining.
+    std::set<std::string> CoveredFuns;
     // Function abstraction to assembly string map.
     StringMap<StringRef> AsmToStringMapL;
     StringMap<StringRef> AsmToStringMapR;
