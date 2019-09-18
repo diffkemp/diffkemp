@@ -49,6 +49,18 @@ const Function *getCalledFunction(const Value *CalledValue) {
     return fun;
 }
 
+Function *getCalledFunction(Value *CalledValue) {
+    Function *fun = dyn_cast<Function>(CalledValue);
+    if (!fun) {
+        if (auto BitCast = dyn_cast<BitCastOperator>(CalledValue)) {
+            fun = dyn_cast<Function>(BitCast->getOperand(0));
+        } else if (auto Alias = dyn_cast<GlobalAlias>(CalledValue)) {
+            fun = getCalledFunction(Alias->getAliasee());
+        }
+    }
+    return fun;
+}
+
 /// Get name of a type so that it can be used as a variable in Z3.
 std::string typeName(const Type *Type) {
     std::string result;

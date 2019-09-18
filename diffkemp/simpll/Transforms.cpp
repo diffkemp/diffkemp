@@ -104,10 +104,7 @@ void preprocessModule(Module &Mod,
 /// 3. Using debug information to compute offsets of the corresponding GEP
 ///    indices. Offsets are stored inside LLVM metadata.
 /// 4. Removing bodies of functions that are syntactically equivalent.
-void simplifyModulesDiff(Config &config,
-                         std::vector<FunPair> &nonequalFuns,
-                         std::vector<ConstFunPair> &missingDefs,
-                         std::vector<SyntaxDifference> &differingMacros) {
+void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies.
     AnalysisManager<Module, Function *> mam(false);
@@ -168,8 +165,8 @@ void simplifyModulesDiff(Config &config,
         for (auto &funPair : modComp.ComparedFuns) {
             if (funPair.second == ModuleComparator::NOT_EQUAL) {
                 allEqual = false;
-                nonequalFuns.emplace_back(funPair.first.first,
-                                          funPair.first.second);
+                Result.nonequalFuns.emplace_back(funPair.first.first,
+                                                 funPair.first.second);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << funPair.first.first->getName()
                                        << " are syntactically different\n");
@@ -196,8 +193,9 @@ void simplifyModulesDiff(Config &config,
         }
     }
 
-    missingDefs = modComp.MissingDefs;
-    differingMacros = modComp.DifferingObjects;
+    Result.missingDefs = modComp.MissingDefs;
+    Result.differingSynDiffs = modComp.DifferingObjects;
+    Result.coveredFuns = modComp.CoveredFuns;
 }
 
 /// Recursively mark callees of a function with 'alwaysinline' attribute.

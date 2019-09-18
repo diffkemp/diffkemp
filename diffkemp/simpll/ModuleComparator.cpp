@@ -95,6 +95,24 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
             ConstFunPair missingDefs;
             bool inlined = false;
+            // If inlining two functions with the same name, it is possible that
+            // there is a difference in their bodies and only a formal
+            // difference that won't show up in the syntax diff.
+            // For this reason, the functions are compared using
+            // ModuleComparator and the original functions are marked as
+            // covered, leading to the diff not being show when empty.
+            Function *InlinedFunFirst = !inlineFirst ? nullptr :
+                    getCalledFunction(inlineFirst->getCalledValue());
+            Function *InlinedFunSecond = !inlineSecond ? nullptr :
+                    getCalledFunction(inlineSecond->getCalledValue());
+            if (InlinedFunFirst && InlinedFunSecond &&
+                !InlinedFunFirst->getName().startswith("simpll__") &&
+                (InlinedFunFirst->getName() == InlinedFunSecond->getName())) {
+                compareFunctions(InlinedFunFirst, InlinedFunSecond);
+                if (ComparedFuns.at({InlinedFunFirst, InlinedFunSecond}) ==
+                        Result::NOT_EQUAL)
+                    CoveredFuns.insert(FirstFun->getName().str());
+            }
             // If the called function is a declaration, add it to missingDefs.
             // Otherwise, inline the call and simplify the function.
             // The above is done for the first and the second call to inline.
@@ -161,6 +179,12 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                                                        showAsmDiffs,
                                                        DI, this);
             result = fCompSecond.compare();
+            // If the functions are equal after the inlining, we do not want to
+            // report the called functions as unequal in case they are compared
+            // as such alone - only the equivalence inside the compared function
+            // matters here.
+            if (!result)
+                ComparedFuns.erase({InlinedFunFirst, InlinedFunSecond});
 
             DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
             if (result == 0) {

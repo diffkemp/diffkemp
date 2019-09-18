@@ -43,22 +43,20 @@ int main(int argc, const char **argv) {
                      config.ControlFlowOnly);
     config.refreshFunctions();
 
-    std::vector<FunPair> nonequalFuns;
-    std::vector<ConstFunPair> missingDefs;
-    std::vector<SyntaxDifference> differingMacros;
-    simplifyModulesDiff(config, nonequalFuns, missingDefs, differingMacros);
+    ComparisonResult Result;
+    simplifyModulesDiff(config, Result);
 
-    reportOutput(config, nonequalFuns, missingDefs, differingMacros);
+    reportOutput(config, Result);
 
     // Split list of non-equal function pairs into two sets.
     std::set<Function *> MainFunsFirst;
-    std::transform(nonequalFuns.begin(),
-                   nonequalFuns.end(),
+    std::transform(Result.nonequalFuns.begin(),
+                   Result.nonequalFuns.end(),
                    std::inserter(MainFunsFirst, MainFunsFirst.begin()),
                    [](FunPair &p) { return p.first; });
     std::set<Function *> MainFunsSecond;
-    std::transform(nonequalFuns.begin(),
-                   nonequalFuns.end(),
+    std::transform(Result.nonequalFuns.begin(),
+                   Result.nonequalFuns.end(),
                    std::inserter(MainFunsSecond, MainFunsSecond.begin()),
                    [](FunPair &p) { return p.second; });
 

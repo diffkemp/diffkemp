@@ -88,7 +88,7 @@ def simplify_modules_diff(first, second, fun_first, fun_second, var,
                                      for call in fun["callstack"]])
                                 if "callstack" in fun else "",
                                 fun["is-syn-diff"],
-                                fun["covered-by-syn-diff"]
+                                fun["covered"]
                             )
                             for fun in [fun_pair_yaml["first"],
                                         fun_pair_yaml["second"]]

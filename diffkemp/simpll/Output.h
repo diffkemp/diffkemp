@@ -18,13 +18,11 @@
 #include "Config.h"
 #include "Utils.h"
 #include "ModuleComparator.h"
+#include "Transforms.h"
 
 /// Report results in YAML format to stdout.
 /// \param config Configuration.
 /// \param nonequalFuns List of non-equal functions.
-void reportOutput(Config &config,
-                  std::vector<FunPair> &nonequalFuns,
-                  std::vector<ConstFunPair> &missingDefs,
-                  std::vector<SyntaxDifference> &differingMacros);
+void reportOutput(Config &config, ComparisonResult &Result);
 
 #endif // DIFFKEMP_SIMPLL_OUTPUT_H

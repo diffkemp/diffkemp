@@ -32,13 +32,13 @@ class Result:
         If it is a function, it contains the file of the function.
         """
         def __init__(self, name, filename=None, line=None, callstack=None,
-                     is_syn_diff=False, covered_by_syn_diff=False):
+                     is_syn_diff=False, covered=False):
             self.name = name
             self.filename = filename
             self.line = line
             self.callstack = callstack
             self.is_syn_diff = is_syn_diff
-            self.covered_by_syn_diff = covered_by_syn_diff
+            self.covered = covered
 
     def __init__(self, kind, first_name, second_name):
         self.kind = kind
@@ -128,7 +128,7 @@ class Result:
         for _, inner_res_out in self.inner.items():
             for _, inner_res in inner_res_out.inner.items():
                 if (inner_res.diff == "" and
-                        inner_res.first.covered_by_syn_diff):
+                        inner_res.first.covered):
                     continue
                 unique_diffs.add(UniqueDiff(inner_res))
 

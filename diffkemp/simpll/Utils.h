@@ -46,6 +46,7 @@ typedef std::vector<CallInfo> CallStack;
 
 /// Extract called function from a called value
 const Function *getCalledFunction(const Value *CalledValue);
+Function *getCalledFunction(Value *CalledValue);
 
 /// Get name of a type.
 std::string typeName(const Type *Type);
