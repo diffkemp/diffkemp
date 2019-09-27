@@ -4,7 +4,8 @@ RUN apt-get update && apt-get install -y software-properties-common wget
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     add-apt-repository ppa:ubuntu-toolchain-r/test && \
     add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main" && \
-    add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
+    add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main" && \
+    add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
 RUN apt-get update && \
     apt-get install -y \
       autoconf \
@@ -15,6 +16,7 @@ RUN apt-get update && \
       clang-6.0 \
       clang-7 \
       clang-8 \
+      clang-9 \
       cmake \
       cpio \
       cscope \
@@ -38,6 +40,7 @@ RUN apt-get update && \
       llvm-6.0-dev \
       llvm-7-dev \
       llvm-8-dev \
+      llvm-9-dev \
       make \
       module-init-tools \
       ninja-build \
@@ -66,6 +69,10 @@ RUN update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bi
     update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-8 40 && \
     update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-8 40 && \
     update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-8 40 && \
+    update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bin/llvm-config-9 40 && \
+    update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-9 40 && \
+    update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-9 40 && \
+    update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-9 40 && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 # Copy script for changing default LLVM version
 COPY switch-llvm.sh /switch-llvm.sh
