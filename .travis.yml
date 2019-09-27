@@ -7,6 +7,7 @@ env:
   - LLVM_VERSION=6.0
   - LLVM_VERSION=7
   - LLVM_VERSION=8
+  - LLVM_VERSION=9
 
 addons:
   apt:
@@ -17,6 +18,7 @@ addons:
       - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main"
       - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main"
       - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
+      - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
     packages:
       - bc
       - cpio
