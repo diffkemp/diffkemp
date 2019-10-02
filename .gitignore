@@ -32,7 +32,6 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
 
 # Installer logs
 pip-log.txt
@@ -109,7 +108,7 @@ tests/regression/kernel_modules
 
 # Kernel sources and snapshots directory
 kernel/
-snapshots/
+*snapshots*/
 
 # LLReve tool
 llreve/
@@ -117,3 +116,11 @@ llreve/
 # Symlinks created dynamically by CMake
 diffkemp/simpll/FunctionComparator.h
 diffkemp/simpll/FunctionComparator.cpp
+
+# Diff logs and folders
+*.log
+diff-*/
+
+# RPM packages
+*.rpm
+*.srpm
