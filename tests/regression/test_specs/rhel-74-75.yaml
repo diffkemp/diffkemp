@@ -9,4 +9,5 @@ functions:
         single_open: equal_syntax
         netif_free_tx_queues: equal_syntax
         skb_queue_head: equal_syntax
+        dev_get_stats: equal_syntax
 
