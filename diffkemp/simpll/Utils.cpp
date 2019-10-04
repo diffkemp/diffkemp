@@ -49,16 +49,11 @@ const Function *getCalledFunction(const Value *CalledValue) {
     return fun;
 }
 
+/// Extract called function from a called value. Handles situation when the
+/// called value is a bitcast.
 Function *getCalledFunction(Value *CalledValue) {
-    Function *fun = dyn_cast<Function>(CalledValue);
-    if (!fun) {
-        if (auto BitCast = dyn_cast<BitCastOperator>(CalledValue)) {
-            fun = dyn_cast<Function>(BitCast->getOperand(0));
-        } else if (auto Alias = dyn_cast<GlobalAlias>(CalledValue)) {
-            fun = getCalledFunction(Alias->getAliasee());
-        }
-    }
-    return fun;
+    return const_cast<Function *>(getCalledFunction(
+            const_cast<const Value *>(CalledValue)));
 }
 
 /// Get name of a type so that it can be used as a variable in Z3.
