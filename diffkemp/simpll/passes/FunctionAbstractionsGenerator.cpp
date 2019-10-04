@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "CalledFunctionsAnalysis.h"
+#include "FieldAccessFunctionGenerator.h"
 #include "FunctionAbstractionsGenerator.h"
 #include "Utils.h"
 #include <llvm/IR/InlineAsm.h>
@@ -152,4 +153,10 @@ bool trySwap(FunctionAbstractionsGenerator::FunMap &Map,
 bool isSimpllAbstractionDeclaration(const Function *Fun) {
     return Fun->getName().startswith(SimpllIndirectFunctionPrefix) ||
            Fun->getName().startswith(SimpllInlineAsmPrefix);
+}
+
+/// Returns true if the function is a SimpLL abstraction.
+bool isSimpllAbstraction(const Function *Fun) {
+    return isSimpllAbstractionDeclaration(Fun) ||
+           isSimpllFieldAccessAbstraction(Fun);
 }

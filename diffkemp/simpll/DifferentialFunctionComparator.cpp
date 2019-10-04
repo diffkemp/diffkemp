@@ -673,8 +673,7 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                 auto FunR = dyn_cast<Function>(R);
 
                 // Do not compare SimpLL abstractions.
-                if (!FunL->getName().startswith("simpll_") &&
-                    !FunR->getName().startswith("simpll_") &&
+                if (!isSimpllAbstraction(FunL) && !isSimpllAbstraction(FunR) &&
                     (ModComparator->ComparedFuns.find({FunL, FunR}) ==
                         ModComparator->ComparedFuns.end()) &&
                     (!isPrintFunction(L->getName()) &&
