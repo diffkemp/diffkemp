@@ -561,6 +561,9 @@ std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
 
     while (position < int(rawArguments.size())) {
         position = rawArguments.find('(', position + 1);
+        if (position == std::string::npos)
+            // There is no additional bracket.
+            break;
         std::string argument =
                 getSubstringToMatchingBracket(rawArguments, position);
         if (argument.empty() || (argument.size() == 1 && argument[0] == 0)) {
