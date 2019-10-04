@@ -36,4 +36,7 @@ class FieldAccessFunctionGenerator
     void processStack(const std::vector<Instruction *> &Stack, Module &Mod);
 };
 
+/// Returns true if the function is an SimpLL field access abstraction.
+bool isSimpllFieldAccessAbstraction(const Function *Fun);
+
 #endif //DIFFKEMP_SIMPLL_FIELDACCESSFUNCTIONGENERATOR_H

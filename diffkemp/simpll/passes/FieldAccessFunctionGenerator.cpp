@@ -176,3 +176,8 @@ void FieldAccessFunctionGenerator::processStack(
     auto ReturnInst = ReturnInst::Create(Abstraction->getContext(),
             &BB->back(), BB);
 }
+
+/// Returns true if the function is an SimpLL field access abstraction.
+bool isSimpllFieldAccessAbstraction(const Function *Fun) {
+    return Fun->getName().startswith(SimpllFieldAccessFunName);
+}

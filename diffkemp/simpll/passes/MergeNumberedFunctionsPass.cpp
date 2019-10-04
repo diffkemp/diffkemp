@@ -27,7 +27,7 @@ PreservedAnalyses MergeNumberedFunctionsPass::run(Module &Mod,
     // Go over all called functions and put them into the map. Functions without
     // a suffix are included, too, because there may be variants that have it.
     for (Function &Fun : Mod) {
-        if (Fun.getName().startswith("simpll__") ||
+        if (isSimpllAbstraction(&Fun) ||
                 Fun.getName().startswith("llvm."))
             // Do not merge LLVM intrinsics and SimpLL abstractions.
             continue;

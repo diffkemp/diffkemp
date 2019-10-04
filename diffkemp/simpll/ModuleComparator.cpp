@@ -12,6 +12,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "passes/FunctionAbstractionsGenerator.h"
 #include "ModuleComparator.h"
 #include "DifferentialFunctionComparator.h"
 #include "Utils.h"
@@ -117,7 +118,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             Function *InlinedFunSecond = !inlineSecond ? nullptr :
                     getCalledFunction(inlineSecond->getCalledValue());
             if (InlinedFunFirst && InlinedFunSecond &&
-                !InlinedFunFirst->getName().startswith("simpll__") &&
+                !isSimpllAbstraction(InlinedFunFirst) &&
                 (InlinedFunFirst->getName() == InlinedFunSecond->getName())) {
                 compareFunctions(InlinedFunFirst, InlinedFunSecond);
                 if (ComparedFuns.at({InlinedFunFirst, InlinedFunSecond}) ==
@@ -138,9 +139,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << getDebugIndent()
                                            << "Missing definition\n");
-                    if (!toInline->isIntrinsic()
-                            && toInline->getName().find("simpll__")
-                                    == std::string::npos)
+                    if (!toInline->isIntrinsic() &&
+                            !isSimpllAbstraction(toInline))
                         missingDefs.first = toInline;
                 } else {
                     InlineFunctionInfo ifi;
@@ -159,9 +159,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << getDebugIndent()
                                            << "Missing definition\n");
-                    if (!toInline->isIntrinsic()
-                            && toInline->getName().find("simpll__")
-                                    == std::string::npos)
+                    if (!toInline->isIntrinsic() &&
+                            !isSimpllAbstraction(toInline))
                         missingDefs.second = toInline;
                 } else {
                     InlineFunctionInfo ifi;
