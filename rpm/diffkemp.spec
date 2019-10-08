@@ -1,7 +1,7 @@
 %define llvmcpy_version 0.1.5
 
 Name:           diffkemp
-Version:        0.1.0
+Version:        0.1.1
 Release:        1%{?dist}
 Summary:        A tool for analyzing differences in kernel functions
 
@@ -73,5 +73,10 @@ cd ..
 
 
 %changelog
+* Tue Oct 08 2019 Viktor Malik <vmalik@redhat.com> 0.1.1-1
+- Fix bug in parsing inline assembly.
+- Fix function inlining causing empty diffs.
+- Fix bugs in and improve handling of unused return values.
+
 * Wed Oct 02 2019 Viktor Malik <vmalik@redhat.com> 0.1.0-1
 - Initial RPM release
