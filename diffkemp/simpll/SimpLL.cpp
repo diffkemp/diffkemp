@@ -60,9 +60,6 @@ int main(int argc, const char **argv) {
                    std::inserter(MainFunsSecond, MainFunsSecond.begin()),
                    [](FunPair &p) { return p.second; });
 
-    postprocessModule(*config.First, MainFunsFirst);
-    postprocessModule(*config.Second, MainFunsSecond);
-
     // Write LLVM IR to output files
     writeIRToFile(*config.First, config.FirstOutFile);
     writeIRToFile(*config.Second, config.SecondOutFile);
