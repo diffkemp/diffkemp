@@ -224,35 +224,3 @@ void markCalleesAlwaysInline(Function &Fun,
         }
     }
 }
-
-/// Preprocessing functions run on each module at the beginning.
-/// The following transformations are applied:
-/// 1. Removing debugging information.
-///    TODO this should be configurable via CLI option.
-/// 2. Inlining all functions called by the analysed function (if possible).
-void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns) {
-    if (MainFuns.empty())
-        return;
-
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "Postprocess\n");
-
-    for (auto *Main : MainFuns) {
-        if (Main->getName().empty())
-            continue;
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << "  " << Main->getName() << "\n");
-        // Do not inline function that will be compared
-        if (Main->hasFnAttribute(Attribute::AttrKind::AlwaysInline))
-            Main->removeFnAttr(Attribute::AttrKind::AlwaysInline);
-        // Inline all other functions
-        markCalleesAlwaysInline(*Main, MainFuns);
-    }
-
-    // Module passes
-    PassBuilder pb;
-    ModulePassManager mpm(false);
-    ModuleAnalysisManager mam(false);
-    pb.registerModuleAnalyses(mam);
-    mpm.addPass(AlwaysInlinerPass {});
-    mpm.run(Mod, mam);
-}
