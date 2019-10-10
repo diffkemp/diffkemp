@@ -3,7 +3,44 @@
 Tool for semantic **Diff**erence of **Ke**rnel functions, **m**odules, and
 **p**arameters.
 
+## Installation
+
+There are two options to install the project, either build from source or use a
+prepared RPM package for Fedora.
+
+### Install from source
+
+Currently, DiffKemp runs on Linux and needs the following software installed:
+* Clang and LLVM (supported versions are 5, 6, 7 and 8)
+* Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
+* Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
+* CScope
+
+Additionally, to build manually, you need to install the following tools:
+* CMake
+* Ninja build system
+
+Build can be done by running:
+
+    mkdir build
+    cd build
+    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
+    ninja
+    cd ..
+
+    pip install -e .
+
+### Install from RPM
+
+Alternatively, you can use a prepared RPM package for Fedora that can be
+installed from our Copr repository:
+[https://copr.fedorainfracloud.org/coprs/viktormalik/diffkemp/](https://copr.fedorainfracloud.org/coprs/viktormalik/diffkemp/)
+
 ## Usage
+DiffKemp assumes that the compared kernel versions are properly configured (by
+running `make prepare`) and that all the tools necessary for building the
+kernels are installed.
+
 First, generate snapshots for each kernel version that you need to compare:
 
     bin/diffkemp generate KERNEL_DIR SNAPSHOT_DIR FUNCTION_LIST
@@ -91,14 +128,6 @@ The analysis is composed of multiple steps:
     compared instruction-by-instruction.
   * Removing bodies of functions that are proved to be equal. 
 
-## Running environment
-
-Currently, DiffKemp runs on Linux and needs the following software installed:
-* LLVM (supported versions are 5, 6, 7 and 8)
-* Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
-* Python packages from `requirements.txt`
-* CScope
-
 ## Development
 
 For a better developer experience, there is a development container image
@@ -112,23 +141,8 @@ After that, the container can be run using
 The script mounts the current directory (the root DiffKemp directory) as a
 volume inside the container.
 
-Building DiffKemp outside of the container requires, in addition to the running
-dependencies stated above, the following dependencies:
-* CMake
-* Ninja build system
-* Tools neccessary for building the kernels that will be compared.
-
-### Build
-	mkdir build
-	cd build
-	cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
-    ninja
-    cd ..
-
-Additionally if you are not using the development container:
-
-    pip install -r requirements.txt
-    pip install -e .
+Follow [build instructions](#install-from-source) to build DiffKemp from source.
+If using the container image, no additional software needs to be installed.
 
 ### Tests
 
