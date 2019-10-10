@@ -214,15 +214,10 @@ def functions_diff(mod_first, mod_second,
                     run_simpll(first=mod_first.llvm, second=mod_second.llvm,
                                fun_first=fun_first, fun_second=fun_second,
                                var=glob_var.name if glob_var else None,
+                               config=config,
                                suffix=glob_var.name if glob_var else "simpl",
                                cache_dir=function_cache.directory
                                if function_cache else None,
-                               pattern_config=config.pattern_config,
-                               control_flow_only=config.control_flow_only,
-                               output_llvm_ir=config.output_llvm_ir,
-                               print_asm_diffs=config.print_asm_diffs,
-                               verbosity=config.verbosity,
-                               use_ffi=config.use_ffi,
                                module_cache=module_cache,
                                modules_to_cache=modules_to_cache)
                 if missing_defs:

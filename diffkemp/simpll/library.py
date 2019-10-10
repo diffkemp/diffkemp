@@ -80,8 +80,8 @@ class SimpLLModule:
         return {ffi.string(ffi.cast("char *", cstr)).decode("ascii")
                 for cstr in _ptrarray_to_list(carray)}
 
-    def preprocess(self, control_flow_only):
-        lib.preprocessModuleC(self.pointer, control_flow_only)
+    def preprocess(self, builtin_patterns):
+        lib.preprocessModuleC(self.pointer, builtin_patterns)
 
 
 class SimpLLFunction:

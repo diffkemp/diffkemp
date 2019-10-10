@@ -113,9 +113,6 @@ def make_argument_parser():
     compare_ap.add_argument("--output-llvm-ir",
                             help="output each simplified module to a file",
                             action="store_true")
-    compare_ap.add_argument("--control-flow-only",
-                            help=SUPPRESS,
-                            action="store_true")
     compare_ap.add_argument("--print-asm-diffs",
                             help="print raw inline assembly differences (does \
                             not apply to macros)",
@@ -138,6 +135,36 @@ def make_argument_parser():
                             help="show diff for all functions \
                             (even semantically equivalent ones)",
                             action="store_true")
+
+    BUILTIN_PATTERNS = ["struct-alignment",
+                        "function-splits",
+                        "unused-returns",
+                        "kernel-prints",
+                        "dead-code",
+                        "numerical-macros",
+                        "relocations",
+                        "type-casts",
+                        "control-flow-only",
+                        "inverse-conditions"]
+
+    # Semantic patterns options.
+    compare_ap.add_argument("--enable-pattern",
+                            action="append", default=[],
+                            choices=BUILTIN_PATTERNS,
+                            help="choose which built-in patterns should be "
+                                 "explicitly enabled")
+    compare_ap.add_argument("--disable-pattern",
+                            action="append", default=[],
+                            choices=BUILTIN_PATTERNS,
+                            help="choose which built-in patterns should be "
+                                 "explicitly disabled")
+    compare_ap.add_argument("--enable-all-patterns", action="append_const",
+                            dest="enable_pattern", const="all",
+                            help="enable all supported built-in patterns")
+    compare_ap.add_argument("--disable-all-patterns", action="append_const",
+                            dest="disable_pattern", const="all",
+                            help="disable all built-in patterns")
+
     compare_ap.set_defaults(func=diffkemp.diffkemp.compare)
 
     # "view" sub-command
