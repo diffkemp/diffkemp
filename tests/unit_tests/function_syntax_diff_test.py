@@ -2,7 +2,7 @@
 Unit tests for testing function syntax diff.
 """
 
-from diffkemp.config import Config
+from diffkemp.config import Config, BuiltinPatterns
 from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.semdiff.module_diff import functions_diff
@@ -21,7 +21,7 @@ def test_syntax_diff():
     kernel_new = "kernel/linux-3.10.0-957.el7"
     source_first = SourceTree(kernel_old, KernelLlvmSourceBuilder(kernel_old))
     source_second = SourceTree(kernel_new, KernelLlvmSourceBuilder(kernel_new))
-    config = Config(control_flow_only=True)
+    config = Config(builtin_patterns=BuiltinPatterns(control_flow_only=True))
     first = source_first.get_module_for_symbol(f)
     second = source_second.get_module_for_symbol(f)
     fun_result = functions_diff(mod_first=first, mod_second=second,

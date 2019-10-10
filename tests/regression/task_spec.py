@@ -3,7 +3,7 @@
 import os
 import shutil
 
-from diffkemp.config import Config
+from diffkemp.config import Config, BuiltinPatterns
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.semdiff.custom_pattern_config import CustomPatternConfig
@@ -55,10 +55,10 @@ class TaskSpec:
             )
         else:
             custom_pattern_config = None
-        if "control_flow_only" in spec:
-            control_flow_only = spec["control_flow_only"]
-        else:
-            control_flow_only = False
+
+        builtin_patterns = BuiltinPatterns(
+            control_flow_only=spec.get("control_flow_only", False),
+        )
 
         # Create LLVM sources and configuration
         self.old_kernel = KernelSourceTree(
@@ -70,7 +70,7 @@ class TaskSpec:
         self.config = Config(snapshot_first=self.old_snapshot,
                              snapshot_second=self.new_snapshot,
                              custom_pattern_config=custom_pattern_config,
-                             control_flow_only=control_flow_only)
+                             builtin_patterns=builtin_patterns)
         self.functions = dict()
 
     def finalize(self):
