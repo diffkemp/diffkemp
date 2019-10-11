@@ -65,6 +65,14 @@ class DifferentialFunctionComparator : public FunctionComparator {
     int cmpTypes(Type *L, Type *R) const override;
     /// Do not compare bitwidth when comparing the control flow only.
     int cmpAPInts(const APInt &L, const APInt &R) const override;
+    /// Does additional comparisons based on the C source to determine whether
+    /// two call function arguments that may be compared as non-equal by LLVM
+    /// are actually semantically equal.
+    bool cmpCallArgumentUsingCSource(const CallInst *CIL,
+                                     const CallInst *CIR,
+                                     Value *OpL,
+                                     Value *OpR,
+                                     unsigned i) const;
     /// Detect cast instructions and ignore them when comparing the control flow
     /// only. (The rest is the same as in LLVM.)
     int cmpBasicBlocks(const BasicBlock *BBL,

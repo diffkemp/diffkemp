@@ -358,6 +358,109 @@ bool mayIgnoreMacro(std::string macro) {
     return ignoredMacroList.find(macro) != ignoredMacroList.end();
 }
 
+/// Does additional comparisons based on the C source to determine whether two
+/// call function arguments that may be compared as non-equal by LLVM are
+/// actually semantically equal.
+bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
+        const CallInst *CIL,
+        const CallInst *CIR,
+        Value *OpL,
+        Value *OpR,
+        unsigned i) const {
+    // Try to prepare C source argument values to be used in operand
+    // comparison.
+    std::vector<std::string> CArgsL, CArgsR;
+    const Function *CFL = getCalledFunction(CIL->getCalledValue());
+    const Function *CFR = getCalledFunction(CIR->getCalledValue());
+    const BasicBlock *BBL = CIL->getParent();
+    const BasicBlock *BBR = CIR->getParent();
+
+    // Use the appropriate C source call argument extraction function depending
+    // on whether it is an inline assembly call or not.
+    if (CFL->getName().startswith(SimpllInlineAsmPrefix))
+        CArgsL = findInlineAssemblySourceArguments(
+                CIL->getDebugLoc(),
+                CIL->getModule(),
+                ModComparator->AsmToStringMapL[CFL->getName()]);
+    else
+        CArgsL = findFunctionCallSourceArguments(
+                CIL->getDebugLoc(), CIL->getModule(), CFL->getName());
+
+    if (CFR->getName().startswith(SimpllInlineAsmPrefix))
+        CArgsR = findInlineAssemblySourceArguments(
+                CIR->getDebugLoc(),
+                CIR->getModule(),
+                ModComparator->AsmToStringMapR[CFR->getName()]);
+    else
+        CArgsR = findFunctionCallSourceArguments(
+                CIR->getDebugLoc(), CIR->getModule(), CFL->getName());
+
+    if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
+        if (mayIgnoreMacro(CArgsL[i]) && mayIgnoreMacro(CArgsR[i])
+            && (CArgsL[i] == CArgsR[i])) {
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                            dbgs() << getDebugIndent()
+                                   << "Comparing integers as equal because of "
+                                   << "correspondence to an ignored macro\n");
+            return 0;
+        }
+
+        if (StringRef(CArgsL[i]).startswith("sizeof")
+            && StringRef(CArgsR[i]).startswith("sizeof")
+            && isa<ConstantInt>(OpL) && isa<ConstantInt>(OpR)) {
+            // Both arguments are sizeofs; look whether they correspond to
+            // a changed size of the same structure.
+            int IntL = dyn_cast<ConstantInt>(OpL)->getZExtValue();
+            int IntR = dyn_cast<ConstantInt>(OpR)->getZExtValue();
+            auto SizeL = ModComparator->StructSizeMapL.find(IntL);
+            auto SizeR = ModComparator->StructSizeMapR.find(IntR);
+
+            // Extract the identifiers inside sizeofs
+            auto IdL = getSubstringToMatchingBracket(CArgsL[i], 6);
+            auto IdR = getSubstringToMatchingBracket(CArgsR[i], 6);
+            IdL = IdL.substr(1, IdL.size() - 2);
+            IdR = IdR.substr(1, IdR.size() - 2);
+
+            auto TyIdL = getCSourceIdentifierType(
+                    IdL, BBL->getParent(), DI->LocalVariableMapL);
+            auto TyIdR = getCSourceIdentifierType(
+                    IdR, BBR->getParent(), DI->LocalVariableMapR);
+
+            // If the types are structure types, prepare their names for
+            // comparison. (Use different generic names for non-structure
+            // types.)
+            // Note: since the sizeof is different the types would likely be
+            // also compared as different using cmpTypes.
+            auto TyIdLName =
+                    TyIdL->isStructTy()
+                            ? dyn_cast<StructType>(TyIdL)->getStructName()
+                            : "Type 1";
+            auto TyIdRName =
+                    TyIdR->isStructTy()
+                            ? dyn_cast<StructType>(TyIdR)->getStructName()
+                            : "Type 2";
+
+            // In case both values belong to the sizes of the same structure or
+            // the original types were found and their names (in the case of
+            // structure types) are the same, compare the sizeof as equal.
+            if ((SizeL != ModComparator->StructSizeMapL.end()
+                 && SizeR != ModComparator->StructSizeMapR.end()
+                 && SizeL->second == SizeR->second)
+                || (TyIdL != nullptr && TyIdR != nullptr
+                    && (!cmpTypes(TyIdL, TyIdR) || TyIdLName == TyIdRName))) {
+                DEBUG_WITH_TYPE(
+                        DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "Comparing integers as equal because of"
+                               << "correspondence to structure type sizes\n");
+                return 0;
+            }
+        }
+    }
+
+    return 1;
+}
+
 /// Detect cast instructions and ignore them when comparing the control flow
 /// only.
 /// Note: this function was copied from FunctionComparator.
@@ -394,132 +497,15 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             for (unsigned i = 0, e = InstL->getNumOperands(); i != e; ++i) {
                 Value *OpL = InstL->getOperand(i);
                 Value *OpR = InstR->getOperand(i);
+
                 if (int Res = cmpValues(OpL, OpR)) {
-                    // Try to compare operands with the help of C source code
-                    std::vector<std::string> CArgsL, CArgsR;
-                    // In case both instructions are call instructions, try to
-                    // prepare C source argument values to be used in operand
-                    // comparison.
-
                     if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
-                        const CallInst *CIL = dyn_cast<CallInst>(&*InstL);
-                        const CallInst *CIR = dyn_cast<CallInst>(&*InstR);
-                        const Function *CFL =
-                                getCalledFunction(CIL->getCalledValue());
-                        const Function *CFR =
-                                getCalledFunction(CIR->getCalledValue());
-
-                        // Use the appropriate C source call argument extraction
-                        // function depending on whether it is an inline asm
-                        // call or not.
-                        if (CFL->getName().startswith(SimpllInlineAsmPrefix))
-                            CArgsL = findInlineAssemblySourceArguments(
-                                    InstL->getDebugLoc(),
-                                    InstL->getModule(),
-                                    ModComparator
-                                            ->AsmToStringMapL[CFL->getName()]);
-                        else
-                            CArgsL = findFunctionCallSourceArguments(
-                                    InstL->getDebugLoc(),
-                                    InstL->getModule(),
-                                    CFL->getName());
-
-                        if (CFR->getName().startswith(SimpllInlineAsmPrefix))
-                            CArgsR = findInlineAssemblySourceArguments(
-                                    InstR->getDebugLoc(),
-                                    InstR->getModule(),
-                                    ModComparator
-                                            ->AsmToStringMapR[CFR->getName()]);
-                        else
-                            CArgsR = findFunctionCallSourceArguments(
-                                    InstR->getDebugLoc(),
-                                    InstR->getModule(),
-                                    CFL->getName());
-                    }
-
-                    if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
-                        if (mayIgnoreMacro(CArgsL[i])
-                            && mayIgnoreMacro(CArgsR[i])
-                            && (CArgsL[i] == CArgsR[i])) {
-                            DEBUG_WITH_TYPE(
-                                    DEBUG_SIMPLL,
-                                    dbgs() << getDebugIndent()
-                                           << "Comparing integers as equal "
-                                           << "because of correspondence to an "
-                                           << "ignored macro\n");
-                            Res = 0;
-                        }
-
-                        if (StringRef(CArgsL[i]).startswith("sizeof")
-                            && StringRef(CArgsR[i]).startswith("sizeof")
-                            && isa<ConstantInt>(OpL) && isa<ConstantInt>(OpR)) {
-                            // Both arguments are sizeofs; look whether they
-                            // correspond to a changed size of the same
-                            // structure
-                            int IntL =
-                                    dyn_cast<ConstantInt>(OpL)->getZExtValue();
-                            int IntR =
-                                    dyn_cast<ConstantInt>(OpR)->getZExtValue();
-                            auto SizeL =
-                                    ModComparator->StructSizeMapL.find(IntL);
-                            auto SizeR =
-                                    ModComparator->StructSizeMapR.find(IntR);
-
-                            // Extract the identifiers inside sizeofs
-                            auto IdL =
-                                    getSubstringToMatchingBracket(CArgsL[i], 6);
-                            auto IdR =
-                                    getSubstringToMatchingBracket(CArgsR[i], 6);
-                            IdL = IdL.substr(1, IdL.size() - 2);
-                            IdR = IdR.substr(1, IdR.size() - 2);
-
-                            auto TyIdL = getCSourceIdentifierType(
-                                    IdL,
-                                    BBL->getParent(),
-                                    DI->LocalVariableMapL);
-                            auto TyIdR = getCSourceIdentifierType(
-                                    IdR,
-                                    BBR->getParent(),
-                                    DI->LocalVariableMapR);
-
-                            // If the types are structure types, prepare their
-                            // names for comparison. (Use different generic
-                            // names for non-structure types.)
-                            // Note: since the sizeof is different the types
-                            // would likely be also compared as different
-                            // using cmpTypes.
-                            auto TyIdLName =
-                                    TyIdL->isStructTy()
-                                            ? dyn_cast<StructType>(TyIdL)
-                                                      ->getStructName()
-                                            : "Type 1";
-                            auto TyIdRName =
-                                    TyIdR->isStructTy()
-                                            ? dyn_cast<StructType>(TyIdR)
-                                                      ->getStructName()
-                                            : "Type 2";
-
-                            // In case both values belong to the sizes of the
-                            // same structure or the original types were found
-                            // and their names (in the case of
-                            // structure types) are the same, compare the sizeof
-                            // as equal.
-                            if ((SizeL != ModComparator->StructSizeMapL.end()
-                                 && SizeR != ModComparator->StructSizeMapR.end()
-                                 && SizeL->second == SizeR->second)
-                                || (TyIdL != nullptr && TyIdR != nullptr
-                                    && (!cmpTypes(TyIdL, TyIdR)
-                                        || TyIdLName == TyIdRName))) {
-                                DEBUG_WITH_TYPE(
-                                        DEBUG_SIMPLL,
-                                        dbgs() << getDebugIndent()
-                                               << "Comparing integers as equal "
-                                               << "because of correspondence "
-                                                  "to "
-                                               << "structure type sizes \n");
-                                Res = 0;
-                            }
-                        }
+                        Res = cmpCallArgumentUsingCSource(
+                                dyn_cast<CallInst>(&*InstL),
+                                dyn_cast<CallInst>(&*InstR),
+                                OpL,
+                                OpR,
+                                i);
                     }
 
                     if (Res) {
@@ -527,6 +513,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                         // difference
                         auto macroDiffs =
                                 findMacroDifferences(&*InstL, &*InstR);
+
                         ModComparator->DifferingObjects.insert(
                                 ModComparator->DifferingObjects.end(),
                                 macroDiffs.begin(),
