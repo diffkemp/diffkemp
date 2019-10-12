@@ -16,9 +16,8 @@
 #include <llvm/IR/TypeFinder.h>
 #include <llvm/Support/raw_ostream.h>
 
-PreservedAnalyses StructHashGeneratorPass::run (
-        Module &Mod,
-        llvm::AnalysisManager<llvm::Module> &Main) {
+PreservedAnalyses StructHashGeneratorPass::run(
+        Module &Mod, llvm::AnalysisManager<llvm::Module> &Main) {
     TypeFinder Types;
     Types.run(Mod, true);
 
@@ -28,8 +27,10 @@ PreservedAnalyses StructHashGeneratorPass::run (
                 !STy->getStructName().startswith("struct.anon"))
                 continue;
             std::string TypeName = STy->getStructName().str();
-            std::string TypeDump; llvm::raw_string_ostream DumpStrm(TypeDump);
-            DumpStrm << *STy; TypeDump = DumpStrm.str();
+            std::string TypeDump;
+            llvm::raw_string_ostream DumpStrm(TypeDump);
+            DumpStrm << *STy;
+            TypeDump = DumpStrm.str();
 
             // Extract the type declaration without type name
             int pos = TypeDump.find("{");
@@ -37,8 +38,9 @@ PreservedAnalyses StructHashGeneratorPass::run (
                 continue;
             std::string TypeDecl = TypeDump.substr(pos);
             std::string NewTypeName =
-                    (STy->getStructName().startswith("union.anon") ?
-                            "union.anon." : "struct.anon.") +
+                    (STy->getStructName().startswith("union.anon")
+                             ? "union.anon."
+                             : "struct.anon.") +
                     std::to_string(hash_value(TypeDecl));
 
             // Rename the type

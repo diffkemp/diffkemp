@@ -27,32 +27,28 @@
 // If a operand of a call instruction is detected to be generated from one of
 // these macros, it should be always compared as equal.
 std::set<std::string> ignoredMacroList = {
-        "__COUNTER__", "__FILE__", "__LINE__", "__DATE__", "__TIME__"
-};
+        "__COUNTER__", "__FILE__", "__LINE__", "__DATE__", "__TIME__"};
 
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
 /// Uses data saved in StructFieldNames.
-int DifferentialFunctionComparator::cmpGEPs(
-        const GEPOperator *GEPL,
-        const GEPOperator *GEPR) const {
+int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
+                                            const GEPOperator *GEPR) const {
     int OriginalResult = FunctionComparator::cmpGEPs(GEPL, GEPR);
 
-    if(OriginalResult == 0)
+    if (OriginalResult == 0)
         // The original function says the GEPs are equal - return the value
         return OriginalResult;
 
     if (!isa<StructType>(GEPL->getSourceElementType()) ||
         !isa<StructType>(GEPR->getSourceElementType()))
-       // One of the types in not a structure - the original function is
-       // sufficient for correct comparison
-       return OriginalResult;
+        // One of the types in not a structure - the original function is
+        // sufficient for correct comparison
+        return OriginalResult;
 
-    if (getStructTypeName(dyn_cast<StructType>(
-                GEPL->getSourceElementType())) !=
-            getStructTypeName(dyn_cast<StructType>(
-                GEPR->getSourceElementType())))
+    if (getStructTypeName(dyn_cast<StructType>(GEPL->getSourceElementType())) !=
+        getStructTypeName(dyn_cast<StructType>(GEPR->getSourceElementType())))
         // Different structure names - the indices may be same by coincidence,
         // therefore index comparison can't be used
         return OriginalResult;
@@ -77,15 +73,13 @@ int DifferentialFunctionComparator::cmpGEPs(
             return OriginalResult;
 
         for (auto idxL = GEPL->idx_begin(), idxR = GEPR->idx_begin();
-         idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
-         ++idxL, ++idxR) {
-            auto ValueTypeL = GEPiL->getIndexedType(GEPiL->getSourceElementType(),
-                                                    ArrayRef<Value *>(
-                                                            IndicesL));
+             idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
+             ++idxL, ++idxR) {
+            auto ValueTypeL = GEPiL->getIndexedType(
+                    GEPiL->getSourceElementType(), ArrayRef<Value *>(IndicesL));
 
-            auto ValueTypeR = GEPiR->getIndexedType(GEPiR->getSourceElementType(),
-                                                    ArrayRef<Value *>(
-                                                            IndicesR));
+            auto ValueTypeR = GEPiR->getIndexedType(
+                    GEPiR->getSourceElementType(), ArrayRef<Value *>(IndicesR));
 
             auto NumericIndexL = dyn_cast<ConstantInt>(idxL->get())->getValue();
             auto NumericIndexR = dyn_cast<ConstantInt>(idxR->get())->getValue();
@@ -104,13 +98,13 @@ int DifferentialFunctionComparator::cmpGEPs(
 
             // The indexed type is a structure type - compare the names of the
             // structure members from StructFieldNames.
-            auto MemberNameL = DI->StructFieldNames.find(
-                {dyn_cast<StructType>(ValueTypeL),
-                NumericIndexL.getZExtValue()});
+            auto MemberNameL =
+                    DI->StructFieldNames.find({dyn_cast<StructType>(ValueTypeL),
+                                               NumericIndexL.getZExtValue()});
 
-            auto MemberNameR = DI->StructFieldNames.find(
-                {dyn_cast<StructType>(ValueTypeR),
-                NumericIndexR.getZExtValue()});
+            auto MemberNameR =
+                    DI->StructFieldNames.find({dyn_cast<StructType>(ValueTypeR),
+                                               NumericIndexR.getZExtValue()});
 
             if (MemberNameL == DI->StructFieldNames.end() ||
                 MemberNameR == DI->StructFieldNames.end() ||
@@ -143,7 +137,9 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
 /// Compare allocation instructions using separate cmpAllocs function in case
 /// standard comparison returns something other than zero.
 int DifferentialFunctionComparator::cmpOperations(
-    const Instruction *L, const Instruction *R, bool &needToCmpOperands) const {
+        const Instruction *L,
+        const Instruction *R,
+        bool &needToCmpOperands) const {
     int Result = FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     // Check whether the instruction is a call instruction.
@@ -165,7 +161,7 @@ int DifferentialFunctionComparator::cmpOperations(
                     }
 
                     if (CalledL->getIntrinsicID() == Intrinsic::memset &&
-                            CalledR->getIntrinsicID() == Intrinsic::memset) {
+                        CalledR->getIntrinsicID() == Intrinsic::memset) {
                         if (!cmpMemset(CL, CR)) {
                             needToCmpOperands = false;
                             return 0;
@@ -173,8 +169,7 @@ int DifferentialFunctionComparator::cmpOperations(
                     }
 
                     if (Result && controlFlowOnly &&
-                            abs(CL->getNumOperands() - CR->getNumOperands())
-                                    == 1) {
+                        abs(CL->getNumOperands() - CR->getNumOperands()) == 1) {
                         needToCmpOperands = false;
                         return cmpCallsWithExtraArg(CL, CR);
                     }
@@ -186,7 +181,7 @@ int DifferentialFunctionComparator::cmpOperations(
                     // (except for case when one of the function is a SimpLL
                     // abstraction).
                     if (!isSimpllAbstractionDeclaration(CalledL) &&
-                            !isSimpllAbstractionDeclaration(CalledR))
+                        !isSimpllAbstractionDeclaration(CalledR))
                         ModComparator->tryInline = {CL, CR};
 
                     // Look for a macro-function difference.
@@ -197,11 +192,13 @@ int DifferentialFunctionComparator::cmpOperations(
             // If just one of the instructions is a call, it is possible that
             // some logic has been moved into a function. We'll try to inline
             // that function and compare again.
-            if (isa<CallInst>(L) && !isSimpllAbstractionDeclaration(
-                    getCalledFunction(dyn_cast<CallInst>(L)->getCalledValue())))
+            if (isa<CallInst>(L) &&
+                !isSimpllAbstractionDeclaration(getCalledFunction(
+                        dyn_cast<CallInst>(L)->getCalledValue())))
                 ModComparator->tryInline = {dyn_cast<CallInst>(L), nullptr};
-            else if (isa<CallInst>(R) && !isSimpllAbstractionDeclaration(
-                    getCalledFunction(dyn_cast<CallInst>(R)->getCalledValue())))
+            else if (isa<CallInst>(R) &&
+                     !isSimpllAbstractionDeclaration(getCalledFunction(
+                             dyn_cast<CallInst>(R)->getCalledValue())))
                 ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
 
             // Look for a macro-function difference.
@@ -214,8 +211,8 @@ int DifferentialFunctionComparator::cmpOperations(
         if (controlFlowOnly && isa<ICmpInst>(L) && isa<ICmpInst>(R)) {
             auto *ICmpL = dyn_cast<ICmpInst>(L);
             auto *ICmpR = dyn_cast<ICmpInst>(R);
-            if (ICmpL->getUnsignedPredicate()
-                    == ICmpR->getUnsignedPredicate()) {
+            if (ICmpL->getUnsignedPredicate() ==
+                ICmpR->getUnsignedPredicate()) {
                 return 0;
             }
         }
@@ -226,7 +223,7 @@ int DifferentialFunctionComparator::cmpOperations(
             StructType *TypeR = dyn_cast<StructType>(
                     dyn_cast<AllocaInst>(R)->getAllocatedType());
             if (TypeL && TypeR &&
-                    TypeL->getStructName() == TypeR->getStructName())
+                TypeL->getStructName() == TypeR->getStructName())
                 return cmpNumbers(dyn_cast<AllocaInst>(L)->getAlignment(),
                                   dyn_cast<AllocaInst>(R)->getAlignment());
         }
@@ -235,8 +232,9 @@ int DifferentialFunctionComparator::cmpOperations(
     if (Result) {
         auto macroDiffs = findMacroDifferences(L, R);
         ModComparator->DifferingObjects.insert(
-            ModComparator->DifferingObjects.end(),
-            macroDiffs.begin(), macroDiffs.end());
+                ModComparator->DifferingObjects.end(),
+                macroDiffs.begin(),
+                macroDiffs.end());
     }
 
     return Result;
@@ -256,18 +254,16 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
     // First look whether this is the case described above.
     auto LineL = extractLineFromLocation(L->getDebugLoc());
     auto LineR = extractLineFromLocation(R->getDebugLoc());
-    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(),
-            L->getModule());
-    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(),
-            R->getModule());
+    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
+    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
     std::string NameL;
     std::string NameR;
     if (isa<CallInst>(L))
-        NameL = getCalledFunction(
-            dyn_cast<CallInst>(L)->getCalledValue())->getName();
+        NameL = getCalledFunction(dyn_cast<CallInst>(L)->getCalledValue())
+                        ->getName();
     if (isa<CallInst>(R))
-        NameR = getCalledFunction(
-            dyn_cast<CallInst>(R)->getCalledValue())->getName();
+        NameR = getCalledFunction(dyn_cast<CallInst>(R)->getCalledValue())
+                        ->getName();
 
     // Note: the line has to actually have been found for the comparison to make
     // sense.
@@ -281,13 +277,11 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
              MacrosR.find(NameL) != MacrosR.end())) {
             trueName = NameL;
             NameR = NameL + " (macro)";
-            ModComparator->tryInline =
-                {dyn_cast<CallInst>(L), nullptr};
+            ModComparator->tryInline = {dyn_cast<CallInst>(L), nullptr};
         } else {
             trueName = NameR;
             NameL = NameR + " (macro)";
-            ModComparator->tryInline =
-                {nullptr, dyn_cast<CallInst>(R)};
+            ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
         }
 
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
@@ -299,12 +293,14 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
         diff.name = trueName;
         diff.BodyL = "[macro function difference]";
         diff.BodyR = "[macro function difference]";
-        diff.StackL = CallStack {CallInfo {NameL,
-            L->getDebugLoc()->getFile()->getFilename(),
-            L->getDebugLoc()->getLine()}};
-        diff.StackR = CallStack {CallInfo {NameR,
-            R->getDebugLoc()->getFile()->getFilename(),
-            R->getDebugLoc()->getLine()}};
+        diff.StackL =
+                CallStack{CallInfo{NameL,
+                                   L->getDebugLoc()->getFile()->getFilename(),
+                                   L->getDebugLoc()->getLine()}};
+        diff.StackR =
+                CallStack{CallInfo{NameR,
+                                   R->getDebugLoc()->getFile()->getFilename(),
+                                   R->getDebugLoc()->getLine()}};
         ModComparator->DifferingObjects.push_back(diff);
     }
 }
@@ -312,8 +308,7 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
 /// Compare structure size with a constant.
 /// @return 0 if equal, 1 otherwise.
 int DifferentialFunctionComparator::cmpStructTypeSizeWithConstant(
-        StructType *Type,
-        const Value *Const) const {
+        StructType *Type, const Value *Const) const {
     uint64_t ConstValue = dyn_cast<ConstantInt>(Const)->getZExtValue();
     return ConstValue != LayoutL.getTypeStoreSize(Type);
 }
@@ -322,11 +317,11 @@ int DifferentialFunctionComparator::cmpStructTypeSizeWithConstant(
 /// of the composite type is different.
 int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
                                               const CallInst *CR) const {
-     // Look whether the sizes for allocation match. If yes, then return zero
-     // (ignore flags).
-     if (cmpValues(CL->op_begin()->get(), CR->op_begin()->get()) == 0) {
-         return 0;
-     }
+    // Look whether the sizes for allocation match. If yes, then return zero
+    // (ignore flags).
+    if (cmpValues(CL->op_begin()->get(), CR->op_begin()->get()) == 0) {
+        return 0;
+    }
 
     // The instruction is a call instrution calling the function kzalloc. Now
     // look whether the next instruction is a BitCastInst casting to a structure
@@ -364,8 +359,8 @@ bool mayIgnoreMacro(std::string macro) {
 /// Detect cast instructions and ignore them when comparing the control flow
 /// only.
 /// Note: this function was copied from FunctionComparator.
-int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
-        const BasicBlock *BBR) const {
+int DifferentialFunctionComparator::cmpBasicBlocks(
+        const BasicBlock *BBL, const BasicBlock *BBR) const {
     BasicBlock::const_iterator InstL = BBL->begin(), InstLE = BBL->end();
     BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
 
@@ -407,42 +402,49 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                     if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
                         const CallInst *CIL = dyn_cast<CallInst>(&*InstL);
                         const CallInst *CIR = dyn_cast<CallInst>(&*InstR);
-                        const Function *CFL = getCalledFunction(
-                                CIL->getCalledValue());
-                        const Function *CFR = getCalledFunction(
-                                CIR->getCalledValue());
+                        const Function *CFL =
+                                getCalledFunction(CIL->getCalledValue());
+                        const Function *CFR =
+                                getCalledFunction(CIR->getCalledValue());
 
                         // Use the appropriate C source call argument extraction
                         // function depending on whether it is an inline asm
                         // call or not.
                         if (CFL->getName().startswith(SimpllInlineAsmPrefix))
                             CArgsL = findInlineAssemblySourceArguments(
-                                InstL->getDebugLoc(), InstL->getModule(),
-                                ModComparator->AsmToStringMapL[CFL->getName()]);
+                                    InstL->getDebugLoc(),
+                                    InstL->getModule(),
+                                    ModComparator
+                                            ->AsmToStringMapL[CFL->getName()]);
                         else
                             CArgsL = findFunctionCallSourceArguments(
-                                InstL->getDebugLoc(), InstL->getModule(),
-                                CFL->getName());
+                                    InstL->getDebugLoc(),
+                                    InstL->getModule(),
+                                    CFL->getName());
 
                         if (CFR->getName().startswith(SimpllInlineAsmPrefix))
                             CArgsR = findInlineAssemblySourceArguments(
-                                InstR->getDebugLoc(), InstR->getModule(),
-                                ModComparator->AsmToStringMapR[CFR->getName()]);
+                                    InstR->getDebugLoc(),
+                                    InstR->getModule(),
+                                    ModComparator
+                                            ->AsmToStringMapR[CFR->getName()]);
                         else
                             CArgsR = findFunctionCallSourceArguments(
-                                InstR->getDebugLoc(), InstR->getModule(),
-                                CFL->getName());
+                                    InstR->getDebugLoc(),
+                                    InstR->getModule(),
+                                    CFL->getName());
                     }
 
                     if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
                         if (mayIgnoreMacro(CArgsL[i]) &&
-                                mayIgnoreMacro(CArgsR[i]) &&
-                                (CArgsL[i] == CArgsR[i])) {
-                            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent()
-                                       << "Comparing integers as equal "
-                                       << "because of correspondence to an "
-                                       << "ignored macro\n");
+                            mayIgnoreMacro(CArgsR[i]) &&
+                            (CArgsL[i] == CArgsR[i])) {
+                            DEBUG_WITH_TYPE(
+                                    DEBUG_SIMPLL,
+                                    dbgs() << getDebugIndent()
+                                           << "Comparing integers as equal "
+                                           << "because of correspondence to an "
+                                           << "ignored macro\n");
                             Res = 0;
                         }
 
@@ -453,26 +455,30 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             // correspond to a changed size of the same
                             // structure
                             int IntL =
-                                dyn_cast<ConstantInt>(OpL)->getZExtValue();
+                                    dyn_cast<ConstantInt>(OpL)->getZExtValue();
                             int IntR =
-                                dyn_cast<ConstantInt>(OpR)->getZExtValue();
-                            auto SizeL = ModComparator->StructSizeMapL.find(
-                                IntL);
-                            auto SizeR = ModComparator->StructSizeMapR.find(
-                                IntR);
+                                    dyn_cast<ConstantInt>(OpR)->getZExtValue();
+                            auto SizeL =
+                                    ModComparator->StructSizeMapL.find(IntL);
+                            auto SizeR =
+                                    ModComparator->StructSizeMapR.find(IntR);
 
                             // Extract the identifiers inside sizeofs
-                            auto IdL = getSubstringToMatchingBracket(CArgsL[i],
-                                    6);
-                            auto IdR = getSubstringToMatchingBracket(CArgsR[i],
-                                    6);
+                            auto IdL =
+                                    getSubstringToMatchingBracket(CArgsL[i], 6);
+                            auto IdR =
+                                    getSubstringToMatchingBracket(CArgsR[i], 6);
                             IdL = IdL.substr(1, IdL.size() - 2);
                             IdR = IdR.substr(1, IdR.size() - 2);
 
-                            auto TyIdL = getCSourceIdentifierType(IdL,
-                                    BBL->getParent(), DI->LocalVariableMapL);
-                            auto TyIdR = getCSourceIdentifierType(IdR,
-                                    BBR->getParent(), DI->LocalVariableMapR);
+                            auto TyIdL = getCSourceIdentifierType(
+                                    IdL,
+                                    BBL->getParent(),
+                                    DI->LocalVariableMapL);
+                            auto TyIdR = getCSourceIdentifierType(
+                                    IdR,
+                                    BBR->getParent(),
+                                    DI->LocalVariableMapR);
 
                             // If the types are structure types, prepare their
                             // names for comparison. (Use different generic
@@ -480,14 +486,16 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             // Note: since the sizeof is different the types
                             // would likely be also compared as different
                             // using cmpTypes.
-                            auto TyIdLName = TyIdL->isStructTy() ?
-                                             dyn_cast<StructType>(TyIdL)->
-                                                 getStructName() :
-                                             "Type 1";
-                            auto TyIdRName = TyIdR->isStructTy() ?
-                                             dyn_cast<StructType>(TyIdR)->
-                                                 getStructName() :
-                                             "Type 2";
+                            auto TyIdLName =
+                                    TyIdL->isStructTy()
+                                            ? dyn_cast<StructType>(TyIdL)
+                                                      ->getStructName()
+                                            : "Type 1";
+                            auto TyIdRName =
+                                    TyIdR->isStructTy()
+                                            ? dyn_cast<StructType>(TyIdR)
+                                                      ->getStructName()
+                                            : "Type 2";
 
                             // In case both values belong to the sizes of the
                             // same structure or the original types were found
@@ -497,14 +505,16 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             if ((SizeL != ModComparator->StructSizeMapL.end() &&
                                  SizeR != ModComparator->StructSizeMapR.end() &&
                                  SizeL->second == SizeR->second) ||
-                                 (TyIdL != nullptr && TyIdR != nullptr &&
-                                  (!cmpTypes(TyIdL, TyIdR) ||
-                                   TyIdLName == TyIdRName))) {
-                                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << getDebugIndent()
-                                           << "Comparing integers as equal "
-                                           << "because of correspondence to "
-                                           << "structure type sizes \n");
+                                (TyIdL != nullptr && TyIdR != nullptr &&
+                                 (!cmpTypes(TyIdL, TyIdR) ||
+                                  TyIdLName == TyIdRName))) {
+                                DEBUG_WITH_TYPE(
+                                        DEBUG_SIMPLL,
+                                        dbgs() << getDebugIndent()
+                                               << "Comparing integers as equal "
+                                               << "because of correspondence "
+                                                  "to "
+                                               << "structure type sizes \n");
                                 Res = 0;
                             }
                         }
@@ -513,20 +523,23 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                     if (Res) {
                         // Try to find macros that could be causing the
                         // difference
-                        auto macroDiffs = findMacroDifferences(&*InstL, &*InstR);
+                        auto macroDiffs =
+                                findMacroDifferences(&*InstL, &*InstR);
                         ModComparator->DifferingObjects.insert(
-                            ModComparator->DifferingObjects.end(),
-                            macroDiffs.begin(), macroDiffs.end());
+                                ModComparator->DifferingObjects.end(),
+                                macroDiffs.begin(),
+                                macroDiffs.end());
 
                         // Try to find assembly functions causing the difference
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR) &&
-                                showAsmDiff) {
+                            showAsmDiff) {
                             auto asmDiffs = findAsmDifference(
                                     dyn_cast<CallInst>(&*InstL),
                                     dyn_cast<CallInst>(&*InstR));
                             ModComparator->DifferingObjects.insert(
-                                ModComparator->DifferingObjects.end(),
-                                asmDiffs.begin(), asmDiffs.end());
+                                    ModComparator->DifferingObjects.end(),
+                                    asmDiffs.begin(),
+                                    asmDiffs.end());
                         }
 
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
@@ -534,14 +547,13 @@ int DifferentialFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
                             // to inline the functions.
                             auto CL = dyn_cast<CallInst>(&*InstL);
                             auto CR = dyn_cast<CallInst>(&*InstR);
-                            auto CalledL = getCalledFunction(
-                                    CL->getCalledValue());
-                            auto CalledR = getCalledFunction(
-                                    CR->getCalledValue());
-
+                            auto CalledL =
+                                    getCalledFunction(CL->getCalledValue());
+                            auto CalledR =
+                                    getCalledFunction(CR->getCalledValue());
 
                             if (!isSimpllAbstractionDeclaration(CalledL) &&
-                                    !isSimpllAbstractionDeclaration(CalledR))
+                                !isSimpllAbstractionDeclaration(CalledR))
                                 ModComparator->tryInline = {CL, CR};
 
                             // Look for a macro-function difference.
@@ -607,8 +619,8 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
 
         for (int i = 0; i < I->getNumArgOperands(); i++) {
             const Value *Op = I->getArgOperand(i);
-            std::string OpName = getIdentifierForValue(Op, DI->StructFieldNames,
-                    I->getFunction());
+            std::string OpName = getIdentifierForValue(
+                    Op, DI->StructFieldNames, I->getFunction());
 
             if (*argumentNames == "")
                 *argumentNames += OpName;
@@ -623,20 +635,16 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
     diff.BodyL = AsmL.str() + " (args: " + argumentNamesL + ")";
     diff.BodyR = AsmR.str() + " (args: " + argumentNamesR + ")";
     diff.StackL = CallStack();
-    diff.StackL.push_back(CallInfo {
-        "(generated assembly code)",
-        ParentL->getSubprogram()->getFilename(),
-        ParentL->getSubprogram()->getLine()
-    });
+    diff.StackL.push_back(CallInfo{"(generated assembly code)",
+                                   ParentL->getSubprogram()->getFilename(),
+                                   ParentL->getSubprogram()->getLine()});
     diff.StackR = CallStack();
-    diff.StackR.push_back(CallInfo {
-        "(generated assembly code)",
-        ParentR->getSubprogram()->getFilename(),
-        ParentR->getSubprogram()->getLine()
-    });
+    diff.StackR.push_back(CallInfo{"(generated assembly code)",
+                                   ParentR->getSubprogram()->getFilename(),
+                                   ParentR->getSubprogram()->getLine()});
     diff.function = ParentL->getName();
     diff.name = "assembly code " +
-            std::to_string(++ModComparator->asmDifferenceCounter);
+                std::to_string(++ModComparator->asmDifferenceCounter);
 
     return {diff};
 }
@@ -652,8 +660,7 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
     if (GVarL && GVarR && GVarL->hasInitializer() && GVarR->hasInitializer() &&
         GVarL->isConstant() && GVarR->isConstant()) {
         // Constant global variables are compared using their initializers.
-        return cmpConstants(GVarL->getInitializer(),
-                            GVarR->getInitializer());
+        return cmpConstants(GVarL->getInitializer(), GVarR->getInitializer());
     } else if (L->hasName() && R->hasName()) {
         // Both values are named, compare them by names
         auto NameL = L->getName();
@@ -664,8 +671,8 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
             NameL = NameL.substr(0, NameL.find_last_of("."));
         if (hasSuffix(NameR))
             NameR = NameR.substr(0, NameR.find_last_of("."));
-        if (NameL == NameR || (isPrintFunction(NameL) &&
-                isPrintFunction(NameR))) {
+        if (NameL == NameR ||
+            (isPrintFunction(NameL) && isPrintFunction(NameR))) {
             if (isa<Function>(L) && isa<Function>(R)) {
                 // Functions compared as being the same have to be also compared
                 // by ModuleComparator.
@@ -675,7 +682,7 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                 // Do not compare SimpLL abstractions.
                 if (!isSimpllAbstraction(FunL) && !isSimpllAbstraction(FunR) &&
                     (ModComparator->ComparedFuns.find({FunL, FunR}) ==
-                        ModComparator->ComparedFuns.end()) &&
+                     ModComparator->ComparedFuns.end()) &&
                     (!isPrintFunction(L->getName()) &&
                      !isPrintFunction(R->getName()))) {
                     ModComparator->compareFunctions(FunL, FunR);
@@ -706,8 +713,8 @@ bool DifferentialFunctionComparator::accumulateAllOffsets(
     for (auto &Inst : BB) {
         if (auto GEP = dyn_cast<GetElementPtrInst>(&Inst)) {
             APInt Offset;
-            if (!GEP->accumulateConstantOffset(
-                    BB.getModule()->getDataLayout(), Offset))
+            if (!GEP->accumulateConstantOffset(BB.getModule()->getDataLayout(),
+                                               Offset))
                 return false;
             Offset += Offset.getZExtValue();
         }
@@ -777,7 +784,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             auto *ConstantR = dyn_cast<Constant>(R);
             auto MacroMapping = DI->MacroConstantMap.find(ConstantL);
             if (MacroMapping != DI->MacroConstantMap.end() &&
-                    MacroMapping->second == valueAsString(ConstantR))
+                MacroMapping->second == valueAsString(ConstantR))
                 return 0;
         } else if (isa<BasicBlock>(L) && isa<BasicBlock>(R)) {
             // In case functions have different numbers of BBs, they may be
@@ -802,7 +809,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
 /// Specific comparing of constants. If one of them (or both) is a cast
 /// constant expression, compare its operand.
 int DifferentialFunctionComparator::cmpConstants(const Constant *L,
-        const Constant *R) const {
+                                                 const Constant *R) const {
     int Result = FunctionComparator::cmpConstants(L, R);
 
     if (Result == 0)
@@ -832,8 +839,7 @@ int DifferentialFunctionComparator::cmpConstants(const Constant *L,
 }
 
 int DifferentialFunctionComparator::cmpCallsWithExtraArg(
-        const CallInst *CL,
-        const CallInst *CR) const {
+        const CallInst *CL, const CallInst *CR) const {
     // Distinguish which call has more parameters
     const CallInst *CallExtraArg;
     const CallInst *CallOther;
@@ -895,7 +901,7 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
 
         if (StrTy->getStructName().startswith("union") &&
             (StrTyLayout->getTypeAllocSize(StrTy) >=
-                TyLayout->getTypeAllocSize(Ty))) {
+             TyLayout->getTypeAllocSize(Ty))) {
             return 0;
         }
     }
@@ -918,8 +924,8 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
 }
 
 /// Do not compare bitwidth when comparing the control flow only.
-int DifferentialFunctionComparator::cmpAPInts(const APInt &L, const APInt &R)
-    const {
+int DifferentialFunctionComparator::cmpAPInts(const APInt &L,
+                                              const APInt &R) const {
     int Result = FunctionComparator::cmpAPInts(L, R);
     if (!controlFlowOnly || !Result) {
         return Result;
@@ -956,7 +962,7 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
     // Return 0 (equality) if both memory destinations are structs of the same
     // name and each memset size is equal to the corresponding struct size.
     return !STyL || !STyR ||
-            cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2)) ||
-            cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2)) ||
-            STyL->getStructName() != STyR->getStructName();
+           cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2)) ||
+           cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2)) ||
+           STyL->getStructName() != STyR->getStructName();
 }

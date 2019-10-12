@@ -47,20 +47,20 @@ struct MacroElement {
 /// source files.
 /// Note: this can be either a macro difference or inline assembly difference.
 struct SyntaxDifference {
-	// Name of the object.
-	std::string name;
-	// The difference.
-	std::string BodyL, BodyR;
-	// Stacks containing the differing objects and all other objects affected
-	// by the difference (again for both modules).
-	CallStack StackL, StackR;
-	// The function in which the difference was found
-	std::string function;
+    // Name of the object.
+    std::string name;
+    // The difference.
+    std::string BodyL, BodyR;
+    // Stacks containing the differing objects and all other objects affected
+    // by the difference (again for both modules).
+    CallStack StackL, StackR;
+    // The function in which the difference was found
+    std::string function;
 };
 
 /// Gets all macros used on the line in the form of a key to value map.
-std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
-    StringRef line, StringMap<StringRef> macroMap);
+std::unordered_map<std::string, MacroElement>
+        getAllMacrosOnLine(StringRef line, StringMap<StringRef> macroMap);
 
 /// Takes a list of parameter-argument pairs and expand them on places where
 /// are a part of a composite macro name joined by ##.
@@ -74,15 +74,16 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset = 0);
 /// Gets all macros used on a certain DILocation in the form of a key to value
 /// map.
 std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-    DILocation *LineLoc, const Module *Mod, int lineOffset = 0);
+        DILocation *LineLoc, const Module *Mod, int lineOffset = 0);
 
 /// Finds macro differences at the locations of the instructions L and R and
 /// return them as a vector.
 /// This is used when a difference is suspected to be in a macro in order to
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
-std::vector<SyntaxDifference> findMacroDifferences(
-		const Instruction *L, const Instruction *R, int lineOffset = 0);
+std::vector<SyntaxDifference> findMacroDifferences(const Instruction *L,
+                                                   const Instruction *R,
+                                                   int lineOffset = 0);
 
 // Takes a string and the position of the first bracket and returns the
 // substring in the brackets.
@@ -92,25 +93,26 @@ std::string getSubstringToMatchingBracket(std::string str, size_t position);
 /// code, the inline asm is found and extracted) to the LLVM syntax.
 /// Returns a pair of strings - the first one contains the converted ASM, the
 /// second one contains (unparsed) arguments.
-std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
-        std::string input);
+std::pair<std::string, std::string>
+        convertInlineAsmToLLVMFormat(std::string input);
 
 /// Takes a LLVM inline assembly with the corresponding call location and
 /// retrieves the corresponding arguments in the C source code.
-std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
-        const Module *Mod, std::string inlineAsm);
+std::vector<std::string> findInlineAssemblySourceArguments(
+        DILocation *LineLoc, const Module *Mod, std::string inlineAsm);
 
 // Takes in a string with C function call arguments and splits it into a vector.
 std::vector<std::string> splitArgumentsList(std::string argumentString);
 
 /// Takes a function name with the corresponding call location and retrieves
 /// the corresponding arguments in the C source code.
-std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
-        const Module *Mod, std::string functionName);
+std::vector<std::string> findFunctionCallSourceArguments(
+        DILocation *LineLoc, const Module *Mod, std::string functionName);
 
 /// Expand simple non-argument macros in string. The macros are determined by
 /// macro-body pairs.
 std::string expandMacros(std::vector<std::string> macros,
-                         std::vector<std::string> bodies, std::string Input);
+                         std::vector<std::string> bodies,
+                         std::string Input);
 
 #endif // DIFFKEMP_SIMPLL_MACRO_UTILS_H

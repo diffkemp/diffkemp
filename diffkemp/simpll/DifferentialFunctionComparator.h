@@ -17,9 +17,9 @@
 #define DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
 
 #include "DebugInfo.h"
+#include "FunctionComparator.h"
 #include "ModuleComparator.h"
 #include "Utils.h"
-#include "FunctionComparator.h"
 
 using namespace llvm;
 
@@ -38,8 +38,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
             : FunctionComparator(F1, F2, nullptr), DI(DI),
               controlFlowOnly(controlFlowOnly), showAsmDiff(showAsmDiff),
               LayoutL(F1->getParent()->getDataLayout()),
-              LayoutR(F2->getParent()->getDataLayout()),
-              ModComparator(MC) {}
+              LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
 
   protected:
     /// Specific comparison of GEP instructions/operators.
@@ -51,7 +50,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Attributes that do not affect the semantics of functions are removed.
     int cmpAttrs(const AttributeList L, const AttributeList R) const override;
     /// Compare CallInsts using cmpAllocs.
-    int cmpOperations(const Instruction *L, const Instruction *R,
+    int cmpOperations(const Instruction *L,
+                      const Instruction *R,
                       bool &needToCmpOperands) const override;
     /// Handle comparing of memory allocation function in cases where the size
     /// of the composite type is different.
@@ -67,8 +67,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     int cmpAPInts(const APInt &L, const APInt &R) const override;
     /// Detect cast instructions and ignore them when comparing the control flow
     /// only. (The rest is the same as in LLVM.)
-    int cmpBasicBlocks(const BasicBlock *BBL, const BasicBlock *BBR)
-        const override;
+    int cmpBasicBlocks(const BasicBlock *BBL,
+                       const BasicBlock *BBR) const override;
     /// Implement comparison of global values that does not use a
     /// GlobalNumberState object, since that approach does not fit the use case
     /// of comparing functions in two different modules.
@@ -99,16 +99,16 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Note: passing the parent function is necessary in order to properly
     /// generate the SyntaxDifference object.
     std::vector<SyntaxDifference> findAsmDifference(const CallInst *IL,
-            const CallInst *IR) const;
+                                                    const CallInst *IR) const;
 
     /// Detects a change from a function to a macro between two instructions.
     /// This is necessary because such a change isn't visible in C source.
     void findMacroFunctionDifference(const Instruction *L,
-            const Instruction *R) const;
+                                     const Instruction *R) const;
 
     // Takes all GEPs in a basic block and computes the sum of their offsets if
     // constant (if not, it returns false).
     bool accumulateAllOffsets(const BasicBlock &BB, uint64_t &Offset) const;
 };
 
-#endif //DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
+#endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H

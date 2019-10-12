@@ -18,8 +18,8 @@
 
 using namespace llvm;
 
-PreservedAnalyses RemoveDebugInfoPass::run(
-        Function &Fun, FunctionAnalysisManager &fam) {
+PreservedAnalyses RemoveDebugInfoPass::run(Function &Fun,
+                                           FunctionAnalysisManager &fam) {
     std::vector<Instruction *> toRemove;
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
@@ -44,7 +44,7 @@ bool isDebugInfo(const Instruction &Instr) {
 
 bool isDebugInfo(const Function &Fun) {
     return Fun.getIntrinsicID() == Intrinsic::dbg_declare ||
-            Fun.getIntrinsicID() == Intrinsic::dbg_value;
+           Fun.getIntrinsicID() == Intrinsic::dbg_value;
 }
 
 /// Get C name of the struct type. This can be extracted from the LLVM struct
@@ -81,22 +81,20 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
 
         User::op_iterator idx_other;
         if (OtherGEP)
-             // If we have the other GEP, iterate over its indices, too
-             idx_other = OtherGEP->idx_begin();
+            // If we have the other GEP, iterate over its indices, too
+            idx_other = OtherGEP->idx_begin();
 
         // Iterate all indices
-        for (auto idx = GEP->idx_begin();
-                idx != GEP->idx_end();
-                ++idx, indices.push_back(*idx)) {
+        for (auto idx = GEP->idx_begin(); idx != GEP->idx_end();
+             ++idx, indices.push_back(*idx)) {
             auto indexedType = GEP->getIndexedType(GEP->getSourceElementType(),
                                                    ArrayRef<Value *>(indices));
 
             Type *indexedTypeOther = nullptr;
             if (OtherGEP)
                 indexedTypeOther = OtherGEP->getIndexedType(
-                                        OtherGEP->getSourceElementType(),
-                                        ArrayRef<Value *>(
-                                            indicesOther));
+                        OtherGEP->getSourceElementType(),
+                        ArrayRef<Value *>(indicesOther));
 
             if (!indexedType->isStructTy())
                 continue;
@@ -117,12 +115,11 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                 auto otherIndex = indexMap.find(indexFirst);
                 if (otherIndex != indexMap.end()) {
                     if (indexFirst != otherIndex->second) {
-                        setNewAlignmentOfIndex(
-                                *GEP,
-                                indices.size(),
-                                otherIndex->second,
-                                IndexConstant->getBitWidth(),
-                                ModFirst.getContext());
+                        setNewAlignmentOfIndex(*GEP,
+                                               indices.size(),
+                                               otherIndex->second,
+                                               IndexConstant->getBitWidth(),
+                                               ModFirst.getContext());
                     }
                     continue;
                 }
@@ -132,8 +129,8 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                 // Name of the current type (type being indexed)
                 if (!dyn_cast<StructType>(indexedType)->hasName())
                     continue;
-                std::string typeName = getStructTypeName(
-                        dyn_cast<StructType>(indexedType));
+                std::string typeName =
+                        getStructTypeName(dyn_cast<StructType>(indexedType));
 
                 // Get name of the element at the current index in
                 // the first module
@@ -141,48 +138,49 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                 if (!TypeDIFirst)
                     continue;
 
-                StringRef elementName = getElementNameAtIndex(*TypeDIFirst,
-                                                              indexFirst);
+                StringRef elementName =
+                        getElementNameAtIndex(*TypeDIFirst, indexFirst);
 
                 // Find index of the element with the same name in
                 // the second module
-                auto TypeDISecond = getStructTypeInfo(typeName,
-                                                      Program::Second);
+                auto TypeDISecond =
+                        getStructTypeInfo(typeName, Program::Second);
                 if (!TypeDISecond)
                     continue;
 
-                int indexSecond = getTypeMemberIndex(*TypeDISecond,
-                                                     elementName);
+                int indexSecond =
+                        getTypeMemberIndex(*TypeDISecond, elementName);
 
                 if (indexSecond > 0) {
                     if (indexFirst != indexSecond) {
                         // If indices do not match, align the first one to
                         // be the same as the second one
-                        indexMap.at(indexFirst) =
-                                (unsigned) indexSecond;
-                        setNewAlignmentOfIndex(
-                                *GEP, indices.size(),
-                                (unsigned) indexSecond,
-                                IndexConstant->getBitWidth(),
-                                ModFirst.getContext());
+                        indexMap.at(indexFirst) = (unsigned)indexSecond;
+                        setNewAlignmentOfIndex(*GEP,
+                                               indices.size(),
+                                               (unsigned)indexSecond,
+                                               IndexConstant->getBitWidth(),
+                                               ModFirst.getContext());
                     }
 
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL, GEP->print(dbgs()));
 
                     // Insert the names of the indices into StructFieldNames.
                     StructFieldNames.insert(
-                        {{dyn_cast<StructType>(indexedType),
-                            indexFirst}, elementName});
+                            {{dyn_cast<StructType>(indexedType), indexFirst},
+                             elementName});
 
                     if (indexedTypeOther)
                         StructFieldNames.insert(
-                            {{dyn_cast<StructType>(indexedTypeOther),
-                                indexSecond}, elementName});
+                                {{dyn_cast<StructType>(indexedTypeOther),
+                                  indexSecond},
+                                 elementName});
                     else
                         StructFieldNames.insert(
-                            {{ModSecond.getTypeByName(
-                                    indexedType->getStructName()),
-                        indexSecond}, elementName});
+                                {{ModSecond.getTypeByName(
+                                          indexedType->getStructName()),
+                                  indexSecond},
+                                 elementName});
 
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << "New index: " << indexSecond
@@ -229,8 +227,8 @@ void DebugInfo::calculateGEPIndexAlignments() {
                     if (OtherInstr != OtherBB->end()) {
                         // The other instruction is available; try to get the
                         // corresponding GEP instruction
-                        auto OtherGEP = dyn_cast<GetElementPtrInst>(
-                            &*OtherInstr);
+                        auto OtherGEP =
+                                dyn_cast<GetElementPtrInst>(&*OtherInstr);
 
                         extractAlignmentFromInstructions(GEP, OtherGEP);
 
@@ -259,14 +257,13 @@ void DebugInfo::calculateGEPIndexAlignments() {
 /// is can be determined by checking if the value of DIFlagBitField is different
 /// from the element offset.
 bool DebugInfo::isSameElemIndex(const DIDerivedType *TypeElem) {
-    if (TypeElem->getFlag("DIFlagBitField") &&
-            TypeElem->getExtraData()) {
-        if (auto ExtraDataValue = dyn_cast<ConstantAsMetadata>(
-                TypeElem->getExtraData())) {
-            if (auto ExtraDataConst = dyn_cast<ConstantInt>(
-                    ExtraDataValue->getValue())) {
+    if (TypeElem->getFlag("DIFlagBitField") && TypeElem->getExtraData()) {
+        if (auto ExtraDataValue =
+                    dyn_cast<ConstantAsMetadata>(TypeElem->getExtraData())) {
+            if (auto ExtraDataConst =
+                        dyn_cast<ConstantInt>(ExtraDataValue->getValue())) {
                 if (ExtraDataConst->getZExtValue() !=
-                        TypeElem->getOffsetInBits())
+                    TypeElem->getOffsetInBits())
                     return true;
             }
         }
@@ -328,8 +325,9 @@ void DebugInfo::setNewAlignmentOfIndex(GetElementPtrInst &GEP,
                                        uint64_t alignment,
                                        unsigned bitWidth,
                                        LLVMContext &c) {
-    MDNode *MD = MDNode::get(c, ConstantAsMetadata::get(
-            ConstantInt::get(c, APInt(bitWidth, alignment, false))));
+    MDNode *MD = MDNode::get(c,
+                             ConstantAsMetadata::get(ConstantInt::get(
+                                     c, APInt(bitWidth, alignment, false))));
     GEP.setMetadata("idx_align_" + std::to_string(index), MD);
 }
 
@@ -412,7 +410,8 @@ void DebugInfo::collectMacrosWithValue(const Constant *Val) {
 
 /// Find all local variables and create a map from their names to their
 /// values.
-void DebugInfo::collectLocalVariables(std::set<const Function *> &Called,
+void DebugInfo::collectLocalVariables(
+        std::set<const Function *> &Called,
         std::unordered_map<std::string, const Value *> &Map) {
     for (auto Fun : Called) {
         for (auto &BB : *Fun) {
@@ -420,21 +419,22 @@ void DebugInfo::collectLocalVariables(std::set<const Function *> &Called,
                 if (!isa<CallInst>(Inst))
                     continue;
                 auto CInst = dyn_cast<CallInst>(&Inst);
-                if (!getCalledFunction(CInst->getCalledValue())->getName().
-                        startswith("llvm.dbg"))
+                if (!getCalledFunction(CInst->getCalledValue())
+                             ->getName()
+                             .startswith("llvm.dbg"))
                     continue;
 
                 // Get the value name and the value itself.
                 auto WrappedVal = CInst->getOperand(0);
-                auto ValMD = dyn_cast<MetadataAsValue>(WrappedVal)->
-                        getMetadata();
+                auto ValMD =
+                        dyn_cast<MetadataAsValue>(WrappedVal)->getMetadata();
                 auto Val = dyn_cast<ValueAsMetadata>(ValMD);
                 if (!Val)
                     continue;
 #if LLVM_VERSION_MAJOR < 6
                 MetadataAsValue *DIVal;
                 if (getCalledFunction(CInst->getCalledValue())->getName() ==
-                        "llvm.dbg.declare")
+                    "llvm.dbg.declare")
                     DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(1));
                 else
                     DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(2));
@@ -458,7 +458,7 @@ void DebugInfo::collectLocalVariables(std::set<const Function *> &Called,
 void DebugInfo::addAlignment(std::string MacroName, std::string MacroValue) {
     auto MacroUsage = MacroUsageMap.find(MacroName);
     if (MacroUsage != MacroUsageMap.end() &&
-            valueAsString(*MacroUsage->second.begin()) != MacroValue) {
+        valueAsString(*MacroUsage->second.begin()) != MacroValue) {
         for (auto *Constant : MacroUsage->second) {
             MacroConstantMap.emplace(Constant, MacroValue);
         }
@@ -474,7 +474,7 @@ void DebugInfo::removeFunctionsDebugInfo(Module &Mod) {
     FunctionPassManager fpm(false);
     FunctionAnalysisManager fam(false);
     pb.registerFunctionAnalyses(fam);
-    fpm.addPass(RemoveDebugInfoPass {});
+    fpm.addPass(RemoveDebugInfoPass{});
     for (auto &F : Mod)
         fpm.run(F, fam);
 }

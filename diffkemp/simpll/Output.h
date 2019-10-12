@@ -16,9 +16,9 @@
 #define DIFFKEMP_SIMPLL_OUTPUT_H
 
 #include "Config.h"
-#include "Utils.h"
 #include "ModuleComparator.h"
 #include "Transforms.h"
+#include "Utils.h"
 
 /// Report results in YAML format to stdout.
 /// \param config Configuration.

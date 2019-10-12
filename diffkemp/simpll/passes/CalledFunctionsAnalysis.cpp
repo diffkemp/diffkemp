@@ -20,9 +20,7 @@
 AnalysisKey CalledFunctionsAnalysis::Key;
 
 CalledFunctionsAnalysis::Result CalledFunctionsAnalysis::run(
-        Module &Mod,
-        AnalysisManager<Module, Function *> &mam,
-        Function *Main) {
+        Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
     Result result;
     collectCalled(Main, result);
     return result;
@@ -42,7 +40,7 @@ void CalledFunctionsAnalysis::collectCalled(const Function *Fun,
         for (auto &Inst : BB) {
             if (auto Call = dyn_cast<CallInst>(&Inst)) {
                 if (auto *CalledFun =
-                        getCalledFunction(Call->getCalledValue())) {
+                            getCalledFunction(Call->getCalledValue())) {
                     collectCalled(CalledFun, Called);
                 }
             }

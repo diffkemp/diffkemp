@@ -19,8 +19,7 @@
 using namespace llvm;
 
 /// Pass for removing llvm.lifetime.start and llvm.lifetime.end functions
-class RemoveLifetimeCallsPass
-        : public PassInfoMixin<RemoveLifetimeCallsPass> {
+class RemoveLifetimeCallsPass : public PassInfoMixin<RemoveLifetimeCallsPass> {
   public:
     PreservedAnalyses run(Module &Mod, ModuleAnalysisManager &mam);
 };

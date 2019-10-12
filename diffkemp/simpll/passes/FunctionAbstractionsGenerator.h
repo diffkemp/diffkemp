@@ -60,4 +60,4 @@ bool isSimpllAbstractionDeclaration(const Function *Fun);
 /// Returns true if the function is a SimpLL abstraction.
 bool isSimpllAbstraction(const Function *Fun);
 
-#endif //DIFFKEMP_SIMPLL_FUNCTIONABSTRACTIONSGENERATOR_H
+#endif // DIFFKEMP_SIMPLL_FUNCTIONABSTRACTIONSGENERATOR_H

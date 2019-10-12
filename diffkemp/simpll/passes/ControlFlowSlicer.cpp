@@ -36,7 +36,7 @@ void addWithOperands(const Value &Val,
 /// Add instruction and its users to the set of dependent instructions.
 /// If any user is added, its operands are added recursively.
 void addWithUsers(const Instruction &Instr,
-                 std::set<const Instruction *> &Dependent) {
+                  std::set<const Instruction *> &Dependent) {
     Dependent.insert(&Instr);
     for (const auto &User : Instr.users()) {
         addWithOperands(*User, Dependent);
@@ -58,8 +58,8 @@ bool hasIndirectCall(const Function &Fun) {
                     if (Use.getUser() == Call)
                         continue;
                     if (auto UserCall = dyn_cast<CallInst>(Use.getUser())) {
-                        if (UserCall->getCalledFunction()
-                                && UserCall->getCalledFunction()->isIntrinsic())
+                        if (UserCall->getCalledFunction() &&
+                            UserCall->getCalledFunction()->isIntrinsic())
                             continue;
                     }
                     return true;
@@ -91,13 +91,12 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
             if (Instr.isTerminator()) {
                 // Terminators
                 keep = true;
-            }
-            else if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
+            } else if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
                 // Call instruction except calls to intrinsics
                 keep = true;
                 auto Function = CallInstr->getCalledFunction();
                 if (Function && !hasSideEffect(*Function) &&
-                        isResultOnlyStored(CallInstr)) {
+                    isResultOnlyStored(CallInstr)) {
                     // Remove calls to functions having no side effects whose
                     // result is only stored somewhere (does not affect control
                     // flow).
@@ -109,8 +108,7 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                         addWithUsers(*next, Dependent);
                     }
                 }
-            }
-            else {
+            } else {
                 // Instructions having functions as parameters are included only
                 // if it is possible that the functions is sometimes called.
                 // This at least requires that Fun contains an indirect call.
@@ -128,7 +126,7 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
         }
     }
 
-    std::vector <Instruction *> ToRemove;
+    std::vector<Instruction *> ToRemove;
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
             if (Dependent.find(&Instr) == Dependent.end()) {

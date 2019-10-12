@@ -30,8 +30,11 @@ using namespace llvm;
 class FieldAccessFunctionGenerator
         : public PassInfoMixin<FieldAccessFunctionGenerator> {
   public:
-    PreservedAnalyses run(Module &Mod, AnalysisManager<Module, Function *> &mam,
-                          Function *Main, Module *ModOther);
+    PreservedAnalyses run(Module &Mod,
+                          AnalysisManager<Module, Function *> &mam,
+                          Function *Main,
+                          Module *ModOther);
+
   private:
     void processStack(const std::vector<Instruction *> &Stack, Module &Mod);
 };
@@ -39,4 +42,4 @@ class FieldAccessFunctionGenerator
 /// Returns true if the function is an SimpLL field access abstraction.
 bool isSimpllFieldAccessAbstraction(const Function *Fun);
 
-#endif //DIFFKEMP_SIMPLL_FIELDACCESSFUNCTIONGENERATOR_H
+#endif // DIFFKEMP_SIMPLL_FIELDACCESSFUNCTIONGENERATOR_H

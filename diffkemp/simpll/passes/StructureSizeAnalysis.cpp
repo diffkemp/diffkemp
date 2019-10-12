@@ -16,8 +16,8 @@
 
 AnalysisKey StructureSizeAnalysis::Key;
 
-StructureSizeAnalysis::Result StructureSizeAnalysis::run(Module &Mod,
-        AnalysisManager<Module, Function *> &mam, Function *Main) {
+StructureSizeAnalysis::Result StructureSizeAnalysis::run(
+        Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
     TypeFinder Types;
     Result Res;
     Types.run(Mod, true);

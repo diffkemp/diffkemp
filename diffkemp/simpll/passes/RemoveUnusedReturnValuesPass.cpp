@@ -11,9 +11,9 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "RemoveUnusedReturnValuesPass.h"
 #include "CalledFunctionsAnalysis.h"
 #include "FunctionAbstractionsGenerator.h"
-#include "RemoveUnusedReturnValuesPass.h"
 #include "Utils.h"
 #include <Config.h>
 #include <llvm/IR/Instructions.h>
@@ -40,8 +40,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             Attribute::AttrKind::StructRet,
             Attribute::AttrKind::ZExt,
             Attribute::AttrKind::Dereferenceable,
-            Attribute::AttrKind::DereferenceableOrNull
-    };
+            Attribute::AttrKind::DereferenceableOrNull};
 
     auto &CalledFuns = mam.getResult<CalledFunctionsAnalysis>(Mod, Main);
 
@@ -61,8 +60,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             if (!ModOther->getFunction(Fun->getName()))
                 continue;
 
-            if (!ModOther->getFunction(Fun->getName())->getReturnType()->
-                    isVoidTy())
+            if (!ModOther->getFunction(Fun->getName())
+                         ->getReturnType()
+                         ->isVoidTy())
                 continue;
 
             if (CalledFuns.find(Fun) == CalledFuns.end())
@@ -74,10 +74,12 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         for (Use &U : Fun->uses()) {
             // Figure out whether the return value is used after each call.
             if (U.getUser()->use_empty() &&
-                ((isa<CallInst>(U.getUser()) && (dyn_cast<CallInst>(
-                    U.getUser())->getCalledFunction()) == Fun) ||
-                (isa<InvokeInst>(U.getUser()) && (dyn_cast<InvokeInst>(
-                    U.getUser())->getCalledFunction()) == Fun))) {
+                ((isa<CallInst>(U.getUser()) &&
+                  (dyn_cast<CallInst>(U.getUser())->getCalledFunction()) ==
+                          Fun) ||
+                 (isa<InvokeInst>(U.getUser()) &&
+                  (dyn_cast<InvokeInst>(U.getUser())->getCalledFunction()) ==
+                          Fun))) {
                 // The instruction can be replaced.
                 toReplace.push_back(dyn_cast<Instruction>(U.getUser()));
             }
@@ -117,7 +119,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             Fun_Clone->copyAttributesFrom(Fun);
             Fun_Clone->setSubprogram(Fun->getSubprogram());
             for (Function::arg_iterator AI = Fun->arg_begin(),
-                    AE = Fun->arg_end(), NAI = Fun_Clone->arg_begin();
+                                        AE = Fun->arg_end(),
+                                        NAI = Fun_Clone->arg_begin();
                  AI != AE;
                  ++AI, ++NAI) {
                 NAI->takeName(AI);
@@ -129,12 +132,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         std::vector<Type *> FAT_New(Fun->getFunctionType()->param_begin(),
                                     Fun->getFunctionType()->param_end());
         FunctionType *FT_New = FunctionType::get(
-                Type::getVoidTy(Fun->getContext()),
-                FAT_New, Fun->isVarArg());
-        Function *Fun_New = Function::Create(FT_New,
-                                             Fun->getLinkage(),
-                                             Fun->getName(),
-                                             Fun->getParent());
+                Type::getVoidTy(Fun->getContext()), FAT_New, Fun->isVarArg());
+        Function *Fun_New = Function::Create(
+                FT_New, Fun->getLinkage(), Fun->getName(), Fun->getParent());
 
         // Copy the attributes from the old function and delete the ones
         // related to the return value
@@ -143,8 +143,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             Fun_New->removeAttribute(AttributeList::ReturnIndex, AK);
             Fun_New->removeAttribute(AttributeList::FunctionIndex, AK);
         }
-        Fun_New->setAttributes(
-            cleanAttributeList(Fun_New->getAttributes()));
+        Fun_New->setAttributes(cleanAttributeList(Fun_New->getAttributes()));
 
         // Set the right function name and subprogram
         Fun_New->setName(OriginalName);
@@ -152,7 +151,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
 
         // Set the names of all arguments of the new function
         for (Function::arg_iterator AI = Fun->arg_begin(),
-                     AE = Fun->arg_end(), NAI = Fun_New->arg_begin();
+                                    AE = Fun->arg_end(),
+                                    NAI = Fun_New->arg_begin();
              AI != AE;
              ++AI, ++NAI) {
             NAI->takeName(AI);
@@ -166,8 +166,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         for (BasicBlock &B : *Fun_New)
             if (dyn_cast<ReturnInst>(B.getTerminator())) {
                 B.getInstList().pop_back();
-                ReturnInst *Term_New = ReturnInst::Create(
-                        B.getContext());
+                ReturnInst *Term_New = ReturnInst::Create(B.getContext());
                 B.getInstList().push_back(Term_New);
 
                 // Simplify the function to remove any code that became dead
@@ -176,7 +175,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
 
         // Replace all uses of the old arguments
         for (Function::arg_iterator I = Fun->arg_begin(),
-                     E = Fun->arg_end(), NI = Fun_New->arg_begin();
+                                    E = Fun->arg_end(),
+                                    NI = Fun_New->arg_begin();
              I != E;
              ++I, ++NI) {
             I->replaceAllUsesWith(NI);
@@ -197,20 +197,17 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 ArrayRef<Value *> Args_AR(Args);
 
                 // Insert the new instruction next to the old one
-                CallInst *CI_New = CallInst::Create(Fun_New, Args_AR, "",
-                                                    CI);
+                CallInst *CI_New = CallInst::Create(Fun_New, Args_AR, "", CI);
 
                 // Copy additional properties
                 CI_New->setAttributes(CI->getAttributes());
                 for (Attribute::AttrKind AK : badAttributes) {
                     // Remove incompatibile attributes
-                    CI_New->removeAttribute(
-                            AttributeList::ReturnIndex, AK);
-                    CI_New->removeAttribute(
-                            AttributeList::FunctionIndex, AK);
+                    CI_New->removeAttribute(AttributeList::ReturnIndex, AK);
+                    CI_New->removeAttribute(AttributeList::FunctionIndex, AK);
                 }
                 CI_New->setAttributes(
-                    cleanAttributeList(CI_New->getAttributes()));
+                        cleanAttributeList(CI_New->getAttributes()));
                 CI_New->setDebugLoc(CI->getDebugLoc());
                 CI_New->setCallingConv(CI->getCallingConv());
                 if (CI->isTailCall())
@@ -232,23 +229,22 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 ArrayRef<Value *> Args_AR(Args);
 
                 // Insert the new instruction next to the old one
-                InvokeInst *II_New = InvokeInst::Create(
-                        Fun_New,
-                        II->getNormalDest(),
-                        II->getUnwindDest(),
-                        Args_AR, "", II);
+                InvokeInst *II_New = InvokeInst::Create(Fun_New,
+                                                        II->getNormalDest(),
+                                                        II->getUnwindDest(),
+                                                        Args_AR,
+                                                        "",
+                                                        II);
 
                 // Copy additional properties
                 II_New->setAttributes(II->getAttributes());
                 for (Attribute::AttrKind AK : badAttributes) {
                     // Remove incompatibile attributes
-                    II_New->removeAttribute(
-                            AttributeList::ReturnIndex, AK);
-                    II_New->removeAttribute(
-                            AttributeList::FunctionIndex, AK);
+                    II_New->removeAttribute(AttributeList::ReturnIndex, AK);
+                    II_New->removeAttribute(AttributeList::FunctionIndex, AK);
                 }
                 II_New->setAttributes(
-                    cleanAttributeList(II_New->getAttributes()));
+                        cleanAttributeList(II_New->getAttributes()));
                 II_New->setDebugLoc(II->getDebugLoc());
                 II_New->setCallingConv(II->getCallingConv());
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,

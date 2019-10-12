@@ -15,13 +15,12 @@
 #define DIFFKEMP_SIMPLL_STRUCTURESIZEANALYSIS_H
 
 #include <llvm/IR/PassManager.h>
-#include <set>
 #include <map>
+#include <set>
 
 using namespace llvm;
 
-class StructureSizeAnalysis
-        : public AnalysisInfoMixin<StructureSizeAnalysis> {
+class StructureSizeAnalysis : public AnalysisInfoMixin<StructureSizeAnalysis> {
   public:
     using Result = std::map<int, std::set<std::string>>;
 
@@ -36,4 +35,4 @@ class StructureSizeAnalysis
     static AnalysisKey Key;
 };
 
-#endif //DIFFKEMP_SIMPLL_STRUCTURESIZEANALYSIS_H
+#endif // DIFFKEMP_SIMPLL_STRUCTURESIZEANALYSIS_H

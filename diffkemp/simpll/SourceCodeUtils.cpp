@@ -21,15 +21,15 @@
 #include <llvm/Support/raw_ostream.h>
 
 /// Gets all macros used on the line in the form of a key to value map.
-std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
-    StringRef line, StringMap<MacroElement> macroMap) {
+std::unordered_map<std::string, MacroElement>
+        getAllMacrosOnLine(StringRef line, StringMap<MacroElement> macroMap) {
     // Transform macroMap into a second that will contain only macros that are
     // used on the line.
     // Note: For the purpose of the algorithm the starting line is treated as a
     // with a space as its key, making it an invalid identifier for a macro.
     std::unordered_map<std::string, MacroElement> usedMacroMap;
     bool mapChanged = true;
-    usedMacroMap[" "] = MacroElement {"<>", "<>", line, StringRef(""), 0, ""};
+    usedMacroMap[" "] = MacroElement{"<>", "<>", line, StringRef(""), 0, ""};
 
     // The bodies of all macros currently present in usedMacroMap are examined;
     // every time another macro is found in it, it is added to the map.
@@ -51,8 +51,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
             // from the left, record all such substrings and test them using the
             // macro map provided in the function arguments.
             std::string macroBody = Entry.second.body.str();
-            expandCompositeMacroNames(Entry.second.params, Entry.second.args,
-                                      macroBody);
+            expandCompositeMacroNames(
+                    Entry.second.params, Entry.second.args, macroBody);
             std::string potentialMacroName;
 
             for (int i = 0; i < macroBody.size(); i++) {
@@ -89,18 +89,18 @@ std::unordered_map<std::string, MacroElement> getAllMacrosOnLine(
                                     getSubstringToMatchingBracket(
                                             macro.fullName,
                                             macro.fullName.find("("));
-                            macro.params = splitArgumentsList(
-                                    rawParameters);
+                            macro.params = splitArgumentsList(rawParameters);
                         }
                         // Replace parameters from the parent macro with
                         // arguments if the parent macro has parameters.
                         if (!Entry.second.params.empty())
                             rawArguments = expandMacros(Entry.second.params,
-                                    Entry.second.args, rawArguments);
+                                                        Entry.second.args,
+                                                        rawArguments);
                         macro.args = splitArgumentsList(rawArguments);
 
-                        entriesToAdd.push_back({potentialMacro->first(),
-                                                macro});
+                        entriesToAdd.push_back(
+                                {potentialMacro->first(), macro});
                     }
 
                     // Reset the potential identifier.
@@ -138,12 +138,12 @@ void expandCompositeMacroNames(std::vector<std::string> params,
     for (auto arg : zip(params, args)) {
         int position = 0;
         while ((position = body.find(std::get<0>(arg) + "##", position)) !=
-                std::string::npos) {
+               std::string::npos) {
             if (position != 0 && isValidCharForIdentifier(body[position - 1]))
                 // Do not replace parts of identifiers.
                 continue;
-            body.replace(position, std::get<0>(arg).length() + 2,
-                         std::get<1>(arg));
+            body.replace(
+                    position, std::get<0>(arg).length() + 2, std::get<1>(arg));
             position += std::get<1>(arg).length() + 2;
         }
     }
@@ -157,8 +157,7 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
         // Line location was not found
         return "";
 
-    auto sourcePath = getSourceFilePath(
-            dyn_cast<DIScope>(LineLoc->getScope()));
+    auto sourcePath = getSourceFilePath(dyn_cast<DIScope>(LineLoc->getScope()));
 
     // Open the C source file corresponding to the location and extract the line
     auto sourceFile = MemoryBuffer::getFile(Twine(sourcePath));
@@ -174,8 +173,8 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
     // the other parts are added to it.
     line_iterator it(**sourceFile);
     std::string line, previousLine;
-    while (!it.is_at_end() && it.line_number() != (LineLoc->getLine() + offset))
-    {
+    while (!it.is_at_end() &&
+           it.line_number() != (LineLoc->getLine() + offset)) {
         ++it;
         if (it->count('(') < it->count(')'))
             // The line is a continuation of the previous one
@@ -191,8 +190,8 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
         do {
             ++it;
             line += it->str();
-        } while (!it.is_at_end() && (StringRef(line).count(')') <
-                StringRef(line).count('(')));
+        } while (!it.is_at_end() &&
+                 (StringRef(line).count(')') < StringRef(line).count('(')));
     }
 
     // Detect and fix unfinished return expressions.
@@ -201,7 +200,7 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
     findAndReplace(lineWithoutWhitespace, "\t", "");
 
     if (StringRef(lineWithoutWhitespace).startswith("return") &&
-            !StringRef(line).contains(";")) {
+        !StringRef(line).contains(";")) {
         do {
             ++it;
             line += it->str();
@@ -214,7 +213,7 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
 /// Gets all macros used on a certain DILocation in the form of a key to value
 /// map.
 std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-    DILocation *LineLoc, const Module *Mod, int lineOffset) {
+        DILocation *LineLoc, const Module *Mod, int lineOffset) {
     // Store generated macro maps for modules to avoid having to regenerate them
     // many times when comparing a module that has to be inlined a lot.
     static std::map<const Module *, StringMap<MacroElement>> MacroMapCache;
@@ -238,8 +237,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                     dbgs() << getDebugIndent()
-                           << "Looking for all macros on line:"
-                           << line << "\n");
+                           << "Looking for all macros on line:" << line
+                           << "\n");
 
     // Get macro array from debug info
     DISubprogram *Sub = LineLoc->getScope()->getSubprogram();
@@ -260,8 +259,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
         // First all DIMacroFiles (these represent directly included headers)
         // are added to a stack.
         for (const DIMacroNode *Node : RawMacros) {
-           if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
-               macroFileStack.push_back(File);
+            if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+                macroFileStack.push_back(File);
         }
 
         // Next a DFS algorithm (using the stack created in the previous
@@ -270,37 +269,37 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
         // referenced from the top macro file to the stack (these represent
         // indirectly included headers).
         while (!macroFileStack.empty()) {
-           const DIMacroFile *MF = macroFileStack.back();
-           DIMacroNodeArray A = MF->getElements();
-           macroFileStack.pop_back();
+            const DIMacroFile *MF = macroFileStack.back();
+            DIMacroNodeArray A = MF->getElements();
+            macroFileStack.pop_back();
 
-           for (const DIMacroNode *Node : A)
-               if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
-                   // The macro node is another macro file - add it to the
-                   // stack
-                   macroFileStack.push_back(File);
-               else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
-                   // The macro node is an actual macro - add an object
-                   // representing it (containing its full name) with its
-                   // shortened name as the key.
-                   std::string macroName = Macro->getName().str();
+            for (const DIMacroNode *Node : A)
+                if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+                    // The macro node is another macro file - add it to the
+                    // stack
+                    macroFileStack.push_back(File);
+                else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
+                    // The macro node is an actual macro - add an object
+                    // representing it (containing its full name) with its
+                    // shortened name as the key.
+                    std::string macroName = Macro->getName().str();
 
-                   // If the macro name contains arguments, remove them for
-                   // the purpose of the map key.
-                   auto position = macroName.find('(');
-                   if (position != std::string::npos) {
-                       macroName = macroName.substr(0, position);
-                   }
+                    // If the macro name contains arguments, remove them for
+                    // the purpose of the map key.
+                    auto position = macroName.find('(');
+                    if (position != std::string::npos) {
+                        macroName = macroName.substr(0, position);
+                    }
 
-                   MacroElement element;
-                   element.name = macroName;
-                   element.fullName = Macro->getName();
-                   element.body = Macro->getValue();
-                   element.parentMacro = "N/A";
-                   element.sourceFile = MF->getFile()->getFilename().str();
-                   element.line = Macro->getLine();
-                   macroMap[macroName] = element;
-               }
+                    MacroElement element;
+                    element.name = macroName;
+                    element.fullName = Macro->getName();
+                    element.body = Macro->getValue();
+                    element.parentMacro = "N/A";
+                    element.sourceFile = MF->getFile()->getFilename().str();
+                    element.line = Macro->getLine();
+                    macroMap[macroName] = element;
+                }
         }
         // Put map into cache.
         MacroMapCache[Mod] = macroMap;
@@ -308,8 +307,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 
     // Add information about the original line to the map, then return the map
     auto macrosOnLine = getAllMacrosOnLine(line, macroMap);
-    macrosOnLine[" "].sourceFile = getSourceFilePath(
-            dyn_cast<DIScope>(LineLoc->getScope()));
+    macrosOnLine[" "].sourceFile =
+            getSourceFilePath(dyn_cast<DIScope>(LineLoc->getScope()));
     macrosOnLine[" "].line = LineLoc->getLine();
 
     return macrosOnLine;
@@ -320,13 +319,14 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// This is used when a difference is suspected to be in a macro in order to
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
-std::vector<SyntaxDifference> findMacroDifferences(
-    const Instruction *L, const Instruction *R, int lineOffset) {
+std::vector<SyntaxDifference> findMacroDifferences(const Instruction *L,
+                                                   const Instruction *R,
+                                                   int lineOffset) {
     // Try to discover a macro difference
-    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule(),
-            lineOffset);
-    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule(),
-            lineOffset);
+    auto MacrosL = getAllMacrosAtLocation(
+            L->getDebugLoc(), L->getModule(), lineOffset);
+    auto MacrosR = getAllMacrosAtLocation(
+            R->getDebugLoc(), R->getModule(), lineOffset);
 
     std::vector<SyntaxDifference> result;
 
@@ -355,16 +355,16 @@ std::vector<SyntaxDifference> findMacroDifferences(
             while (currentElement.parentMacro != "") {
                 auto parent = MacrosL[currentElement.parentMacro];
                 StackL.push_back(CallInfo(currentElement.name + " (macro)",
-                    parent.sourceFile,
-                    parent.line));
+                                          parent.sourceFile,
+                                          parent.line));
                 currentElement = parent;
             }
             currentElement = RValue->second;
             while (currentElement.parentMacro != "") {
                 auto parent = MacrosR[currentElement.parentMacro];
                 StackR.push_back(CallInfo(currentElement.name + " (macro)",
-                    parent.sourceFile,
-                    parent.line));
+                                          parent.sourceFile,
+                                          parent.line));
                 currentElement = parent;
             }
 
@@ -372,27 +372,33 @@ std::vector<SyntaxDifference> findMacroDifferences(
             std::reverse(StackL.begin(), StackL.end());
             std::reverse(StackR.begin(), StackR.end());
 
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                dbgs() << getDebugIndent() << "Left stack:\n\t";
-                dbgs() << getDebugIndent() << LValue->second.body << "\n";
-                for (CallInfo &elem : StackL) {
-                    dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
-                           << " in file " << elem.file << " on line "
-                           << elem.line << "\n";
-                });
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                dbgs() << getDebugIndent() << "Right stack:\n\t";
-                dbgs() << getDebugIndent() << RValue->second.body << "\n";
-                for (CallInfo &elem : StackR) {
-                    dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
-                           << " in file " << elem.file << " on line "
-                           << elem.line << "\n";
-                });
+            DEBUG_WITH_TYPE(
+                    DEBUG_SIMPLL,
+                    dbgs() << getDebugIndent() << "Left stack:\n\t";
+                    dbgs() << getDebugIndent() << LValue->second.body << "\n";
+                    for (CallInfo &elem
+                         : StackL) {
+                        dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
+                               << " in file " << elem.file << " on line "
+                               << elem.line << "\n";
+                    });
+            DEBUG_WITH_TYPE(
+                    DEBUG_SIMPLL,
+                    dbgs() << getDebugIndent() << "Right stack:\n\t";
+                    dbgs() << getDebugIndent() << RValue->second.body << "\n";
+                    for (CallInfo &elem
+                         : StackR) {
+                        dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
+                               << " in file " << elem.file << " on line "
+                               << elem.line << "\n";
+                    });
 
-            result.push_back(SyntaxDifference {
-                Elem.first, LValue->second.body, RValue->second.body,
-                StackL, StackR, L->getFunction()->getName()
-            });
+            result.push_back(SyntaxDifference{Elem.first,
+                                              LValue->second.body,
+                                              RValue->second.body,
+                                              StackL,
+                                              StackR,
+                                              L->getFunction()->getName()});
         }
     }
 
@@ -430,8 +436,8 @@ std::string getSubstringToMatchingBracket(std::string str, size_t position) {
 /// code, the inline asm is found and extracted) to the LLVM syntax.
 /// Returns a pair of strings - the first one contains the converted ASM, the
 /// second one contains (unparsed) arguments.
-std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
-        std::string input) {
+std::pair<std::string, std::string>
+        convertInlineAsmToLLVMFormat(std::string input) {
     size_t position = input.find("asm");
 
     if (position == std::string::npos)
@@ -470,19 +476,21 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
         return {"", ""};
 
     while (extractedBody.find('\"', lastQuotationMark + 1) !=
-           std::string::npos &&
+                   std::string::npos &&
            extractedBody.find(':', lastQuotationMark + 1) >
-           extractedBody.find('\"', lastQuotationMark + 1)) {
+                   extractedBody.find('\"', lastQuotationMark + 1)) {
         firstQuotationMark = extractedBody.find('\"', lastQuotationMark + 1);
         lastQuotationMark = extractedBody.find('\"', firstQuotationMark + 1);
         newBody += extractedBody.substr(firstQuotationMark + 1,
-                lastQuotationMark - firstQuotationMark - 1);
+                                        lastQuotationMark - firstQuotationMark -
+                                                1);
     }
 
     // Replaces inline asm argument syntax (assuming there are 20 or less
     // arguments)
     for (int i = 0; i < 20; i++)
-        findAndReplace(newBody, "%c" + std::to_string(i),
+        findAndReplace(newBody,
+                       "%c" + std::to_string(i),
                        "${" + std::to_string(i) + ":c}");
     // Replace escape sequences
     findAndReplace(newBody, "\\t", "\t");
@@ -500,8 +508,8 @@ std::pair<std::string, std::string> convertInlineAsmToLLVMFormat(
 
 /// Takes a LLVM inline assembly with the corresponding call location and
 /// retrieves the corresponding arguments in the C source code.
-std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
-        const Module *Mod, std::string inlineAsm) {
+std::vector<std::string> findInlineAssemblySourceArguments(
+        DILocation *LineLoc, const Module *Mod, std::string inlineAsm) {
     // Empty inline asm string cannot be found by the function
     if (inlineAsm == "")
         return {};
@@ -526,7 +534,7 @@ std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
     for (auto input : inputs) {
         auto output = convertInlineAsmToLLVMFormat(input);
 
-        if (output != std::pair<std::string, std::string> {"", ""})
+        if (output != std::pair<std::string, std::string>{"", ""})
             candidates.push_back(output);
     }
 
@@ -536,11 +544,13 @@ std::vector<std::string> findInlineAssemblySourceArguments(DILocation *LineLoc,
     // repeated until one or no candidate is left.
     int position = 0;
     while (candidates.size() > 1) {
-        auto it = std::remove_if(candidates.begin(), candidates.end(),
-            [&position, &inlineAsm] (auto &candidate) {
-                return candidate.first[position] != inlineAsm[position] ||
-                       candidate.first == "";
-        });
+        auto it = std::remove_if(candidates.begin(),
+                                 candidates.end(),
+                                 [&position, &inlineAsm](auto &candidate) {
+                                     return candidate.first[position] !=
+                                                    inlineAsm[position] ||
+                                            candidate.first == "";
+                                 });
         candidates.erase(it, candidates.end());
 
         ++position;
@@ -589,7 +599,7 @@ std::vector<std::string> splitArgumentsList(std::string argumentString) {
         else if (argumentString[position] == ')')
             --bracketCounter;
         if ((bracketCounter == 0 && (argumentString[position] == ',')) ||
-             bracketCounter == -1) {
+            bracketCounter == -1) {
             // Next argument
             unstrippedArguments.push_back(currentArgument);
             currentArgument = "";
@@ -606,7 +616,9 @@ std::vector<std::string> splitArgumentsList(std::string argumentString) {
             arguments.push_back(arg);
         else
             arguments.push_back(arg.substr(arg.find_first_not_of(" "),
-               arg.find_last_not_of(" ") - arg.find_first_not_of(" ") + 1));
+                                           arg.find_last_not_of(" ") -
+                                                   arg.find_first_not_of(" ") +
+                                                   1));
     }
 
     return arguments;
@@ -614,8 +626,8 @@ std::vector<std::string> splitArgumentsList(std::string argumentString) {
 
 /// Takes a function name with the corresponding call location and retrieves
 /// the corresponding arguments in the C source code.
-std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
-        const Module *Mod, std::string functionName) {
+std::vector<std::string> findFunctionCallSourceArguments(
+        DILocation *LineLoc, const Module *Mod, std::string functionName) {
     // The function searches for the function call at two locations - the first
     // one is the line in the original C source code corresponding to the debug
     // info location, the second one are macros used on that line.
@@ -640,8 +652,8 @@ std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
         if (i == std::string::npos)
             continue;
 
-        argumentString = getSubstringToMatchingBracket(input,
-                input.find('(', i));
+        argumentString =
+                getSubstringToMatchingBracket(input, input.find('(', i));
     }
 
     return splitArgumentsList(argumentString);
@@ -650,7 +662,8 @@ std::vector<std::string> findFunctionCallSourceArguments(DILocation *LineLoc,
 /// Expand simple non-argument macros in string. The macros are determined by
 /// macro-body pairs.
 std::string expandMacros(std::vector<std::string> macros,
-                         std::vector<std::string> bodies, std::string Input) {
+                         std::vector<std::string> bodies,
+                         std::string Input) {
     std::string Output = Input;
     for (auto Pair : zip(macros, bodies)) {
         findAndReplace(Output, std::get<0>(Pair), std::get<1>(Pair));

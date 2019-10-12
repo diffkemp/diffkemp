@@ -42,4 +42,4 @@ class CalledFunctionsAnalysis
     static AnalysisKey Key;
 };
 
-#endif //DIFFKEMP_SIMPLL_CALLEDFUNCTIONSANALYSIS_H
+#endif // DIFFKEMP_SIMPLL_CALLEDFUNCTIONSANALYSIS_H

@@ -26,4 +26,4 @@ class SimplifyKernelGlobalsPass
     PreservedAnalyses run(Module &Mod, ModuleAnalysisManager &mam);
 };
 
-#endif //DIFFKEMP_SIMPLL_SIMPLIFYKERNELGLOBALSPASS_H
+#endif // DIFFKEMP_SIMPLL_SIMPLIFYKERNELGLOBALSPASS_H

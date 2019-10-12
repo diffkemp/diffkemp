@@ -18,8 +18,9 @@
 #include "Utils.h"
 #include <unordered_map>
 
-PreservedAnalyses MergeNumberedFunctionsPass::run(Module &Mod,
-        AnalysisManager<Module> &mam) {
+PreservedAnalyses
+        MergeNumberedFunctionsPass::run(Module &Mod,
+                                        AnalysisManager<Module> &mam) {
     // All functions with the same number are grouped together into a vector,
     // its index is the name of the functions without the suffix.
     std::unordered_map<std::string, std::vector<Function *>> GroupingMap;
@@ -27,13 +28,13 @@ PreservedAnalyses MergeNumberedFunctionsPass::run(Module &Mod,
     // Go over all called functions and put them into the map. Functions without
     // a suffix are included, too, because there may be variants that have it.
     for (Function &Fun : Mod) {
-        if (isSimpllAbstraction(&Fun) ||
-                Fun.getName().startswith("llvm."))
+        if (isSimpllAbstraction(&Fun) || Fun.getName().startswith("llvm."))
             // Do not merge LLVM intrinsics and SimpLL abstractions.
             continue;
         std::string originalName = Fun.getName();
-        std::string strippedName = hasSuffix(originalName) ?
-                                   dropSuffix(originalName) : originalName;
+        std::string strippedName = hasSuffix(originalName)
+                                           ? dropSuffix(originalName)
+                                           : originalName;
         GroupingMap[strippedName].push_back(&Fun);
     }
 
@@ -62,4 +63,3 @@ PreservedAnalyses MergeNumberedFunctionsPass::run(Module &Mod,
 
     return PreservedAnalyses();
 }
-

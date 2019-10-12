@@ -14,23 +14,23 @@
 #include "Utils.h"
 #include "Config.h"
 #include <algorithm>
+#include <iostream>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/LineIterator.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_ostream.h>
-#include <numeric>
-#include <set>
-#include <sstream>
-#include <iostream>
-#include <llvm/IR/PassManager.h>
-#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/Scalar/DCE.h>
 #include <llvm/Transforms/Scalar/NewGVN.h>
 #include <llvm/Transforms/Scalar/SimplifyCFG.h>
 #include <llvm/Transforms/Utils/Cloning.h>
+#include <numeric>
+#include <set>
+#include <sstream>
 
 /// Level of debug indentation. Each level corresponds to two characters.
 static unsigned int debugIndentLevel = 0;
@@ -52,8 +52,8 @@ const Function *getCalledFunction(const Value *CalledValue) {
 /// Extract called function from a called value. Handles situation when the
 /// called value is a bitcast.
 Function *getCalledFunction(Value *CalledValue) {
-    return const_cast<Function *>(getCalledFunction(
-            const_cast<const Value *>(CalledValue)));
+    return const_cast<Function *>(
+            getCalledFunction(const_cast<const Value *>(CalledValue)));
 }
 
 /// Get name of a type so that it can be used as a variable in Z3.
@@ -87,8 +87,8 @@ void deleteAliasToFun(Module &Mod, Function *Fun) {
 /// Check if the substring behind the last dot ('.') contains only numbers.
 bool hasSuffix(std::string Name) {
     size_t dotPos = Name.find_last_of('.');
-    return dotPos != std::string::npos
-            && Name.find_last_not_of("0123456789.") < dotPos;
+    return dotPos != std::string::npos &&
+           Name.find_last_not_of("0123456789.") < dotPos;
 }
 
 /// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned
@@ -100,9 +100,10 @@ std::string dropSuffix(std::string Name) {
 /// Join directory path with a filename in case the filename does not already
 /// contain the directory.
 std::string joinPath(StringRef DirName, StringRef FileName) {
-    return FileName.startswith(DirName) ?
-           FileName.str() :
-           DirName.str() + sys::path::get_separator().str() + FileName.str();
+    return FileName.startswith(DirName)
+                   ? FileName.str()
+                   : DirName.str() + sys::path::get_separator().str() +
+                             FileName.str();
 }
 
 /// Extracts file name and directory name from the DebugInfo
@@ -146,8 +147,8 @@ bool searchCallStackRec(Function *Src,
                     if (called == Dest)
                         return true;
                     else {
-                        bool found = searchCallStackRec(called, Dest, callStack,
-                                                        visited);
+                        bool found = searchCallStackRec(
+                                called, Dest, callStack, visited);
                         if (found)
                             return true;
                         else
@@ -229,7 +230,7 @@ StructType *getStructType(const Value *Value) {
             // Value is a bicast, get the original type
             if (auto *SrcPtrTy = dyn_cast<PointerType>(BitCast->getSrcTy())) {
                 if (auto *SrcStructTy =
-                        dyn_cast<StructType>(SrcPtrTy->getElementType()))
+                            dyn_cast<StructType>(SrcPtrTy->getElementType()))
                     Type = SrcStructTy;
             }
         }
@@ -246,9 +247,9 @@ void simplifyFunction(Function *Fun) {
     FunctionPassManager fpm(false);
     FunctionAnalysisManager fam(false);
     pb.registerFunctionAnalyses(fam);
-    fpm.addPass(SimplifyCFGPass {});
-    fpm.addPass(DCEPass {});
-    fpm.addPass(NewGVNPass {});
+    fpm.addPass(SimplifyCFGPass{});
+    fpm.addPass(DCEPass{});
+    fpm.addPass(NewGVNPass{});
     fpm.run(*Fun, fam);
 }
 
@@ -259,21 +260,17 @@ AttributeList cleanAttributeList(AttributeList AL) {
     AttributeList NewAttrList;
 
     // There are three possible indices for attribute sets
-    std::vector<AttributeList::AttrIndex> indices {
-        AttributeList::FirstArgIndex,
-        AttributeList::FunctionIndex,
-        AttributeList::ReturnIndex
-    };
+    std::vector<AttributeList::AttrIndex> indices{AttributeList::FirstArgIndex,
+                                                  AttributeList::FunctionIndex,
+                                                  AttributeList::ReturnIndex};
 
     for (AttributeList::AttrIndex i : indices) {
-        AttributeSet AttrSet =
-                AL.getAttributes(i);
+        AttributeSet AttrSet = AL.getAttributes(i);
         if (AttrSet.getNumAttributes() != 0) {
             AttrBuilder AB;
             for (const Attribute &A : AttrSet)
                 AB.addAttribute(A);
-            NewAttrList = NewAttrList.addAttributes(
-                    AL.getContext(), i, AB);
+            NewAttrList = NewAttrList.addAttributes(AL.getContext(), i, AB);
         }
     }
 
@@ -301,8 +298,7 @@ std::string getSourceFilePath(DIScope *Scope) {
 /// Returns true when the argument is a name of a kernel print function.
 bool isPrintFunction(std::string name) {
     const static std::set<std::string> List = {
-        "_dev_info", "dev_warn", "dev_err", "sprintf", "printk"
-    };
+            "_dev_info", "dev_warn", "dev_err", "sprintf", "printk"};
 
     return List.find(name) != List.end();
 }
@@ -327,14 +323,12 @@ bool isValidCharForIdentifierStart(char ch) {
 
 /// Finds the string given in the second argument and replaces it with the one
 /// given in the third argument.
-void findAndReplace(std::string &input, std::string find,
-        std::string replace) {
+void findAndReplace(std::string &input, std::string find, std::string replace) {
     if (find == "")
         return;
 
     int position = 0;
-    while ((position = input.find(find, position)) !=
-            std::string::npos) {
+    while ((position = input.find(find, position)) != std::string::npos) {
         input.replace(position, find.length(), replace);
         position += replace.length();
     }
@@ -348,7 +342,7 @@ void findAndReplace(std::string &input, std::string find,
 /// the built-in getAsInstruction method is sufficient.
 const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
     SmallVector<Value *, 4> ValueOperands(CEx->op_begin(), CEx->op_end());
-    ArrayRef<Value*> Ops(ValueOperands);
+    ArrayRef<Value *> Ops(ValueOperands);
 
     switch (CEx->getOpcode()) {
     case Instruction::Trunc:
@@ -364,8 +358,8 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
     case Instruction::IntToPtr:
     case Instruction::BitCast:
     case Instruction::AddrSpaceCast:
-        return CastInst::Create((Instruction::CastOps) CEx->getOpcode(), Ops[0],
-                CEx->getType());
+        return CastInst::Create(
+                (Instruction::CastOps)CEx->getOpcode(), Ops[0], CEx->getType());
     case Instruction::Select:
         return SelectInst::Create(Ops[0], Ops[1], Ops[2]);
     case Instruction::InsertElement:
@@ -382,32 +376,31 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
     case Instruction::GetElementPtr: {
         const auto *GO = cast<GEPOperator>(CEx);
         if (GO->isInBounds())
-            return GetElementPtrInst::CreateInBounds(GO->getSourceElementType(),
-                    Ops[0], Ops.slice(1));
-        return GetElementPtrInst::Create(GO->getSourceElementType(), Ops[0],
-                Ops.slice(1));
+            return GetElementPtrInst::CreateInBounds(
+                    GO->getSourceElementType(), Ops[0], Ops.slice(1));
+        return GetElementPtrInst::Create(
+                GO->getSourceElementType(), Ops[0], Ops.slice(1));
     }
     case Instruction::ICmp:
     case Instruction::FCmp:
-        return CmpInst::Create((Instruction::OtherOps) CEx->getOpcode(),
-                (CmpInst::Predicate) CEx->getPredicate(), Ops[0], Ops[1]);
+        return CmpInst::Create((Instruction::OtherOps)CEx->getOpcode(),
+                               (CmpInst::Predicate)CEx->getPredicate(),
+                               Ops[0],
+                               Ops[1]);
 
     default:
         assert(CEx->getNumOperands() == 2 && "Must be binary operator?");
         BinaryOperator *BO = BinaryOperator::Create(
-                (Instruction::BinaryOps) CEx->getOpcode(), Ops[0], Ops[1]);
+                (Instruction::BinaryOps)CEx->getOpcode(), Ops[0], Ops[1]);
         if (isa<OverflowingBinaryOperator>(BO)) {
-            BO->setHasNoUnsignedWrap(
-                    CEx->getRawSubclassOptionalData()
-                            & OverflowingBinaryOperator::NoUnsignedWrap);
-            BO->setHasNoSignedWrap(
-                    CEx->getRawSubclassOptionalData()
-                            & OverflowingBinaryOperator::NoSignedWrap);
+            BO->setHasNoUnsignedWrap(CEx->getRawSubclassOptionalData() &
+                                     OverflowingBinaryOperator::NoUnsignedWrap);
+            BO->setHasNoSignedWrap(CEx->getRawSubclassOptionalData() &
+                                   OverflowingBinaryOperator::NoSignedWrap);
         }
         if (isa<PossiblyExactOperator>(BO))
-            BO->setIsExact(
-                    CEx->getRawSubclassOptionalData()
-                            & PossiblyExactOperator::IsExact);
+            BO->setIsExact(CEx->getRawSubclassOptionalData() &
+                           PossiblyExactOperator::IsExact);
         return BO;
     }
 }
@@ -438,16 +431,18 @@ std::string getIdentifierForType(Type *Ty) {
 }
 
 /// Generates human-readable C-like identifier for value.
-std::string getIdentifierForValue(const Value *Val,
+std::string getIdentifierForValue(
+        const Value *Val,
         const std::map<std::pair<StructType *, uint64_t>, StringRef>
-        &StructFieldNames, const Function *Parent) {
+                &StructFieldNames,
+        const Function *Parent) {
     // This function uses a different approach for different types of values.
     if (auto GEPi = dyn_cast<GetElementPtrInst>(Val)) {
         // GEP instruction.
         // First find the original variable name, then try to append the names
         // of all indices.
-        std::string name = getIdentifierForValue(GEPi->getOperand(0),
-                StructFieldNames, Parent);
+        std::string name = getIdentifierForValue(
+                GEPi->getOperand(0), StructFieldNames, Parent);
 
         std::vector<Value *> Indices;
 
@@ -456,32 +451,30 @@ std::string getIdentifierForValue(const Value *Val,
                                                   ArrayRef<Value *>(Indices));
             Value *Index = idx->get();
 
-            if (isa<ConstantInt>(Index) && (dyn_cast<ConstantInt>(Index)->
-                    getValue().getZExtValue() == 0) &&
-                    (idx == GEPi->idx_begin())) {
+            if (isa<ConstantInt>(Index) &&
+                (dyn_cast<ConstantInt>(Index)->getValue().getZExtValue() ==
+                 0) &&
+                (idx == GEPi->idx_begin())) {
                 // Do not print the first zero index
                 continue;
             }
 
             if (isa<StructType>(ValueType)) {
                 // Structure type indexing
-                auto NumericIndex =
-                        dyn_cast<ConstantInt>(Index)->getValue();
-                auto IndexName = StructFieldNames.find({
-                    dyn_cast<StructType>(ValueType),
-                    NumericIndex.getZExtValue()
-                });
+                auto NumericIndex = dyn_cast<ConstantInt>(Index)->getValue();
+                auto IndexName =
+                        StructFieldNames.find({dyn_cast<StructType>(ValueType),
+                                               NumericIndex.getZExtValue()});
                 if (IndexName != StructFieldNames.end()) {
                     // We can use the index name to create a C-like syntax.
                     name += "->" + IndexName->second.str();
                 } else {
-                    name += "->" +
-                            std::to_string(NumericIndex.getZExtValue());
+                    name += "->" + std::to_string(NumericIndex.getZExtValue());
                 }
             } else {
                 // Array type indexing (the index doesn't have to be constant)
-                std::string IdxName = getIdentifierForValue(Index,
-                        StructFieldNames, Parent);
+                std::string IdxName =
+                        getIdentifierForValue(Index, StructFieldNames, Parent);
 
                 // Remove reference operator to match C syntax
                 name = name.substr(2, name.size() - 3);
@@ -500,22 +493,22 @@ std::string getIdentifierForValue(const Value *Val,
         return name;
     } else if (auto CEx = dyn_cast<ConstantExpr>(Val)) {
         // Constant expressions are converted to instructions.
-        return getIdentifierForValue(getConstExprAsInstruction(CEx),
-                StructFieldNames, Parent);
+        return getIdentifierForValue(
+                getConstExprAsInstruction(CEx), StructFieldNames, Parent);
     } else if (auto BitCast = dyn_cast<BitCastInst>(Val)) {
         // Bit casts are expanded to C-like cast syntax.
-        std::string Casted = getIdentifierForValue(BitCast->getOperand(0),
-                StructFieldNames, Parent);
-        return "((" + getIdentifierForType(BitCast->getDestTy()) + ") " + Casted
-                + ")";
+        std::string Casted = getIdentifierForValue(
+                BitCast->getOperand(0), StructFieldNames, Parent);
+        return "((" + getIdentifierForType(BitCast->getDestTy()) + ") " +
+               Casted + ")";
     } else if (auto ZExt = dyn_cast<ZExtInst>(Val)) {
         // ZExt is treated the same as a statement without it
-        return getIdentifierForValue(ZExt->getOperand(0), StructFieldNames,
-                Parent);
+        return getIdentifierForValue(
+                ZExt->getOperand(0), StructFieldNames, Parent);
     } else if (auto Load = dyn_cast<LoadInst>(Val)) {
         // Load instruction is treated as the dereference operator
-        std::string Internal = getIdentifierForValue(Load->getOperand(0),
-                StructFieldNames, Parent);
+        std::string Internal = getIdentifierForValue(
+                Load->getOperand(0), StructFieldNames, Parent);
 
         if (Internal[0] == '&')
             // Reference and dereference operator cancel out.
@@ -535,10 +528,11 @@ std::string getIdentifierForValue(const Value *Val,
         int idx = 0;
 
         // Extract register number
-        std::string ValDump; llvm::raw_string_ostream ValDumStrm(ValDump);
+        std::string ValDump;
+        llvm::raw_string_ostream ValDumStrm(ValDump);
         Val->print(ValDumStrm);
         std::string RegName = ValDump.substr(ValDump.find_last_of('%') + 1,
-                std::string::npos);
+                                             std::string::npos);
         int RegNum;
         std::istringstream Iss(RegName);
         Iss >> RegNum;
@@ -572,14 +566,16 @@ std::string getIdentifierForValue(const Value *Val,
 }
 
 /// Retrieves the type of the value based its C source code expression.
-Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
+Type *getCSourceIdentifierType(
+        std::string expr,
+        const Function *Parent,
         const std::unordered_map<std::string, const Value *>
-        &LocalVariableMap) {
+                &LocalVariableMap) {
     // First we have to remove pointer operators from the call.
     if (expr[0] == '*') {
         // Dereference operator. Return the original type.
-        Type *Ty = getCSourceIdentifierType(expr.substr(1), Parent,
-                LocalVariableMap);
+        Type *Ty = getCSourceIdentifierType(
+                expr.substr(1), Parent, LocalVariableMap);
         if (!Ty)
             return nullptr;
 
@@ -587,8 +583,8 @@ Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
         return PTy->getElementType();
     } else if (expr[0] == '&') {
         // Reference operator. Return a pointer type.
-        Type *InnerTy = getCSourceIdentifierType(expr.substr(1), Parent,
-                LocalVariableMap);
+        Type *InnerTy = getCSourceIdentifierType(
+                expr.substr(1), Parent, LocalVariableMap);
 
         // Note: assuming von Neumann architecture with single address space.
         if (!InnerTy)
@@ -599,10 +595,13 @@ Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
         // Determine whether the expression is an identifier at this point.
         // If not, it is not supported.
         std::vector<bool> Tmp;
-        std::transform(expr.begin(), expr.end(), std::back_inserter(Tmp),
+        std::transform(expr.begin(),
+                       expr.end(),
+                       std::back_inserter(Tmp),
                        isValidCharForIdentifier);
-        if (!std::accumulate(Tmp.begin(), Tmp.end(), true,
-             [](auto a, auto b){ return a && b; })) {
+        if (!std::accumulate(Tmp.begin(), Tmp.end(), true, [](auto a, auto b) {
+                return a && b;
+            })) {
             // There are some characters that are not allowed in an identifier.
             return nullptr;
         }
@@ -627,14 +626,16 @@ Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
 /// the ability to directly dump values because GDB can't call the corresponding
 /// methods.
 std::string valueToString(const Value *Val) {
-    std::string ValDump; llvm::raw_string_ostream DumpStrm(ValDump);
+    std::string ValDump;
+    llvm::raw_string_ostream DumpStrm(ValDump);
     Val->print(DumpStrm);
     return DumpStrm.str();
 }
 
 /// Converts type to its (LLVM IR) string representation.
 std::string typeToString(Type *Ty) {
-    std::string TyDump; llvm::raw_string_ostream DumpStrm(TyDump);
+    std::string TyDump;
+    llvm::raw_string_ostream DumpStrm(TyDump);
     Ty->print(DumpStrm);
     return DumpStrm.str();
 }
@@ -646,9 +647,7 @@ std::string getDebugIndent(const char prefixChar) {
 }
 
 /// Increase the level of debug indentation by one.
-void increaseDebugIndentLevel() {
-    debugIndentLevel++;
-}
+void increaseDebugIndentLevel() { debugIndentLevel++; }
 
 /// Decrease the level of debug indentation by one.
 void decreaseDebugIndentLevel() {

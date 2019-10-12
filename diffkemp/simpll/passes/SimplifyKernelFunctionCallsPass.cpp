@@ -30,9 +30,9 @@
 void replaceArgByZero(CallInst *Call, unsigned index) {
     auto OldArg = dyn_cast<ConstantInt>(Call->getArgOperand(index));
     if (OldArg->getType()->isIntegerTy()) {
-        Call->setArgOperand(index, ConstantInt::get(OldArg->getType(),
-                                                    APInt(OldArg->getBitWidth(),
-                                                          0)));
+        Call->setArgOperand(index,
+                            ConstantInt::get(OldArg->getType(),
+                                             APInt(OldArg->getBitWidth(), 0)));
     }
 }
 
@@ -42,14 +42,14 @@ void replaceArgByNull(CallInst *Call, unsigned index) {
     auto OldArg = Call->getArgOperand(index);
     if (OldArg->getType()->isPointerTy()) {
         Call->setArgOperand(index,
-                            ConstantPointerNull::get(dyn_cast<PointerType>(
-                                    OldArg->getType())));
+                            ConstantPointerNull::get(
+                                    dyn_cast<PointerType>(OldArg->getType())));
     }
 }
 
-PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
-        Function &Fun,
-        FunctionAnalysisManager &fam) {
+PreservedAnalyses
+        SimplifyKernelFunctionCallsPass::run(Function &Fun,
+                                             FunctionAnalysisManager &fam) {
     std::vector<Instruction *> toRemove;
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
@@ -62,8 +62,8 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                     //  - replace the second argument by 0 (is a line number)
                     auto CalledVal = CallInstr->getCalledValue();
                     if (auto Asm = dyn_cast<InlineAsm>(CalledVal)) {
-                        if (Asm->getAsmString().find("__bug_table")
-                                != std::string::npos) {
+                        if (Asm->getAsmString().find("__bug_table") !=
+                            std::string::npos) {
                             replaceArgByNull(CallInstr, 0);
                             replaceArgByZero(CallInstr, 1);
                         }
@@ -79,11 +79,12 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                     // An additional void pointer is added to the operand list
                     // so the instruction can be compared as equal even when the
                     // other one is one of the functions listed in the other if
-                    auto newCall = CallInst::Create(
-                            CalledFun,
-                            {ConstantPointerNull::get(OpType),
-                             ConstantPointerNull::get(OpType)},
-                            "", &Instr);
+                    auto newCall =
+                            CallInst::Create(CalledFun,
+                                             {ConstantPointerNull::get(OpType),
+                                              ConstantPointerNull::get(OpType)},
+                                             "",
+                                             &Instr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
                     CallInstr->replaceAllUsesWith(newCall);
                     toRemove.push_back(&Instr);
@@ -97,7 +98,8 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                             CalledFun,
                             {ConstantPointerNull::get(Op0Type),
                              ConstantPointerNull::get(Op1Type)},
-                            "", &Instr);
+                            "",
+                            &Instr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
                     CallInstr->replaceAllUsesWith(newCall);
                     toRemove.push_back(&Instr);
@@ -106,9 +108,9 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                 // Replace the second argument of a call to warn_slowpath_null
                 // by 0 (it is a line number).
                 if (CalledFun->getName() == "warn_slowpath_null" ||
-                        CalledFun->getName() == "warn_slowpath_fmt" ||
-                        CalledFun->getName() == "__might_sleep" ||
-                        CalledFun->getName() == "acpi_ut_predefined_warning") {
+                    CalledFun->getName() == "warn_slowpath_fmt" ||
+                    CalledFun->getName() == "__might_sleep" ||
+                    CalledFun->getName() == "acpi_ut_predefined_warning") {
                     replaceArgByNull(CallInstr, 0);
                     replaceArgByZero(CallInstr, 1);
                 }

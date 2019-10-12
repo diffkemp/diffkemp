@@ -23,12 +23,10 @@ using namespace llvm;
 /// This does not work on more complicated anonymous structures that use another
 /// anonymous structure as a member when there is a name change in the inner
 /// one and the outer one gets replaced first.
-class StructHashGeneratorPass
-        : public PassInfoMixin<StructHashGeneratorPass> {
+class StructHashGeneratorPass : public PassInfoMixin<StructHashGeneratorPass> {
   public:
-    PreservedAnalyses run(
-            Module &Mod,
-            llvm::AnalysisManager<llvm::Module> &Main);
+    PreservedAnalyses run(Module &Mod,
+                          llvm::AnalysisManager<llvm::Module> &Main);
 };
 
-#endif //DIFFKEMP_SIMPLL_STRUCTHASHGENERATORPASS_H
+#endif // DIFFKEMP_SIMPLL_STRUCTHASHGENERATORPASS_H

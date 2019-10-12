@@ -22,9 +22,7 @@
 using namespace llvm;
 
 /// Enumeration type to easy distinguishing between the compared programs.
-enum Program {
-    First, Second
-};
+enum Program { First, Second };
 
 typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
@@ -110,8 +108,7 @@ bool isValidCharForIdentifierStart(char ch);
 
 /// Finds the string given in the second argument and replaces it with the one
 /// given in the third argument.
-void findAndReplace(std::string &input, std::string find,
-        std::string replace);
+void findAndReplace(std::string &input, std::string find, std::string replace);
 
 /// Convert constant expression to instruction. (Copied from LLVM and modified)
 /// Note: this is for constant ConstantExpr pointers; for non-constant ones,
@@ -119,17 +116,20 @@ void findAndReplace(std::string &input, std::string find,
 const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx);
 
 /// Retrives type of the value based its C source code identifier.
-Type *getCSourceIdentifierType(std::string expr, const Function *Parent,
-        const std::unordered_map<std::string, const Value *>
-        &LocalVariableMap);
+Type *getCSourceIdentifierType(
+        std::string expr,
+        const Function *Parent,
+        const std::unordered_map<std::string, const Value *> &LocalVariableMap);
 
 /// Generates human-readable C-like identifier for type.
 std::string getIdentifierForType(Type *Ty);
 
 /// Finds the name of a value (in case there exists one).
-std::string getIdentifierForValue(const Value *Val,
+std::string getIdentifierForValue(
+        const Value *Val,
         const std::map<std::pair<StructType *, uint64_t>, StringRef>
-        &StructFieldNames, const Function *Parent = nullptr);
+                &StructFieldNames,
+        const Function *Parent = nullptr);
 
 /// Converts value to its string representation.
 /// Note: Currently the only place that calls this is returns.gdb, which lacks
@@ -150,4 +150,4 @@ void increaseDebugIndentLevel();
 /// Decrease the level of debug indentation by one.
 void decreaseDebugIndentLevel();
 
-#endif //DIFFKEMP_SIMPLL_UTILS_H
+#endif // DIFFKEMP_SIMPLL_UTILS_H

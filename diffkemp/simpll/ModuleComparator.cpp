@@ -12,11 +12,11 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "passes/FunctionAbstractionsGenerator.h"
 #include "ModuleComparator.h"
+#include "Config.h"
 #include "DifferentialFunctionComparator.h"
 #include "Utils.h"
-#include "Config.h"
+#include "passes/FunctionAbstractionsGenerator.h"
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
@@ -54,8 +54,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             else
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
         } else {
-            if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
-                    && FirstFunName == SecondFunName)
+            if (FirstFun->isDeclaration() && SecondFun->isDeclaration() &&
+                FirstFunName == SecondFunName)
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
             else if (FirstFunName != SecondFunName)
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
@@ -69,23 +69,24 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             }
         }
 
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-            decreaseDebugIndentLevel();
-            if (ComparedFuns.at({FirstFun, SecondFun}) == Result::EQUAL) {
-                dbgs() << getDebugIndent() << "Declarations with matching "
-                       << "names, assuming they are equal\n";
-            } else if (ComparedFuns.at({FirstFun, SecondFun})
-                          == Result::NOT_EQUAL) {
-                dbgs() << getDebugIndent() << "Declarations without matching "
-                       << "names, assuming they are not equal\n";
-        });
+        DEBUG_WITH_TYPE(
+                DEBUG_SIMPLL, decreaseDebugIndentLevel();
+                if (ComparedFuns.at({FirstFun, SecondFun}) == Result::EQUAL) {
+                    dbgs() << getDebugIndent() << "Declarations with matching "
+                           << "names, assuming they are equal\n";
+                } else if (ComparedFuns.at({FirstFun, SecondFun}) ==
+                           Result::NOT_EQUAL) {
+                    dbgs() << getDebugIndent()
+                           << "Declarations without matching "
+                           << "names, assuming they are not equal\n";
+                });
 
         return;
     }
 
     // Comparing functions with bodies using custom FunctionComparator.
-    DifferentialFunctionComparator fComp(FirstFun, SecondFun, controlFlowOnly,
-                                         showAsmDiffs, DI, this);
+    DifferentialFunctionComparator fComp(
+            FirstFun, SecondFun, controlFlowOnly, showAsmDiffs, DI, this);
     int result = fComp.compare();
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
@@ -113,16 +114,20 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // For this reason, the functions are compared using
             // ModuleComparator and the original functions are marked as
             // covered, leading to the diff not being show when empty.
-            Function *InlinedFunFirst = !inlineFirst ? nullptr :
-                    getCalledFunction(inlineFirst->getCalledValue());
-            Function *InlinedFunSecond = !inlineSecond ? nullptr :
-                    getCalledFunction(inlineSecond->getCalledValue());
+            Function *InlinedFunFirst =
+                    !inlineFirst
+                            ? nullptr
+                            : getCalledFunction(inlineFirst->getCalledValue());
+            Function *InlinedFunSecond =
+                    !inlineSecond
+                            ? nullptr
+                            : getCalledFunction(inlineSecond->getCalledValue());
             if (InlinedFunFirst && InlinedFunSecond &&
                 !isSimpllAbstraction(InlinedFunFirst) &&
                 (InlinedFunFirst->getName() == InlinedFunSecond->getName())) {
                 compareFunctions(InlinedFunFirst, InlinedFunSecond);
                 if (ComparedFuns.at({InlinedFunFirst, InlinedFunSecond}) ==
-                        Result::NOT_EQUAL)
+                    Result::NOT_EQUAL)
                     CoveredFuns.insert(FirstFun->getName().str());
             }
             // If the called function is a declaration, add it to missingDefs.
@@ -133,14 +138,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         getCalledFunction(inlineFirst->getCalledValue());
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent() << "Try to inline "
-                                       << toInline->getName()
-                                       << " in first\n");
+                                       << toInline->getName() << " in first\n");
                 if (toInline->isDeclaration()) {
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << getDebugIndent()
                                            << "Missing definition\n");
                     if (!toInline->isIntrinsic() &&
-                            !isSimpllAbstraction(toInline))
+                        !isSimpllAbstraction(toInline))
                         missingDefs.first = toInline;
                 } else {
                     InlineFunctionInfo ifi;
@@ -160,7 +164,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                                     dbgs() << getDebugIndent()
                                            << "Missing definition\n");
                     if (!toInline->isIntrinsic() &&
-                            !isSimpllAbstraction(toInline))
+                        !isSimpllAbstraction(toInline))
                         missingDefs.second = toInline;
                 } else {
                     InlineFunctionInfo ifi;
@@ -184,10 +188,12 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // Reset the function diff result
             ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
             // Re-run the comparison
-            DifferentialFunctionComparator fCompSecond(FirstFun, SecondFun,
+            DifferentialFunctionComparator fCompSecond(FirstFun,
+                                                       SecondFun,
                                                        controlFlowOnly,
                                                        showAsmDiffs,
-                                                       DI, this);
+                                                       DI,
+                                                       this);
             result = fCompSecond.compare();
             // If the functions are equal after the inlining, we do not want to
             // report the called functions as unequal in case they are compared
