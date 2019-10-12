@@ -16,8 +16,9 @@
 
 /// Remove custom sections from functions (used when comparing the control flow
 /// only)
-PreservedAnalyses ReduceFunctionMetadataPass::run(
-    Function &Fun, FunctionAnalysisManager &fam) {
+PreservedAnalyses
+        ReduceFunctionMetadataPass::run(Function &Fun,
+                                        FunctionAnalysisManager &fam) {
     // If the function has a custom section, remove it.
     if (Fun.hasSection())
         Fun.setSection("");

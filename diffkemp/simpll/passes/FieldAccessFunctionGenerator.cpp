@@ -56,21 +56,22 @@ PreservedAnalyses FieldAccessFunctionGenerator::run(
                     // Check if GEP has constant indices (this pass could
                     // technically support all GEPs, but this is not implemented
                     // yet)
-                    if (dyn_cast<GetElementPtrInst>(&Inst)->
-                            hasAllConstantIndices()) {
+                    if (dyn_cast<GetElementPtrInst>(&Inst)
+                                ->hasAllConstantIndices()) {
                         DIL = Inst.getDebugLoc().get();
                         InstStack.push_back(&Inst);
                     }
                 } else if ((isa<GetElementPtrInst>(Inst) ||
-                           isa<CastInst>(Inst)) && !InstStack.empty()) {
-                   if (Inst.getDebugLoc().get() != DIL) {
-                       // Stop building stack.
-                       processStack(InstStack, Mod);
-                       InstStack.clear();
-                   } else {
-                       // Add instruction to stack.
-                       InstStack.push_back(&Inst);
-                   }
+                            isa<CastInst>(Inst)) &&
+                           !InstStack.empty()) {
+                    if (Inst.getDebugLoc().get() != DIL) {
+                        // Stop building stack.
+                        processStack(InstStack, Mod);
+                        InstStack.clear();
+                    } else {
+                        // Add instruction to stack.
+                        InstStack.push_back(&Inst);
+                    }
                 } else {
                     // Wrong instruction type. Stop building stack.
                     processStack(InstStack, Mod);
@@ -134,47 +135,50 @@ void FieldAccessFunctionGenerator::processStack(
     // The generated abstraction receives the source variable as its argument
     // and returns the result of the field access (both are pointers, as with
     // simple GEPs).
-    FunctionType *FT = FunctionType::get(Stack.back()->getType(), {
-        Stack.front()->getOperand(0)->getType()
-    }, false);
-    Function *Abstraction = Function::Create(FT,
-            GlobalValue::LinkageTypes::ExternalLinkage,
-            SimpllFieldAccessFunName, &Mod);
+    FunctionType *FT =
+            FunctionType::get(Stack.back()->getType(),
+                              {Stack.front()->getOperand(0)->getType()},
+                              false);
+    Function *Abstraction =
+            Function::Create(FT,
+                             GlobalValue::LinkageTypes::ExternalLinkage,
+                             SimpllFieldAccessFunName,
+                             &Mod);
     Abstraction->setMetadata(SimpllFieldAccessMetadata,
                              Stack.front()->getDebugLoc().get());
     auto Arg = &*Abstraction->arg_begin();
 
     // Copy the instructions to the function body.
-    BasicBlock *BB = BasicBlock::Create(Abstraction->getContext(),
-                                        "", Abstraction);
+    BasicBlock *BB =
+            BasicBlock::Create(Abstraction->getContext(), "", Abstraction);
     for (Instruction *Inst : Stack) {
         // Move into the new function.
         if (Inst == Stack.back()) {
             // The last instruction needs special processing, because it will
             // be replaced with the function call in the original function.
             Instruction *Clone = Inst->clone();
-            Clone->setDebugLoc(DebugLoc(Abstraction->getMetadata(
-                                        SimpllFieldAccessMetadata)));
-            auto CallInst = CallInst::Create(FT, Abstraction,
-                    {Stack.front()->getOperand(0)});
+            Clone->setDebugLoc(DebugLoc(
+                    Abstraction->getMetadata(SimpllFieldAccessMetadata)));
+            auto CallInst = CallInst::Create(
+                    FT, Abstraction, {Stack.front()->getOperand(0)});
             CallInst->insertAfter(Inst);
-            CallInst->setDebugLoc(DebugLoc(Abstraction->getMetadata(
-                                           SimpllFieldAccessMetadata)));
+            CallInst->setDebugLoc(DebugLoc(
+                    Abstraction->getMetadata(SimpllFieldAccessMetadata)));
             Inst->replaceAllUsesWith(CallInst);
             Inst->removeFromParent();
             BB->getInstList().push_back(Clone);
         } else {
             Inst->removeFromParent();
-            Inst->setDebugLoc(DebugLoc(Abstraction->getMetadata(
-                                       SimpllFieldAccessMetadata)));
+            Inst->setDebugLoc(DebugLoc(
+                    Abstraction->getMetadata(SimpllFieldAccessMetadata)));
             BB->getInstList().push_back(Inst);
         }
     }
     BB->begin()->setOperand(0, Arg);
 
     // Create return instruction
-    auto ReturnInst = ReturnInst::Create(Abstraction->getContext(),
-            &BB->back(), BB);
+    auto ReturnInst =
+            ReturnInst::Create(Abstraction->getContext(), &BB->back(), BB);
 }
 
 /// Returns true if the function is an SimpLL field access abstraction.

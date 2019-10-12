@@ -24,4 +24,4 @@ class UnifyMemcpyPass : public PassInfoMixin<UnifyMemcpyPass> {
     PreservedAnalyses run(Function &Fun, FunctionAnalysisManager &fam);
 };
 
-#endif //DIFFKEMP_SIMPLL_UNIFYMEMCPYPASS_H
+#endif // DIFFKEMP_SIMPLL_UNIFYMEMCPYPASS_H

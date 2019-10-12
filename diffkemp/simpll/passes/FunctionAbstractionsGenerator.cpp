@@ -12,23 +12,21 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "FunctionAbstractionsGenerator.h"
 #include "CalledFunctionsAnalysis.h"
 #include "FieldAccessFunctionGenerator.h"
-#include "FunctionAbstractionsGenerator.h"
 #include "Utils.h"
+#include <Config.h>
+#include <llvm/ADT/Hashing.h>
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/Instructions.h>
-#include <llvm/ADT/Hashing.h>
-#include <Config.h>
 
 AnalysisKey FunctionAbstractionsGenerator::Key;
 
 /// Creates a new function for each type of function that is called indirectly
 /// or as an inline assembly.
 FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
-        Module &Mod,
-        AnalysisManager<Module, Function *> &mam,
-        Function *Main) {
+        Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
     FunMap funAbstractions;
     StringMap<StringRef> asmValueMap;
     int i = 0;
@@ -53,8 +51,8 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     // Retrieve function from the hash map if it has already
                     // been created or create a new one.
                     auto FunType = dyn_cast<FunctionType>(
-                            dyn_cast<PointerType>(
-                                    CalledType)->getElementType());
+                            dyn_cast<PointerType>(CalledType)
+                                    ->getElementType());
 
                     std::string hash = funHash(CallInstr->getCalledValue());
                     auto funAbstr = funAbstractions.find(hash);
@@ -72,13 +70,13 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                                 abstractionPrefix(CallInstr->getCalledValue()) +
                                 std::to_string(i++);
 
-                        newFun = Function::Create(
-                                newFunType,
-                                Function::ExternalLinkage,
-                                funName, &Mod);
+                        newFun = Function::Create(newFunType,
+                                                  Function::ExternalLinkage,
+                                                  funName,
+                                                  &Mod);
                         funAbstractions.emplace(hash, newFun);
-                        if (auto assembly =
-                            dyn_cast<InlineAsm>(CallInstr->getCalledValue())) {
+                        if (auto assembly = dyn_cast<InlineAsm>(
+                                    CallInstr->getCalledValue())) {
                             asmValueMap[funName] = assembly->getAsmString();
                         }
                     } else {
@@ -93,8 +91,8 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     }
                     if (!CallInstr->isInlineAsm())
                         args.push_back(CallInstr->getCalledValue());
-                    auto newCall = CallInst::Create(newFun, args, "",
-                                                    CallInstr);
+                    auto newCall =
+                            CallInst::Create(newFun, args, "", CallInstr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
 
                     CallInstr->replaceAllUsesWith(newCall);
@@ -106,7 +104,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
             toErase.clear();
         }
     }
-    return FunctionAbstractionsGenerator::Result {funAbstractions, asmValueMap};
+    return FunctionAbstractionsGenerator::Result{funAbstractions, asmValueMap};
 }
 
 /// A hash that uniquely identifies an indirect function or an inline asm.
@@ -116,7 +114,7 @@ std::string FunctionAbstractionsGenerator::funHash(Value *Fun) {
     std::string result = typeName(Fun->getType());
     if (auto inlineAsm = dyn_cast<InlineAsm>(Fun)) {
         result += "$" + inlineAsm->getAsmString() + "$" +
-                inlineAsm->getConstraintString();
+                  inlineAsm->getConstraintString();
     }
     return result;
 }

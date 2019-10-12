@@ -23,8 +23,10 @@ using namespace llvm;
 class RemoveUnusedReturnValuesPass
         : public PassInfoMixin<RemoveUnusedReturnValuesPass> {
   public:
-    PreservedAnalyses run(Module &Mod, AnalysisManager<Module, Function *> &mam,
-                          Function *Main, Module *ModOther);
+    PreservedAnalyses run(Module &Mod,
+                          AnalysisManager<Module, Function *> &mam,
+                          Function *Main,
+                          Module *ModOther);
 };
 
-#endif //DIFFKEMP_SIMPLL_REMOVEUNUSEDRETURNVALUESPASS_H
+#endif // DIFFKEMP_SIMPLL_REMOVEUNUSEDRETURNVALUESPASS_H

@@ -12,9 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "UnifyMemcpyPass.h"
-#include <llvm/IR/Instructions.h>
-#include <llvm/IR/IRBuilder.h>
 #include <Config.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
 
 PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                                        FunctionAnalysisManager &fam) {
@@ -33,10 +33,13 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
 #if LLVM_VERSION_MAJOR < 7
                     builder.CreateMemCpy(Call->getArgOperand(0),
                                          Call->getArgOperand(1),
-                                         Call->getArgOperand(2), 0);
+                                         Call->getArgOperand(2),
+                                         0);
 #else
-                    builder.CreateMemCpy(Call->getArgOperand(0), 0,
-                                         Call->getArgOperand(1), 0,
+                    builder.CreateMemCpy(Call->getArgOperand(0),
+                                         0,
+                                         Call->getArgOperand(1),
+                                         0,
                                          Call->getArgOperand(2));
 #endif
                     // __memcpy returns pointer to the destination
@@ -46,11 +49,12 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                     // If the alignment parameter is set to 1, set it to 0
                     // (LLVM defines 0 and 1 as no alignment)
                     if (auto MemcpyAlign =
-                            dyn_cast<ConstantInt>(Call->getArgOperand(3))) {
+                                dyn_cast<ConstantInt>(Call->getArgOperand(3))) {
                         if (MemcpyAlign->getZExtValue() == 1)
                             Call->setArgOperand(
-                                    3, ConstantInt::get(MemcpyAlign->getType(),
-                                                        0, false));
+                                    3,
+                                    ConstantInt::get(
+                                            MemcpyAlign->getType(), 0, false));
                     }
                 }
             }

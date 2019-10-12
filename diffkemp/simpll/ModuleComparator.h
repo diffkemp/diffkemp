@@ -17,8 +17,8 @@
 
 #include "DebugInfo.h"
 #include "SourceCodeUtils.h"
-#include "passes/StructureSizeAnalysis.h"
 #include "Utils.h"
+#include "passes/StructureSizeAnalysis.h"
 #include <llvm/IR/Module.h>
 #include <set>
 
@@ -53,16 +53,20 @@ class ModuleComparator {
     /// DebugInfo class storing results from analysing debug information
     const DebugInfo *DI;
 
-    ModuleComparator(Module &First, Module &Second, bool controlFlowOnly,
-                     bool showAsmDiffs, const DebugInfo *DI,
+    ModuleComparator(Module &First,
+                     Module &Second,
+                     bool controlFlowOnly,
+                     bool showAsmDiffs,
+                     const DebugInfo *DI,
                      StringMap<StringRef> &AsmToStringMapL,
                      StringMap<StringRef> &AsmToStringMapR,
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-            showAsmDiffs(showAsmDiffs), DI(DI),
-            AsmToStringMapL(AsmToStringMapL), AsmToStringMapR(AsmToStringMapR),
-            StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR) {}
+              showAsmDiffs(showAsmDiffs), DI(DI),
+              AsmToStringMapL(AsmToStringMapL),
+              AsmToStringMapR(AsmToStringMapR), StructSizeMapL(StructSizeMapL),
+              StructSizeMapR(StructSizeMapR) {}
 
     /// Syntactically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.
@@ -70,7 +74,8 @@ class ModuleComparator {
 
     /// Pointer to a function that is called just by one of the compared
     /// functions and needs to be inlined.
-    std::pair<const CallInst *, const CallInst*> tryInline = {nullptr, nullptr};
+    std::pair<const CallInst *, const CallInst *> tryInline = {nullptr,
+                                                               nullptr};
 };
 
-#endif //DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
+#endif // DIFFKEMP_SIMPLL_MODULECOMPARATOR_H

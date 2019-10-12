@@ -59,7 +59,7 @@ void preprocessModule(Module &Mod,
         PassBuilder pb;
         pb.registerFunctionAnalyses(fam);
 
-        fpm.addPass(VarDependencySlicer {});
+        fpm.addPass(VarDependencySlicer{});
         fpm.run(*Main, fam, Var);
     }
 
@@ -70,12 +70,12 @@ void preprocessModule(Module &Mod,
     pb.registerFunctionAnalyses(fam);
 
     if (ControlFlowOnly)
-        fpm.addPass(ControlFlowSlicer {});
+        fpm.addPass(ControlFlowSlicer{});
     fpm.addPass(SimplifyKernelFunctionCallsPass{});
-    fpm.addPass(UnifyMemcpyPass {});
-    fpm.addPass(DCEPass {});
-    fpm.addPass(LowerExpectIntrinsicPass {});
-    fpm.addPass(ReduceFunctionMetadataPass {});
+    fpm.addPass(UnifyMemcpyPass{});
+    fpm.addPass(DCEPass{});
+    fpm.addPass(LowerExpectIntrinsicPass{});
+    fpm.addPass(ReduceFunctionMetadataPass{});
 
     for (auto &Fun : Mod)
         fpm.run(Fun, fam);
@@ -85,10 +85,10 @@ void preprocessModule(Module &Mod,
     ModuleAnalysisManager mam(false);
     pb.registerModuleAnalyses(mam);
 
-    mpm.addPass(MergeNumberedFunctionsPass {});
-    mpm.addPass(SimplifyKernelGlobalsPass {});
-    mpm.addPass(RemoveLifetimeCallsPass {});
-    mpm.addPass(StructHashGeneratorPass {});
+    mpm.addPass(MergeNumberedFunctionsPass{});
+    mpm.addPass(SimplifyKernelGlobalsPass{});
+    mpm.addPass(RemoveLifetimeCallsPass{});
+    mpm.addPass(StructHashGeneratorPass{});
 
     mpm.run(Mod, mam);
 }
@@ -117,21 +117,24 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
 
     auto AbstractionGeneratorResultL =
             mam.getResult<FunctionAbstractionsGenerator>(*config.First,
-                    config.FirstFun);
+                                                         config.FirstFun);
     auto AbstractionGeneratorResultR =
             mam.getResult<FunctionAbstractionsGenerator>(*config.Second,
-                    config.SecondFun);
+                                                         config.SecondFun);
 
     auto StructSizeMapL = mam.getResult<StructureSizeAnalysis>(*config.First,
-            config.FirstFun);
-    auto StructSizeMapR = mam.getResult<StructureSizeAnalysis>(*config.Second,
-            config.SecondFun);
+                                                               config.FirstFun);
+    auto StructSizeMapR = mam.getResult<StructureSizeAnalysis>(
+            *config.Second, config.SecondFun);
 
     // Module passes
-    PassManager<Module, AnalysisManager<Module, Function *>, Function *,
-        Module *> mpm;
-    mpm.addPass(RemoveUnusedReturnValuesPass {});
-    mpm.addPass(FieldAccessFunctionGenerator {});
+    PassManager<Module,
+                AnalysisManager<Module, Function *>,
+                Function *,
+                Module *>
+            mpm;
+    mpm.addPass(RemoveUnusedReturnValuesPass{});
+    mpm.addPass(FieldAccessFunctionGenerator{});
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 
@@ -139,8 +142,10 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
     // a new version by a pass
     config.refreshFunctions();
 
-    DebugInfo DI(*config.First, *config.Second,
-                 config.FirstFun, config.SecondFun,
+    DebugInfo DI(*config.First,
+                 *config.Second,
+                 config.FirstFun,
+                 config.SecondFun,
                  mam.getResult<CalledFunctionsAnalysis>(*config.First,
                                                         config.FirstFun),
                  mam.getResult<CalledFunctionsAnalysis>(*config.Second,
@@ -150,11 +155,15 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
                            << DI.StructFieldNames.size() << "\n");
 
     // Compare functions for syntactical equivalence
-    ModuleComparator modComp(*config.First, *config.Second,
-                             config.ControlFlowOnly, config.PrintAsmDiffs, &DI,
+    ModuleComparator modComp(*config.First,
+                             *config.Second,
+                             config.ControlFlowOnly,
+                             config.PrintAsmDiffs,
+                             &DI,
                              AbstractionGeneratorResultL.asmValueMap,
                              AbstractionGeneratorResultR.asmValueMap,
-                             StructSizeMapL, StructSizeMapR);
+                             StructSizeMapL,
+                             StructSizeMapR);
 
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
@@ -187,7 +196,7 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
     } else {
         for (auto &FunFirst : *config.First) {
             if (auto FunSecond =
-                    config.Second->getFunction(FunFirst.getName())) {
+                        config.Second->getFunction(FunFirst.getName())) {
                 modComp.compareFunctions(&FunFirst, FunSecond);
             }
         }
@@ -206,14 +215,14 @@ void markCalleesAlwaysInline(Function &Fun,
             if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
                 auto CalledFun = CallInstr->getCalledFunction();
                 if (!CalledFun || CalledFun->isDeclaration() ||
-                        CalledFun->isIntrinsic() ||
-                        IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
+                    CalledFun->isIntrinsic() ||
+                    IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
                     continue;
 
                 if (CalledFun->hasFnAttribute(Attribute::AttrKind::NoInline))
                     CalledFun->removeFnAttr(Attribute::AttrKind::NoInline);
                 if (!CalledFun->hasFnAttribute(
-                        Attribute::AttrKind::AlwaysInline)) {
+                            Attribute::AttrKind::AlwaysInline)) {
                     CalledFun->addFnAttr(Attribute::AttrKind::AlwaysInline);
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << "Inlining: "

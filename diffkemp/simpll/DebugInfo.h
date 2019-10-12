@@ -20,8 +20,8 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/PassManager.h>
 #include <llvm/IR/TypeFinder.h>
-#include <set>
 #include <llvm/IR/ValueMap.h>
+#include <set>
 
 using namespace llvm;
 
@@ -34,15 +34,17 @@ using namespace llvm;
 ///    the index offset into the metadata of a GEP instruction.
 class DebugInfo {
   public:
-    using StructFieldNamesMap = std::map<std::pair<StructType *, uint64_t>,
-                                         StringRef>;
-    DebugInfo(Module &modFirst, Module &modSecond,
-              Function *funFirst, Function *funSecond,
+    using StructFieldNamesMap =
+            std::map<std::pair<StructType *, uint64_t>, StringRef>;
+    DebugInfo(Module &modFirst,
+              Module &modSecond,
+              Function *funFirst,
+              Function *funSecond,
               std::set<const Function *> &CalledFirst,
-              std::set<const Function *> &CalledSecond) :
-            FunFirst(funFirst), FunSecond(funSecond),
-            ModFirst(modFirst), ModSecond(modSecond),
-            CalledFirst(CalledFirst), CalledSecond(CalledSecond) {
+              std::set<const Function *> &CalledSecond)
+            : FunFirst(funFirst), FunSecond(funSecond), ModFirst(modFirst),
+              ModSecond(modSecond), CalledFirst(CalledFirst),
+              CalledSecond(CalledSecond) {
         DebugInfoFirst.processModule(ModFirst);
         DebugInfoSecond.processModule(ModSecond);
         // Use debug info to gather useful information
@@ -65,7 +67,7 @@ class DebugInfo {
 
     /// Maps local variable names to their values.
     std::unordered_map<std::string, const Value *> LocalVariableMapL,
-                                                   LocalVariableMapR;
+            LocalVariableMapR;
 
   private:
     Function *FunFirst;
@@ -100,13 +102,15 @@ class DebugInfo {
 
     /// Find all local variables and create a map from their names to their
     /// values.
-    void collectLocalVariables(std::set<const Function *> &Called,
+    void collectLocalVariables(
+            std::set<const Function *> &Called,
             std::unordered_map<std::string, const Value *> &Map);
 
     /// Add an alignment of macros if it exists
     /// \param MacroName Name of the macro in the second module
     /// \param MacroValue Value of the macro in the second module
-    void addAlignment(const std::string MacroName, const std::string MacroValue);
+    void addAlignment(const std::string MacroName,
+                      const std::string MacroValue);
 
     /// Get debug info for struct type with given name
     DICompositeType *getStructTypeInfo(const StringRef name,
@@ -148,8 +152,7 @@ class DebugInfo {
 /// A pass to remove all debugging information from a function.
 class RemoveDebugInfoPass : public PassInfoMixin<RemoveDebugInfoPass> {
   public:
-    PreservedAnalyses run(Function &Fun,
-                          FunctionAnalysisManager &fam);
+    PreservedAnalyses run(Function &Fun, FunctionAnalysisManager &fam);
 };
 
 /// Check if function is a debug info function.

@@ -17,8 +17,8 @@
 #define DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H
 
 #include "Config.h"
-#include "Utils.h"
 #include "ModuleComparator.h"
+#include "Utils.h"
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
 #include <set>
@@ -60,4 +60,4 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result);
 ///             NULL, but specifying this optimizes the transformations.
 void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns);
 
-#endif //DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H
+#endif // DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H

@@ -29,8 +29,8 @@
 /// Check if a global variable with the given name is supported to be merged in
 /// case multiple instances of the same variable with different suffices exist.
 bool canMergeGlobalWithName(const std::string Name) {
-    return Name.find(".__warned") != std::string::npos
-            || Name.find(".descriptor") != std::string::npos;
+    return Name.find(".__warned") != std::string::npos ||
+           Name.find(".descriptor") != std::string::npos;
 }
 
 PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
@@ -39,8 +39,8 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
 
     for (auto &Glob : Mod.globals()) {
         // Set kernel symbol to be removed
-        if (Glob.hasName() &&
-            Glob.getName().startswith("__ksym") && isa<GlobalVariable>(Glob)) {
+        if (Glob.hasName() && Glob.getName().startswith("__ksym") &&
+            isa<GlobalVariable>(Glob)) {
             kSymstoDelete.push_back(&Glob);
         }
     }
@@ -62,9 +62,8 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
 
         if (!newValues.empty()) {
             // Create the new type and initialized
-            ArrayType *NewType =
-                    ArrayType::get(Used->getType()->getArrayElementType(),
-                                   newValues.size());
+            ArrayType *NewType = ArrayType::get(
+                    Used->getType()->getArrayElementType(), newValues.size());
             Constant *Used_New = ConstantArray::get(NewType, newValues);
             // The initialized type has changed, therefore the whole global
             // variable has to be replaced.

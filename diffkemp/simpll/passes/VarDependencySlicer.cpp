@@ -13,15 +13,15 @@
 //===----------------------------------------------------------------------===//
 
 #include "VarDependencySlicer.h"
-#include <Config.h>
 #include "DebugInfo.h"
+#include <Config.h>
 #include <llvm/Analysis/CFG.h>
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 #include <llvm/Transforms/Utils/Local.h>
 #include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
-#include <llvm/Transforms/Utils/Cloning.h>
 
 PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                                            FunctionAnalysisManager &fam,
@@ -136,7 +136,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                     continue;
                 for (unsigned i = 0; i < Phi->getNumIncomingValues(); ++i) {
                     if (auto incomingInstr = dyn_cast<Instruction>(
-                            Phi->getIncomingValue(i))) {
+                                Phi->getIncomingValue(i))) {
                         addToIncluded(incomingInstr);
                         addAllOpsToIncluded(incomingInstr);
                     }
@@ -192,14 +192,13 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
             // redirect incoming edges into the successor (a block that
             // is not included is guaranteed to have one successor).
             if (canRemoveBlock(BB)) {
-                bool removed =
-                        TryToSimplifyUncondBranchFromEmptyBlock(BB);
+                bool removed = TryToSimplifyUncondBranchFromEmptyBlock(BB);
                 assert(removed || BB->getSingleSuccessor() == BB);
             }
         }
     }
     if (!isIncluded(&Fun.getEntryBlock()) &&
-            canRemoveFirstBlock(&Fun.getEntryBlock())) {
+        canRemoveFirstBlock(&Fun.getEntryBlock())) {
         // Erase entry block if possible
         DeleteDeadBlock(&Fun.getEntryBlock());
     }
@@ -211,8 +210,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
     // If the return instruction is not included, we can transform the function
     // to return void
-    if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
-              && !Fun.getReturnType()->isVoidTy()) {
+    if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator()) &&
+        !Fun.getReturnType()->isVoidTy()) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "Changing return type of " << Fun.getName()
                                << " to void.\n");
@@ -231,8 +230,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 /// A condition affects those blocks that are reachable through one branch
 /// only: hence it is a difference of union and intersection of sets of
 /// blocks reachable from individual branches.
-std::vector<const BasicBlock *> VarDependencySlicer::affectedBasicBlocks(
-        BranchInst *Branch) {
+std::vector<const BasicBlock *>
+        VarDependencySlicer::affectedBasicBlocks(BranchInst *Branch) {
     std::set<const BasicBlock *> reachableUnion;
     std::set<const BasicBlock *> reachableIntersection;
     bool first = true;
@@ -253,7 +252,8 @@ std::vector<const BasicBlock *> VarDependencySlicer::affectedBasicBlocks(
         }
     }
     std::vector<const BasicBlock *> result;
-    std::set_difference(reachableUnion.begin(), reachableUnion.end(),
+    std::set_difference(reachableUnion.begin(),
+                        reachableUnion.end(),
                         reachableIntersection.begin(),
                         reachableIntersection.end(),
                         std::back_inserter(result));
@@ -324,8 +324,7 @@ bool VarDependencySlicer::addToSet(const Instruction *Inst,
 /// Recursively add all operands of an instruction to included instructions.
 /// \param Inst
 /// \return
-bool VarDependencySlicer::addAllOpsToIncluded(
-        const Instruction *Inst) {
+bool VarDependencySlicer::addAllOpsToIncluded(const Instruction *Inst) {
     bool added = false;
     for (auto &Op : Inst->operands()) {
         if (auto OpInst = dyn_cast<Instruction>(&Op)) {
@@ -351,9 +350,9 @@ bool VarDependencySlicer::addAllOpsToIncluded(
 /// Calculate which successors of a terminator instruction must be included.
 /// We include a successor if there exists an included basic block that is
 /// reachable only via this successor.
-std::set<BasicBlock *> VarDependencySlicer::includedSuccessors(
-    BranchInst &Terminator,
-    const BasicBlock *ExitBlock) {
+std::set<BasicBlock *>
+        VarDependencySlicer::includedSuccessors(BranchInst &Terminator,
+                                                const BasicBlock *ExitBlock) {
 
     // If block has multiple successors, choose which must be included
     if (Terminator.getNumSuccessors() == 0)
@@ -380,11 +379,15 @@ std::set<BasicBlock *> VarDependencySlicer::includedSuccessors(
     if (reachableTrue != reachableFalse) {
         // If one successor covers all included blocks reachable from the other
         // successor, choose it
-        if (std::includes(reachableTrue.begin(), reachableTrue.end(),
-                          reachableFalse.begin(), reachableFalse.end()))
+        if (std::includes(reachableTrue.begin(),
+                          reachableTrue.end(),
+                          reachableFalse.begin(),
+                          reachableFalse.end()))
             return {TrueSucc};
-        if (std::includes(reachableFalse.begin(), reachableFalse.end(),
-                          reachableTrue.begin(), reachableTrue.end()))
+        if (std::includes(reachableFalse.begin(),
+                          reachableFalse.end(),
+                          reachableTrue.begin(),
+                          reachableTrue.end()))
             return {FalseSucc};
         // If neither of successors covers all blocks reachable by the other,
         // we have to follow both
@@ -399,8 +402,7 @@ std::set<BasicBlock *> VarDependencySlicer::includedSuccessors(
     if (!reachableTrue.empty()) {
         if (!isPotentiallyReachable(TrueSucc, Terminator.getParent())) {
             return {TrueSucc};
-        } else if (!isPotentiallyReachable(FalseSucc,
-                                           Terminator.getParent())) {
+        } else if (!isPotentiallyReachable(FalseSucc, Terminator.getParent())) {
             return {FalseSucc};
         } else {
             return {TrueSucc == ExitBlock ? FalseSucc : TrueSucc};
@@ -449,8 +451,9 @@ bool VarDependencySlicer::canRemoveFirstBlock(const BasicBlock *bb) {
 
 /// Calculate the set of all basic blocks reachable from some block in
 /// a function.
-std::set<const BasicBlock *> VarDependencySlicer::reachableBlocks(
-        const BasicBlock *Src, Function &Fun) {
+std::set<const BasicBlock *>
+        VarDependencySlicer::reachableBlocks(const BasicBlock *Src,
+                                             Function &Fun) {
     std::set<const BasicBlock *> result;
     for (auto &BB : Fun) {
         if (Src != &BB && isPotentiallyReachable(Src, &BB))
@@ -461,14 +464,15 @@ std::set<const BasicBlock *> VarDependencySlicer::reachableBlocks(
 
 /// Calculate a set of all basic blocks that are reachable via a successor of
 /// a terminator instruction.
-std::set<const BasicBlock *> VarDependencySlicer::reachableBlocksThroughSucc(
-    Instruction *Terminator, BasicBlock *Succ) {
+std::set<const BasicBlock *>
+        VarDependencySlicer::reachableBlocksThroughSucc(Instruction *Terminator,
+                                                        BasicBlock *Succ) {
     // Replace terminator by unconditional branch and find all blocks reachable
     // through the new branch (one that omits all other successors)
     auto NewBranch = BranchInst::Create(Succ, Terminator);
     Terminator->removeFromParent();
-    auto reachable = reachableBlocks(NewBranch->getParent(),
-                                     *Succ->getParent());
+    auto reachable =
+            reachableBlocks(NewBranch->getParent(), *Succ->getParent());
 
     // Restore original terminator
     Terminator->insertBefore(NewBranch);
@@ -482,17 +486,22 @@ void VarDependencySlicer::intersectWith(
         std::set<const BasicBlock *> &set,
         const std::set<const BasicBlock *> &other) {
     std::set<const BasicBlock *> tmpSet;
-    std::set_intersection(set.begin(), set.end(), other.begin(), other.end(),
+    std::set_intersection(set.begin(),
+                          set.end(),
+                          other.begin(),
+                          other.end(),
                           std::inserter(tmpSet, tmpSet.begin()));
     set = std::move(tmpSet);
 }
 
 /// Set union. Result is stored in the first set.
-void VarDependencySlicer::uniteWith(
-        std::set<const BasicBlock *> &set,
-        const std::set<const BasicBlock *> &other) {
+void VarDependencySlicer::uniteWith(std::set<const BasicBlock *> &set,
+                                    const std::set<const BasicBlock *> &other) {
     std::set<const BasicBlock *> tmpSet;
-    std::set_union(set.begin(), set.end(), other.begin(), other.end(),
+    std::set_union(set.begin(),
+                   set.end(),
+                   other.begin(),
+                   other.end(),
                    std::inserter(tmpSet, tmpSet.begin()));
     set = std::move(tmpSet);
 }
@@ -526,10 +535,10 @@ bool VarDependencySlicer::isIncluded(const Argument *Param) {
 bool VarDependencySlicer::isIncludedDebugInfo(const Instruction &Inst) {
     if (auto CallInstr = dyn_cast<CallInst>(&Inst)) {
         if (!CallInstr->getCalledFunction() ||
-                !isDebugInfo(*CallInstr->getCalledFunction()))
+            !isDebugInfo(*CallInstr->getCalledFunction()))
             return false;
-        const auto *VarMD = dyn_cast<MetadataAsValue>(
-                CallInstr->getOperand(0))->getMetadata();
+        const auto *VarMD = dyn_cast<MetadataAsValue>(CallInstr->getOperand(0))
+                                    ->getMetadata();
         if (const auto *Var = dyn_cast<ValueAsMetadata>(VarMD)) {
             if (auto InstrVar = dyn_cast<Instruction>(Var->getValue())) {
                 return isIncluded(InstrVar);
@@ -576,12 +585,11 @@ bool VarDependencySlicer::checkPhiDependency(const PHINode &Phi) {
 
                     if (included->getTerminator()->getNumSuccessors() == 2) {
                         if (isPotentiallyReachable(
-                                included->getTerminator()->getSuccessor(0),
-                                incomingBB) !=
-                                isPotentiallyReachable(
-                                        included->getTerminator()->getSuccessor(
-                                                1),
-                                        incomingBB))
+                                    included->getTerminator()->getSuccessor(0),
+                                    incomingBB) !=
+                            isPotentiallyReachable(
+                                    included->getTerminator()->getSuccessor(1),
+                                    incomingBB))
                             return true;
                     }
                 }
@@ -711,15 +719,16 @@ void VarDependencySlicer::changeToVoid(Function &Fun) {
             std::vector<Type *>(Fun.getFunctionType()->param_begin(),
                                 Fun.getFunctionType()->param_end()),
             Fun.isVarArg());
-    auto NewFun = Function::Create(NewType,
-                                   Fun.getLinkage(),
-                                   Fun.getName(),
-                                   Fun.getParent());
+    auto NewFun = Function::Create(
+            NewType, Fun.getLinkage(), Fun.getName(), Fun.getParent());
 
     // Map function arguments
     ValueToValueMapTy ArgMap;
-    for (auto AI = Fun.arg_begin(), NAI = NewFun->arg_begin(),
-                 E = Fun.arg_end(); AI != E; ++AI, ++NAI) {
+    for (auto AI = Fun.arg_begin(),
+              NAI = NewFun->arg_begin(),
+              E = Fun.arg_end();
+         AI != E;
+         ++AI, ++NAI) {
         ArgMap.insert({&*AI, &*NAI});
     }
 

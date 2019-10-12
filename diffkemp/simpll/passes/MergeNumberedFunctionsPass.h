@@ -26,4 +26,4 @@ class MergeNumberedFunctionsPass
     PreservedAnalyses run(Module &Mod, AnalysisManager<Module> &mam);
 };
 
-#endif //DIFFKEMP_SIMPLL_MERGENUMBEREDFUNCTIONSPASS_H
+#endif // DIFFKEMP_SIMPLL_MERGENUMBEREDFUNCTIONSPASS_H

@@ -28,7 +28,8 @@ using namespace llvm;
 /// are kept.
 class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
   public:
-    PreservedAnalyses run(Function &Fun, FunctionAnalysisManager &fam,
+    PreservedAnalyses run(Function &Fun,
+                          FunctionAnalysisManager &fam,
                           GlobalVariable *Var);
 
   private:
@@ -49,8 +50,7 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
 
     // Functions for adding to sets
     void addAllInstrs(const std::vector<const BasicBlock *> BBs);
-    bool addToSet(const Instruction *Inst,
-                  std::set<const Instruction *> &set);
+    bool addToSet(const Instruction *Inst, std::set<const Instruction *> &set);
     bool addToDependent(const Instruction *Instr);
     bool addToIncluded(const Instruction *Inst);
     bool addAllOpsToIncluded(const Instruction *Inst);
@@ -73,9 +73,9 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
     // Computing reachable blocks
     std::set<const BasicBlock *> reachableBlocks(const BasicBlock *Src,
                                                  Function &Fun);
-    std::set<const BasicBlock *> reachableBlocksThroughSucc(
-        Instruction *Terminator,
-        BasicBlock *Succ);
+    std::set<const BasicBlock *>
+            reachableBlocksThroughSucc(Instruction *Terminator,
+                                       BasicBlock *Succ);
 
     // Set operations
     void intersectWith(std::set<const BasicBlock *> &set,
@@ -98,4 +98,4 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
     void changeToVoid(Function &Fun);
 };
 
-#endif //PROJECT_VARDEPENDENCYSLICER_H
+#endif // PROJECT_VARDEPENDENCYSLICER_H
