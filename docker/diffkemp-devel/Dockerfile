@@ -17,6 +17,7 @@ RUN apt-get update && \
       clang-7 \
       clang-8 \
       clang-9 \
+      clang-format-8 \
       cmake \
       cpio \
       cscope \
@@ -74,6 +75,9 @@ RUN update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bi
     update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-9 40 && \
     update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-9 40 && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+# Configure links for the clang-format checker script
+RUN update-alternatives --install /usr/local/bin/clang-format clang-format /usr/bin/clang-format-8 40 && \
+    ln -s /diffkemp/tools/check-clang-format.sh /usr/local/bin/check-clang-format
 # Copy script for changing default LLVM version
 COPY switch-llvm.sh /switch-llvm.sh
 RUN chmod +x /switch-llvm.sh
