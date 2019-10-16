@@ -18,6 +18,7 @@
 #include "Logger.h"
 #include "SourceCodeUtils.h"
 #include "passes/FunctionAbstractionsGenerator.h"
+#include "passes/SimplifyKernelFunctionCallsPass.h"
 #include <deque>
 #include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/CFG.h>
@@ -1106,7 +1107,8 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
         if (hasSuffix(NameR.str()))
             NameR = NameR.substr(0, NameR.find_last_of("."));
         if (NameL == NameR
-            || (isPrintFunction(NameL.str()) && isPrintFunction(NameR.str()))) {
+            || (isKernelPrintFunction(NameL.str())
+                && isKernelPrintFunction(NameR.str()))) {
             if (isa<Function>(L) && isa<Function>(R)) {
                 // Functions compared as being the same have to be also compared
                 // by ModuleComparator.
@@ -1115,8 +1117,8 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
 
                 // Do not compare SimpLL abstractions and intrinsic functions.
                 if (!isSimpllAbstraction(FunL) && !isSimpllAbstraction(FunR)
-                    && !isPrintFunction(L->getName().str())
-                    && !isPrintFunction(R->getName().str())
+                    && !isKernelPrintFunction(L->getName().str())
+                    && !isKernelPrintFunction(R->getName().str())
                     && !FunL->isIntrinsic() && !FunR->isIntrinsic()) {
                     // Store the called functions into the current
                     // functions' callee set.

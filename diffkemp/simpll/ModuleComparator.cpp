@@ -18,6 +18,7 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "passes/FunctionAbstractionsGenerator.h"
+#include "passes/SimplifyKernelFunctionCallsPass.h"
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
@@ -223,7 +224,7 @@ ModuleComparator::InliningResult ModuleComparator::tryToInline(
         LOG("Missing definition\n");
         if (!toInline->isIntrinsic() && !isSimpllAbstraction(toInline))
             return MissingDef;
-    } else {
+    } else if (!isKernelSimplifiedFunction(toInline->getName().str())) {
         InlineFunctionInfo ifi;
         if (inlineCall(Call)) {
             return Inlined;
