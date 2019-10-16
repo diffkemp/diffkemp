@@ -114,9 +114,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
     void findMacroFunctionDifference(const Instruction *L,
                                      const Instruction *R) const;
 
-    // Takes all GEPs in a basic block and computes the sum of their offsets if
-    // constant (if not, it returns false).
+    /// Takes all GEPs in a basic block and computes the sum of their offsets if
+    /// constant (if not, it returns false).
     bool accumulateAllOffsets(const BasicBlock &BB, uint64_t &Offset) const;
+
+    /// Check if the given operation can be ignored (it does not affect
+    /// semantics) for control flow only diffs.
+    bool mayIgnore(const Instruction *Inst) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
