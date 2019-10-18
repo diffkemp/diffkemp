@@ -12,10 +12,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "Config.h"
+#include "ModuleComparator.h"
+#include "Output.h"
 #include "Transforms.h"
 #include "Utils.h"
-#include "Output.h"
-#include "ModuleComparator.h"
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -37,9 +37,13 @@ int main(int argc, const char **argv) {
     Config config;
 
     // Run transformations
-    preprocessModule(*config.First, config.FirstFun, config.FirstVar,
+    preprocessModule(*config.First,
+                     config.FirstFun,
+                     config.FirstVar,
                      config.ControlFlowOnly);
-    preprocessModule(*config.Second, config.SecondFun, config.SecondVar,
+    preprocessModule(*config.Second,
+                     config.SecondFun,
+                     config.SecondVar,
                      config.ControlFlowOnly);
     config.refreshFunctions();
 

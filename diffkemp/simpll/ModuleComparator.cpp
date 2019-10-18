@@ -54,8 +54,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             else
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
         } else {
-            if (FirstFun->isDeclaration() && SecondFun->isDeclaration() &&
-                FirstFunName == SecondFunName)
+            if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
+                && FirstFunName == SecondFunName)
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
             else if (FirstFunName != SecondFunName)
                 ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
@@ -74,8 +74,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 if (ComparedFuns.at({FirstFun, SecondFun}) == Result::EQUAL) {
                     dbgs() << getDebugIndent() << "Declarations with matching "
                            << "names, assuming they are equal\n";
-                } else if (ComparedFuns.at({FirstFun, SecondFun}) ==
-                           Result::NOT_EQUAL) {
+                } else if (ComparedFuns.at({FirstFun, SecondFun})
+                           == Result::NOT_EQUAL) {
                     dbgs() << getDebugIndent()
                            << "Declarations without matching "
                            << "names, assuming they are not equal\n";
@@ -122,12 +122,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     !inlineSecond
                             ? nullptr
                             : getCalledFunction(inlineSecond->getCalledValue());
-            if (InlinedFunFirst && InlinedFunSecond &&
-                !isSimpllAbstraction(InlinedFunFirst) &&
-                (InlinedFunFirst->getName() == InlinedFunSecond->getName())) {
+            if (InlinedFunFirst && InlinedFunSecond
+                && !isSimpllAbstraction(InlinedFunFirst)
+                && (InlinedFunFirst->getName()
+                    == InlinedFunSecond->getName())) {
                 compareFunctions(InlinedFunFirst, InlinedFunSecond);
-                if (ComparedFuns.at({InlinedFunFirst, InlinedFunSecond}) ==
-                    Result::NOT_EQUAL)
+                if (ComparedFuns.at({InlinedFunFirst, InlinedFunSecond})
+                    == Result::NOT_EQUAL)
                     CoveredFuns.insert(FirstFun->getName().str());
             }
             // If the called function is a declaration, add it to missingDefs.
@@ -143,8 +144,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << getDebugIndent()
                                            << "Missing definition\n");
-                    if (!toInline->isIntrinsic() &&
-                        !isSimpllAbstraction(toInline))
+                    if (!toInline->isIntrinsic()
+                        && !isSimpllAbstraction(toInline))
                         missingDefs.first = toInline;
                 } else {
                     InlineFunctionInfo ifi;
@@ -163,8 +164,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << getDebugIndent()
                                            << "Missing definition\n");
-                    if (!toInline->isIntrinsic() &&
-                        !isSimpllAbstraction(toInline))
+                    if (!toInline->isIntrinsic()
+                        && !isSimpllAbstraction(toInline))
                         missingDefs.second = toInline;
                 } else {
                     InlineFunctionInfo ifi;

@@ -197,8 +197,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
             }
         }
     }
-    if (!isIncluded(&Fun.getEntryBlock()) &&
-        canRemoveFirstBlock(&Fun.getEntryBlock())) {
+    if (!isIncluded(&Fun.getEntryBlock())
+        && canRemoveFirstBlock(&Fun.getEntryBlock())) {
         // Erase entry block if possible
         DeleteDeadBlock(&Fun.getEntryBlock());
     }
@@ -210,8 +210,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
     // If the return instruction is not included, we can transform the function
     // to return void
-    if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator()) &&
-        !Fun.getReturnType()->isVoidTy()) {
+    if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
+        && !Fun.getReturnType()->isVoidTy()) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "Changing return type of " << Fun.getName()
                                << " to void.\n");
@@ -534,8 +534,8 @@ bool VarDependencySlicer::isIncluded(const Argument *Param) {
 // Check if the instruction is a debug info that must be included.
 bool VarDependencySlicer::isIncludedDebugInfo(const Instruction &Inst) {
     if (auto CallInstr = dyn_cast<CallInst>(&Inst)) {
-        if (!CallInstr->getCalledFunction() ||
-            !isDebugInfo(*CallInstr->getCalledFunction()))
+        if (!CallInstr->getCalledFunction()
+            || !isDebugInfo(*CallInstr->getCalledFunction()))
             return false;
         const auto *VarMD = dyn_cast<MetadataAsValue>(CallInstr->getOperand(0))
                                     ->getMetadata();
@@ -586,8 +586,8 @@ bool VarDependencySlicer::checkPhiDependency(const PHINode &Phi) {
                     if (included->getTerminator()->getNumSuccessors() == 2) {
                         if (isPotentiallyReachable(
                                     included->getTerminator()->getSuccessor(0),
-                                    incomingBB) !=
-                            isPotentiallyReachable(
+                                    incomingBB)
+                            != isPotentiallyReachable(
                                     included->getTerminator()->getSuccessor(1),
                                     incomingBB))
                             return true;

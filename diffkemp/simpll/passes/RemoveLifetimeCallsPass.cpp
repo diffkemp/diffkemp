@@ -26,8 +26,9 @@ PreservedAnalyses RemoveLifetimeCallsPass::run(Module &Mod,
                         continue;
                     auto name = fun->getName();
                     // TODO: this should work with Instr.getIntrinsicID()
-                    if (name.find("llvm.lifetime.start") != std::string::npos ||
-                        name.find("llvm.lifetime.end") != std::string::npos) {
+                    if (name.find("llvm.lifetime.start") != std::string::npos
+                        || name.find("llvm.lifetime.end")
+                                   != std::string::npos) {
                         toRemove.push_back(&Instr);
                     }
                 }

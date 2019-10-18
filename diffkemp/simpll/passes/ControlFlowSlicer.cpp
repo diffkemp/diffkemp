@@ -58,8 +58,8 @@ bool hasIndirectCall(const Function &Fun) {
                     if (Use.getUser() == Call)
                         continue;
                     if (auto UserCall = dyn_cast<CallInst>(Use.getUser())) {
-                        if (UserCall->getCalledFunction() &&
-                            UserCall->getCalledFunction()->isIntrinsic())
+                        if (UserCall->getCalledFunction()
+                            && UserCall->getCalledFunction()->isIntrinsic())
                             continue;
                     }
                     return true;
@@ -95,8 +95,8 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                 // Call instruction except calls to intrinsics
                 keep = true;
                 auto Function = CallInstr->getCalledFunction();
-                if (Function && !hasSideEffect(*Function) &&
-                    isResultOnlyStored(CallInstr)) {
+                if (Function && !hasSideEffect(*Function)
+                    && isResultOnlyStored(CallInstr)) {
                     // Remove calls to functions having no side effects whose
                     // result is only stored somewhere (does not affect control
                     // flow).

@@ -87,8 +87,8 @@ void deleteAliasToFun(Module &Mod, Function *Fun) {
 /// Check if the substring behind the last dot ('.') contains only numbers.
 bool hasSuffix(std::string Name) {
     size_t dotPos = Name.find_last_of('.');
-    return dotPos != std::string::npos &&
-           Name.find_last_not_of("0123456789.") < dotPos;
+    return dotPos != std::string::npos
+           && Name.find_last_not_of("0123456789.") < dotPos;
 }
 
 /// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned
@@ -102,8 +102,8 @@ std::string dropSuffix(std::string Name) {
 std::string joinPath(StringRef DirName, StringRef FileName) {
     return FileName.startswith(DirName)
                    ? FileName.str()
-                   : DirName.str() + sys::path::get_separator().str() +
-                             FileName.str();
+                   : DirName.str() + sys::path::get_separator().str()
+                             + FileName.str();
 }
 
 /// Extracts file name and directory name from the DebugInfo
@@ -173,9 +173,9 @@ CallStack getCallStack(Function &Src, Function &Dest) {
 /// other function with side effect).
 bool hasSideEffect(const Function &Fun, std::set<const Function *> &Visited) {
     if (Fun.isDeclaration()) {
-        return !(Fun.getIntrinsicID() == Intrinsic::dbg_declare ||
-                 Fun.getIntrinsicID() == Intrinsic::dbg_value ||
-                 Fun.getIntrinsicID() == Intrinsic::expect);
+        return !(Fun.getIntrinsicID() == Intrinsic::dbg_declare
+                 || Fun.getIntrinsicID() == Intrinsic::dbg_value
+                 || Fun.getIntrinsicID() == Intrinsic::expect);
     }
     Visited.insert(&Fun);
     for (auto &BB : Fun) {
@@ -204,8 +204,8 @@ bool hasSideEffect(const Function &Fun) {
 
 /// Returns true if the function is one of the supported allocators
 bool isAllocFunction(const Function &Fun) {
-    return Fun.getName() == "kzalloc" || Fun.getName() == "__kmalloc" ||
-           Fun.getName() == "kmalloc";
+    return Fun.getName() == "kzalloc" || Fun.getName() == "__kmalloc"
+           || Fun.getName() == "kmalloc";
 }
 
 /// Get value of the given constant as a string
@@ -305,8 +305,8 @@ bool isPrintFunction(std::string name) {
 
 /// Checks whether the character is valid for a C identifier.
 bool isValidCharForIdentifier(char ch) {
-    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
-        (ch >= '0' && ch <= '9') || ch == '_')
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')
+        || (ch >= '0' && ch <= '9') || ch == '_')
         return true;
     else
         return false;
@@ -393,14 +393,15 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
         BinaryOperator *BO = BinaryOperator::Create(
                 (Instruction::BinaryOps)CEx->getOpcode(), Ops[0], Ops[1]);
         if (isa<OverflowingBinaryOperator>(BO)) {
-            BO->setHasNoUnsignedWrap(CEx->getRawSubclassOptionalData() &
-                                     OverflowingBinaryOperator::NoUnsignedWrap);
-            BO->setHasNoSignedWrap(CEx->getRawSubclassOptionalData() &
-                                   OverflowingBinaryOperator::NoSignedWrap);
+            BO->setHasNoUnsignedWrap(
+                    CEx->getRawSubclassOptionalData()
+                    & OverflowingBinaryOperator::NoUnsignedWrap);
+            BO->setHasNoSignedWrap(CEx->getRawSubclassOptionalData()
+                                   & OverflowingBinaryOperator::NoSignedWrap);
         }
         if (isa<PossiblyExactOperator>(BO))
-            BO->setIsExact(CEx->getRawSubclassOptionalData() &
-                           PossiblyExactOperator::IsExact);
+            BO->setIsExact(CEx->getRawSubclassOptionalData()
+                           & PossiblyExactOperator::IsExact);
         return BO;
     }
 }
@@ -451,10 +452,10 @@ std::string getIdentifierForValue(
                                                   ArrayRef<Value *>(Indices));
             Value *Index = idx->get();
 
-            if (isa<ConstantInt>(Index) &&
-                (dyn_cast<ConstantInt>(Index)->getValue().getZExtValue() ==
-                 0) &&
-                (idx == GEPi->idx_begin())) {
+            if (isa<ConstantInt>(Index)
+                && (dyn_cast<ConstantInt>(Index)->getValue().getZExtValue()
+                    == 0)
+                && (idx == GEPi->idx_begin())) {
                 // Do not print the first zero index
                 continue;
             }
@@ -499,8 +500,8 @@ std::string getIdentifierForValue(
         // Bit casts are expanded to C-like cast syntax.
         std::string Casted = getIdentifierForValue(
                 BitCast->getOperand(0), StructFieldNames, Parent);
-        return "((" + getIdentifierForType(BitCast->getDestTy()) + ") " +
-               Casted + ")";
+        return "((" + getIdentifierForType(BitCast->getDestTy()) + ") " + Casted
+               + ")";
     } else if (auto ZExt = dyn_cast<ZExtInst>(Val)) {
         // ZExt is treated the same as a statement without it
         return getIdentifierForValue(

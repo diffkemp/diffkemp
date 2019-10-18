@@ -66,4 +66,4 @@ script:
   - pytest tests
   - flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
   - flake8 tests
-  - tools/check-clang-format.sh diffkemp
+  - tools/check-clang-format.sh -d

@@ -73,13 +73,14 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
 
         for (Use &U : Fun->uses()) {
             // Figure out whether the return value is used after each call.
-            if (U.getUser()->use_empty() &&
-                ((isa<CallInst>(U.getUser()) &&
-                  (dyn_cast<CallInst>(U.getUser())->getCalledFunction()) ==
-                          Fun) ||
-                 (isa<InvokeInst>(U.getUser()) &&
-                  (dyn_cast<InvokeInst>(U.getUser())->getCalledFunction()) ==
-                          Fun))) {
+            if (U.getUser()->use_empty()
+                && ((isa<CallInst>(U.getUser())
+                     && (dyn_cast<CallInst>(U.getUser())->getCalledFunction())
+                                == Fun)
+                    || (isa<InvokeInst>(U.getUser())
+                        && (dyn_cast<InvokeInst>(U.getUser())
+                                    ->getCalledFunction())
+                                   == Fun))) {
                 // The instruction can be replaced.
                 toReplace.push_back(dyn_cast<Instruction>(U.getUser()));
             }

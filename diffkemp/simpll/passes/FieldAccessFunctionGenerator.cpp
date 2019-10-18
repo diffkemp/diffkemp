@@ -61,9 +61,8 @@ PreservedAnalyses FieldAccessFunctionGenerator::run(
                         DIL = Inst.getDebugLoc().get();
                         InstStack.push_back(&Inst);
                     }
-                } else if ((isa<GetElementPtrInst>(Inst) ||
-                            isa<CastInst>(Inst)) &&
-                           !InstStack.empty()) {
+                } else if ((isa<GetElementPtrInst>(Inst) || isa<CastInst>(Inst))
+                           && !InstStack.empty()) {
                     if (Inst.getDebugLoc().get() != DIL) {
                         // Stop building stack.
                         processStack(InstStack, Mod);
