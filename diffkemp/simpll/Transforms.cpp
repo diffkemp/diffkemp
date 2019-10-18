@@ -214,9 +214,9 @@ void markCalleesAlwaysInline(Function &Fun,
         for (auto &Instr : BB) {
             if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
                 auto CalledFun = CallInstr->getCalledFunction();
-                if (!CalledFun || CalledFun->isDeclaration() ||
-                    CalledFun->isIntrinsic() ||
-                    IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
+                if (!CalledFun || CalledFun->isDeclaration()
+                    || CalledFun->isIntrinsic()
+                    || IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
                     continue;
 
                 if (CalledFun->hasFnAttribute(Attribute::AttrKind::NoInline))

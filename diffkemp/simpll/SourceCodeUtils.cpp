@@ -60,11 +60,11 @@ std::unordered_map<std::string, MacroElement>
                     // We are looking for the beginning of an identifier.
                     if (isValidCharForIdentifierStart(macroBody[i]))
                         potentialMacroName += macroBody[i];
-                } else if (!isValidCharForIdentifier(macroBody[i]) ||
-                           (i == (macroBody.size() - 1))) {
+                } else if (!isValidCharForIdentifier(macroBody[i])
+                           || (i == (macroBody.size() - 1))) {
                     // We found the end of the identifier.
-                    if (i == (macroBody.size() - 1) &&
-                        isValidCharForIdentifier(macroBody[i]))
+                    if (i == (macroBody.size() - 1)
+                        && isValidCharForIdentifier(macroBody[i]))
                         // We found the end of the entire macro - append the
                         // last character, too
                         potentialMacroName += macroBody[i];
@@ -137,8 +137,8 @@ void expandCompositeMacroNames(std::vector<std::string> params,
                                std::string &body) {
     for (auto arg : zip(params, args)) {
         int position = 0;
-        while ((position = body.find(std::get<0>(arg) + "##", position)) !=
-               std::string::npos) {
+        while ((position = body.find(std::get<0>(arg) + "##", position))
+               != std::string::npos) {
             if (position != 0 && isValidCharForIdentifier(body[position - 1]))
                 // Do not replace parts of identifiers.
                 continue;
@@ -173,8 +173,8 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
     // the other parts are added to it.
     line_iterator it(**sourceFile);
     std::string line, previousLine;
-    while (!it.is_at_end() &&
-           it.line_number() != (LineLoc->getLine() + offset)) {
+    while (!it.is_at_end()
+           && it.line_number() != (LineLoc->getLine() + offset)) {
         ++it;
         if (it->count('(') < it->count(')'))
             // The line is a continuation of the previous one
@@ -190,8 +190,8 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
         do {
             ++it;
             line += it->str();
-        } while (!it.is_at_end() &&
-                 (StringRef(line).count(')') < StringRef(line).count('(')));
+        } while (!it.is_at_end()
+                 && (StringRef(line).count(')') < StringRef(line).count('(')));
     }
 
     // Detect and fix unfinished return expressions.
@@ -199,8 +199,8 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
     findAndReplace(lineWithoutWhitespace, " ", "");
     findAndReplace(lineWithoutWhitespace, "\t", "");
 
-    if (StringRef(lineWithoutWhitespace).startswith("return") &&
-        !StringRef(line).contains(";")) {
+    if (StringRef(lineWithoutWhitespace).startswith("return")
+        && !StringRef(line).contains(";")) {
         do {
             ++it;
             line += it->str();
@@ -339,8 +339,8 @@ std::vector<SyntaxDifference> findMacroDifferences(const Instruction *L,
         auto LValue = MacrosL.find(Elem.first);
         auto RValue = MacrosR.find(Elem.first);
 
-        if (LValue != MacrosL.end() && RValue != MacrosR.end() &&
-            LValue->second.body != RValue->second.body) {
+        if (LValue != MacrosL.end() && RValue != MacrosR.end()
+            && LValue->second.body != RValue->second.body) {
             // Macro difference found - get the macro stacks and insert the
             // object into the macro differences array to be passed on to
             // ModuleComparator.
@@ -475,15 +475,14 @@ std::pair<std::string, std::string>
     if (std::count(extractedBody.begin(), extractedBody.end(), '\"') % 2 == 1)
         return {"", ""};
 
-    while (extractedBody.find('\"', lastQuotationMark + 1) !=
-                   std::string::npos &&
-           extractedBody.find(':', lastQuotationMark + 1) >
-                   extractedBody.find('\"', lastQuotationMark + 1)) {
+    while (extractedBody.find('\"', lastQuotationMark + 1) != std::string::npos
+           && extractedBody.find(':', lastQuotationMark + 1)
+                      > extractedBody.find('\"', lastQuotationMark + 1)) {
         firstQuotationMark = extractedBody.find('\"', lastQuotationMark + 1);
         lastQuotationMark = extractedBody.find('\"', firstQuotationMark + 1);
         newBody += extractedBody.substr(firstQuotationMark + 1,
-                                        lastQuotationMark - firstQuotationMark -
-                                                1);
+                                        lastQuotationMark - firstQuotationMark
+                                                - 1);
     }
 
     // Replaces inline asm argument syntax (assuming there are 20 or less
@@ -547,9 +546,9 @@ std::vector<std::string> findInlineAssemblySourceArguments(
         auto it = std::remove_if(candidates.begin(),
                                  candidates.end(),
                                  [&position, &inlineAsm](auto &candidate) {
-                                     return candidate.first[position] !=
-                                                    inlineAsm[position] ||
-                                            candidate.first == "";
+                                     return candidate.first[position]
+                                                    != inlineAsm[position]
+                                            || candidate.first == "";
                                  });
         candidates.erase(it, candidates.end());
 
@@ -598,8 +597,8 @@ std::vector<std::string> splitArgumentsList(std::string argumentString) {
             ++bracketCounter;
         else if (argumentString[position] == ')')
             --bracketCounter;
-        if ((bracketCounter == 0 && (argumentString[position] == ',')) ||
-            bracketCounter == -1) {
+        if ((bracketCounter == 0 && (argumentString[position] == ','))
+            || bracketCounter == -1) {
             // Next argument
             unstrippedArguments.push_back(currentArgument);
             currentArgument = "";
@@ -616,9 +615,9 @@ std::vector<std::string> splitArgumentsList(std::string argumentString) {
             arguments.push_back(arg);
         else
             arguments.push_back(arg.substr(arg.find_first_not_of(" "),
-                                           arg.find_last_not_of(" ") -
-                                                   arg.find_first_not_of(" ") +
-                                                   1));
+                                           arg.find_last_not_of(" ")
+                                                   - arg.find_first_not_of(" ")
+                                                   + 1));
     }
 
     return arguments;

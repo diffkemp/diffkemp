@@ -62,8 +62,8 @@ PreservedAnalyses
                     //  - replace the second argument by 0 (is a line number)
                     auto CalledVal = CallInstr->getCalledValue();
                     if (auto Asm = dyn_cast<InlineAsm>(CalledVal)) {
-                        if (Asm->getAsmString().find("__bug_table") !=
-                            std::string::npos) {
+                        if (Asm->getAsmString().find("__bug_table")
+                            != std::string::npos) {
                             replaceArgByNull(CallInstr, 0);
                             replaceArgByZero(CallInstr, 1);
                         }
@@ -107,10 +107,10 @@ PreservedAnalyses
 
                 // Replace the second argument of a call to warn_slowpath_null
                 // by 0 (it is a line number).
-                if (CalledFun->getName() == "warn_slowpath_null" ||
-                    CalledFun->getName() == "warn_slowpath_fmt" ||
-                    CalledFun->getName() == "__might_sleep" ||
-                    CalledFun->getName() == "acpi_ut_predefined_warning") {
+                if (CalledFun->getName() == "warn_slowpath_null"
+                    || CalledFun->getName() == "warn_slowpath_fmt"
+                    || CalledFun->getName() == "__might_sleep"
+                    || CalledFun->getName() == "acpi_ut_predefined_warning") {
                     replaceArgByNull(CallInstr, 0);
                     replaceArgByZero(CallInstr, 1);
                 }

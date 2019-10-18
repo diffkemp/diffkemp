@@ -23,8 +23,8 @@ PreservedAnalyses StructHashGeneratorPass::run(
 
     for (auto *Ty : Types) {
         if (auto STy = dyn_cast<StructType>(Ty)) {
-            if (!STy->getStructName().startswith("union.anon") &&
-                !STy->getStructName().startswith("struct.anon"))
+            if (!STy->getStructName().startswith("union.anon")
+                && !STy->getStructName().startswith("struct.anon"))
                 continue;
             std::string TypeName = STy->getStructName().str();
             std::string TypeDump;
@@ -40,8 +40,8 @@ PreservedAnalyses StructHashGeneratorPass::run(
             std::string NewTypeName =
                     (STy->getStructName().startswith("union.anon")
                              ? "union.anon."
-                             : "struct.anon.") +
-                    std::to_string(hash_value(TypeDecl));
+                             : "struct.anon.")
+                    + std::to_string(hash_value(TypeDecl));
 
             // Rename the type
             STy->setName(NewTypeName);

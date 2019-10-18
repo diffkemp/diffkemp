@@ -66,8 +66,8 @@ class DebugInfo {
     std::map<const Constant *, std::string> MacroConstantMap;
 
     /// Maps local variable names to their values.
-    std::unordered_map<std::string, const Value *> LocalVariableMapL,
-            LocalVariableMapR;
+    std::unordered_map<std::string, const Value *> LocalVariableMapL;
+    std::unordered_map<std::string, const Value *> LocalVariableMapR;
 
   private:
     Function *FunFirst;

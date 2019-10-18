@@ -166,12 +166,12 @@ void reportOutput(Config &config, ComparisonResult &Result) {
             auto ModuleR = Result.nonequalFuns[0].second->getParent();
 
             // Function has to exist in both modules to prevent mistakes.
-            if ((ModuleL->getFunction(synDiff.function) == nullptr) ||
-                (ModuleR->getFunction(synDiff.function) == nullptr))
+            if ((ModuleL->getFunction(synDiff.function) == nullptr)
+                || (ModuleR->getFunction(synDiff.function) == nullptr))
                 continue;
 
-            if (differingFunsSet.find(synDiff.function) ==
-                differingFunsSet.end()) {
+            if (differingFunsSet.find(synDiff.function)
+                == differingFunsSet.end()) {
                 skipSynDiff = true;
             }
         } else {
@@ -226,8 +226,8 @@ void reportOutput(Config &config, ComparisonResult &Result) {
                 SyndiffBody{synDiff.name, synDiff.BodyL, synDiff.BodyR});
     }
     for (auto &funPair : Result.nonequalFuns) {
-        bool covered = Result.coveredFuns.find(funPair.first->getName()) !=
-                       Result.coveredFuns.end();
+        bool covered = Result.coveredFuns.find(funPair.first->getName())
+                       != Result.coveredFuns.end();
         report.diffFuns.push_back(
                 {FunctionInfo(
                          funPair.first->getName(),

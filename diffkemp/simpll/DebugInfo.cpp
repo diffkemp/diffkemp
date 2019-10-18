@@ -43,8 +43,8 @@ bool isDebugInfo(const Instruction &Instr) {
 }
 
 bool isDebugInfo(const Function &Fun) {
-    return Fun.getIntrinsicID() == Intrinsic::dbg_declare ||
-           Fun.getIntrinsicID() == Intrinsic::dbg_value;
+    return Fun.getIntrinsicID() == Intrinsic::dbg_declare
+           || Fun.getIntrinsicID() == Intrinsic::dbg_value;
 }
 
 /// Get C name of the struct type. This can be extracted from the LLVM struct
@@ -262,8 +262,8 @@ bool DebugInfo::isSameElemIndex(const DIDerivedType *TypeElem) {
                     dyn_cast<ConstantAsMetadata>(TypeElem->getExtraData())) {
             if (auto ExtraDataConst =
                         dyn_cast<ConstantInt>(ExtraDataValue->getValue())) {
-                if (ExtraDataConst->getZExtValue() !=
-                    TypeElem->getOffsetInBits())
+                if (ExtraDataConst->getZExtValue()
+                    != TypeElem->getOffsetInBits())
                     return true;
             }
         }
@@ -433,8 +433,8 @@ void DebugInfo::collectLocalVariables(
                     continue;
 #if LLVM_VERSION_MAJOR < 6
                 MetadataAsValue *DIVal;
-                if (getCalledFunction(CInst->getCalledValue())->getName() ==
-                    "llvm.dbg.declare")
+                if (getCalledFunction(CInst->getCalledValue())->getName()
+                    == "llvm.dbg.declare")
                     DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(1));
                 else
                     DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(2));
@@ -457,8 +457,8 @@ void DebugInfo::collectLocalVariables(
 /// macro in the first module and the new value from the second module.
 void DebugInfo::addAlignment(std::string MacroName, std::string MacroValue) {
     auto MacroUsage = MacroUsageMap.find(MacroName);
-    if (MacroUsage != MacroUsageMap.end() &&
-        valueAsString(*MacroUsage->second.begin()) != MacroValue) {
+    if (MacroUsage != MacroUsageMap.end()
+        && valueAsString(*MacroUsage->second.begin()) != MacroValue) {
         for (auto *Constant : MacroUsage->second) {
             MacroConstantMap.emplace(Constant, MacroValue);
         }
