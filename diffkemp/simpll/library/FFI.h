@@ -12,6 +12,9 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#ifndef DIFFKEMP_SIMPLL_FFI_H
+#define DIFFKEMP_SIMPLL_FFI_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,12 +23,25 @@ extern "C" {
 // Note: this comment is an identifier for simpll_build.py. Any changes made to
 // it should be reflected there.
 
+struct builtin_patterns {
+    int StructAlignment;
+    int FunctionSplits;
+    int UnusedReturnTypes;
+    int KernelPrints;
+    int DeadCode;
+    int NumericalMacros;
+    int Relocations;
+    int TypeCasts;
+    int ControlFlowOnly;
+    int InverseConditions;
+};
+
 struct config {
     const char *CacheDir;
     const char *CustomPatterns;
+    struct builtin_patterns BuiltinPatterns;
     const char *Variable;
     int OutputLlvmIR;
-    int ControlFlowOnly;
     int PrintAsmDiffs;
     int PrintCallStacks;
     int Verbosity;
@@ -126,7 +142,7 @@ void parseAndRunSimpLL(const char *ModL,
 
 /// Runs preprocess passes on module and marks it as being preprocessed so they
 /// won't be run again when the module is compared.
-void preprocessModuleC(void *Mod, int ControlFlowOnly);
+void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC);
 
 void shutdownSimpLL();
 
@@ -137,3 +153,5 @@ void shutdownSimpLL();
 #ifdef __cplusplus
 }
 #endif
+
+#endif // DIFFKEMP_SIMPLL_FFI_H

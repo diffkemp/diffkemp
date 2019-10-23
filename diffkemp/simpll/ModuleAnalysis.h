@@ -32,10 +32,11 @@ using namespace llvm;
 /// \param Var Global variable w.r.t. to whose value the semantic diff will be
 ///            done. Can be set to NULL, but specifying this enables more
 ///            aggresive simplification.
+/// \param BuiltinPatterns Specifies which built-in patterns are enabled.
 void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
-                      bool ControlFlowOnly);
+                      BuiltinPatterns Patterns);
 
 /// Simplify two corresponding modules for the purpose of their subsequent
 /// semantic difference analysis. Tries to remove all the code that is
