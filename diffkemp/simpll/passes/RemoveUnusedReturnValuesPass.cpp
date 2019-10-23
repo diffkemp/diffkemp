@@ -169,9 +169,6 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 B.getInstList().pop_back();
                 ReturnInst *Term_New = ReturnInst::Create(B.getContext());
                 B.getInstList().push_back(Term_New);
-
-                // Simplify the function to remove any code that became dead
-                simplifyFunction(Fun_New);
             }
 
         // Replace all uses of the old arguments
@@ -182,6 +179,10 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
              ++I, ++NI) {
             I->replaceAllUsesWith(NI);
         }
+
+        if (!Fun_New->isDeclaration())
+            // Simplify the function to remove any code that became dead.
+            simplifyFunction(Fun_New);
 
         // For call or invoke instructions where the return value is not used
         // a new instruction has to be created and the old one replaced.
