@@ -53,7 +53,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         if (hasSuffix(SecondFunName))
             SecondFunName = dropSuffix(SecondFunName);
 
-        if (config.ControlFlowOnly) {
+        if (config.Patterns.ControlFlowOnly) {
             // If checking control flow only, it suffices that one of the
             // functions is a declaration to treat them equal.
             if (FirstFunName == SecondFunName)
@@ -117,6 +117,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
 
         std::set<ConstFunPair> inlinedPairs;
+
         while (tryInline.first || tryInline.second) {
             LOG_INDENT();
 
@@ -125,8 +126,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             CallInst *callSecond = findCallInst(tryInline.second, SecondFun);
             auto calledFirst = getCalledFunction(callFirst);
             auto calledSecond = getCalledFunction(callSecond);
-            auto inlineResultFirst = tryToInline(callFirst, Program::First);
-            auto inlineResultSecond = tryToInline(callSecond, Program::Second);
+
+            auto inlineResultFirst = tryToInline(
+                    callFirst, Program::First, config.Patterns.FunctionSplits);
+            auto inlineResultSecond =
+                    tryToInline(callSecond,
+                                Program::Second,
+                                config.Patterns.FunctionSplits);
 
             // If some function to be inlined does not have a declaration,
             // store it into MissingDefs (will be reported at the end).
@@ -194,18 +200,22 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 }
 
 /// Try to inline a function call.
-/// \param Call     Call instruction to inline
-/// \param program  Program in which the inlining is done
+/// \param Call                  Call instruction to inline
+/// \param program               Program in which the inlining is done
+/// \param FunctionSplitsEnabled Whether the necessary built-in pattern is on
 /// \return InliningResult::Inlined    when inlining was successful
 ///         InliningResult::NotInlined when inlining was unsuccessful
 ///         Inlining::MissingDef       when inlining was unsuccessful due to
 ///                                    missing function definition
-ModuleComparator::InliningResult
-        ModuleComparator::tryToInline(CallInst *Call, Program program) const {
+ModuleComparator::InliningResult ModuleComparator::tryToInline(
+        CallInst *Call, Program program, bool FunctionSplitsEnabled) const {
     if (!Call)
         return NotInlined;
 
     Function *toInline = getCalledFunction(Call);
+
+    if (!FunctionSplitsEnabled && !isSimpllAbstraction(toInline))
+        return NotInlined;
 
     LOG("Inlining \"" << toInline->getName() << "\" in " << programName(program)
                       << "\n");

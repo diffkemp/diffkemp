@@ -60,6 +60,21 @@ template <class T> struct ptr_array stringContainerToPtrArray(T Container) {
     return ptr_array{(void **)Result, Container.size()};
 }
 
+BuiltinPatterns BuiltinPatternsFromC(builtin_patterns PatternsC) {
+    return BuiltinPatterns{
+            .StructAlignment = (bool)PatternsC.StructAlignment,
+            .FunctionSplits = (bool)PatternsC.FunctionSplits,
+            .UnusedReturnTypes = (bool)PatternsC.UnusedReturnTypes,
+            .KernelPrints = (bool)PatternsC.KernelPrints,
+            .DeadCode = (bool)PatternsC.DeadCode,
+            .NumericalMacros = (bool)PatternsC.NumericalMacros,
+            .Relocations = (bool)PatternsC.Relocations,
+            .TypeCasts = (bool)PatternsC.TypeCasts,
+            .ControlFlowOnly = (bool)PatternsC.ControlFlowOnly,
+            .InverseConditions = (bool)PatternsC.InverseConditions,
+    };
+}
+
 extern "C" {
 void *loadModule(const char *Path) {
     SMDiagnostic err;
@@ -234,9 +249,9 @@ void runSimpLL(void *ModL,
                   ModROut,
                   Conf.CacheDir,
                   Conf.CustomPatterns,
+                  BuiltinPatternsFromC(Conf.BuiltinPatterns),
                   Conf.Variable,
                   Conf.OutputLlvmIR,
-                  Conf.ControlFlowOnly,
                   Conf.PrintAsmDiffs,
                   Conf.PrintCallStacks,
                   Conf.Verbosity);
@@ -297,9 +312,10 @@ void parseAndRunSimpLL(const char *ModL,
 
 /// Runs preprocess passes on module and marks it as being preprocessed so they
 /// won't be run again when the module is compared.
-void preprocessModuleC(void *Mod, int ControlFlowOnly) {
+void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC) {
     Module *LLVMMod = (Module *)Mod;
-    preprocessModule(*LLVMMod, nullptr, nullptr, ControlFlowOnly);
+    BuiltinPatterns Patterns = BuiltinPatternsFromC(PatternsC);
+    preprocessModule(*LLVMMod, nullptr, nullptr, Patterns);
 }
 
 void shutdownSimpLL() { llvm_shutdown(); }

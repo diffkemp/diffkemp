@@ -26,6 +26,19 @@
 
 using namespace llvm;
 
+struct BuiltinPatterns {
+    bool StructAlignment = true;
+    bool FunctionSplits = true;
+    bool UnusedReturnTypes = true;
+    bool KernelPrints = true;
+    bool DeadCode = true;
+    bool NumericalMacros = true;
+    bool Relocations = true;
+    bool TypeCasts = false;
+    bool ControlFlowOnly = false;
+    bool InverseConditions = true;
+};
+
 /// Tool configuration parsed from CLI options.
 class Config {
   private:
@@ -54,10 +67,12 @@ class Config {
     // Path to custom LLVM IR differential pattern configuration.
     std::string CustomPatternConfigPath;
 
+    // The following structure specifies which built-in patterns
+    // should be treated as semantically equal.
+    struct BuiltinPatterns Patterns;
+
     // Save the simplified IR of the module to a file.
     bool OutputLlvmIR;
-    // Keep only control-flow related instructions
-    bool ControlFlowOnly;
     // Print raw differences in inline assembly.
     bool PrintAsmDiffs;
     // Show call stacks for non-equal functions
@@ -71,25 +86,25 @@ class Config {
            std::string SecondOutFile,
            std::string CacheDir,
            std::string CustomPatternConfigPath,
+           BuiltinPatterns Patterns,
            std::string Variable = "",
            bool OutputLlvmIR = false,
-           bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
            int Verbosity = 0);
+
     // Constructor without module loading (for tests).
     Config(std::string FirstFunName,
            std::string SecondFunName,
            std::string CacheDir,
            std::string CustomPatternConfigPath,
-           bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true)
             : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
               First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
-              CustomPatternConfigPath(PatternConfigPath),
-              ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
+              CustomPatternConfigPath(CustomPatternConfigPath),
+              OutputLlvmIR(false), PrintAsmDiffs(PrintAsmDiffs),
               PrintCallStacks(PrintCallStacks) {}
 
     /// Sets debug types specified in the vector.

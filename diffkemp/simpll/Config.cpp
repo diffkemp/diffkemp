@@ -39,17 +39,17 @@ Config::Config(std::string FirstFunName,
                std::string SecondOutFile,
                std::string CacheDir,
                std::string CustomPatternConfigPath,
+               BuiltinPatterns Patterns,
                std::string Variable,
                bool OutputLlvmIR,
-               bool ControlFlowOnly,
                bool PrintAsmDiffs,
                bool PrintCallStacks,
                int Verbosity)
         : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
           First(FirstModule), Second(SecondModule), FirstOutFile(FirstOutFile),
           SecondOutFile(SecondOutFile), CacheDir(CacheDir),
-          CustomPatternConfigPath(PatternConfigPath), OutputLlvmIR(OutputLlvmIR),
-          ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
+          CustomPatternConfigPath(CustomPatternConfigPath), Patterns(Patterns),
+          OutputLlvmIR(OutputLlvmIR), PrintAsmDiffs(PrintAsmDiffs),
           PrintCallStacks(PrintCallStacks) {
     refreshFunctions();
 

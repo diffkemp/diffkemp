@@ -45,7 +45,8 @@ class DebugInfo {
               Function *funFirst,
               Function *funSecond,
               std::set<const Function *> &CalledFirst,
-              std::set<const Function *> &CalledSecond)
+              std::set<const Function *> &CalledSecond,
+              BuiltinPatterns Patterns)
             : FunFirst(funFirst), FunSecond(funSecond), ModFirst(modFirst),
               ModSecond(modSecond), CalledFirst(CalledFirst),
               CalledSecond(CalledSecond) {
@@ -54,8 +55,10 @@ class DebugInfo {
         DebugInfoFirst.processModule(ModFirst);
         DebugInfoSecond.processModule(ModSecond);
         // Use debug info to gather useful information
-        calculateGEPIndexAlignments();
-        calculateMacroAlignments();
+        if (Patterns.StructAlignment)
+            calculateGEPIndexAlignments();
+        if (Patterns.NumericalMacros)
+            calculateMacroAlignments();
         collectLocalVariables(CalledFirst, LocalVariableMapL);
         collectLocalVariables(CalledSecond, LocalVariableMapR);
         LOG_UNINDENT();

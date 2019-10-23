@@ -194,7 +194,7 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
         // Note: DifferentialFunctionComparator cannot function without
         // ModuleComparator and DebugInfo.
         DbgInfo = std::make_unique<DebugInfo>(
-                ModL, ModR, FL, FR, CalledFirst, CalledSecond);
+                ModL, ModR, FL, FR, CalledFirst, CalledSecond, Conf.Patterns);
         ModComp = std::make_unique<ModuleComparator>(ModL,
                                                      ModR,
                                                      Conf,
@@ -458,7 +458,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAttrs) {
 }
 
 /// Tests specific comparison of intermediate comparison operations in cases
-/// when the signedness differs while comparing with control flow only.
+/// when the signedness differs when ignoring type casts.
 TEST_F(DifferentialFunctionComparatorTest, CmpOperationsICmp) {
     bool needToCmpOperands;
 
@@ -485,7 +485,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpOperationsICmp) {
             new ICmpInst(*BBR, CmpInst::Predicate::ICMP_SGT, GVR, GVR);
 
     ASSERT_EQ(DiffComp->testCmpOperations(ICmpL, ICmpR, needToCmpOperands), -1);
-    Conf.ControlFlowOnly = true;
+    Conf.Patterns.TypeCasts = true;
     ASSERT_EQ(DiffComp->testCmpOperations(ICmpL, ICmpR, needToCmpOperands), 0);
 
     ICmpL->eraseFromParent();
@@ -864,14 +864,14 @@ TEST_F(DifferentialFunctionComparatorTest, CmpTypes) {
     ASSERT_EQ(DiffComp->testCmpTypes(IntTyR, STyL), -1);
 
     // Integer types and array times with the same element type should compare
-    // as equivalent when comparing with control flow only.
+    // as equivalent when ignoring type casts.
     ASSERT_EQ(DiffComp->testCmpTypes(Type::getInt16Ty(CtxL),
                                      Type::getInt8Ty(CtxR)),
               1);
     ASSERT_EQ(DiffComp->testCmpTypes(ArrayType::get(Type::getInt8Ty(CtxL), 10),
                                      ArrayType::get(Type::getInt8Ty(CtxR), 11)),
               -1);
-    Conf.ControlFlowOnly = true;
+    Conf.Patterns.TypeCasts = true;
     ASSERT_EQ(DiffComp->testCmpTypes(Type::getInt16Ty(CtxL),
                                      Type::getInt8Ty(CtxR)),
               0);
@@ -1151,11 +1151,11 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesIntTrunc) {
     DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR), -1);
 
-    Conf.ControlFlowOnly = true;
+    Conf.Patterns.TypeCasts = true;
     DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR), 0);
     ASSERT_EQ(DiffComp->testCmpValues(ConstR, CastL), 0);
-    Conf.ControlFlowOnly = false;
+    Conf.Patterns.TypeCasts = false;
 }
 
 /// Test ignoring of an extended integer value with an unextended one
@@ -1221,7 +1221,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesMacroConstantMap) {
 
 /// Tests comparison of constant expressions containing bitcasts.
 TEST_F(DifferentialFunctionComparatorTest, CmpConstants) {
-    Conf.ControlFlowOnly = true;
+    Conf.Patterns.TypeCasts = true;
     Constant *ConstL = ConstantInt::get(Type::getInt8Ty(CtxR), 0);
     Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
     Constant *ConstR =

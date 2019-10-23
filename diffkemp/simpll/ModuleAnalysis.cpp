@@ -60,7 +60,7 @@
 void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
-                      bool ControlFlowOnly) {
+                      BuiltinPatterns Patterns) {
     LOG_NO_INDENT("Preprocessing " << Mod.getName() << "...\n");
     LOG_INDENT();
     if (Var) {
@@ -85,11 +85,13 @@ void preprocessModule(Module &Mod,
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
 
-    if (ControlFlowOnly)
+    if (Patterns.ControlFlowOnly)
         fpm.addPass(ControlFlowSlicer{});
-    fpm.addPass(SimplifyKernelFunctionCallsPass{});
+    if (Patterns.KernelPrints)
+        fpm.addPass(SimplifyKernelFunctionCallsPass{});
     fpm.addPass(UnifyMemcpyPass{});
-    fpm.addPass(DCEPass{});
+    if (Patterns.DeadCode)
+        fpm.addPass(DCEPass{});
     fpm.addPass(LowerExpectIntrinsicPass{});
     fpm.addPass(ReduceFunctionMetadataPass{});
 #if LLVM_VERSION_MAJOR < 15
@@ -159,7 +161,8 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                 Function *,
                 Module *>
             mpm;
-    mpm.addPass(RemoveUnusedReturnValuesPass{});
+    if (config.Patterns.UnusedReturnTypes)
+        mpm.addPass(RemoveUnusedReturnValuesPass{});
     mpm.run(*config.First, mam, config.FirstFun, config.Second);
     mpm.run(*config.Second, mam, config.SecondFun, config.First);
 
@@ -174,7 +177,8 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                  mam.getResult<CalledFunctionsAnalysis>(*config.First,
                                                         config.FirstFun),
                  mam.getResult<CalledFunctionsAnalysis>(*config.Second,
-                                                        config.SecondFun));
+                                                        config.SecondFun),
+                 config.Patterns);
 
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First,
@@ -241,14 +245,12 @@ void writeIRToFile(Module &Mod, StringRef FileName) {
 /// in config.
 void processAndCompare(Config &config, OverallResult &Result) {
     // Run transformations
-    preprocessModule(*config.First,
-                     config.FirstFun,
-                     config.FirstVar,
-                     config.ControlFlowOnly);
+    preprocessModule(
+            *config.First, config.FirstFun, config.FirstVar, config.Patterns);
     preprocessModule(*config.Second,
                      config.SecondFun,
                      config.SecondVar,
-                     config.ControlFlowOnly);
+                     config.Patterns);
     config.refreshFunctions();
 
     simplifyModulesDiff(config, Result);

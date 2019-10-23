@@ -90,7 +90,9 @@ class ModuleComparator {
         MissingDef,
     };
 
-    InliningResult tryToInline(CallInst *InlinedCall, Program program) const;
+    InliningResult tryToInline(CallInst *InlinedCall,
+                               Program program,
+                               bool FunctionSplitsEnabled) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
