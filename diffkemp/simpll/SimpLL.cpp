@@ -39,10 +39,10 @@ cl::opt<std::string> VariableOpt(
         cl::value_desc("variable"),
         cl::desc("Do analysis w.r.t. the value of the given variable"),
         cl::cat(SimpLLCategory));
-cl::opt<bool> OutputLlvmIROpt(
-        "output-llvm-ir",
-        cl::value_desc("Output each simplified module to a file."),
-        cl::cat(SimpLLCategory));
+cl::opt<bool>
+        OutputLlvmIROpt("output-llvm-ir",
+                        cl::desc("Output each simplified module to a file."),
+                        cl::cat(SimpLLCategory));
 cl::opt<std::string>
         SuffixOpt("suffix",
                   cl::value_desc("suffix"),
@@ -58,10 +58,6 @@ cl::opt<std::string> CustomPatternConfigOpt(
         cl::value_desc("custom-pattern-config"),
         cl::desc("Configuration file for custom LLVM IR difference patterns."),
         cl::cat(SimpLLCategory));
-cl::opt<bool> ControlFlowOpt(
-        "control-flow",
-        cl::desc("Only keep instructions related to the control-flow."),
-        cl::cat(SimpLLCategory));
 cl::opt<bool> PrintCallstacksOpt(
         "print-callstacks",
         cl::desc("Print call stacks for non-equal functions."),
@@ -75,6 +71,42 @@ cl::opt<bool> PrintAsmDiffsOpt(
         cl::desc("Print raw differences in inline assembly code "
                  "(does not apply to macros)."),
         cl::cat(SimpLLCategory));
+
+cl::OptionCategory BuiltinPatternsCategory("SimpLL pattern options",
+                                           "Options for configuring built-in "
+                                           "semantics-preserving patterns");
+cl::opt<bool> StructAlignmentOpt("struct-alignment",
+                                 cl::desc("Enable struct alignment pattern."),
+                                 cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> FunctionSplitsOpt("function-splits",
+                                cl::desc("Enable function splits pattern."),
+                                cl::cat(BuiltinPatternsCategory));
+cl::opt<bool>
+        UnusedReturnTypesOpt("unused-return-types",
+                             cl::desc("Enable unused return types pattern."),
+                             cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> KernelPrintsOpt("kernel-prints",
+                              cl::desc("Enable kernel prints pattern."),
+                              cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> DeadCodeOpt("dead-code",
+                          cl::desc("Enable dead code pattern."),
+                          cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> NumericalMacrosOpt("numerical-macros",
+                                 cl::desc("Enable numerical macros pattern."),
+                                 cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> RelocationsOpt("relocations",
+                             cl::desc("Enable relocations pattern."),
+                             cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> TypeCastsOpt("type-casts",
+                           cl::desc("Enable type casts pattern."),
+                           cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> ControlFlowOnlyOpt("control-flow-only",
+                                 cl::desc("Enable control flow only pattern."),
+                                 cl::cat(BuiltinPatternsCategory));
+cl::opt<bool>
+        InverseConditionsOpt("inverse-conditions",
+                             cl::desc("Enable inverse conditions pattern."),
+                             cl::cat(BuiltinPatternsCategory));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -109,8 +141,19 @@ std::pair<std::string, std::string> parseFunOption() {
 
 int main(int argc, const char **argv) {
     // Parse CLI options
-    cl::HideUnrelatedOptions(SimpLLCategory);
+    cl::HideUnrelatedOptions({&SimpLLCategory, &BuiltinPatternsCategory});
     cl::ParseCommandLineOptions(argc, argv);
+
+    BuiltinPatterns Patterns{.StructAlignment = StructAlignmentOpt,
+                             .FunctionSplits = FunctionSplitsOpt,
+                             .UnusedReturnTypes = UnusedReturnTypesOpt,
+                             .KernelPrints = KernelPrintsOpt,
+                             .DeadCode = DeadCodeOpt,
+                             .NumericalMacros = NumericalMacrosOpt,
+                             .Relocations = RelocationsOpt,
+                             .TypeCasts = TypeCastsOpt,
+                             .ControlFlowOnly = ControlFlowOnlyOpt,
+                             .InverseConditions = InverseConditionsOpt};
 
     // Parse --fun option
     auto FunName = parseFunOption();
@@ -130,9 +173,9 @@ int main(int argc, const char **argv) {
                   !SuffixOpt.empty() ? addSuffix(SecondFileOpt, SuffixOpt) : "",
                   CacheDirOpt,
                   CustomPatternConfigOpt,
+                  Patterns,
                   VariableOpt,
                   OutputLlvmIROpt,
-                  ControlFlowOpt,
                   PrintAsmDiffsOpt,
                   PrintCallstacksOpt,
                   VerbosityOpt);
