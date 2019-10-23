@@ -816,7 +816,15 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
 
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
-        if (isa<Constant>(L) && isa<Constant>(R)) {
+        if (isa<ConstantExpr>(L)) {
+            // Try comparing constant expressions as instructions.
+            auto InstL = getConstExprAsInstruction(dyn_cast<ConstantExpr>(L));
+            return cmpValues(InstL, R);
+        } else if (isa<ConstantExpr>(R)) {
+            // Try comparing constant expressions as instructions.
+            auto InstR = getConstExprAsInstruction(dyn_cast<ConstantExpr>(R));
+            return cmpValues(L, InstR);
+        } else if (isa<Constant>(L) && isa<Constant>(R)) {
             auto *ConstantL = dyn_cast<Constant>(L);
             auto *ConstantR = dyn_cast<Constant>(R);
             auto MacroMapping = DI->MacroConstantMap.find(ConstantL);
