@@ -481,11 +481,11 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
             // Note: since the sizeof is different the types would likely be
             // also compared as different using cmpTypes.
             auto TyIdLName =
-                    TyIdL->isStructTy()
+                    TyIdL && TyIdL->isStructTy()
                             ? dyn_cast<StructType>(TyIdL)->getStructName()
                             : "Type 1";
             auto TyIdRName =
-                    TyIdR->isStructTy()
+                    TyIdR && TyIdR->isStructTy()
                             ? dyn_cast<StructType>(TyIdR)->getStructName()
                             : "Type 2";
 
