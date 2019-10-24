@@ -94,6 +94,7 @@ venv.bak/
 
 ### IDE part ###
 .idea
+.DS_Store
 cmake-build-debug/
 
 # Vim files
