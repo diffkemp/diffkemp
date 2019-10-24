@@ -150,9 +150,6 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
                                                         config.FirstFun),
                  mam.getResult<CalledFunctionsAnalysis>(*config.Second,
                                                         config.SecondFun));
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "StructFieldNames size: "
-                           << DI.StructFieldNames.size() << "\n");
 
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First,
