@@ -219,9 +219,12 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 CI_New->setCallingConv(CI->getCallingConv());
                 if (CI->isTailCall())
                     CI_New->setTailCall();
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Replacing :" << *CI << " with "
-                                       << *CI_New << "\n");
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel();
+                                dbgs() << getDebugIndent()
+                                       << "Replacing :" << *CI << "\n"
+                                       << getDebugIndent()
+                                       << "     with :" << *CI_New << "\n";
+                                decreaseDebugIndentLevel());
                 // Erase the old instruction
                 CI->eraseFromParent();
             } else if (InvokeInst *II = dyn_cast<InvokeInst>(I)) {
@@ -254,9 +257,12 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                         cleanAttributeList(II_New->getAttributes()));
                 II_New->setDebugLoc(II->getDebugLoc());
                 II_New->setCallingConv(II->getCallingConv());
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << "Replacing :" << *II << " with "
-                                       << *II_New << "\n");
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel();
+                                dbgs() << getDebugIndent()
+                                       << "Replacing :" << *II << "\n"
+                                       << getDebugIndent()
+                                       << "     with :" << *II_New << "\n";
+                                decreaseDebugIndentLevel());
                 // Erase the old instruction
                 II->eraseFromParent();
             }

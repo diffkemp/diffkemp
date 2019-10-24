@@ -14,6 +14,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "ControlFlowSlicer.h"
+#include "Config.h"
 #include "Utils.h"
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
@@ -135,8 +136,16 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
             }
         }
     }
-    for (auto &Instr : ToRemove)
-        Instr->eraseFromParent();
 
+    if (!ToRemove.empty()) {
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Removed instructions from " << Fun.getName()
+                               << ": \n");
+    }
+
+    for (auto &Instr : ToRemove) {
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << *Instr << "\n";);
+        Instr->eraseFromParent();
+    }
     return PreservedAnalyses::none();
 }

@@ -161,10 +161,12 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                                                (unsigned)indexSecond,
                                                IndexConstant->getBitWidth(),
                                                ModFirst.getContext());
+                        DEBUG_WITH_TYPE(
+                                DEBUG_SIMPLL,
+                                dbgs() << "Index alignment in:" << *GEP << "\n"
+                                       << "                     " << indexFirst
+                                       << " -> " << indexSecond << "\n");
                     }
-
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL, GEP->print(dbgs()));
-
                     // Insert the names of the indices into StructFieldNames.
                     StructFieldNames.insert(
                             {{dyn_cast<StructType>(indexedType), indexFirst},
@@ -181,10 +183,6 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                                           indexedType->getStructName()),
                                   indexSecond},
                                  elementName});
-
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << "New index: " << indexSecond
-                                           << "\n");
                 }
             }
 
