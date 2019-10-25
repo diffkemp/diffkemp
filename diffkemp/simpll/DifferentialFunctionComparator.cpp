@@ -135,6 +135,44 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
     return 0;
 }
 
+/// Does additional operations in cases when a difference between two CallInsts
+/// or their arguments is detected.
+/// This consists of three parts:
+/// 1. Compare the called functions using cmpGlobalValues (covers case when they
+/// are not compared in cmpBasicBlocks because there is another difference).
+/// 2. Try to inline the functions.
+/// 3. Look a macro-function differenfce.
+void DifferentialFunctionComparator::processCallInstDifference(
+        const CallInst *CL, const CallInst *CR) const {
+    Function *CalledL = CL->getCalledFunction();
+    Function *CalledR = CR->getCalledFunction();
+    // Compare both functions using cmpGlobalValues in order to
+    // ensure that any differences inside them are detected even
+    // if they wouldn't be otherwise compared because of the
+    // code stopping before comparing instruction arguments.
+    // This inner difference may also cause a difference in the
+    // the original function that is not visible in C source
+    // code. To prevent a false positive empty diff in this case
+    // the original function is marked as covered in case the
+    // functions differ.
+    cmpGlobalValues(CalledL, CalledR);
+    if (ModComparator->ComparedFuns.find({CalledL, CalledR})
+        != ModComparator->ComparedFuns.end()) {
+        ModComparator->CoveredFuns.insert(CL->getFunction()->getName());
+    }
+    // If the call instructions are different (cmpOperations
+    // doesn't compare the called functions) or the called
+    // functions have different names, try inlining them.
+    // (except for case when one of the function is a SimpLL
+    // abstraction).
+    if (!isSimpllAbstractionDeclaration(CalledL)
+        && !isSimpllAbstractionDeclaration(CalledR))
+        ModComparator->tryInline = {CL, CR};
+
+    // Look for a macro-function difference.
+    findMacroFunctionDifference(CL, CR);
+}
+
 /// Compare allocation instructions using separate cmpAllocs function in case
 /// standard comparison returns something other than zero.
 int DifferentialFunctionComparator::cmpOperations(
@@ -176,19 +214,8 @@ int DifferentialFunctionComparator::cmpOperations(
                         return cmpCallsWithExtraArg(CL, CR);
                     }
                 }
-                if (Result) {
-                    // If the call instructions are different (cmpOperations
-                    // doesn't compare the called functions) or the called
-                    // functions have different names, try inlining them.
-                    // (except for case when one of the function is a SimpLL
-                    // abstraction).
-                    if (!isSimpllAbstractionDeclaration(CalledL)
-                        && !isSimpllAbstractionDeclaration(CalledR))
-                        ModComparator->tryInline = {CL, CR};
-
-                    // Look for a macro-function difference.
-                    findMacroFunctionDifference(L, R);
-                }
+                if (Result)
+                    processCallInstDifference(CL, CR);
             }
         } else {
             // If just one of the instructions is a call, it is possible that
@@ -580,23 +607,10 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                                     asmDiffs.end());
                         }
 
-                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
-                            // If the instructions are call instructions, try
-                            // to inline the functions.
-                            auto CL = dyn_cast<CallInst>(&*InstL);
-                            auto CR = dyn_cast<CallInst>(&*InstR);
-                            auto CalledL =
-                                    getCalledFunction(CL->getCalledValue());
-                            auto CalledR =
-                                    getCalledFunction(CR->getCalledValue());
-
-                            if (!isSimpllAbstractionDeclaration(CalledL)
-                                && !isSimpllAbstractionDeclaration(CalledR))
-                                ModComparator->tryInline = {CL, CR};
-
-                            // Look for a macro-function difference.
-                            findMacroFunctionDifference(&*InstL, &*InstR);
-                        }
+                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR))
+                            processCallInstDifference(
+                                    dyn_cast<CallInst>(&*InstL),
+                                    dyn_cast<CallInst>(&*InstR));
 
                         return Res;
                     }

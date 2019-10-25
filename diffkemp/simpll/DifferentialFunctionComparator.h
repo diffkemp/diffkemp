@@ -121,6 +121,17 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Check if the given operation can be ignored (it does not affect
     /// semantics) for control flow only diffs.
     bool mayIgnore(const Instruction *Inst) const;
+
+    /// Does additional operations in cases when a difference between two
+    /// CallInsts or their arguments is detected.
+    /// This consists of three parts:
+    /// 1. Compare the called functions using cmpGlobalValues (covers case when
+    /// they are not compared in cmpBasicBlocks because there is another
+    /// difference).
+    /// 2. Try to inline the functions.
+    /// 3. Look a macro-function differenfce.
+    void processCallInstDifference(const CallInst *CL,
+                                   const CallInst *CR) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
