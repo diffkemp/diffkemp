@@ -164,6 +164,8 @@ class KernelSource:
                 # the macro has to be found to get the source file
                 cscope_defs = \
                     self._find_tracepoint_macro_use(symbol) + cscope_defs
+            elif symbol == "rcu_barrier":
+                cscope_defs = ["kernel/rcutree.c"] + cscope_defs
 
             if len(cscope_defs) == 0 and len(cscope_uses) == 0:
                 raise SourceNotFoundException(symbol)
