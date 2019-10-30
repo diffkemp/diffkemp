@@ -119,6 +119,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                                          Fun->getParent());
             Fun_Clone->copyAttributesFrom(Fun);
             Fun_Clone->setSubprogram(Fun->getSubprogram());
+            if (Fun->getMetadata("inlineasm"))
+                Fun_Clone->setMetadata("inlineasm",
+                                       Fun->getMetadata("inlineasm"));
             for (Function::arg_iterator AI = Fun->arg_begin(),
                                         AE = Fun->arg_end(),
                                         NAI = Fun_Clone->arg_begin();
@@ -149,6 +152,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         // Set the right function name and subprogram
         Fun_New->setName(OriginalName);
         Fun_New->setSubprogram(Fun->getSubprogram());
+        if (Fun->getMetadata("inlineasm"))
+            Fun_New->setMetadata("inlineasm", Fun->getMetadata("inlineasm"));
 
         // Set the names of all arguments of the new function
         for (Function::arg_iterator AI = Fun->arg_begin(),

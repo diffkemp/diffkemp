@@ -39,9 +39,6 @@ class ModuleComparator {
     /// Storing covered functions names.
     /// Note: currently only from inlining.
     std::set<std::string> CoveredFuns;
-    // Function abstraction to assembly string map.
-    StringMap<StringRef> AsmToStringMapL;
-    StringMap<StringRef> AsmToStringMapR;
     // Structure size to structure name map.
     StructureSizeAnalysis::Result &StructSizeMapL;
     StructureSizeAnalysis::Result &StructSizeMapR;
@@ -58,15 +55,11 @@ class ModuleComparator {
                      bool controlFlowOnly,
                      bool showAsmDiffs,
                      const DebugInfo *DI,
-                     StringMap<StringRef> &AsmToStringMapL,
-                     StringMap<StringRef> &AsmToStringMapR,
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
               showAsmDiffs(showAsmDiffs), DI(DI),
-              AsmToStringMapL(AsmToStringMapL),
-              AsmToStringMapR(AsmToStringMapR), StructSizeMapL(StructSizeMapL),
-              StructSizeMapR(StructSizeMapR) {}
+              StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR) {}
 
     /// Syntactically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.

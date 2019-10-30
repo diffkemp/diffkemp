@@ -32,7 +32,6 @@ class FunctionAbstractionsGenerator
     typedef std::unordered_map<std::string, Function *> FunMap;
     struct Result {
         FunMap funAbstractions;
-        StringMap<StringRef> asmValueMap;
     };
 
     Result run(Module &Mod,
@@ -59,5 +58,11 @@ bool isSimpllAbstractionDeclaration(const Function *Fun);
 
 /// Returns true if the function is a SimpLL abstraction.
 bool isSimpllAbstraction(const Function *Fun);
+
+/// Extracts inline assembly code string from abstraction.
+StringRef getInlineAsmString(const Function *Abstr);
+
+/// Extracts inline assembly code constraint string from abstraction.
+StringRef getInlineAsmConstraintString(const Function *Abstr);
 
 #endif // DIFFKEMP_SIMPLL_FUNCTIONABSTRACTIONSGENERATOR_H
