@@ -28,7 +28,6 @@ AnalysisKey FunctionAbstractionsGenerator::Key;
 FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
         Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
     FunMap funAbstractions;
-    StringMap<StringRef> asmValueMap;
     int i = 0;
     std::vector<Instruction *> toErase;
 
@@ -77,7 +76,18 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                         funAbstractions.emplace(hash, newFun);
                         if (auto assembly = dyn_cast<InlineAsm>(
                                     CallInstr->getCalledValue())) {
-                            asmValueMap[funName] = assembly->getAsmString();
+                            // Add metadata that will be used for comparison
+                            // to the abstraction.
+                            MDString *asmMD =
+                                    MDString::get(newFun->getContext(),
+                                                  assembly->getAsmString());
+                            MDString *constraintMD = MDString::get(
+                                    newFun->getContext(),
+                                    assembly->getConstraintString());
+                            MDNode *metadata =
+                                    MDTuple::get(newFun->getContext(),
+                                                 {asmMD, constraintMD});
+                            newFun->setMetadata("inlineasm", metadata);
                         }
                     } else {
                         newFun = funAbstr->second;
@@ -104,7 +114,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
             toErase.clear();
         }
     }
-    return FunctionAbstractionsGenerator::Result{funAbstractions, asmValueMap};
+    return FunctionAbstractionsGenerator::Result{funAbstractions};
 }
 
 /// A hash that uniquely identifies an indirect function or an inline asm.
@@ -157,4 +167,16 @@ bool isSimpllAbstractionDeclaration(const Function *Fun) {
 bool isSimpllAbstraction(const Function *Fun) {
     return isSimpllAbstractionDeclaration(Fun)
            || isSimpllFieldAccessAbstraction(Fun);
+}
+
+/// Extracts inline assembly code string from abstraction.
+StringRef getInlineAsmString(const Function *Abstr) {
+    MDTuple *metadata = cast<MDTuple>(Abstr->getMetadata("inlineasm"));
+    return cast<MDString>(*(metadata->getOperand(0))).getString();
+}
+
+/// Extracts inline assembly code constraint string from abstraction.
+StringRef getInlineAsmConstraintString(const Function *Abstr) {
+    MDTuple *metadata = cast<MDTuple>(Abstr->getMetadata("inlineasm"));
+    return cast<MDString>(*(metadata->getOperand(1))).getString();
 }

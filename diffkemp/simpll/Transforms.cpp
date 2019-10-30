@@ -160,8 +160,6 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
                              config.ControlFlowOnly,
                              config.PrintAsmDiffs,
                              &DI,
-                             AbstractionGeneratorResultL.asmValueMap,
-                             AbstractionGeneratorResultR.asmValueMap,
                              StructSizeMapL,
                              StructSizeMapR);
 

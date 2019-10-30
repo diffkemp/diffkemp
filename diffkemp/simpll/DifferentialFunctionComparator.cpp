@@ -461,18 +461,14 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
     // on whether it is an inline assembly call or not.
     if (CFL->getName().startswith(SimpllInlineAsmPrefix))
         CArgsL = findInlineAssemblySourceArguments(
-                CIL->getDebugLoc(),
-                CIL->getModule(),
-                ModComparator->AsmToStringMapL[CFL->getName()]);
+                CIL->getDebugLoc(), CIL->getModule(), getInlineAsmString(CFL));
     else
         CArgsL = findFunctionCallSourceArguments(
                 CIL->getDebugLoc(), CIL->getModule(), CFL->getName());
 
     if (CFR->getName().startswith(SimpllInlineAsmPrefix))
         CArgsR = findInlineAssemblySourceArguments(
-                CIR->getDebugLoc(),
-                CIR->getModule(),
-                ModComparator->AsmToStringMapR[CFR->getName()]);
+                CIR->getDebugLoc(), CIR->getModule(), getInlineAsmString(CFR));
     else
         CArgsR = findFunctionCallSourceArguments(
                 CIR->getDebugLoc(), CIR->getModule(), CFL->getName());
@@ -654,8 +650,8 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
         // Both functions have to be assembly abstractions
         return {};
 
-    StringRef AsmL = ModComparator->AsmToStringMapL[FunL->getName()];
-    StringRef AsmR = ModComparator->AsmToStringMapR[FunR->getName()];
+    StringRef AsmL = getInlineAsmString(FunL);
+    StringRef AsmR = getInlineAsmString(FunR);
     if (AsmL == AsmR)
         // The difference is somewhere else
         return {};
@@ -754,8 +750,14 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                 } else if (FunL->getName().startswith(SimpllInlineAsmPrefix)
                            && FunR->getName().startswith(
                                    SimpllInlineAsmPrefix)) {
-                    return ModComparator->AsmToStringMapL[FunL->getName()]
-                           != ModComparator->AsmToStringMapR[FunR->getName()];
+                    // Compare inline assembly code abstractions using metadata
+                    // generated in FunctionAbstractionGenerator.
+                    StringRef asmL = getInlineAsmString(FunL);
+                    StringRef asmR = getInlineAsmString(FunR);
+                    StringRef constraintL = getInlineAsmConstraintString(FunL);
+                    StringRef constraintR = getInlineAsmConstraintString(FunR);
+
+                    return !(asmL == asmR && constraintL == constraintR);
                 }
             }
             return 0;
