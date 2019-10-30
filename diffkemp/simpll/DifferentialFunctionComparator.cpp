@@ -144,8 +144,14 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
 /// 3. Look a macro-function differenfce.
 void DifferentialFunctionComparator::processCallInstDifference(
         const CallInst *CL, const CallInst *CR) const {
-    Function *CalledL = CL->getCalledFunction();
-    Function *CalledR = CR->getCalledFunction();
+    // Use const_cast to get a non-const point to the function (this is
+    // analogical to the cast in FunctionComparator::cmpValues and effectively
+    // analogical to CallInst::getCalledFunction, which returns a non-const
+    // pointer even if the CallInst itself is const).
+    Function *CalledL =
+            const_cast<Function *>(getCalledFunction(CL->getCalledValue()));
+    Function *CalledR =
+            const_cast<Function *>(getCalledFunction(CR->getCalledValue()));
     // Compare both functions using cmpGlobalValues in order to
     // ensure that any differences inside them are detected even
     // if they wouldn't be otherwise compared because of the
