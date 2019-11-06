@@ -92,6 +92,14 @@ class LlvmKernelBuilder:
                     param.endswith(".o")):
                 continue
 
+            # Do not use generated debug hashes.
+            # Note: they are used for debugging purposes only and cause false
+            # positives in SimpLL.
+            if param.startswith('-D"DEBUG_HASH='):
+                param = '-D"DEBUG_HASH=1"'
+            if param.startswith('-D"DEBUG_HASH2='):
+                param = '-D"DEBUG_HASH2=1"'
+
             # Output name is given by replacing .c by .ll in source name
             if param.endswith(".c"):
                 output_file = "{}.ll".format(param[:-2])
