@@ -216,7 +216,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
         DILocation *LineLoc, const Module *Mod, int lineOffset) {
     // Store generated macro maps for modules to avoid having to regenerate them
     // many times when comparing a module that has to be inlined a lot.
-    static std::map<const Module *, StringMap<MacroElement>> MacroMapCache;
+    static std::map<const DICompileUnit *, StringMap<MacroElement>>
+            MacroMapCache;
 
     if (!LineLoc || LineLoc->getNumOperands() == 0) {
         // DILocation has no scope or is not present - cannot get macro stack
@@ -248,8 +249,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
     StringMap<MacroElement> macroMap;
 
     // Try loading macro map from cache.
-    if (MacroMapCache.find(Mod) != MacroMapCache.end())
-        macroMap = MacroMapCache[Mod];
+    if (MacroMapCache.find(Sub->getUnit()) != MacroMapCache.end())
+        macroMap = MacroMapCache[Sub->getUnit()];
     else {
         // Map is not in cache, generate it.
 
@@ -302,7 +303,7 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
                 }
         }
         // Put map into cache.
-        MacroMapCache[Mod] = macroMap;
+        MacroMapCache[Sub->getUnit()] = macroMap;
     }
 
     // Add information about the original line to the map, then return the map
