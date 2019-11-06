@@ -62,14 +62,14 @@ void CalledFunctionsAnalysis::processValue(const Value *Val, Result &Called) {
             // The initializer is constant - see whether it contains
             // a function (or a user type constant that contains
             // a function).
-            if (auto U = dyn_cast<User>(GV->getInitializer())) {
-                for (auto &UserOp : U->operands()) {
-                    processValue(UserOp.get(), Called);
-                }
-            } else {
-                processValue(GV->getInitializer(), Called);
-            }
+            processValue(GV->getInitializer(), Called);
     } else if (auto BitCast = dyn_cast<BitCastOperator>(Val)) {
         processValue(BitCast->getOperand(0), Called);
+    } else if (isa<Constant>(Val)) {
+        if (auto U = dyn_cast<User>(Val)) {
+            for (auto &UserOp : U->operands()) {
+                processValue(UserOp.get(), Called);
+            }
+        }
     }
 }
