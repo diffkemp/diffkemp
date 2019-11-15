@@ -50,6 +50,12 @@ const Function *getCalledFunction(const Value *CalledValue);
 /// called value is a bitcast.
 Function *getCalledFunction(Value *CalledValue);
 
+/// Extracts value from an arbitrary number of casts.
+const Value *stripAllCasts(const Value *Val);
+
+/// Extracts value from an arbitrary number of casts.
+Value *stripAllCasts(Value *Val);
+
 /// Get name of a type.
 std::string typeName(const Type *Type);
 
@@ -61,6 +67,10 @@ bool hasSuffix(std::string Name);
 
 /// Drop the .<NUMBER> suffix from the LLVM name.
 std::string dropSuffix(std::string Name);
+
+/// Join directory path with a filename in case the filename does not already
+/// contain the directory.
+std::string joinPath(StringRef DirName, StringRef FileName);
 
 /// Get absolute path to a file in which the given function is defined.
 /// Requires debug info to work correctly.

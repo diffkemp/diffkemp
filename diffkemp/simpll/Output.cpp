@@ -38,7 +38,7 @@ struct FunctionInfo {
     std::string file;
     int line;
     CallStack callstack;
-    bool isSynDiff;
+    std::string diffKind;
     bool covered;
 
     // Default constructor is needed for YAML serialisation so that the struct
@@ -47,11 +47,11 @@ struct FunctionInfo {
     FunctionInfo(const std::string &name,
                  const std::string &file,
                  const CallStack &callstack,
-                 bool isMacro = false,
+                 std::string diffKind = "function",
                  int line = 0,
                  bool covered = false)
             : name(name), file(file), line(line), callstack(callstack),
-              isSynDiff(isMacro), covered(covered) {}
+              diffKind(diffKind), covered(covered) {}
 };
 
 // Syntactic diff body
@@ -87,7 +87,7 @@ template <> struct MappingTraits<FunctionInfo> {
         if (info.line != 0)
             io.mapOptional("line", info.line);
         io.mapOptional("callstack", info.callstack);
-        io.mapRequired("is-syn-diff", info.isSynDiff);
+        io.mapRequired("diff-kind", info.diffKind);
         io.mapRequired("covered", info.covered);
     }
 };
@@ -152,12 +152,12 @@ void reportOutput(Config &config, ComparisonResult &Result) {
         differingFunsSet.insert(FP.second->getName());
     }
 
-    for (auto &synDiff : Result.differingSynDiffs) {
+    for (auto &nonFunDiff : Result.differingObjects) {
         // Look whether the function the syntactic difference was found in is
         // among functions declared as non-equal.
         // In case it is not, then the syntax difference should not be shown,
         // since the function in which it was found is equal.
-        bool skipSynDiff = false;
+        bool skipDiff = false;
 
         if (Result.nonequalFuns.size() > 0) {
             // The case when nonequalFuns is empty is uninteresting - in that
@@ -166,64 +166,77 @@ void reportOutput(Config &config, ComparisonResult &Result) {
             auto ModuleR = Result.nonequalFuns[0].second->getParent();
 
             // Function has to exist in both modules to prevent mistakes.
-            if ((ModuleL->getFunction(synDiff.function) == nullptr)
-                || (ModuleR->getFunction(synDiff.function) == nullptr))
+            if ((ModuleL->getFunction(nonFunDiff->function) == nullptr)
+                || (ModuleR->getFunction(nonFunDiff->function) == nullptr))
                 continue;
 
-            if (differingFunsSet.find(synDiff.function)
+            if (differingFunsSet.find(nonFunDiff->function)
                 == differingFunsSet.end()) {
-                skipSynDiff = true;
+                skipDiff = true;
             }
         } else {
-            skipSynDiff = true;
+            skipDiff = true;
         }
 
-        if (skipSynDiff)
+        if (skipDiff)
             continue;
 
         // Try to append call stack of function to the syndiff stack if possible
         CallStack toAppendLeft, toAppendRight;
-        for (auto &diff : Result.nonequalFuns) {
+        for (auto diff : Result.nonequalFuns) {
             // Find the right function diff
-            if (diff.first->getName() == synDiff.function) {
+            if (diff.first->getName() == nonFunDiff->function) {
                 CallStack CS = getCallStack(*config.FirstFun, *diff.first);
                 if (!CS.empty())
                     toAppendLeft = CS;
             }
-            if (diff.second->getName() == synDiff.function) {
+            if (diff.second->getName() == nonFunDiff->function) {
                 CallStack CS = getCallStack(*config.SecondFun, *diff.second);
                 if (!CS.empty())
                     toAppendRight = CS;
             }
         }
         if (toAppendLeft.size() > 0)
-            synDiff.StackL.insert(synDiff.StackL.begin(),
-                                  toAppendLeft.begin(),
-                                  toAppendLeft.end());
+            nonFunDiff->StackL.insert(nonFunDiff->StackL.begin(),
+                                      toAppendLeft.begin(),
+                                      toAppendLeft.end());
         if (toAppendRight.size() > 0)
-            synDiff.StackR.insert(synDiff.StackR.begin(),
-                                  toAppendRight.begin(),
-                                  toAppendRight.end());
+            nonFunDiff->StackR.insert(nonFunDiff->StackR.begin(),
+                                      toAppendRight.begin(),
+                                      toAppendRight.end());
 
         // Add functions used in call stack to set (also include the parent
         // function)
-        for (CallInfo CI : synDiff.StackL)
+        for (CallInfo CI : nonFunDiff->StackL)
             Result.coveredFuns.insert(CI.fun);
-        for (CallInfo CI : synDiff.StackR)
+        for (CallInfo CI : nonFunDiff->StackR)
             Result.coveredFuns.insert(CI.fun);
-        Result.coveredFuns.insert(synDiff.function);
+        Result.coveredFuns.insert(nonFunDiff->function);
 
-        report.diffFuns.push_back({FunctionInfo(synDiff.name,
-                                                synDiff.StackL[0].file,
-                                                synDiff.StackL,
-                                                true),
-                                   FunctionInfo(synDiff.name,
-                                                synDiff.StackR[0].file,
-                                                synDiff.StackR,
-                                                true)});
-
-        report.syndiffBodies.push_back(
-                SyndiffBody{synDiff.name, synDiff.BodyL, synDiff.BodyR});
+        if (auto synDiff = unique_dyn_cast<SyntaxDifference>(nonFunDiff)) {
+            report.diffFuns.push_back({FunctionInfo(synDiff->name,
+                                                    synDiff->StackL[0].file,
+                                                    synDiff->StackL,
+                                                    "syntactic"),
+                                       FunctionInfo(synDiff->name,
+                                                    synDiff->StackR[0].file,
+                                                    synDiff->StackR,
+                                                    "syntactic")});
+            report.syndiffBodies.push_back(
+                    SyndiffBody{synDiff->name, synDiff->BodyL, synDiff->BodyR});
+        } else if (auto typeDiff =
+                           unique_dyn_cast<TypeDifference>(nonFunDiff)) {
+            report.diffFuns.push_back({FunctionInfo(typeDiff->name,
+                                                    typeDiff->FileL,
+                                                    typeDiff->StackL,
+                                                    "type",
+                                                    typeDiff->LineL),
+                                       FunctionInfo(typeDiff->name,
+                                                    typeDiff->FileR,
+                                                    typeDiff->StackR,
+                                                    "type",
+                                                    typeDiff->LineR)});
+        }
     }
     for (auto &funPair : Result.nonequalFuns) {
         bool covered = Result.coveredFuns.find(funPair.first->getName())
@@ -233,7 +246,7 @@ void reportOutput(Config &config, ComparisonResult &Result) {
                          funPair.first->getName(),
                          getFileForFun(funPair.first),
                          getCallStack(*config.FirstFun, *funPair.first),
-                         false,
+                         "function",
                          funPair.first->getSubprogram()
                                  ? funPair.first->getSubprogram()->getLine()
                                  : 0,
@@ -242,7 +255,7 @@ void reportOutput(Config &config, ComparisonResult &Result) {
                          funPair.second->getName(),
                          getFileForFun(funPair.second),
                          getCallStack(*config.SecondFun, *funPair.second),
-                         false,
+                         "function",
                          funPair.second->getSubprogram()
                                  ? funPair.second->getSubprogram()->getLine()
                                  : 0,

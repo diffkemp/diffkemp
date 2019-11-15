@@ -15,6 +15,7 @@
 #ifndef DIFFKEMP_SIMPLL_MACRO_UTILS_H
 #define DIFFKEMP_SIMPLL_MACRO_UTILS_H
 
+#include "ModuleComparator.h"
 #include "Utils.h"
 
 #include <llvm/ADT/StringMap.h>
@@ -43,21 +44,6 @@ struct MacroElement {
     std::vector<std::string> args, params;
 };
 
-/// Syntactic difference between objects that cannot be found in the original
-/// source files.
-/// Note: this can be either a macro difference or inline assembly difference.
-struct SyntaxDifference {
-    // Name of the object.
-    std::string name;
-    // The difference.
-    std::string BodyL, BodyR;
-    // Stacks containing the differing objects and all other objects affected
-    // by the difference (again for both modules).
-    CallStack StackL, StackR;
-    // The function in which the difference was found
-    std::string function;
-};
-
 /// Gets all macros used on the line in the form of a key to value map.
 std::unordered_map<std::string, MacroElement>
         getAllMacrosOnLine(StringRef line, StringMap<StringRef> macroMap);
@@ -81,9 +67,8 @@ std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
 /// This is used when a difference is suspected to be in a macro in order to
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
-std::vector<SyntaxDifference> findMacroDifferences(const Instruction *L,
-                                                   const Instruction *R,
-                                                   int lineOffset = 0);
+std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
+        const Instruction *L, const Instruction *R, int lineOffset = 0);
 
 // Takes a string and the position of the first bracket and returns the
 // substring in the brackets.

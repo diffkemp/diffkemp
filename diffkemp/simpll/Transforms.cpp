@@ -28,6 +28,7 @@
 #include "passes/SimplifyKernelFunctionCallsPass.h"
 #include "passes/SimplifyKernelGlobalsPass.h"
 #include "passes/StructHashGeneratorPass.h"
+#include "passes/StructureDebugInfoAnalysis.h"
 #include "passes/StructureSizeAnalysis.h"
 #include "passes/UnifyMemcpyPass.h"
 #include "passes/VarDependencySlicer.h"
@@ -111,6 +112,7 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
     mam.registerPass([] { return StructureSizeAnalysis(); });
+    mam.registerPass([] { return StructureDebugInfoAnalysis(); });
 #if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
 #endif
@@ -125,6 +127,10 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
     auto StructSizeMapL = mam.getResult<StructureSizeAnalysis>(*config.First,
                                                                config.FirstFun);
     auto StructSizeMapR = mam.getResult<StructureSizeAnalysis>(
+            *config.Second, config.SecondFun);
+    auto StructDIL = mam.getResult<StructureDebugInfoAnalysis>(*config.First,
+                                                               config.FirstFun);
+    auto StructDIR = mam.getResult<StructureDebugInfoAnalysis>(
             *config.Second, config.SecondFun);
 
     // Module passes
@@ -158,7 +164,9 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
                              config.PrintAsmDiffs,
                              &DI,
                              StructSizeMapL,
-                             StructSizeMapR);
+                             StructSizeMapR,
+                             StructDIL,
+                             StructDIR);
 
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
@@ -198,7 +206,7 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
     }
 
     Result.missingDefs = modComp.MissingDefs;
-    Result.differingSynDiffs = modComp.DifferingObjects;
+    Result.differingObjects = std::move(modComp.DifferingObjects);
     Result.coveredFuns = modComp.CoveredFuns;
 }
 
