@@ -61,6 +61,12 @@ PreservedAnalyses FieldAccessFunctionGenerator::run(
                         // Stop building stack.
                         processStack(InstStack, Mod);
                         InstStack.clear();
+                        if (isa<GetElementPtrInst>(Inst)) {
+                            // If the instruction is a GEP, start building a
+                            // new stack.
+                            DIL = Inst.getDebugLoc().get();
+                            InstStack.push_back(&Inst);
+                        }
                     } else {
                         // Add instruction to stack.
                         InstStack.push_back(&Inst);
