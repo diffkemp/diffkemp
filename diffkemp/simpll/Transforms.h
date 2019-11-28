@@ -43,7 +43,7 @@ void preprocessModule(Module &Mod,
 struct ComparisonResult {
     std::vector<FunPair> nonequalFuns;
     std::vector<ConstFunPair> missingDefs;
-    std::vector<SyntaxDifference> differingSynDiffs;
+    std::vector<std::unique_ptr<NonFunctionDifference>> differingObjects;
     std::set<std::string> coveredFuns;
 };
 

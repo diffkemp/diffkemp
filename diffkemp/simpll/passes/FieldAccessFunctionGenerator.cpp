@@ -53,20 +53,20 @@ PreservedAnalyses FieldAccessFunctionGenerator::run(
             for (auto &Inst : BB) {
                 if (isa<GetElementPtrInst>(Inst) && InstStack.empty()) {
                     // Possible start of field access block.
-                    // Check if GEP has constant indices (this pass could
-                    // technically support all GEPs, but this is not implemented
-                    // yet)
-                    if (dyn_cast<GetElementPtrInst>(&Inst)
-                                ->hasAllConstantIndices()) {
-                        DIL = Inst.getDebugLoc().get();
-                        InstStack.push_back(&Inst);
-                    }
+                    DIL = Inst.getDebugLoc().get();
+                    InstStack.push_back(&Inst);
                 } else if ((isa<GetElementPtrInst>(Inst) || isa<CastInst>(Inst))
                            && !InstStack.empty()) {
                     if (Inst.getDebugLoc().get() != DIL) {
                         // Stop building stack.
                         processStack(InstStack, Mod);
                         InstStack.clear();
+                        if (isa<GetElementPtrInst>(Inst)) {
+                            // If the instruction is a GEP, start building a
+                            // new stack.
+                            DIL = Inst.getDebugLoc().get();
+                            InstStack.push_back(&Inst);
+                        }
                     } else {
                         // Add instruction to stack.
                         InstStack.push_back(&Inst);
@@ -112,21 +112,24 @@ void FieldAccessFunctionGenerator::processStack(
     }
 
     // Check if all operands in the code are values included in the stack.
-    // If not, it would be technically possible to do this transformation,
-    // but this is not supported by this implementation.
+    // If not, arrange them to be passed to the generated abstraction.
+    // Note: the first argument of the abstraction is always the operand of the
+    // GEP - this should not be changed, since it is expected to be this way
+    // later in the analysis.
+    std::vector<Value *> valuesToReplace;
     for (Instruction *Inst : Stack) {
-        if (Inst == Stack.front()) {
-            // The GEP is guaranteed to have all indices constant and the first
-            // value is extracted.
-            continue;
-        }
         for (Value *Op : Inst->operands()) {
             if (isa<ConstantData>(Op))
                 // Constants are fine, they can be moved without problem.
                 continue;
-            if (std::find(Stack.begin(), Stack.end(), Op) == std::end(Stack))
-                // The value was not found in the stack set.
-                return;
+            if (std::find(Stack.begin(), Stack.end(), Op) == std::end(Stack)
+                && std::find(valuesToReplace.begin(), valuesToReplace.end(), Op)
+                           == std::end(valuesToReplace)) {
+                // The value was not found in the stack.
+                // Add it to the replacement vector (unless it is already
+                // there).
+                valuesToReplace.push_back(Op);
+            }
         }
     }
 
@@ -134,10 +137,13 @@ void FieldAccessFunctionGenerator::processStack(
     // The generated abstraction receives the source variable as its argument
     // and returns the result of the field access (both are pointers, as with
     // simple GEPs).
+    std::vector<Type *> argTypes;
+    std::transform(valuesToReplace.begin(),
+                   valuesToReplace.end(),
+                   std::back_inserter(argTypes),
+                   [](Value *V) { return V->getType(); });
     FunctionType *FT =
-            FunctionType::get(Stack.back()->getType(),
-                              {Stack.front()->getOperand(0)->getType()},
-                              false);
+            FunctionType::get(Stack.back()->getType(), argTypes, false);
     Function *Abstraction =
             Function::Create(FT,
                              GlobalValue::LinkageTypes::ExternalLinkage,
@@ -145,7 +151,14 @@ void FieldAccessFunctionGenerator::processStack(
                              &Mod);
     Abstraction->setMetadata(SimpllFieldAccessMetadata,
                              Stack.front()->getDebugLoc().get());
-    auto Arg = &*Abstraction->arg_begin();
+
+    // Create a map that will be used for replacing operands referencing values
+    // outside of the abstraction function with its arguments.
+    std::map<Value *, Value *> valueReplacementMap;
+    int i = 0;
+    for (Value &Arg : Abstraction->args()) {
+        valueReplacementMap.insert({valuesToReplace[i++], &Arg});
+    }
 
     // Copy the instructions to the function body.
     BasicBlock *BB =
@@ -158,8 +171,7 @@ void FieldAccessFunctionGenerator::processStack(
             Instruction *Clone = Inst->clone();
             Clone->setDebugLoc(DebugLoc(
                     Abstraction->getMetadata(SimpllFieldAccessMetadata)));
-            auto CallInst = CallInst::Create(
-                    FT, Abstraction, {Stack.front()->getOperand(0)});
+            auto CallInst = CallInst::Create(FT, Abstraction, valuesToReplace);
             CallInst->insertAfter(Inst);
             CallInst->setDebugLoc(DebugLoc(
                     Abstraction->getMetadata(SimpllFieldAccessMetadata)));
@@ -172,8 +184,16 @@ void FieldAccessFunctionGenerator::processStack(
                     Abstraction->getMetadata(SimpllFieldAccessMetadata)));
             BB->getInstList().push_back(Inst);
         }
+        // Replace the instruction's operands with function arguments if needed.
+        Instruction *NewInst = &BB->getInstList().back();
+        for (int i = 0; i < NewInst->getNumOperands(); i++) {
+            if (valueReplacementMap.find(NewInst->getOperand(i))
+                != valueReplacementMap.end()) {
+                NewInst->setOperand(
+                        i, valueReplacementMap[NewInst->getOperand(i)]);
+            }
+        }
     }
-    BB->begin()->setOperand(0, Arg);
 
     // Create return instruction
     auto ReturnInst =

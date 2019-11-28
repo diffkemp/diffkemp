@@ -165,7 +165,7 @@ def functions_diff(mod_first, mod_second,
                                       config.print_asm_diffs,
                                       config.verbosity)
             funs_to_compare = list([o for o in objects_to_compare
-                                    if not o[0].is_syn_diff])
+                                    if o[0].diff_kind == "function"])
             if funs_to_compare and missing_defs:
                 # If there are missing function definitions, try to find
                 # implementing them, link those to the current modules, and
@@ -198,7 +198,7 @@ def functions_diff(mod_first, mod_second,
             # If the functions are not syntactically equal, objects_to_compare
             # contains a list of functions and macros that are different.
             for fun_pair in objects_to_compare:
-                if (not fun_pair[0].is_syn_diff and
+                if (not fun_pair[0].diff_kind == "function" and
                         config.semdiff_tool is not None):
                     # If a semantic diff tool is set, use it for further
                     # comparison of non-equal functions
@@ -211,15 +211,16 @@ def functions_diff(mod_first, mod_second,
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
                 if fun_result.kind == Result.Kind.NOT_EQUAL:
-                    if not fun_result.first.is_syn_diff:
-                        # Get the syntactic diff of functions
+                    if fun_result.first.diff_kind in ["function", "type"]:
+                        # Get the syntactic diff of functions or types
                         fun_result.diff = syntax_diff(
                             fun_result.first.filename,
                             fun_result.second.filename,
                             fun_result.first.name,
+                            fun_result.first.diff_kind,
                             fun_pair[0].line,
                             fun_pair[1].line)
-                    else:
+                    elif fun_result.first.diff_kind == "syntactic":
                         # Find the syntax differences and append the left and
                         # right value to create the resulting diff
                         found = None
@@ -230,6 +231,11 @@ def functions_diff(mod_first, mod_second,
                         if found is not None:
                             fun_result.diff = "  {}\n\n  {}\n".format(
                                 sd["left-value"], sd["right-value"])
+                    else:
+                        sys.stderr.write(
+                            "warning: unknown diff kind: {}\n".format(
+                                fun_result.first.diff_kind))
+                        fun_result.diff = "unknown\n"
                 result.add_inner(fun_result)
         if config.verbosity:
             print("  {}".format(result))

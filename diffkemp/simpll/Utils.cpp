@@ -56,6 +56,22 @@ Function *getCalledFunction(Value *CalledValue) {
             getCalledFunction(const_cast<const Value *>(CalledValue)));
 }
 
+/// Extracts value from an arbitrary number of casts.
+const Value *stripAllCasts(const Value *Val) {
+    if (auto Cast = dyn_cast<CastInst>(Val))
+        return stripAllCasts(Cast->getOperand(0));
+    else if (auto Cast = dyn_cast<BitCastOperator>(Val))
+        // Handle bitcast constant expressions.
+        return stripAllCasts(Cast->getOperand(0));
+    else
+        return Val;
+}
+
+/// Extracts value from an arbitrary number of casts.
+Value *stripAllCasts(Value *Val) {
+    return const_cast<Value *>(stripAllCasts(const_cast<const Value *>(Val)));
+}
+
 /// Get name of a type so that it can be used as a variable in Z3.
 std::string typeName(const Type *Type) {
     std::string result;

@@ -265,14 +265,127 @@ int DifferentialFunctionComparator::cmpOperations(
     }
 
     if (Result) {
+        // Check whether there is an additional cast because of a structure type
+        // change.
+        if (isa<CastInst>(L) || isa<CastInst>(R)) {
+            auto Cast = isa<CastInst>(L) ? dyn_cast<CastInst>(L)
+                                         : dyn_cast<CastInst>(R);
+            Value *Op = stripAllCasts(Cast->getOperand(0));
+            CallInst *CI;
+            LoadInst *LI;
+            Function *Fun;
+            PointerType *PTy;
+            StructType *STy;
+            // Check if the operator of a cast is a call to a field access
+            // abstraction from a named structure type (either directly or
+            // through a load).
+            if (((CI = dyn_cast<CallInst>(Op))
+                 || ((LI = dyn_cast<LoadInst>(Op))
+                     && (CI = dyn_cast<CallInst>(
+                                 stripAllCasts(LI->getOperand(0))))))
+                && (Fun = getCalledFunction(CI->getCalledValue()))
+                && isSimpllFieldAccessAbstraction(Fun)
+                && (PTy = dyn_cast<PointerType>(CI->getOperand(0)->getType()))
+                && (STy = dyn_cast<StructType>(PTy->getPointerElementType()))
+                && STy->hasName()) {
+                // Value is casted after being extracted from a structure.
+                // There is probably a change in the structure type causing
+                // the cast.
+                // Try to find the type in the other structure.
+                auto OtherSTy = R->getModule()->getTypeByName(STy->getName());
+                if (Cast == L)
+                    findTypeDifference(
+                            STy, OtherSTy, L->getFunction(), R->getFunction());
+                else
+                    findTypeDifference(
+                            OtherSTy, STy, L->getFunction(), R->getFunction());
+            }
+        }
+        // Check whether there is a load type difference because of a structure
+        // type change.
+        if (isa<LoadInst>(L) && isa<LoadInst>(R)
+            && cmpTypes(L->getType(), R->getType())) {
+            Value *OpL = stripAllCasts(L->getOperand(0));
+            Value *OpR = stripAllCasts(R->getOperand(0));
+            CallInst *CL;
+            CallInst *CR;
+            Function *FL;
+            Function *FR;
+            PointerType *PTyL;
+            PointerType *PTyR;
+            StructType *STyL;
+            StructType *STyR;
+            // Check whether both load instructions operate on the return value
+            // of a call of a field access abstraction from named structure
+            // types of the same name.
+            if ((CL = dyn_cast<CallInst>(OpL)) && (CR = dyn_cast<CallInst>(OpR))
+                && (FL = getCalledFunction(CL->getCalledValue()))
+                && (FR = getCalledFunction(CR->getCalledValue()))
+                && isSimpllFieldAccessAbstraction(FL)
+                && isSimpllFieldAccessAbstraction(FR)
+                && (PTyL = dyn_cast<PointerType>(CL->getOperand(0)->getType()))
+                && (PTyR = dyn_cast<PointerType>(CR->getOperand(0)->getType()))
+                && (STyL = dyn_cast<StructType>(PTyL->getPointerElementType()))
+                && (STyR = dyn_cast<StructType>(PTyR->getPointerElementType()))
+                && STyL->hasName() && STyR->hasName()
+                && (STyL->getName() == STyR->getName())) {
+                findTypeDifference(
+                        STyL, STyR, L->getFunction(), R->getFunction());
+            }
+        }
         auto macroDiffs = findMacroDifferences(L, R);
         ModComparator->DifferingObjects.insert(
                 ModComparator->DifferingObjects.end(),
-                macroDiffs.begin(),
-                macroDiffs.end());
+                std::make_move_iterator(macroDiffs.begin()),
+                std::make_move_iterator(macroDiffs.end()));
     }
 
     return Result;
+}
+
+/// Find and record a difference between structure types.
+void DifferentialFunctionComparator::findTypeDifference(
+        StructType *L,
+        StructType *R,
+        const Function *FL,
+        const Function *FR) const {
+    if (cmpTypes(L, R)) {
+        std::unique_ptr<TypeDifference> diff =
+                std::make_unique<TypeDifference>();
+        diff->name = L->getName().startswith("struct.") ? L->getName().substr(7)
+                                                        : L->getName();
+
+        // Try to get the debug info for the structure type.
+        DICompositeType *DCTyL = nullptr, *DCTyR = nullptr;
+        if (ModComparator->StructDIMapL.find(diff->name)
+            != ModComparator->StructDIMapL.end()) {
+            DCTyL = ModComparator->StructDIMapL[diff->name];
+        }
+        if (ModComparator->StructDIMapR.find(diff->name)
+            != ModComparator->StructDIMapR.end()) {
+            DCTyR = ModComparator->StructDIMapR[diff->name];
+        }
+        if (!DCTyL || !DCTyR)
+            // Debug info not found.
+            return;
+
+        diff->function = FL->getName();
+        diff->FileL = joinPath(DCTyL->getDirectory(), DCTyL->getFilename());
+        diff->FileR = joinPath(DCTyR->getDirectory(), DCTyR->getFilename());
+        // Note: for some reason the starting line of the struct in the debug
+        // info is the first attribute, skipping the actual declaration.
+        // This is fixed by decrementing the line number.
+        diff->LineL = DCTyL->getLine() - 1;
+        diff->LineR = DCTyR->getLine() - 1;
+        diff->StackL.push_back(CallInfo{diff->name + " (type)",
+                                        FL->getSubprogram()->getFilename(),
+                                        FL->getSubprogram()->getLine()});
+        diff->StackR = CallStack();
+        diff->StackR.push_back(CallInfo{diff->name + " (type)",
+                                        FR->getSubprogram()->getFilename(),
+                                        FR->getSubprogram()->getLine()});
+        ModComparator->DifferingObjects.push_back(std::move(diff));
+    }
 }
 
 /// Detects a change from a function to a macro between two instructions.
@@ -323,20 +436,21 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
                         dbgs() << getDebugIndent() << "Writing function-macro "
                                << "syntactic difference\n");
 
-        SyntaxDifference diff;
-        diff.function = L->getFunction()->getName();
-        diff.name = trueName;
-        diff.BodyL = "[macro function difference]";
-        diff.BodyR = "[macro function difference]";
-        diff.StackL =
+        std::unique_ptr<SyntaxDifference> diff =
+                std::make_unique<SyntaxDifference>();
+        diff->function = L->getFunction()->getName();
+        diff->name = trueName;
+        diff->BodyL = "[macro function difference]";
+        diff->BodyR = "[macro function difference]";
+        diff->StackL =
                 CallStack{CallInfo{NameL,
                                    L->getDebugLoc()->getFile()->getFilename(),
                                    L->getDebugLoc()->getLine()}};
-        diff.StackR =
+        diff->StackR =
                 CallStack{CallInfo{NameR,
                                    R->getDebugLoc()->getFile()->getFilename(),
                                    R->getDebugLoc()->getLine()}};
-        ModComparator->DifferingObjects.push_back(diff);
+        ModComparator->DifferingObjects.push_back(std::move(diff));
     }
 }
 
@@ -594,8 +708,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
 
                         ModComparator->DifferingObjects.insert(
                                 ModComparator->DifferingObjects.end(),
-                                macroDiffs.begin(),
-                                macroDiffs.end());
+                                std::make_move_iterator(macroDiffs.begin()),
+                                std::make_move_iterator(macroDiffs.end()));
 
                         // Try to find assembly functions causing the difference
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)
@@ -605,8 +719,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                                     dyn_cast<CallInst>(&*InstR));
                             ModComparator->DifferingObjects.insert(
                                     ModComparator->DifferingObjects.end(),
-                                    asmDiffs.begin(),
-                                    asmDiffs.end());
+                                    std::make_move_iterator(asmDiffs.begin()),
+                                    std::make_move_iterator(asmDiffs.end()));
                         }
 
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR))
@@ -634,8 +748,9 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
 }
 
 /// Looks for inline assembly differences between the call instructions.
-std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
-        const CallInst *IL, const CallInst *IR) const {
+std::vector<std::unique_ptr<SyntaxDifference>>
+        DifferentialFunctionComparator::findAsmDifference(
+                const CallInst *IL, const CallInst *IR) const {
     auto FunL = getCalledFunction(IL->getCalledValue());
     auto FunR = getCalledFunction(IR->getCalledValue());
     auto ParentL = IL->getFunction();
@@ -685,22 +800,26 @@ std::vector<SyntaxDifference> DifferentialFunctionComparator::findAsmDifference(
 
     // Create difference object.
     // Note: the call stack is left empty here, it will be added in reportOutput
-    SyntaxDifference diff;
-    diff.BodyL = AsmL.str() + " (args: " + argumentNamesL + ")";
-    diff.BodyR = AsmR.str() + " (args: " + argumentNamesR + ")";
-    diff.StackL = CallStack();
-    diff.StackL.push_back(CallInfo{"(generated assembly code)",
-                                   ParentL->getSubprogram()->getFilename(),
-                                   ParentL->getSubprogram()->getLine()});
-    diff.StackR = CallStack();
-    diff.StackR.push_back(CallInfo{"(generated assembly code)",
-                                   ParentR->getSubprogram()->getFilename(),
-                                   ParentR->getSubprogram()->getLine()});
-    diff.function = ParentL->getName();
-    diff.name = "assembly code "
-                + std::to_string(++ModComparator->asmDifferenceCounter);
+    std::unique_ptr<SyntaxDifference> diff =
+            std::make_unique<SyntaxDifference>();
+    diff->BodyL = AsmL.str() + " (args: " + argumentNamesL + ")";
+    diff->BodyR = AsmR.str() + " (args: " + argumentNamesR + ")";
+    diff->StackL = CallStack();
+    diff->StackL.push_back(CallInfo{"(generated assembly code)",
+                                    ParentL->getSubprogram()->getFilename(),
+                                    ParentL->getSubprogram()->getLine()});
+    diff->StackR = CallStack();
+    diff->StackR.push_back(CallInfo{"(generated assembly code)",
+                                    ParentR->getSubprogram()->getFilename(),
+                                    ParentR->getSubprogram()->getLine()});
+    diff->function = ParentL->getName();
+    diff->name = "assembly code "
+                 + std::to_string(++ModComparator->asmDifferenceCounter);
 
-    return {diff};
+    std::vector<std::unique_ptr<SyntaxDifference>> Result;
+    Result.push_back(std::move(diff));
+
+    return Result;
 }
 
 /// Implement comparison of global values that does not use a

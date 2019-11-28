@@ -32,12 +32,12 @@ class Result:
         If it is a function, it contains the file of the function.
         """
         def __init__(self, name, filename=None, line=None, callstack=None,
-                     is_syn_diff=False, covered=False):
+                     diff_kind="function", covered=False):
             self.name = name
             self.filename = filename
             self.line = line
             self.callstack = callstack
-            self.is_syn_diff = is_syn_diff
+            self.diff_kind = diff_kind
             self.covered = covered
 
     def __init__(self, kind, first_name, second_name):
@@ -135,12 +135,14 @@ class Result:
         # Generate counts
         total = len(unique_diffs)
         functions = len([r for r in unique_diffs
-                         if not r.res.first.is_syn_diff])
+                         if r.res.first.diff_kind == "function"])
+        types = len([r for r in unique_diffs
+                     if r.res.first.diff_kind == "type"])
         macros = len([r for r in unique_diffs
-                      if (r.res.first.is_syn_diff and
+                      if (r.res.first.diff_kind == "syntactic" and
                           not r.res.first.name.startswith("assembly code"))])
         asm = len([r for r in unique_diffs
-                  if (r.res.first.is_syn_diff and
+                  if (r.res.first.diff_kind == "syntactic" and
                       r.res.first.name.startswith("assembly code"))])
         empty = len([r for r in unique_diffs if r.res.diff == ""])
 
@@ -150,6 +152,8 @@ class Result:
             return
         print("In functions:            {0} ({1:.0f}%)".format(functions,
               functions / total * 100))
+        print("In types:                {0} ({1:.0f}%)".format(types,
+              types / total * 100))
         print("In macros:               {0} ({1:.0f}%)".format(macros,
               macros / total * 100))
         print("In inline assembly code: {0} ({1:.0f}%)".format(asm,

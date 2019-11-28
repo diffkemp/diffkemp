@@ -9,11 +9,16 @@ from tempfile import mkdtemp
 import os
 
 
-def syntax_diff(first_file, second_file, fun, first_line, second_line):
-    """Get diff of a C function fun between first_file and second_file"""
+def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
+    """Get diff of a C function or type between first_file and second_file"""
     tmpdir = mkdtemp()
     command = ["diff", "-C", "1", os.path.join(tmpdir, "1"),
                os.path.join(tmpdir, "2")]
+
+    if kind == "function":
+        terminator_list = ["}", ");"]
+    elif kind == "type":
+        terminator_list = ["};"]
 
     # Use the provided arguments "first_line" and "second_line" that contain
     # the lines on which the function starts in each file to extract both
@@ -30,7 +35,7 @@ def syntax_diff(first_file, second_file, fun, first_line, second_line):
             # nothing but an ending curly bracket
             line_index = start - 1
             line = lines[line_index]
-            while line.rstrip() != "}" and line.rstrip() != ");":
+            while line.rstrip() not in terminator_list:
                 line_index += 1
                 if line_index == len(lines):
                     return "Error: cannot get diff\n"
