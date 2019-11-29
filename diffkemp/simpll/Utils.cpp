@@ -267,6 +267,23 @@ StructType *getStructType(const Value *Value) {
     return Type;
 }
 
+/// Extracts source types for all GEPs in a field accecss abstraction.
+std::vector<Type *> getFieldAccessSourceTypes(const Function *FA) {
+    std::vector<Type *> TypeVec;
+    const BasicBlock *BB = &*FA->begin();
+    for (const Instruction &I : *BB) {
+        if (auto GEP = dyn_cast<GetElementPtrInst>(&I)) {
+            TypeVec.push_back(GEP->getSourceElementType());
+            // If the GEP has another GEP as its argument, add it to the vector.
+            if (auto InnerGEP =
+                        dyn_cast<GEPOperator>(GEP->getPointerOperand())) {
+                TypeVec.push_back(InnerGEP->getSourceElementType());
+            }
+        }
+    }
+    return TypeVec;
+}
+
 /// Run simplification passes on the function
 ///  - simplify CFG
 ///  - dead code elimination
