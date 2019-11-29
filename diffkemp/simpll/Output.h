@@ -20,9 +20,9 @@
 #include "Transforms.h"
 #include "Utils.h"
 
-/// Report results in YAML format to stdout.
+/// Report the overall result in YAML format to stdout.
 /// \param config Configuration.
-/// \param nonequalFuns List of non-equal functions.
-void reportOutput(Config &config, ComparisonResult &Result);
+/// \param Result The overall result of the comparison
+void reportOutput(Config &config, OverallResult &Result);
 
 #endif // DIFFKEMP_SIMPLL_OUTPUT_H

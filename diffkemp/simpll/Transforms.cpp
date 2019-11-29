@@ -105,7 +105,7 @@ void preprocessModule(Module &Mod,
 /// 3. Using debug information to compute offsets of the corresponding GEP
 ///    indices. Offsets are stored inside LLVM metadata.
 /// 4. Removing bodies of functions that are syntactically equivalent.
-void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
+void simplifyModulesDiff(Config &config, OverallResult &Result) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies.
     AnalysisManager<Module, Function *> mam(false);
@@ -174,13 +174,16 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "Syntactic comparison results:\n");
         bool allEqual = true;
-        for (auto &funPair : modComp.ComparedFuns) {
-            if (funPair.second == ModuleComparator::NOT_EQUAL) {
+        for (auto &funPairResult : modComp.ComparedFuns) {
+            if (!funPairResult.first.first->isIntrinsic()
+                && !isSimpllAbstraction(funPairResult.first.first)) {
+                Result.functionResults.push_back(
+                        std::move(funPairResult.second));
+            }
+            if (funPairResult.second.kind == Result::Kind::NOT_EQUAL) {
                 allEqual = false;
-                Result.nonequalFuns.emplace_back(funPair.first.first,
-                                                 funPair.first.second);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << funPair.first.first->getName()
+                                dbgs() << funPairResult.first.first->getName()
                                        << " are syntactically different\n");
             }
         }
@@ -204,10 +207,7 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
             }
         }
     }
-
     Result.missingDefs = modComp.MissingDefs;
-    Result.differingObjects = std::move(modComp.DifferingObjects);
-    Result.coveredFuns = modComp.CoveredFuns;
 }
 
 /// Recursively mark callees of a function with 'alwaysinline' attribute.

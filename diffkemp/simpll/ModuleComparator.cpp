@@ -32,7 +32,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                            << FirstFun->getName() << " and "
                            << SecondFun->getName() << "\n";
                     increaseDebugIndentLevel());
-    ComparedFuns.emplace(std::make_pair(FirstFun, SecondFun), Result::UNKNOWN);
+    ComparedFuns.emplace(std::make_pair(FirstFun, SecondFun),
+                         Result(FirstFun, SecondFun));
 
     // Comparing function declarations (function without bodies).
     if (FirstFun->isDeclaration() || SecondFun->isDeclaration()) {
@@ -51,15 +52,15 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // If checking control flow only, it suffices that one of the
             // functions is a declaration to treat them equal.
             if (FirstFunName == SecondFunName)
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
             else
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
         } else {
             if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
                 && FirstFunName == SecondFunName)
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
             else if (FirstFunName != SecondFunName)
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
             else {
                 // One function has a body, the second one does not; add the
                 // missing definition
@@ -72,10 +73,11 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
         DEBUG_WITH_TYPE(
                 DEBUG_SIMPLL, decreaseDebugIndentLevel();
-                if (ComparedFuns.at({FirstFun, SecondFun}) == Result::EQUAL) {
+                if (ComparedFuns.at({FirstFun, SecondFun}).kind
+                    == Result::EQUAL) {
                     dbgs() << getDebugIndent() << "Declarations with matching "
                            << "names, assuming they are equal\n";
-                } else if (ComparedFuns.at({FirstFun, SecondFun})
+                } else if (ComparedFuns.at({FirstFun, SecondFun}).kind
                            == Result::NOT_EQUAL) {
                     dbgs() << getDebugIndent()
                            << "Declarations without matching "
@@ -94,12 +96,12 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     if (result == 0) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << getDebugIndent() << "Functions are equal\n");
-        ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+        ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
     } else {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << getDebugIndent()
                                << "Functions are not equal\n");
-        ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+        ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
         while (tryInline.first || tryInline.second) {
             DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel());
 
@@ -186,7 +188,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             simplifyFunction(FirstFun);
             simplifyFunction(SecondFun);
             // Reset the function diff result
-            ComparedFuns.at({FirstFun, SecondFun}) = Result::UNKNOWN;
+            ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
             // Re-run the comparison
             DifferentialFunctionComparator fCompSecond(FirstFun,
                                                        SecondFun,
@@ -207,12 +209,12 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent() << "After inlining, "
                                        << "the functions are equal\n");
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
             } else {
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent() << "After inlining, "
                                        << "the functions are not equal\n");
-                ComparedFuns.at({FirstFun, SecondFun}) = Result::NOT_EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
             }
         }
     }

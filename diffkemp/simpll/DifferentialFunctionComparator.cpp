@@ -158,14 +158,8 @@ void DifferentialFunctionComparator::processCallInstDifference(
     // code stopping before comparing instruction arguments.
     // This inner difference may also cause a difference in the
     // the original function that is not visible in C source
-    // code. To prevent a false positive empty diff in this case
-    // the original function is marked as covered in case the
-    // functions differ.
+    // code.
     cmpGlobalValues(CalledL, CalledR);
-    if (ModComparator->ComparedFuns.find({CalledL, CalledR})
-        != ModComparator->ComparedFuns.end()) {
-        ModComparator->CoveredFuns.insert(CL->getFunction()->getName());
-    }
     // If the call instructions are different (cmpOperations
     // doesn't compare the called functions) or the called
     // functions have different names, try inlining them.
@@ -365,11 +359,8 @@ int DifferentialFunctionComparator::cmpOperations(
                 findTypeDifferences(FL, FR, L->getFunction(), R->getFunction());
             }
         }
-        auto macroDiffs = findMacroDifferences(L, R);
-        ModComparator->DifferingObjects.insert(
-                ModComparator->DifferingObjects.end(),
-                std::make_move_iterator(macroDiffs.begin()),
-                std::make_move_iterator(macroDiffs.end()));
+        ModComparator->ComparedFuns.at({FnL, FnR})
+                .addDifferingObjects(findMacroDifferences(L, R));
     }
 
     return Result;
@@ -437,7 +428,8 @@ void DifferentialFunctionComparator::findTypeDifference(
         diff->StackR.push_back(CallInfo{diff->name + " (type)",
                                         FR->getSubprogram()->getFilename(),
                                         FR->getSubprogram()->getLine()});
-        ModComparator->DifferingObjects.push_back(std::move(diff));
+        ModComparator->ComparedFuns.at({FnL, FnR})
+                .addDifferingObject(std::move(diff));
     }
 }
 
@@ -503,7 +495,8 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
                 CallStack{CallInfo{NameR,
                                    R->getDebugLoc()->getFile()->getFilename(),
                                    R->getDebugLoc()->getLine()}};
-        ModComparator->DifferingObjects.push_back(std::move(diff));
+        ModComparator->ComparedFuns.at({FnL, FnR})
+                .addDifferingObject(std::move(diff));
     }
 }
 
@@ -747,6 +740,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
     BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
 
     while (InstL != InstLE && InstR != InstRE) {
+        CurrentLocL = &InstL->getDebugLoc();
+        CurrentLocR = &InstR->getDebugLoc();
         bool needToCmpOperands = true;
 
         if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands)) {
@@ -788,24 +783,17 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                     if (Res) {
                         // Try to find macros that could be causing the
                         // difference
-                        auto macroDiffs =
-                                findMacroDifferences(&*InstL, &*InstR);
-
-                        ModComparator->DifferingObjects.insert(
-                                ModComparator->DifferingObjects.end(),
-                                std::make_move_iterator(macroDiffs.begin()),
-                                std::make_move_iterator(macroDiffs.end()));
+                        ModComparator->ComparedFuns.at({FnL, FnR})
+                                .addDifferingObjects(
+                                        findMacroDifferences(&*InstL, &*InstR));
 
                         // Try to find assembly functions causing the difference
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)
                             && showAsmDiff) {
-                            auto asmDiffs = findAsmDifference(
-                                    dyn_cast<CallInst>(&*InstL),
-                                    dyn_cast<CallInst>(&*InstR));
-                            ModComparator->DifferingObjects.insert(
-                                    ModComparator->DifferingObjects.end(),
-                                    std::make_move_iterator(asmDiffs.begin()),
-                                    std::make_move_iterator(asmDiffs.end()));
+                            ModComparator->ComparedFuns.at({FnL, FnR})
+                                    .addDifferingObjects(findAsmDifference(
+                                            dyn_cast<CallInst>(&*InstL),
+                                            dyn_cast<CallInst>(&*InstR)));
                         }
 
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR))
@@ -943,6 +931,12 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                         == ModComparator->ComparedFuns.end())
                     && (!isPrintFunction(L->getName())
                         && !isPrintFunction(R->getName()))) {
+                    // Store the called functions into the current functions'
+                    // callee set.
+                    ModComparator->ComparedFuns.at({FnL, FnR})
+                            .First.addCall(FunL, CurrentLocL->getLine());
+                    ModComparator->ComparedFuns.at({FnL, FnR})
+                            .Second.addCall(FunR, CurrentLocR->getLine());
                     ModComparator->compareFunctions(FunL, FunR);
                 }
 

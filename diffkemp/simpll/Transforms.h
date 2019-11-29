@@ -38,20 +38,11 @@ void preprocessModule(Module &Mod,
                       GlobalVariable *Var,
                       bool ControlFlowOnly);
 
-/// Structure to represent the output value of simplifyModulesDiff containing
-/// several vectors that are all outputs of ModuleComparator.
-struct ComparisonResult {
-    std::vector<FunPair> nonequalFuns;
-    std::vector<GlobalValuePair> missingDefs;
-    std::vector<std::unique_ptr<NonFunctionDifference>> differingObjects;
-    std::set<std::string> coveredFuns;
-};
-
 /// Simplify two corresponding modules for the purpose of their subsequent
 /// semantic difference analysis. Tries to remove all the code that is
 /// syntactically equal between the modules which should decrease the complexity
 /// of the semantic diff.
-void simplifyModulesDiff(Config &config, ComparisonResult &Result);
+void simplifyModulesDiff(Config &config, OverallResult &Result);
 
 /// Preprocessing transformations - run independently on each module at the
 /// end.

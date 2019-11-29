@@ -123,66 +123,12 @@ std::string joinPath(StringRef DirName, StringRef FileName) {
 }
 
 /// Extracts file name and directory name from the DebugInfo
-std::string getFileForFun(Function *Fun) {
+std::string getFileForFun(const Function *Fun) {
     if (auto *SubProgram = Fun->getSubprogram()) {
         if (auto *File = SubProgram->getFile())
             return joinPath(File->getDirectory(), File->getFilename());
     }
     return "";
-}
-
-/// Recursive search for call stack from Src to Dest
-bool searchCallStackRec(Function *Src,
-                        Function *Dest,
-                        CallStack &callStack,
-                        std::set<Function *> &visited) {
-    visited.insert(Src);
-    for (auto &BB : *Src) {
-        for (auto &Inst : BB) {
-            // Collect all functions occuring in the instruction.
-            // Function can be either called or used as a parameter
-            std::vector<Function *> calledFuns;
-            if (CallInst *Call = dyn_cast<CallInst>(&Inst)) {
-                if (auto c = Call->getCalledFunction())
-                    calledFuns.push_back(c);
-            }
-            for (auto &Op : Inst.operands()) {
-                if (isa<Function>(Op))
-                    calledFuns.push_back(dyn_cast<Function>(Op));
-            }
-
-            // Follow each found function
-            for (Function *called : calledFuns) {
-                if (called && visited.find(called) == visited.end()) {
-                    auto loc = Inst.getDebugLoc();
-                    if (!loc)
-                        continue;
-                    callStack.push_back(CallInfo(called->getName().str(),
-                                                 getFileForFun(Src),
-                                                 loc.getLine()));
-                    if (called == Dest)
-                        return true;
-                    else {
-                        bool found = searchCallStackRec(
-                                called, Dest, callStack, visited);
-                        if (found)
-                            return true;
-                        else
-                            callStack.pop_back();
-                    }
-                }
-            }
-        }
-    }
-    return false;
-}
-
-/// Calls the recursive function that retrieves the call stack
-CallStack getCallStack(Function &Src, Function &Dest) {
-    CallStack callStack;
-    std::set<Function *> visited;
-    searchCallStackRec(&Src, &Dest, callStack, visited);
-    return callStack;
 }
 
 /// Check if function has side effect (has 'store' instruction or calls some
