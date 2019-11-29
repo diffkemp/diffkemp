@@ -109,6 +109,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
     std::vector<std::unique_ptr<SyntaxDifference>>
             findAsmDifference(const CallInst *IL, const CallInst *IR) const;
 
+    /// Finds all differences between source types in GEPs inside two field
+    /// access abstractions and records them using findTypeDifference.
+    void findTypeDifferences(const Function *FAL,
+                             const Function *FAR,
+                             const Function *L,
+                             const Function *R) const;
+
     /// Find and record a difference between structure types.
     void findTypeDifference(StructType *L,
                             StructType *R,

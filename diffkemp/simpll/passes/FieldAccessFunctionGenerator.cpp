@@ -119,7 +119,7 @@ void FieldAccessFunctionGenerator::processStack(
     std::vector<Value *> valuesToReplace;
     for (Instruction *Inst : Stack) {
         for (Value *Op : Inst->operands()) {
-            if (isa<ConstantData>(Op))
+            if (isa<Constant>(Op))
                 // Constants are fine, they can be moved without problem.
                 continue;
             if (std::find(Stack.begin(), Stack.end(), Op) == std::end(Stack)

@@ -97,6 +97,9 @@ void simplifyFunction(Function *Fun);
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val);
 
+/// Extracts source types for all GEPs in a field accecss abstraction.
+std::vector<Type *> getFieldAccessSourceTypes(const Function *FA);
+
 /// Extract struct type of the value.
 /// Works if the value is of pointer type which can be even bitcasted.
 StructType *getStructType(const Value *Value);
