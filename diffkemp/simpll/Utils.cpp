@@ -224,6 +224,18 @@ bool isAllocFunction(const Function &Fun) {
            || Fun.getName() == "kmalloc";
 }
 
+/// Retuns true if the given value is a cast (instruction or constant
+/// expression)
+bool isCast(const Value *Val) {
+    if (isa<CastInst>(Val))
+        return true;
+
+    if (auto CExpr = dyn_cast<ConstantExpr>(Val))
+        return CExpr->isCast();
+
+    return false;
+}
+
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val) {
     if (auto *IntVal = dyn_cast<ConstantInt>(Val)) {

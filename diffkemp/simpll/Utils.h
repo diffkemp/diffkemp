@@ -85,6 +85,10 @@ bool hasSideEffect(const Function &Fun);
 /// Check if the function is an allocator
 bool isAllocFunction(const Function &Fun);
 
+/// Retuns true if the given value is a cast (instruction or constant
+/// expression)
+bool isCast(const Value *Val);
+
 /// Run simplification passes on the function
 ///  - simplify CFG
 ///  - dead code elimination
