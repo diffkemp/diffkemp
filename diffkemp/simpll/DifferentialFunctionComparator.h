@@ -126,7 +126,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     /// Check if the given operation can be ignored (it does not affect
     /// semantics) for control flow only diffs.
-    bool mayIgnore(const Instruction *Inst) const;
+    bool mayIgnore(const User *Inst) const;
 
     /// Does additional operations in cases when a difference between two
     /// CallInsts or their arguments is detected.
