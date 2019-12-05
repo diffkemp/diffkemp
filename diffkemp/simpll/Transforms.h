@@ -44,11 +44,4 @@ void preprocessModule(Module &Mod,
 /// of the semantic diff.
 void simplifyModulesDiff(Config &config, OverallResult &Result);
 
-/// Preprocessing transformations - run independently on each module at the
-/// end.
-/// \param Mod Module to simplify.
-/// \param Main Function that is to be compared in the module. Can be set to
-///             NULL, but specifying this optimizes the transformations.
-void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns);
-
 #endif // DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H

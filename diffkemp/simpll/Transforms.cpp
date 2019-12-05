@@ -209,30 +209,3 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
     }
     Result.missingDefs = modComp.MissingDefs;
 }
-
-/// Recursively mark callees of a function with 'alwaysinline' attribute.
-void markCalleesAlwaysInline(Function &Fun,
-                             const std::set<Function *> IgnoreFuns) {
-    for (auto &BB : Fun) {
-        for (auto &Instr : BB) {
-            if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
-                auto CalledFun = CallInstr->getCalledFunction();
-                if (!CalledFun || CalledFun->isDeclaration()
-                    || CalledFun->isIntrinsic()
-                    || IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
-                    continue;
-
-                if (CalledFun->hasFnAttribute(Attribute::AttrKind::NoInline))
-                    CalledFun->removeFnAttr(Attribute::AttrKind::NoInline);
-                if (!CalledFun->hasFnAttribute(
-                            Attribute::AttrKind::AlwaysInline)) {
-                    CalledFun->addFnAttr(Attribute::AttrKind::AlwaysInline);
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << "Inlining: "
-                                           << CalledFun->getName() << "\n");
-                    markCalleesAlwaysInline(*CalledFun, IgnoreFuns);
-                }
-            }
-        }
-    }
-}
