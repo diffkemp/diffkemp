@@ -57,6 +57,7 @@ namespace llvm::yaml {
 template <> struct MappingTraits<std::unique_ptr<NonFunctionDifference>> {
     static void mapping(IO &io, std::unique_ptr<NonFunctionDifference> &diff) {
         io.mapRequired("name", diff->name);
+        io.mapRequired("function", diff->function);
         io.mapRequired("stack-first", diff->StackL);
         io.mapRequired("stack-second", diff->StackR);
 

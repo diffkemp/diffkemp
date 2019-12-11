@@ -931,8 +931,8 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                         == ModComparator->ComparedFuns.end())
                     && (!isPrintFunction(L->getName())
                         && !isPrintFunction(R->getName()))) {
-                    // Store the called functions into the current functions'
-                    // callee set.
+                    // Store the called functions into the current
+                    // functions' callee set.
                     ModComparator->ComparedFuns.at({FnL, FnR})
                             .First.addCall(FunL, CurrentLocL->getLine());
                     ModComparator->ComparedFuns.at({FnL, FnR})

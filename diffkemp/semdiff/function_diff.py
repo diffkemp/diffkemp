@@ -1,6 +1,7 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
 from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
-from diffkemp.simpll.simpll import simplify_modules_diff, SimpLLException
+from diffkemp.simpll.simpll import run_simpll, SimpLLException
+from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.semdiff.result import Result
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
@@ -157,6 +158,15 @@ def functions_semdiff(first, second, fun_first, fun_second, config):
         return result
 
 
+def _edge_callstack_to_string(callstack):
+    """Converts a callstack consisting of Edge objects to a string
+    representation."""
+    return "\n".join(["{} at {}:{}".format(call.target_name,
+                                           call.filename,
+                                           call.line)
+                      for call in callstack])
+
+
 def functions_diff(mod_first, mod_second,
                    fun_first, fun_second,
                    glob_var, config):
@@ -187,16 +197,104 @@ def functions_diff(mod_first, mod_second,
         simplify = True
         while simplify:
             simplify = False
-            # Simplify modules
-            first_simpl, second_simpl, objects_to_compare, missing_defs, \
-                syndiff_bodies = \
-                simplify_modules_diff(mod_first.llvm, mod_second.llvm,
-                                      fun_first, fun_second,
-                                      glob_var.name if glob_var else None,
-                                      glob_var.name if glob_var else "simpl",
-                                      config.control_flow_only,
-                                      config.print_asm_diffs,
-                                      config.verbosity)
+            # Simplify modules and get the output graph.
+            first_simpl, second_simpl, graph, missing_defs = \
+                run_simpll(mod_first.llvm, mod_second.llvm,
+                           fun_first, fun_second,
+                           glob_var.name if glob_var else None,
+                           glob_var.name if glob_var else "simpl",
+                           config.control_flow_only,
+                           config.print_asm_diffs,
+                           config.verbosity)
+            # Extract the functions that should be compared from the graph in
+            # the form of Vertex objects.
+            vertices_to_compare = graph.reachable_from(
+                ComparisonGraph.Side.LEFT, fun_first)
+            # Use methods from ComparisonGraph (on the graph variable) and
+            # vertices_to_compare to generate objects_to_compare.
+            objects_to_compare = []
+            syndiff_bodies_left = dict()
+            syndiff_bodies_right = dict()
+            for vertex in vertices_to_compare:
+                if vertex.result == Result.Kind.EQUAL:
+                    # Do not include equal functions into the result.
+                    continue
+                # Generate and add the function difference.
+                fun_pair = []
+                for side in [ComparisonGraph.Side.LEFT,
+                             ComparisonGraph.Side.RIGHT]:
+                    fun = fun_first if side == ComparisonGraph.Side.LEFT \
+                        else fun_second
+                    if fun == vertex.names[side]:
+                        # There is no callstack from the base function.
+                        calls = None
+                    else:
+                        # Transform the Edge objects returned by
+                        # get_shortest_path to a readable callstack.
+                        calls = _edge_callstack_to_string(graph.get_callstack(
+                            side, fun, vertex.names[side]))
+                    # Note: a function diff is covered (i.e. hidden when empty
+                    # if and only if there is a non-function difference
+                    # referencing it).
+                    fun_pair.append(Result.Entity(
+                        vertex.names[side],
+                        vertex.files[side],
+                        vertex.lines[side],
+                        calls,
+                        "function",
+                        len(vertex.nonfun_diffs) != 0
+                    ))
+                fun_pair.append(vertex.result)
+                objects_to_compare.append(tuple(fun_pair))
+
+                # Process non-function differences.
+                for nonfun_diff in vertex.nonfun_diffs:
+                    nonfun_pair = []
+                    for side in [ComparisonGraph.Side.LEFT,
+                                 ComparisonGraph.Side.RIGHT]:
+                        syndiff_bodies = (syndiff_bodies_left
+                                          if side == ComparisonGraph.Side.LEFT
+                                          else syndiff_bodies_right)
+                        # Convert the YAML callstack format to string.
+                        calls = ["{} at {}:{}".format(call["function"],
+                                                      call["file"],
+                                                      call["line"])
+                                 for call in nonfun_diff.callstack[side]]
+                        # Join the elements in the list to get a string.
+                        calls = "\n".join(calls)
+                        # Append the parent function's callstack.
+                        # (unless it is the base function)
+                        fun = fun_first if side == ComparisonGraph.Side.LEFT \
+                            else fun_second
+                        if nonfun_diff.parent_fun != fun:
+                            parent_calls = _edge_callstack_to_string(
+                                graph.get_callstack(
+                                    side, fun, nonfun_diff.parent_fun))
+                            calls = parent_calls + "\n" + calls
+
+                        if isinstance(nonfun_diff, ComparisonGraph.SyntaxDiff):
+                            nonfun_pair.append(Result.Entity(
+                                nonfun_diff.name,
+                                None,
+                                None,
+                                calls,
+                                "syntactic",
+                                False
+                            ))
+                            syndiff_bodies[nonfun_diff.name] = \
+                                nonfun_diff.body[side]
+                        elif isinstance(nonfun_diff, ComparisonGraph.TypeDiff):
+                            nonfun_pair.append(Result.Entity(
+                                nonfun_diff.name,
+                                nonfun_diff.file[side],
+                                nonfun_diff.line[side],
+                                calls,
+                                "type",
+                                False
+                            ))
+                    # Non-function differences are always of the non-equal type.
+                    nonfun_pair.append(Result.Kind.NOT_EQUAL)
+                    objects_to_compare.append(tuple(nonfun_pair))
             funs_to_compare = list([o for o in objects_to_compare
                                     if o[0].diff_kind == "function"])
             if funs_to_compare and missing_defs:
@@ -232,7 +330,7 @@ def functions_diff(mod_first, mod_second,
                                                    fun_pair[1].name,
                                                    config)
                 else:
-                    fun_result = Result(Result.Kind.NOT_EQUAL, "", "")
+                    fun_result = Result(fun_pair[2], fun_first, fun_second)
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
                 if fun_result.kind == Result.Kind.NOT_EQUAL:
@@ -248,14 +346,9 @@ def functions_diff(mod_first, mod_second,
                     elif fun_result.first.diff_kind == "syntactic":
                         # Find the syntax differences and append the left and
                         # right value to create the resulting diff
-                        found = None
-                        for sd in syndiff_bodies:
-                            if sd["name"] == fun_result.first.name:
-                                found = sd
-                                break
-                        if found is not None:
-                            fun_result.diff = "  {}\n\n  {}\n".format(
-                                sd["left-value"], sd["right-value"])
+                        fun_result.diff = "  {}\n\n  {}\n".format(
+                            syndiff_bodies_left[fun_result.first.name],
+                            syndiff_bodies_right[fun_result.second.name])
                     else:
                         sys.stderr.write(
                             "warning: unknown diff kind: {}\n".format(

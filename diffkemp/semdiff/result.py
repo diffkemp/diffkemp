@@ -22,6 +22,19 @@ class Result:
         TIMEOUT = 5
         ERROR = 6
 
+        @staticmethod
+        def from_string(string):
+            dictionary = {
+                "none": Result.Kind.NONE,
+                "equal-syntax": Result.Kind.EQUAL_SYNTAX,
+                "equal": Result.Kind.EQUAL,
+                "not-equal": Result.Kind.NOT_EQUAL,
+                "unknown": Result.Kind.UNKNOWN,
+                "timeout": Result.Kind.TIMEOUT,
+                "error": Result.Kind.ERROR
+            }
+            return dictionary[string]
+
         def __str__(self):
             return self.name.lower().replace("_", " ")
 
