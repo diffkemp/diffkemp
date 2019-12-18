@@ -35,6 +35,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     ComparedFuns.emplace(std::make_pair(FirstFun, SecondFun),
                          Result(FirstFun, SecondFun));
 
+    // Check if the functions is in the ignored list.
+    if (IgnoredFuns.find({FirstFun->getName(), SecondFun->getName()})
+        != IgnoredFuns.end()) {
+        ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
+        return;
+    }
+
     // Comparing function declarations (function without bodies).
     if (FirstFun->isDeclaration() || SecondFun->isDeclaration()) {
         // Drop suffixes of function names. This is necessary in order to

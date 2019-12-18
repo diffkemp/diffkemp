@@ -19,6 +19,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/Support/SourceMgr.h>
+#include <set>
 
 #define DEBUG_SIMPLL "debug-simpll"
 
@@ -57,6 +58,8 @@ class Config {
     // Output files
     std::string FirstOutFile;
     std::string SecondOutFile;
+    // Equal function list.
+    std::set<std::pair<std::string, std::string>> IgnoredFuns;
 
     // Keep only control-flow related instructions
     bool ControlFlowOnly;

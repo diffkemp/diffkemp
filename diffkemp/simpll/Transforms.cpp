@@ -162,6 +162,7 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                              *config.Second,
                              config.ControlFlowOnly,
                              config.PrintAsmDiffs,
+                             config.IgnoredFuns,
                              &DI,
                              StructSizeMapL,
                              StructSizeMapR,

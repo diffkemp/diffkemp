@@ -59,6 +59,7 @@ class Result:
         self.second = Result.Entity(second_name)
         self.diff = None
         self.macro_diff = None
+        self.cache = None
         self.inner = dict()
 
     def __str__(self):

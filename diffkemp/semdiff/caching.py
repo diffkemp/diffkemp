@@ -261,3 +261,16 @@ class ComparisonGraph:
                     continue
                 stack.append(target)
         return result
+
+    def absorb_graph(self, graph):
+        """
+        Merges another graph into this one. New vertices (i.e. vertices from
+        graph that do not appear in self) are added and the equal funs set is
+        updated respectively.
+        Note: the graph in the argument is expected to reference (in edges)
+        only vertices that are already present in one graph or the other.
+        """
+        for name, vertex in graph.vertices.items():
+            if name not in self.vertices:
+                # Note: the entry to equal_funs is added automatically.
+                self[name] = vertex

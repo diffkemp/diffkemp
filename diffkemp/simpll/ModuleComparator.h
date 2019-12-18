@@ -44,6 +44,9 @@ class ModuleComparator {
 
     std::vector<GlobalValuePair> MissingDefs;
 
+    /// Functions that need not be compared (passed from the user);
+    std::set<std::pair<std::string, std::string>> &IgnoredFuns;
+
     /// DebugInfo class storing results from analysing debug information
     const DebugInfo *DI;
 
@@ -51,13 +54,14 @@ class ModuleComparator {
                      Module &Second,
                      bool controlFlowOnly,
                      bool showAsmDiffs,
+                     std::set<std::pair<std::string, std::string>> &IgnoredFuns,
                      const DebugInfo *DI,
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR,
                      StructureDebugInfoAnalysis::Result &StructDIMapL,
                      StructureDebugInfoAnalysis::Result &StructDIMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-              showAsmDiffs(showAsmDiffs), DI(DI),
+              showAsmDiffs(showAsmDiffs), IgnoredFuns(IgnoredFuns), DI(DI),
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
               StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR) {}
 

@@ -5,6 +5,7 @@ from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.semdiff.result import Result
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
+from tempfile import NamedTemporaryFile
 from threading import Timer
 import sys
 
@@ -169,7 +170,7 @@ def _edge_callstack_to_string(callstack):
 
 def functions_diff(mod_first, mod_second,
                    fun_first, fun_second,
-                   glob_var, config):
+                   glob_var, config, cache=None):
     """
     Compare two functions for equality.
 
@@ -185,6 +186,7 @@ def functions_diff(mod_first, mod_second,
     :param config: Configuration
     """
     result = Result(Result.Kind.NONE, fun_first, fun_second)
+    graph = None
     try:
         if config.verbosity:
             if fun_first == fun_second:
@@ -197,15 +199,34 @@ def functions_diff(mod_first, mod_second,
         simplify = True
         while simplify:
             simplify = False
+            # If an old comparison graph is supplied as an argument, get all
+            # functions compared in it and write them to a file that will be
+            # passed to SimpLL.
+            ignored_funs_file = NamedTemporaryFile()
+            if cache:
+                for vertex in cache.vertices.values():
+                    ignored_funs_file.write("{0}:{1}\n".format(
+                        vertex.names[ComparisonGraph.Side.LEFT],
+                        vertex.names[ComparisonGraph.Side.RIGHT]
+                    ).encode("utf-8"))
             # Simplify modules and get the output graph.
             first_simpl, second_simpl, graph, missing_defs = \
                 run_simpll(mod_first.llvm, mod_second.llvm,
                            fun_first, fun_second,
                            glob_var.name if glob_var else None,
                            glob_var.name if glob_var else "simpl",
+                           ignored_funs_file.name,
                            config.control_flow_only,
                            config.print_asm_diffs,
                            config.verbosity)
+            ignored_funs_file.close()
+            if cache:
+                # Note: "graph" is here the partial result graph, i.e. can
+                # contain unknown results that are known in the cache.
+                # Hence it is necessary to absorb the graph into the cache, not
+                # vice versa.
+                cache.absorb_graph(graph)
+                graph = cache
             # Extract the functions that should be compared from the graph in
             # the form of Vertex objects.
             vertices_to_compare = graph.reachable_from(
@@ -231,8 +252,12 @@ def functions_diff(mod_first, mod_second,
                     else:
                         # Transform the Edge objects returned by
                         # get_shortest_path to a readable callstack.
-                        calls = _edge_callstack_to_string(graph.get_callstack(
-                            side, fun, vertex.names[side]))
+                        try:
+                            edges = graph.get_callstack(
+                                side, fun, vertex.names[side])
+                        except ValueError:
+                            raise SimpLLException()
+                        calls = _edge_callstack_to_string(edges)
                     # Note: a function diff is covered (i.e. hidden when empty
                     # if and only if there is a non-function difference
                     # referencing it).
@@ -292,7 +317,7 @@ def functions_diff(mod_first, mod_second,
                                 "type",
                                 False
                             ))
-                    # Non-function differences are always of the non-equal type.
+                    # Non-function differences are always of the non-equal type
                     nonfun_pair.append(Result.Kind.NOT_EQUAL)
                     objects_to_compare.append(tuple(nonfun_pair))
             funs_to_compare = list([o for o in objects_to_compare
@@ -361,4 +386,5 @@ def functions_diff(mod_first, mod_second,
         if config.verbosity:
             print(e)
         result.kind = Result.Kind.ERROR
+    result.cache = graph if graph else cache
     return result

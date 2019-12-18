@@ -14,6 +14,7 @@
 
 #include "Config.h"
 #include <llvm/Support/Debug.h>
+#include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
 
 // Command line options
@@ -32,6 +33,11 @@ cl::opt<std::string>
         SuffixOpt("suffix",
                   cl::value_desc("suffix"),
                   cl::desc("Add suffix to names of simplified files."));
+cl::opt<std::string> IgnoreFunsOpt(
+        "ignore-funs",
+        cl::value_desc("ignore-funs"),
+        cl::desc("File containing a list of functions that need not be"
+                 " compared."));
 cl::opt<bool> ControlFlowOpt(
         "control-flow",
         cl::desc("Only keep instructions related to the control-flow."));
@@ -94,6 +100,23 @@ Config::Config()
         // Enable debugging output in passes
         DebugFlag = true;
         setCurrentDebugType(DEBUG_SIMPLL);
+    }
+    // Load functions to ignore.
+    if (!IgnoreFunsOpt.empty()) {
+        ErrorOr<std::unique_ptr<MemoryBuffer>> ignoreFunOpen =
+                MemoryBuffer::getFileOrSTDIN(IgnoreFunsOpt);
+        if (ignoreFunOpen) {
+            std::unique_ptr<MemoryBuffer> ignoreFunFile =
+                    std::move(ignoreFunOpen.get());
+            StringRef ignoreFunString = ignoreFunFile->getBuffer();
+            auto lines = std::make_unique<SmallVector<StringRef, 10000>>();
+            ignoreFunString.split(*lines, '\n');
+            for (StringRef line : *lines) {
+                auto refPair = line.split(':');
+                IgnoredFuns.insert({std::get<0>(refPair).str(),
+                                    std::get<1>(refPair).str()});
+            }
+        }
     }
 }
 
