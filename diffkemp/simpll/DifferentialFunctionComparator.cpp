@@ -330,12 +330,18 @@ int DifferentialFunctionComparator::cmpOperations(
                 // the cast.
                 // Try to find the type in the other structure.
                 auto OtherSTy = R->getModule()->getTypeByName(STy->getName());
-                if (Cast == L)
-                    findTypeDifference(
-                            STy, OtherSTy, L->getFunction(), R->getFunction());
-                else
-                    findTypeDifference(
-                            OtherSTy, STy, L->getFunction(), R->getFunction());
+                if (OtherSTy) {
+                    if (Cast == L)
+                        findTypeDifference(STy,
+                                           OtherSTy,
+                                           L->getFunction(),
+                                           R->getFunction());
+                    else
+                        findTypeDifference(OtherSTy,
+                                           STy,
+                                           L->getFunction(),
+                                           R->getFunction());
+                }
             }
         }
         // Check whether there is a load type difference because of a structure
