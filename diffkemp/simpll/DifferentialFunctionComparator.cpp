@@ -740,8 +740,10 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
     BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
 
     while (InstL != InstLE && InstR != InstRE) {
-        CurrentLocL = &InstL->getDebugLoc();
-        CurrentLocR = &InstR->getDebugLoc();
+        if ((&InstL->getDebugLoc())->get())
+            CurrentLocL = &InstL->getDebugLoc();
+        if ((&InstR->getDebugLoc())->get())
+            CurrentLocR = &InstR->getDebugLoc();
         bool needToCmpOperands = true;
 
         if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands)) {
