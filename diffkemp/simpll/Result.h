@@ -138,7 +138,7 @@ struct TypeDifference : public NonFunctionDifference {
 class Result {
   public:
     /// Possible results of function comparison.
-    enum Kind { EQUAL, NOT_EQUAL, UNKNOWN };
+    enum Kind { EQUAL, ASSUMED_EQUAL, NOT_EQUAL, UNKNOWN };
 
     Kind kind = UNKNOWN;
     FunctionInfo First;

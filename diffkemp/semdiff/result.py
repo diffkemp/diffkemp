@@ -16,11 +16,12 @@ class Result:
         """
         NONE = 0
         EQUAL_SYNTAX = 1
-        EQUAL = 2
-        NOT_EQUAL = 3
-        UNKNOWN = 4
-        TIMEOUT = 5
-        ERROR = 6
+        ASSUMED_EQUAL = 2
+        EQUAL = 3
+        NOT_EQUAL = 4
+        UNKNOWN = 5
+        TIMEOUT = 6
+        ERROR = 7
 
         @staticmethod
         def from_string(string):
@@ -28,6 +29,7 @@ class Result:
                 "none": Result.Kind.NONE,
                 "equal-syntax": Result.Kind.EQUAL_SYNTAX,
                 "equal": Result.Kind.EQUAL,
+                "assumed-equal": Result.Kind.ASSUMED_EQUAL,
                 "not-equal": Result.Kind.NOT_EQUAL,
                 "unknown": Result.Kind.UNKNOWN,
                 "timeout": Result.Kind.TIMEOUT,

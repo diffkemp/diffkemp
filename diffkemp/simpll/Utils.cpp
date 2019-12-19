@@ -104,7 +104,8 @@ void deleteAliasToFun(Module &Mod, Function *Fun) {
 bool hasSuffix(std::string Name) {
     size_t dotPos = Name.find_last_of('.');
     return dotPos != std::string::npos
-           && Name.find_last_not_of("0123456789.") < dotPos;
+           && (Name.find_last_not_of("0123456789.") < dotPos
+               || Name.substr(dotPos) == ".void");
 }
 
 /// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned

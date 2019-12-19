@@ -59,18 +59,23 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // If checking control flow only, it suffices that one of the
             // functions is a declaration to treat them equal.
             if (FirstFunName == SecondFunName)
-                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind =
+                        Result::ASSUMED_EQUAL;
             else
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
         } else {
             if (FirstFun->isDeclaration() && SecondFun->isDeclaration()
                 && FirstFunName == SecondFunName)
-                ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
+                ComparedFuns.at({FirstFun, SecondFun}).kind =
+                        Result::ASSUMED_EQUAL;
             else if (FirstFunName != SecondFunName)
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
             else {
                 // One function has a body, the second one does not; add the
                 // missing definition
+                if (FirstFunName == SecondFunName)
+                    ComparedFuns.at({FirstFun, SecondFun}).kind =
+                            Result::ASSUMED_EQUAL;
                 if (FirstFun->isDeclaration())
                     this->MissingDefs.push_back({FirstFun, nullptr});
                 else if (SecondFun->isDeclaration())

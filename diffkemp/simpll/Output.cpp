@@ -38,10 +38,6 @@ namespace llvm::yaml {
 template <> struct MappingTraits<FunctionInfo> {
     static void mapping(IO &io, FunctionInfo &info) {
         std::string name = info.name;
-        if (hasSuffix(name)) {
-            // Remove LLVM suffix.
-            name = dropSuffix(name);
-        }
         io.mapRequired("function", name);
         io.mapOptional("file", info.file);
         io.mapOptional("line", info.line, 0);
@@ -82,6 +78,7 @@ template <> struct ScalarEnumerationTraits<Result::Kind> {
     static void enumeration(IO &io, Result::Kind &kind) {
         io.enumCase(kind, "equal", Result::Kind::EQUAL);
         io.enumCase(kind, "not-equal", Result::Kind::NOT_EQUAL);
+        io.enumCase(kind, "assumed-equal", Result::Kind::ASSUMED_EQUAL);
         io.enumCase(kind, "unknown", Result::Kind::UNKNOWN);
     }
 };

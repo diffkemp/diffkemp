@@ -92,8 +92,18 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
                         # the graph.
                         vertex = ComparisonGraph.Vertex.from_yaml(fun_result,
                                                                   graph)
-                        graph[vertex.names[ComparisonGraph.Side.LEFT]] = \
-                            vertex
+                        # Prefer pointed name to ensure that a difference
+                        # contaning the variant function as either the left or
+                        # the right side has its name in the key.
+                        # This is useful because one can tell this is a weak
+                        # vertex from its name.
+                        if "." in vertex.names[ComparisonGraph.Side.LEFT]:
+                            graph[vertex.names[ComparisonGraph.Side.LEFT]] = \
+                                vertex
+                        else:
+                            graph[vertex.names[ComparisonGraph.Side.RIGHT]] = \
+                                vertex
+                graph.normalize()
                 missing_defs = simpll_result["missing-defs"] \
                     if "missing-defs" in simpll_result else None
         except yaml.YAMLError:

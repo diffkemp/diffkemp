@@ -150,7 +150,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Fun_New->setAttributes(cleanAttributeList(Fun_New->getAttributes()));
 
         // Set the right function name and subprogram
-        Fun_New->setName(OriginalName);
+        Fun_New->setName(OriginalName + ".void");
         Fun_New->setSubprogram(Fun->getSubprogram());
         if (Fun->getMetadata("inlineasm"))
             Fun_New->setMetadata("inlineasm", Fun->getMetadata("inlineasm"));

@@ -205,6 +205,10 @@ def functions_diff(mod_first, mod_second,
             ignored_funs_file = NamedTemporaryFile()
             if cache:
                 for vertex in cache.vertices.values():
+                    if vertex.result == Result.Kind.ASSUMED_EQUAL:
+                        # The result was only assumed equal, i.e. it was not
+                        # compared properly.
+                        continue
                     ignored_funs_file.write("{0}:{1}\n".format(
                         vertex.names[ComparisonGraph.Side.LEFT],
                         vertex.names[ComparisonGraph.Side.RIGHT]
@@ -237,7 +241,8 @@ def functions_diff(mod_first, mod_second,
             syndiff_bodies_left = dict()
             syndiff_bodies_right = dict()
             for vertex in vertices_to_compare:
-                if vertex.result == Result.Kind.EQUAL:
+                if vertex.result in [Result.Kind.EQUAL,
+                                     Result.Kind.ASSUMED_EQUAL]:
                     # Do not include equal functions into the result.
                     continue
                 # Generate and add the function difference.
