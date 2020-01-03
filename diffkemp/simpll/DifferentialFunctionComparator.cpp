@@ -193,8 +193,8 @@ int DifferentialFunctionComparator::cmpOperations(
             const CallInst *CL = dyn_cast<CallInst>(L);
             const CallInst *CR = dyn_cast<CallInst>(R);
 
-            Function *CalledL = CL->getCalledFunction();
-            Function *CalledR = CR->getCalledFunction();
+            const Function *CalledL = getCalledFunction(CL->getCalledValue());
+            const Function *CalledR = getCalledFunction(CR->getCalledValue());
             if (CalledL && CalledR) {
                 if (isSimpllFieldAccessAbstraction(CalledL)
                     && isSimpllFieldAccessAbstraction(CalledR)
