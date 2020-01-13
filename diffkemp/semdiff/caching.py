@@ -285,6 +285,7 @@ class ComparisonGraph:
         the function name including the base vertex).
         """
         start_fun = self[start_fun_name]
+        original_source_files = start_fun.files
         visited = set()
         stack = []
         result = []
@@ -300,9 +301,19 @@ class ComparisonGraph:
                 target = self[edge.target_name]
                 if target in visited:
                     continue
+                if (target.files[side].endswith(".c") and
+                        original_source_files[side] != target.files[side]):
+                    # Do not walk on edges to a C source file from a different
+                    # file.
+                    # Note: this is an (in context of this class) arbitrary
+                    # comparison boundary beyond which we don't consider the
+                    # results interesting.
+                    continue
                 stack.append(target)
-                if edge.kind != ComparisonGraph.DependencyKind.WEAK:
-                    result.append(target)
+                if edge.kind == ComparisonGraph.DependencyKind.WEAK:
+                    # Do not include targets of weak edges to the result.
+                    continue
+                result.append(target)
         return result
 
     def absorb_graph(self, graph):
@@ -369,3 +380,103 @@ class ComparisonGraph:
                     # vertex in the future.
                     weak_vertex.result = Result.Kind.ASSUMED_EQUAL
                 self[non_pointed_name] = weak_vertex
+
+    def _edge_callstack_to_string(self, callstack):
+        """Converts a callstack consisting of Edge objects to a string
+        representation."""
+        return "\n".join(["{} at {}:{}".format(call.target_name,
+                                               call.filename,
+                                               call.line)
+                          for call in callstack])
+
+    def graph_to_fun_pair_list(self, fun_first, fun_second):
+        # Extract the functions that should be compared from the graph in
+        # the form of Vertex objects.
+        vertices_to_compare = self.reachable_from(
+            ComparisonGraph.Side.LEFT, fun_first)
+        # Use methods from ComparisonGraph (on the graph variable) and
+        # vertices_to_compare to generate objects_to_compare.
+        objects_to_compare = []
+        syndiff_bodies_left = dict()
+        syndiff_bodies_right = dict()
+        for vertex in vertices_to_compare:
+            if vertex.result in [Result.Kind.EQUAL,
+                                 Result.Kind.ASSUMED_EQUAL]:
+                # Do not include equal functions into the result.
+                continue
+            # Generate and add the function difference.
+            fun_pair = []
+            for side in ComparisonGraph.Side:
+                fun = fun_first if side == ComparisonGraph.Side.LEFT \
+                    else fun_second
+                if fun == vertex.names[side]:
+                    # There is no callstack from the base function.
+                    calls = None
+                else:
+                    # Transform the Edge objects returned by
+                    # get_shortest_path to a readable callstack.
+                    edges = self.get_callstack(
+                        side, fun, vertex.names[side])
+                    calls = self._edge_callstack_to_string(edges)
+                # Note: a function diff is covered (i.e. hidden when empty)
+                # if and only if there is a non-function difference
+                # referencing it.
+                fun_pair.append(Result.Entity(
+                    vertex.names[side],
+                    vertex.files[side],
+                    vertex.lines[side],
+                    calls,
+                    "function",
+                    covered=len(vertex.nonfun_diffs) != 0
+                ))
+            fun_pair.append(vertex.result)
+            objects_to_compare.append(tuple(fun_pair))
+
+            # Process non-function differences.
+            for nonfun_diff in vertex.nonfun_diffs:
+                nonfun_pair = []
+                for side in ComparisonGraph.Side:
+                    syndiff_bodies = (syndiff_bodies_left
+                                      if side == ComparisonGraph.Side.LEFT
+                                      else syndiff_bodies_right)
+                    # Convert the YAML callstack format to string.
+                    calls = ["{} at {}:{}".format(call["function"],
+                                                  call["file"],
+                                                  call["line"])
+                             for call in nonfun_diff.callstack[side]]
+                    # Join the elements in the list to get a string.
+                    calls = "\n".join(calls)
+                    # Append the parent function's callstack.
+                    # (unless it is the base function)
+                    fun = fun_first if side == ComparisonGraph.Side.LEFT \
+                        else fun_second
+                    if nonfun_diff.parent_fun != fun:
+                        parent_calls = self._edge_callstack_to_string(
+                            self.get_callstack(
+                                side, fun, nonfun_diff.parent_fun))
+                        calls = parent_calls + "\n" + calls
+
+                    if isinstance(nonfun_diff, ComparisonGraph.SyntaxDiff):
+                        nonfun_pair.append(Result.Entity(
+                            nonfun_diff.name,
+                            None,
+                            None,
+                            calls,
+                            "syntactic",
+                            False
+                        ))
+                        syndiff_bodies[nonfun_diff.name] = \
+                            nonfun_diff.body[side]
+                    elif isinstance(nonfun_diff, ComparisonGraph.TypeDiff):
+                        nonfun_pair.append(Result.Entity(
+                            nonfun_diff.name,
+                            nonfun_diff.file[side],
+                            nonfun_diff.line[side],
+                            calls,
+                            "type",
+                            False
+                        ))
+                # Non-function differences are always of the non-equal type
+                nonfun_pair.append(Result.Kind.NOT_EQUAL)
+                objects_to_compare.append(tuple(nonfun_pair))
+        return objects_to_compare, syndiff_bodies_left, syndiff_bodies_right

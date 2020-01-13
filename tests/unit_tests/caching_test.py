@@ -21,7 +21,7 @@ def graph():
         dup("side_function"), Result.Kind.EQUAL, dup("app/main.c"), dup(255)
     )
     g["do_check"] = ComparisonGraph.Vertex(
-        dup("do_check"), Result.Kind.NOT_EQUAL, dup("app/check.c"), dup(105)
+        dup("do_check"), Result.Kind.NOT_EQUAL, dup("app/main.c"), dup(105)
     )
     g["missing"] = ComparisonGraph.Vertex(
         dup("missing"), Result.Kind.ASSUMED_EQUAL, dup("app/mod.c"), dup(665)
@@ -32,13 +32,29 @@ def graph():
     # Weak variant of "strength" function vertex (e.g. void-returning on the
     # right side)
     g["strength.void"] = ComparisonGraph.Vertex(
-        ("strength", "strength.void"), Result.Kind.EQUAL, dup("app/w.c"),
+        ("strength", "strength.void"), Result.Kind.EQUAL, dup("app/main.c"),
         (5, 5)
     )
     # Strong variant of "strength" functin vertex
     g["strength"] = ComparisonGraph.Vertex(
-        ("strength", "strength"), Result.Kind.EQUAL, dup("app/w.c"), (5, 5)
+        ("strength", "strength"), Result.Kind.EQUAL, dup("app/test.h"), (5, 5)
     )
+    # Non-function differences
+    g["do_check"].nonfun_diffs.append(ComparisonGraph.SyntaxDiff(
+        "MACRO", "do_check",
+        dup([
+            {"function": "_MACRO", "file": "test.c", "line": 1},
+            {"function": "__MACRO", "file": "test.c", "line": 2},
+            {"function": "___MACRO", "file": "test.c", "line": 3},
+        ]), ("5", "5L")
+    ))
+    g["do_check"].nonfun_diffs.append(ComparisonGraph.TypeDiff(
+        "struct file", "do_check",
+        dup([
+            {"function": "struct file (type)", "file": "include/file.h",
+             "line": 121},
+        ]), dup("include/file.h"), dup(121)
+    ))
     # Edges
     for side in ComparisonGraph.Side:
         g.add_edge(g["main_function"], side,
@@ -139,13 +155,13 @@ def test_reachable_from_basic(graph):
     reachable_l = graph.reachable_from(ComparisonGraph.Side.LEFT, "do_check")
     reachable_r = graph.reachable_from(ComparisonGraph.Side.RIGHT, "do_check")
     assert (set([v.names[ComparisonGraph.Side.LEFT] for v in reachable_l]) ==
-            {"do_check", "missing", "looping", "strength", "main_function",
-             "side_function"})
+            {"do_check", "looping", "strength", "main_function",
+            "side_function"})
     # Note: in the right module the void-returning variant "strength.void" is
     # used alongside the original one.
     # This is solved by normalization (and tested later).
     assert (set([v.names[ComparisonGraph.Side.RIGHT] for v in reachable_r]) ==
-            {"do_check", "missing", "looping", "strength", "main_function",
+            {"do_check", "looping", "strength", "main_function",
              "side_function", "strength.void"})
 
 
@@ -200,4 +216,44 @@ def test_reachable_from_extended(graph):
         reachable = graph.reachable_from(side, "side_function")
         # The weakly dependent "strength" function should not be in the set.
         assert (set([v.names[side] for v in reachable]) ==
-                {"side_function", "missing"})
+                {"side_function"})
+
+
+def test_graph_to_fun_pair_list(graph):
+    """Tests the conversion of a graph to a structure representing the output
+    of DiffKemp."""
+    objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
+        graph.graph_to_fun_pair_list("main_function", "main_function")
+    for side in [0, 1]:
+        assert {obj[side].name for obj in objects_to_compare} == {
+            "do_check", "MACRO", "struct file"}
+        do_check = [obj[side] for obj in objects_to_compare
+                    if obj[side].name == "do_check"][0]
+        macro = [obj[side] for obj in objects_to_compare
+                 if obj[side].name == "MACRO"][0]
+        struct_file = [obj[side] for obj in objects_to_compare
+                       if obj[side].name == "struct file"][0]
+        assert do_check.filename == "app/main.c"
+        assert do_check.line == 105
+        assert do_check.callstack == "do_check at app/main.c:58"
+        assert do_check.diff_kind == "function"
+        assert do_check.covered
+        assert macro.filename is None
+        assert macro.line is None
+        assert macro.callstack == ("do_check at app/main.c:58\n"
+                                   "_MACRO at test.c:1\n"
+                                   "__MACRO at test.c:2\n"
+                                   "___MACRO at test.c:3")
+        assert macro.diff_kind == "syntactic"
+        assert not macro.covered
+        assert struct_file.filename == "include/file.h"
+        assert struct_file.line == 121
+        assert struct_file.callstack == ("do_check at app/main.c:58\n"
+                                         "struct file (type) at "
+                                         "include/file.h:121")
+        assert struct_file.diff_kind == "type"
+        assert not struct_file.covered
+    # All results should be not equal.
+    assert {obj[2] for obj in objects_to_compare} == {Result.Kind.NOT_EQUAL}
+    assert syndiff_bodies_left == {"MACRO": "5"}
+    assert syndiff_bodies_right == {"MACRO": "5L"}
