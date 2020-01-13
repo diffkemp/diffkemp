@@ -5,6 +5,7 @@ from diffkemp.llvm_ir.kernel_module import KernelParam, LlvmKernelModule
 from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
+from tempfile import mkstemp
 import errno
 import os
 import re
@@ -235,6 +236,8 @@ def compare(args):
             group_dir = None
 
         cache = None
+        handle, simpll_cache_filename = mkstemp()
+        os.close(handle)
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
             new_fun_desc = new_snapshot.get_by_name(fun, group_name)
@@ -258,7 +261,8 @@ def compare(args):
             fun_result = functions_diff(
                 mod_first=old_fun_desc.mod, mod_second=new_fun_desc.mod,
                 fun_first=fun, fun_second=fun,
-                glob_var=glob_var, config=config, cache=cache)
+                glob_var=glob_var, config=config, cache=cache,
+                simpll_cache_filename=simpll_cache_filename)
             cache = fun_result.cache
 
             if fun_result is not None:

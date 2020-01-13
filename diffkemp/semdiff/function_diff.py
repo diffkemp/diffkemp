@@ -5,8 +5,8 @@ from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.semdiff.result import Result
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
-from tempfile import NamedTemporaryFile
 from threading import Timer
+import os
 import sys
 
 
@@ -161,7 +161,8 @@ def functions_semdiff(first, second, fun_first, fun_second, config):
 
 def functions_diff(mod_first, mod_second,
                    fun_first, fun_second,
-                   glob_var, config, cache=None):
+                   glob_var, config,
+                   cache=None, simpll_cache_filename=None):
     """
     Compare two functions for equality.
 
@@ -188,34 +189,44 @@ def functions_diff(mod_first, mod_second,
                                                         mod_first.llvm))
 
         simplify = True
+        rollback_cache = 0
         while simplify:
             simplify = False
-            # If an old comparison graph is supplied as an argument, get
-            # all functions compared in it and write them to a file that
-            # will be passed to SimpLL.
-            ignored_funs_file = NamedTemporaryFile()
-            if cache:
-                for vertex in cache.vertices.values():
-                    if vertex.result == Result.Kind.ASSUMED_EQUAL:
-                        # The result was only assumed equal, i.e. it was
-                        # not compared properly.
-                        continue
-                    ignored_funs_file.write("{0}:{1}\n".format(
-                        vertex.names[ComparisonGraph.Side.LEFT],
-                        vertex.names[ComparisonGraph.Side.RIGHT]
-                    ).encode("utf-8"))
             # Simplify modules and get the output graph.
+            if rollback_cache > 0:
+                # Repeating comparison after linking; remove lines
+                # generated at the previous run from cache
+                with open(simpll_cache_filename, "a") as simpll_cache:
+                    simpll_cache.truncate(simpll_cache.tell() -
+                                          rollback_cache)
+                    simpll_cache.seek(0, os.SEEK_END)
+                    rollback_cache = 0
             first_simpl, second_simpl, graph, missing_defs = \
                 run_simpll(mod_first.llvm, mod_second.llvm,
                            fun_first, fun_second,
                            glob_var.name if glob_var else None,
                            glob_var.name if glob_var
                            else "simpl",
-                           ignored_funs_file.name,
+                           simpll_cache_filename,
                            config.control_flow_only,
                            config.print_asm_diffs,
                            config.verbosity)
-            ignored_funs_file.close()
+            # Add the newly received results to the ignored functions file.
+            # Note: there won't be any duplicates, since all functions
+            # that were in the cache before will be marked as unknown.
+            if simpll_cache_filename:
+                with open(simpll_cache_filename, "a") as simpll_cache:
+                    for vertex in graph.vertices.values():
+                        if vertex.result in [Result.Kind.ASSUMED_EQUAL,
+                                             Result.Kind.UNKNOWN]:
+                            # The result was only assumed equal or is
+                            # unknown, i.e. it was not compared properly.
+                            continue
+                        text = "{0}:{1}\n".format(
+                            vertex.names[ComparisonGraph.Side.LEFT],
+                            vertex.names[ComparisonGraph.Side.RIGHT])
+                        simpll_cache.write(text)
+                        rollback_cache += len(text)
             if cache:
                 # Note: "graph" is here the partial result graph, i.e. can
                 # contain unknown results that are known in the cache.
