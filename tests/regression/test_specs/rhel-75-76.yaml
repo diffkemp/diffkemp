@@ -21,6 +21,7 @@ functions:
         __read_seqcount_begin: equal_syntax
         skb_csum_hwoffload_help: equal_syntax
         proc_put_char: equal_syntax
+        __alloc_percpu: equal_syntax
 
 sysctls:
   - sysctl: net.core.netdev_rss_key
