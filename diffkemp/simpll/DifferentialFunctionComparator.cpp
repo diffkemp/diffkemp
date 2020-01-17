@@ -198,6 +198,8 @@ int DifferentialFunctionComparator::cmpOperations(
             if (CalledL && CalledR) {
                 if (isSimpllFieldAccessAbstraction(CalledL)
                     && isSimpllFieldAccessAbstraction(CalledR)
+                    && isa<PointerType>(CL->getType())
+                    && isa<PointerType>(CR->getType())
                     && (dyn_cast<PointerType>(CL->getType())->getElementType()
                         != dyn_cast<PointerType>(CR->getType())
                                    ->getElementType())) {
