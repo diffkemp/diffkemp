@@ -76,6 +76,9 @@ class Result:
         # The current result is joined with the inner result (the result with
         # a higher priority is chosen from the two).
         self.kind = Result.Kind(max(int(self.kind), int(result.kind)))
+        # The cache of the latest inner result is the cache (graph) of the
+        # outer one.
+        self.cache = result.cache
 
     def report_symbol_stat(self, show_errors=False):
         """
@@ -149,6 +152,7 @@ class Result:
                 unique_diffs.add(UniqueDiff(inner_res))
 
         # Generate counts
+        compared = len(self.cache.vertices)
         total = len(unique_diffs)
         functions = len([r for r in unique_diffs
                          if r.res.first.diff_kind == "function"])
@@ -163,6 +167,7 @@ class Result:
         empty = len([r for r in unique_diffs if r.res.diff == ""])
 
         # Print statistics
+        print("Functions compared:      {}".format(compared))
         print("Total differences:       {}".format(total))
         if total == 0:
             return
