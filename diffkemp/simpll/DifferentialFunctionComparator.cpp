@@ -935,8 +935,6 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
 
                 // Do not compare SimpLL abstractions.
                 if (!isSimpllAbstraction(FunL) && !isSimpllAbstraction(FunR)
-                    && (ModComparator->ComparedFuns.find({FunL, FunR})
-                        == ModComparator->ComparedFuns.end())
                     && (!isPrintFunction(L->getName())
                         && !isPrintFunction(R->getName()))) {
                     // Store the called functions into the current
@@ -945,7 +943,9 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                             .First.addCall(FunL, CurrentLocL->getLine());
                     ModComparator->ComparedFuns.at({FnL, FnR})
                             .Second.addCall(FunR, CurrentLocR->getLine());
-                    ModComparator->compareFunctions(FunL, FunR);
+                    if (ModComparator->ComparedFuns.find({FunL, FunR})
+                        == ModComparator->ComparedFuns.end())
+                        ModComparator->compareFunctions(FunL, FunR);
                 }
 
                 if (FunL->getName().startswith(SimpllFieldAccessFunName)
