@@ -19,3 +19,5 @@ if (${BUILD_LLREVE})
   endif ()
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/llreve/reve)
 endif ()
+
+add_subdirectory(tests/unit_tests/simpll)
