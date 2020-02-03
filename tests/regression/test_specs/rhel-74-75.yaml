@@ -11,3 +11,10 @@ functions:
         skb_queue_head: equal_syntax
         dev_get_stats: equal_syntax
 
+syntax_diffs:
+  - function: pgd_present
+    diff_symbol: __PHYSICAL_MASK
+    def_old: >
+      ((phys_addr_t)((1ULL << __PHYSICAL_MASK_SHIFT) - 1))
+    def_new: >
+      ((phys_addr_t)(__sme_clr((1ULL << __PHYSICAL_MASK_SHIFT) - 1)))

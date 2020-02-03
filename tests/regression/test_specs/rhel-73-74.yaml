@@ -7,3 +7,11 @@ functions:
         debugfs_create_u32: equal_syntax
         up_read: equal_syntax
 
+syntax_diffs:
+  - function: numa_node_id
+    diff_symbol: __this_cpu_read_8
+    def_old: >
+      percpu_from_op("mov", (pcp), "m"(pcp))
+    def_new: >
+      percpu_from_op("mov", pcp)
+

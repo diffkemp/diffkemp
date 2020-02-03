@@ -32,3 +32,48 @@ sysctls:
       functions:
         netdev_rss_key_fill: equal_syntax
         proc_do_rss_key: equal_syntax
+
+syntax_diffs:
+  - function: __free_slab
+    diff_symbol: for_each_object
+    def_old: >
+      for (__p = (__addr);
+      __p < (__addr) + (__objects) * (__s)->size;
+      __p += (__s)->size)
+    def_new: >
+      for (__p = fixup_red_left(__s, __addr);
+      __p < (__addr) + (__objects) * (__s)->size;
+      __p += (__s)->size)
+
+  - function: pte_to_swp_entry
+    diff_symbol: __swp_offset
+    def_old: >
+      ((x).val >> SWP_OFFSET_FIRST_BIT)
+    def_new: >
+      (~(x).val << SWP_TYPE_BITS >> SWP_OFFSET_SHIFT)
+
+  - function: do_strncpy_from_user
+    diff_symbol: __get_user_asm
+    def_old: >
+      asm volatile(ASM_STAC "\n"
+                   "1:	mov"itype" %2,%"rtype"1\n"
+                   "2: " ASM_CLAC "\n"
+                   ".section .fixup,\"ax\"\n"
+                   "3:	mov %3,%0\n"
+                   "	xor"itype" %"rtype"1,%"rtype"1\n"
+                   "	jmp 2b\n" "
+                   .previous\n"
+                   _ASM_EXTABLE(1b, 3b)
+                   : "=r" (err), ltype(x)
+                   : "m" (__m(addr)), "i" (errret), "0" (err))
+    def_new: >
+      asm volatile("\n"
+                   "1:	mov"itype" %2,%"rtype"1\n"
+                   "2:\n"
+                   ".section .fixup,\"ax\"\n"
+                   "3:	mov %3,%0\n"
+                   "	xor"itype" %"rtype"1,%"rtype"1\n"
+                   "	jmp 2b\n" ".previous\n"
+                   _ASM_EXTABLE(1b, 3b)
+                   : "=r" (err), ltype(x)
+                   : "m" (__m(addr)), "i" (errret), "0" (err))

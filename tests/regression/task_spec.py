@@ -180,3 +180,29 @@ class ModuleParamSpec(TaskSpec):
     def get_param(self):
         """Get the name of the global variable representing the parameter."""
         return self.old_module.find_param_var(self.param)
+
+
+class DiffSpec:
+    """
+    Specification of a syntax difference. Contains the name of the differing
+    symbol and its old and new definition.
+    """
+    def __init__(self, symbol, def_old, def_new):
+        self.symbol = symbol
+        self.def_old = def_old
+        self.def_new = def_new
+
+
+class SyntaxDiffSpec(TaskSpec):
+    """
+    Task specification for test of syntax difference.
+    Extends TaskSpec by concrete syntax differences that should be found by
+    DiffKemp. These are currently intended to be macros or inline assemblies.
+    """
+    def __init__(self, spec, task_name, tasks_path, kernel_path):
+        TaskSpec.__init__(self, spec, task_name, tasks_path, kernel_path)
+        self.syntax_diffs = dict()
+
+    def add_syntax_diff_spec(self, symbol, def_old, def_new):
+        """Add an expected syntax difference"""
+        self.syntax_diffs[symbol] = DiffSpec(symbol, def_old, def_new)
