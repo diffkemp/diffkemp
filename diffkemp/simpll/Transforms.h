@@ -42,7 +42,7 @@ void preprocessModule(Module &Mod,
 /// several vectors that are all outputs of ModuleComparator.
 struct ComparisonResult {
     std::vector<FunPair> nonequalFuns;
-    std::vector<ConstFunPair> missingDefs;
+    std::vector<GlobalValuePair> missingDefs;
     std::vector<std::unique_ptr<NonFunctionDifference>> differingObjects;
     std::set<std::string> coveredFuns;
 };
