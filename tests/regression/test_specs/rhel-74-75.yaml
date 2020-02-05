@@ -10,6 +10,7 @@ functions:
         netif_free_tx_queues: equal_syntax
         skb_queue_head: equal_syntax
         dev_get_stats: equal_syntax
+        sprintf: equal_syntax
 
 syntax_diffs:
   - function: pgd_present

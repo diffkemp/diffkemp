@@ -26,6 +26,7 @@ enum Program { First, Second };
 
 typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
+typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
 
 /// Type for call stack entry: contains the called function and its call
 /// location (file and line).

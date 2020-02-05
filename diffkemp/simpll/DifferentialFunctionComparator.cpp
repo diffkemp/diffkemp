@@ -965,7 +965,16 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                 }
             }
             return 0;
-        } else
+
+        } else if (NameL != NameR && GVarL && GVarR && GVarL->isConstant()
+                   && GVarR->isConstant() && !GVarL->hasInitializer()
+                   && !GVarR->hasInitializer()) {
+            // Externally defined constants (those without initializer
+            // and with different names) need to have their definitions linked.
+            ModComparator->MissingDefs.push_back({GVarL, GVarR});
+        }
+
+        else
             return 1;
     } else
         return L != R;

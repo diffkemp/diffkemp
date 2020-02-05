@@ -111,7 +111,7 @@ class ModuleComparator {
     // Counter of assembly diffs
     int asmDifferenceCounter = 0;
 
-    std::vector<ConstFunPair> MissingDefs;
+    std::vector<GlobalValuePair> MissingDefs;
 
     /// DebugInfo class storing results from analysing debug information
     const DebugInfo *DI;
