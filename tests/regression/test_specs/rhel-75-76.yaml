@@ -1,27 +1,16 @@
 old_kernel: kernel/linux-3.10.0-862.el7
 new_kernel: kernel/linux-3.10.0-957.el7
 
-control_flow_only: true
-
 functions:
-        ipmi_set_gets_events: equal_syntax
-        __wake_up: equal_syntax
-        skb_clone: equal_syntax
-        ipmi_set_my_address: equal_syntax
-        check_addr: equal_syntax
-        __alloc_workqueue_key: equal_syntax
-        blk_execute_rq_nowait: equal_syntax
-        ip6_route_output: equal_syntax
-        param_set_int: equal_syntax
-        param_set_long: equal_syntax
-        free_pages: equal_syntax
-        fcoe_ctlr_init: equal_syntax
-        __request_region: equal_syntax
-        generic_file_llseek_size: equal_syntax
-        __read_seqcount_begin: equal_syntax
-        skb_csum_hwoffload_help: equal_syntax
-        proc_put_char: equal_syntax
-        __alloc_percpu: equal_syntax
+  ipmi_set_gets_events: equal_syntax
+  __wake_up: equal_syntax
+  check_addr: equal_syntax
+  __alloc_workqueue_key: equal_syntax
+  blk_execute_rq_nowait: equal_syntax
+  param_set_int: equal_syntax
+  param_set_long: equal_syntax
+  __read_seqcount_begin: equal_syntax
+  __alloc_percpu: equal_syntax
 
 sysctls:
   - sysctl: net.core.netdev_rss_key
