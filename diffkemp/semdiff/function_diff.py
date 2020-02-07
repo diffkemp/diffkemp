@@ -192,48 +192,55 @@ def functions_diff(mod_first, mod_second,
         rollback_cache = 0
         while simplify:
             simplify = False
-            # Simplify modules and get the output graph.
-            if rollback_cache > 0:
-                # Repeating comparison after linking; remove lines
-                # generated at the previous run from cache
-                with open(simpll_cache_filename, "a") as simpll_cache:
-                    simpll_cache.truncate(simpll_cache.tell() -
-                                          rollback_cache)
-                    simpll_cache.seek(0, os.SEEK_END)
-                    rollback_cache = 0
-            first_simpl, second_simpl, graph, missing_defs = \
-                run_simpll(mod_first.llvm, mod_second.llvm,
-                           fun_first, fun_second,
-                           glob_var.name if glob_var else None,
-                           glob_var.name if glob_var
-                           else "simpl",
-                           simpll_cache_filename,
-                           config.control_flow_only,
-                           config.print_asm_diffs,
-                           config.verbosity)
-            # Add the newly received results to the ignored functions file.
-            # Note: there won't be any duplicates, since all functions
-            # that were in the cache before will be marked as unknown.
-            if simpll_cache_filename:
-                with open(simpll_cache_filename, "a") as simpll_cache:
-                    for vertex in graph.vertices.values():
-                        if vertex.result in [Result.Kind.ASSUMED_EQUAL,
-                                             Result.Kind.UNKNOWN]:
-                            # The result was only assumed equal or is
-                            # unknown, i.e. it was not compared properly.
-                            continue
-                        text = "{0}:{1}\n".format(
-                            vertex.names[ComparisonGraph.Side.LEFT],
-                            vertex.names[ComparisonGraph.Side.RIGHT])
-                        simpll_cache.write(text)
-                        rollback_cache += len(text)
-            if cache:
-                # Note: "graph" is here the partial result graph, i.e. can
-                # contain unknown results that are known in the cache.
-                # Hence it is necessary to absorb the graph into the cache,
-                # not vice versa.
-                cache.absorb_graph(graph)
+            if (cache and fun_first in cache.vertices and
+                    (cache.vertices[fun_first].result !=
+                     Result.Kind.ASSUMED_EQUAL)):
+                first_simpl = ""
+                second_simpl = ""
                 graph = cache
+                missing_defs = []
+            else:
+                # Simplify modules and get the output graph.
+                if rollback_cache > 0:
+                    # Repeating comparison after linking; remove lines
+                    # generated at the previous run from cache
+                    with open(simpll_cache_filename, "a") as simpll_cache:
+                        simpll_cache.truncate(simpll_cache.tell() -
+                                              rollback_cache)
+                        simpll_cache.seek(0, os.SEEK_END)
+                        rollback_cache = 0
+                first_simpl, second_simpl, graph, missing_defs = \
+                    run_simpll(first=mod_first.llvm, second=mod_second.llvm,
+                               fun_first=fun_first, fun_second=fun_second,
+                               var=glob_var.name if glob_var else None,
+                               suffix=glob_var.name if glob_var else "simpl",
+                               equal_funs=simpll_cache_filename,
+                               control_flow_only=config.control_flow_only,
+                               print_asm_diffs=config.print_asm_diffs,
+                               verbose=config.verbosity)
+                # Add the newly received results to the ignored functions file.
+                # Note: there won't be any duplicates, since all functions
+                # that were in the cache before will be marked as unknown.
+                if simpll_cache_filename:
+                    with open(simpll_cache_filename, "a") as simpll_cache:
+                        for vertex in graph.vertices.values():
+                            if vertex.result in [Result.Kind.ASSUMED_EQUAL,
+                                                 Result.Kind.UNKNOWN]:
+                                # The result was only assumed equal or is
+                                # unknown, i.e. it was not compared properly.
+                                continue
+                            text = "{0}:{1}\n".format(
+                                vertex.names[ComparisonGraph.Side.LEFT],
+                                vertex.names[ComparisonGraph.Side.RIGHT])
+                            simpll_cache.write(text)
+                            rollback_cache += len(text)
+                if cache:
+                    # Note: "graph" is here the partial result graph, i.e. can
+                    # contain unknown results that are known in the cache.
+                    # Hence it is necessary to absorb the graph into the cache,
+                    # not vice versa.
+                    cache.absorb_graph(graph)
+                    graph = cache
             objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
                 graph.graph_to_fun_pair_list(fun_first, fun_second)
             funs_to_compare = list([o for o in objects_to_compare
