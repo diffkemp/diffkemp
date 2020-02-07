@@ -1,0 +1,16 @@
+old_kernel: kernel/linux-3.10.0-862.el7
+new_kernel: kernel/linux-3.10.0-957.el7
+
+control_flow_only: true
+
+functions:
+  fcoe_ctlr_init: equal_syntax
+  proc_put_char: equal_syntax
+  free_pages: equal_syntax
+  skb_csum_hwoffload_help: equal_syntax
+  ip6_route_output: equal_syntax
+  generic_file_llseek_size: equal_syntax
+  skb_clone: equal_syntax
+  ipmi_set_my_address: equal_syntax
+  __request_region: equal_syntax
+
