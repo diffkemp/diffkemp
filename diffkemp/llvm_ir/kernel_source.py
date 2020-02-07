@@ -241,20 +241,34 @@ class KernelSource:
         finally:
             os.chdir(cwd)
 
-    def get_module_from_source(self, source_path):
+    def get_module_from_source(self, source_path, created_before=None):
         """
         Create an LLVM module from a source file.
-        Builds the source into LLVM IR if needed.
+        Builds the source into LLVM IR if needed. No module is returned if the
+        module is already present but its LLVM IR was generated or its source
+        file modified after the given time constraint.
         :param source_path: Relative path to the file
+        :param created_before: File creation time constraint.
         :returns Instance of LlvmKernelModule
         """
         name = source_path[:-2] if source_path.endswith(".c") else source_path
+        llvm_file = os.path.join(self.kernel_dir, "{}.ll".format(name))
+        source_file = os.path.join(self.kernel_dir, source_path)
+
+        # If the LLVM IR file exits but was modified after the given timestamp,
+        # do not return the module.
+        if created_before:
+            try:
+                if (os.path.getmtime(source_file) > created_before or
+                        os.path.getmtime(llvm_file) > created_before):
+                    return None
+            except OSError:
+                pass
+
         # If the module has already been created, return it
         if name in self.modules:
             return self.modules[name]
 
-        llvm_file = os.path.join(self.kernel_dir, "{}.ll".format(name))
-        source_file = os.path.join(self.kernel_dir, source_path)
         if self.builder:
             try:
                 self.builder.build_source_to_llvm(source_file, llvm_file)
@@ -268,7 +282,7 @@ class KernelSource:
         self.modules[name] = mod
         return mod
 
-    def get_module_for_symbol(self, symbol):
+    def get_module_for_symbol(self, symbol, created_before=None):
         """
         Looks up files containing definition of a symbol using CScope, then
         transforms them into LLVM modules and looks whether the symbol is
@@ -276,13 +290,14 @@ class KernelSource:
         In case there are multiple files containing the definition, the first
         module containing the function definition is returned.
         :param symbol: Name of the function to look up.
+        :param created_before: LLVM module creation time constraint.
         :returns LLVM module containing the specified function.
         """
         mod = None
 
         srcs = self.find_srcs_with_symbol_def(symbol)
         for src in srcs:
-            mod = self.get_module_from_source(src)
+            mod = self.get_module_from_source(src, created_before)
             if mod:
                 if not (mod.has_function(symbol) or mod.has_global(symbol)):
                     mod = None

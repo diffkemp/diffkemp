@@ -5,6 +5,7 @@ from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.kernel_source import KernelSource
 from tempfile import NamedTemporaryFile
 from tempfile import TemporaryDirectory
+import datetime
 import os
 import yaml
 
@@ -44,7 +45,8 @@ def test_load_snapshot_from_dir_functions():
                                dir=snap_dir) as config_file:
         # Populate the temporary snapshot configuration file.
         config_file.writelines("""
-        - diffkemp_version: '0.1'
+        - created_time: 2020-01-01 00:00:00.000001
+          diffkemp_version: '0.1'
           kind: function_list
           list:
           - glob_var: null
@@ -63,6 +65,7 @@ def test_load_snapshot_from_dir_functions():
         config_filename = os.path.basename(config_file.name)
         snap = Snapshot.load_from_dir(snap_dir, config_filename)
 
+        assert str(snap.created_time) == "2020-01-01 00:00:00.000001"
         assert isinstance(snap.snapshot_source, KernelSource)
         assert snap.snapshot_source.kernel_dir == snap_dir
         assert len(snap.fun_groups) == 1
@@ -95,7 +98,8 @@ def test_load_snapshot_from_dir_sysctls():
                                dir=snap_dir) as config_file:
         # Populate the temporary sysctl snapshot configuration file.
         config_file.writelines("""
-        - diffkemp_version: '0.1'
+        - created_time: 2020-01-01 00:00:00.000001
+          diffkemp_version: '0.1'
           kind: function_list
           list:
           - functions:
@@ -118,6 +122,7 @@ def test_load_snapshot_from_dir_sysctls():
         config_filename = os.path.basename(config_file.name)
         snap = Snapshot.load_from_dir(snap_dir, config_filename)
 
+        assert str(snap.created_time) == "2020-01-01 00:00:00.000001"
         assert len(snap.fun_groups) == 2
         assert set(snap.fun_groups.keys()) == {"kernel.sched_latency_ns",
                                                "kernel.timer_migration"}
@@ -304,7 +309,8 @@ def test_to_yaml_functions():
 
     assert len(yaml_snap) == 1
     yaml_dict = yaml_snap[0]
-    assert len(yaml_dict) == 4
+    assert len(yaml_dict) == 5
+    assert isinstance(yaml_dict["created_time"], datetime.datetime)
     assert len(yaml_dict["list"]) == 2
     assert set([f["name"] for f in yaml_dict["list"]]) ==\
         {"___pskb_trim",
@@ -347,7 +353,8 @@ def test_to_yaml_sysctls():
     yaml_snap = yaml.safe_load(yaml_str)
     assert len(yaml_snap) == 1
     yaml_dict = yaml_snap[0]
-    assert len(yaml_dict) == 4
+    assert len(yaml_dict) == 5
+    assert isinstance(yaml_dict["created_time"], datetime.datetime)
     assert len(yaml_dict["list"]) == 2
     assert set([g["sysctl"] for g in yaml_dict["list"]]) == {
         "kernel.sched_latency_ns",

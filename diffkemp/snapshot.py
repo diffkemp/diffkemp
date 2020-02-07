@@ -5,6 +5,7 @@ holds the function list.
 """
 from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.llvm_ir.kernel_source import KernelSource
+import datetime
 import os
 import pkg_resources
 import shutil
@@ -46,6 +47,7 @@ class Snapshot:
         self.snapshot_source = snapshot_source
         self.fun_kind = fun_kind
         self.fun_groups = dict()
+        self.created_time = None
 
     @classmethod
     def create_from_source(cls, kernel_dir, output_dir, fun_kind=None,
@@ -178,6 +180,8 @@ class Snapshot:
         yaml_file = yaml.safe_load(yaml_file)
         yaml_dict = yaml_file[0]
 
+        self.created_time = yaml_dict["created_time"]
+
         if os.path.isdir(yaml_dict["source_kernel_dir"]):
             self.kernel_source = KernelSource(yaml_dict["source_kernel_dir"],
                                               True)
@@ -225,6 +229,7 @@ class Snapshot:
         # Create the top level YAML structure.
         yaml_dict = [{
             "diffkemp_version": pkg_resources.require("diffkemp")[0].version,
+            "created_time": datetime.datetime.utcnow(),
             "kind": "function_list" if self.fun_kind is None else
             "systcl_group_list",
             "list": fun_yaml_dict[0]["functions"] if None in self.fun_groups
