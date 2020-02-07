@@ -5,6 +5,7 @@ Tests for finding sources and building them into LLVM modules.
 
 from diffkemp.llvm_ir.kernel_source import KernelSource, \
     SourceNotFoundException
+import datetime
 import os
 import pytest
 import shutil
@@ -72,11 +73,25 @@ def test_get_module_from_source(source):
     llvm_file = os.path.join(source.kernel_dir, "net/core/utils.ll")
     if os.path.isfile(llvm_file):
         os.unlink(llvm_file)
-    mod = source.get_module_from_source("net/core/utils.c")
+    mod = source.get_module_from_source("net/core/utils.c",
+                                        datetime.datetime.now().timestamp())
     assert mod is not None
     assert "net/core/utils" in source.modules
     assert mod.llvm == llvm_file
     assert mod.source == os.path.join(source.kernel_dir, "net/core/utils.c")
+
+
+def test_get_module_from_source_created_after(source):
+    """
+    Test that no LLVM module is built from the given C source file if the
+    source file was modified after the given timestamp.
+    """
+    before_time = datetime.datetime.now() - datetime.timedelta(minutes=1)
+    tempfile_dir = "kernel/linux-3.10.0-957.el7"
+
+    with tempfile.NamedTemporaryFile(suffix=".c", dir=tempfile_dir) as file:
+        mod = source.get_module_from_source(file.name, before_time.timestamp())
+        assert mod is None
 
 
 def test_get_module_for_symbol(source):

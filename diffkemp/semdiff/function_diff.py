@@ -27,13 +27,15 @@ def _link_symbol_def(snapshot, module, symbol):
     """
     new_mod = None
     result = False
+    time = snapshot.created_time.timestamp() if snapshot.created_time else None
 
     try:
-        new_mod = snapshot.snapshot_source.get_module_for_symbol(symbol)
+        new_mod = snapshot.snapshot_source.get_module_for_symbol(symbol, time)
     except SourceNotFoundException:
         if snapshot.kernel_source:
             try:
-                new_mod = snapshot.kernel_source.get_module_for_symbol(symbol)
+                new_mod = snapshot.kernel_source.get_module_for_symbol(symbol,
+                                                                       time)
             except SourceNotFoundException:
                 pass
 
