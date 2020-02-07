@@ -14,6 +14,37 @@ def _kill(processes):
         p.kill()
 
 
+def _link_symbol_def(snapshot, module, symbol):
+    """
+    Try to find and link a missing symbol definition inside the given snapshot.
+    Look inside the kernel directory if no definition is found inside the
+    primary snapshot directory. The search is skipped when a source file
+    change after the snapshot creation time is detected.
+    :param snapshot: Snapshot where the definition should be.
+    :param module: Module which requires the  missing definition.
+    :param symbol: Symbol with a missing definition to look for.
+    :return: True if the symbol has been successfully linked, False otherwise.
+    """
+    new_mod = None
+    result = False
+
+    try:
+        new_mod = snapshot.snapshot_source.get_module_for_symbol(symbol)
+    except SourceNotFoundException:
+        if snapshot.kernel_source:
+            try:
+                new_mod = snapshot.kernel_source.get_module_for_symbol(symbol)
+            except SourceNotFoundException:
+                pass
+
+    if new_mod:
+        if module.link_modules([new_mod]):
+            result = True
+        new_mod.clean_module()
+
+    return result
+
+
 def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
                    verbose):
     """
@@ -167,28 +198,20 @@ def functions_diff(mod_first, mod_second,
             funs_to_compare = list([o for o in objects_to_compare
                                     if o[0].diff_kind == "function"])
             if funs_to_compare and missing_defs:
-                # If there are missing function definitions, try to find
-                # implementing them, link those to the current modules, and
-                # rerun the simplification.
+                # If there are missing function definitions, try to find their
+                # implementation, link them to the current modules, and rerun
+                # the simplification.
                 for fun_pair in missing_defs:
                     if "first" in fun_pair:
-                        try:
-                            new_mod = config.snapshot_first.snapshot_source \
-                                .get_module_for_symbol(fun_pair["first"])
-                            if mod_first.link_modules([new_mod]):
-                                simplify = True
-                            new_mod.clean_module()
-                        except SourceNotFoundException:
-                            pass
+                        if _link_symbol_def(config.snapshot_first, mod_first,
+                                            fun_pair["first"]):
+                            simplify = True
+
                     if "second" in fun_pair:
-                        try:
-                            new_mod = config.snapshot_second.snapshot_source \
-                                .get_module_for_symbol(fun_pair["second"])
-                            if mod_second.link_modules([new_mod]):
-                                simplify = True
-                            new_mod.clean_module()
-                        except SourceNotFoundException:
-                            pass
+                        if _link_symbol_def(config.snapshot_second, mod_second,
+                                            fun_pair["second"]):
+                            simplify = True
+
         mod_first.restore_unlinked_llvm()
         mod_second.restore_unlinked_llvm()
 
