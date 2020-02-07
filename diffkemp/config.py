@@ -7,21 +7,19 @@ class ConfigException(Exception):
 
 
 class Config:
-    def __init__(self, source_first, source_second, show_diff,
+    def __init__(self, snapshot_first, snapshot_second, show_diff,
                  control_flow_only, print_asm_diffs, verbosity, semdiff_tool):
         """
         Store configuration of DiffKemp
-        :param source_first: Sources for the first kernel (instance of
-                             KernelSource).
-        :param source_second: Sources for the second kernel (instance of
-                              KernelSource).
+        :param snapshot_first: First snapshot representation.
+        :param snapshot_second: Second snapshot representation.
         :param show_diff: Only perform the syntax diff.
         :param control_flow_only: Check only for control-flow differences.
         :param verbosity: Verbosity level (currently boolean).
         :param semdiff_tool: Tool to use for semantic diff
         """
-        self.source_first = source_first
-        self.source_second = source_second
+        self.snapshot_first = snapshot_first
+        self.snapshot_second = snapshot_second
         self.show_diff = show_diff
         self.control_flow_only = control_flow_only
         self.print_asm_diffs = print_asm_diffs

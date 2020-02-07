@@ -219,9 +219,9 @@ def compare(args):
         old_snapshot.filter([args.function])
         new_snapshot.filter([args.function])
 
-    config = Config(old_snapshot.snapshot_source, new_snapshot.snapshot_source,
-                    args.show_diff, args.control_flow_only,
-                    args.print_asm_diffs, args.verbose, args.semdiff_tool)
+    config = Config(old_snapshot, new_snapshot, args.show_diff,
+                    args.control_flow_only, args.print_asm_diffs,
+                    args.verbose, args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old)
 
