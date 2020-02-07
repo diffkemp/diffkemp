@@ -1,15 +1,13 @@
 from argparse import ArgumentParser, SUPPRESS
 from diffkemp.config import Config
-from diffkemp.function_list import FunctionList
+from diffkemp.snapshot import Snapshot
 from diffkemp.llvm_ir.kernel_module import KernelParam, LlvmKernelModule
-from diffkemp.llvm_ir.kernel_source import KernelSource, \
-    SourceNotFoundException
+from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 import errno
 import os
 import re
-import shutil
 import sys
 
 
@@ -97,18 +95,10 @@ def generate(args):
       - copy LLVM and C source files into snapshot directory
       - create YAML with list mapping functions to their LLVM sources
     """
-    source = KernelSource(args.kernel_dir, True)
-    args.output_dir = os.path.abspath(args.output_dir)
-
-    kind = "sysctl" if args.sysctl else None
-    fun_list = FunctionList(args.output_dir, kind)
-    if kind is None:
-        fun_list.add_none_group()
-
-    # Cleanup or create the output directory
-    if os.path.isdir(args.output_dir):
-        shutil.rmtree(args.output_dir)
-    os.mkdir(args.output_dir)
+    # Create a new snapshot from the source directory.
+    snapshot = Snapshot.create_from_source(args.kernel_dir, args.output_dir,
+                                           "sysctl" if args.sysctl else None)
+    source = snapshot.kernel_source
 
     # Build sources for symbols from the list into LLVM IR
     with open(args.functions_list, "r") as fun_list_file:
@@ -139,7 +129,7 @@ def generate(args):
                 for sysctl in sysctl_list:
                     print("{}:".format(sysctl))
                     # New group in function list for the sysctl
-                    fun_list.add_group(sysctl)
+                    snapshot.add_fun_group(sysctl)
 
                     # Proc handler function for sysctl
                     proc_fun = sysctl_mod.get_proc_fun(sysctl)
@@ -147,11 +137,11 @@ def generate(args):
                         try:
                             proc_fun_mod = source.get_module_for_symbol(
                                 proc_fun)
-                            fun_list.add(name=proc_fun,
-                                         llvm_mod=proc_fun_mod,
-                                         glob_var=None,
-                                         tag="proc handler function",
-                                         group=sysctl)
+                            snapshot.add_fun(name=proc_fun,
+                                             llvm_mod=proc_fun_mod,
+                                             glob_var=None,
+                                             tag="proc handler function",
+                                             group=sysctl)
                             print("  {}: {} (proc handler)".format(
                                 proc_fun,
                                 os.path.relpath(proc_fun_mod.llvm,
@@ -171,12 +161,12 @@ def generate(args):
                                 data_mod.get_functions_using_param(data):
                             if data_fun == proc_fun:
                                 continue
-                            fun_list.add(
+                            snapshot.add_fun(
                                 name=data_fun,
                                 llvm_mod=data_mod,
                                 glob_var=data.name,
                                 tag="function using sysctl data "
-                                "variable \"{}\"".format(data.name),
+                                    "variable \"{}\"".format(data.name),
                                 group=sysctl)
                             print(
                                 "  {}: {} (using data variable \"{}\")".format(
@@ -194,23 +184,13 @@ def generate(args):
                         print("unsupported")
                         continue
                     print(os.path.relpath(llvm_mod.llvm, args.kernel_dir))
-                    fun_list.add(symbol, llvm_mod)
+                    snapshot.add_fun(symbol, llvm_mod)
                 except SourceNotFoundException:
                     print("source not found")
-                    fun_list.add(symbol, None)
+                    snapshot.add_fun(symbol, None)
 
-    # Copy LLVM files to the snapshot
-    source.copy_source_files(fun_list.modules(), args.output_dir)
-
-    snapshot = KernelSource(args.output_dir)
-    snapshot.build_cscope_database()
-
-    # Create YAML with functions list
-    with open(os.path.join(args.output_dir, "functions.yaml"),
-              "w") as fun_list_yaml:
-        fun_list_yaml.write(fun_list.to_yaml())
-
-    source.finalize()
+    snapshot.generate_snapshot_dir()
+    snapshot.finalize()
 
 
 def compare(args):
@@ -218,19 +198,9 @@ def compare(args):
     Compare snapshots of linux kernels. Runs the semantic comparison and shows
     information about the compared functions that are semantically different.
     """
-    # Parse old snapshot
-    old_functions = FunctionList(args.snapshot_dir_old)
-    with open(os.path.join(args.snapshot_dir_old, "functions.yaml"),
-              "r") as fun_list_yaml:
-        old_functions.from_yaml(fun_list_yaml.read())
-    old_source = KernelSource(args.snapshot_dir_old)
-
-    # Parse new snapshot
-    new_functions = FunctionList(args.snapshot_dir_new)
-    with open(os.path.join(args.snapshot_dir_new, "functions.yaml"),
-              "r") as fun_list_yaml:
-        new_functions.from_yaml(fun_list_yaml.read())
-    new_source = KernelSource(args.snapshot_dir_new)
+    # Parse both the new and the old snapshot.
+    old_snapshot = Snapshot.load_from_dir(args.snapshot_dir_old)
+    new_snapshot = Snapshot.load_from_dir(args.snapshot_dir_new)
 
     # Set the output directory
     if not args.stdout:
@@ -246,16 +216,16 @@ def compare(args):
         output_dir = None
 
     if args.function:
-        old_functions.filter([args.function])
-        new_functions.filter([args.function])
+        old_snapshot.filter([args.function])
+        new_snapshot.filter([args.function])
 
-    config = Config(old_source, new_source, args.show_diff,
-                    args.control_flow_only, args.print_asm_diffs, args.verbose,
-                    args.semdiff_tool)
+    config = Config(old_snapshot.snapshot_source, new_snapshot.snapshot_source,
+                    args.show_diff, args.control_flow_only,
+                    args.print_asm_diffs, args.verbose, args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old)
 
-    for group_name, group in sorted(old_functions.groups.items()):
+    for group_name, group in sorted(old_snapshot.fun_groups.items()):
         group_printed = False
 
         # Set the group directory
@@ -266,7 +236,7 @@ def compare(args):
 
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
-            new_fun_desc = new_functions.get_by_name(fun, group_name)
+            new_fun_desc = new_snapshot.get_by_name(fun, group_name)
             if not new_fun_desc:
                 continue
 
@@ -318,8 +288,8 @@ def compare(args):
                             print("{}:".format(group_name))
                             group_printed = True
                         print_syntax_diff(
-                            snapshot_old=args.snapshot_dir_old,
-                            snapshot_new=args.snapshot_dir_new,
+                            snapshot_dir_old=args.snapshot_dir_old,
+                            snapshot_dir_new=args.snapshot_dir_new,
                             fun=fun,
                             fun_result=fun_result,
                             fun_tag=old_fun_desc.tag,
@@ -338,6 +308,9 @@ def compare(args):
             old_fun_desc.mod.clean_module()
             new_fun_desc.mod.clean_module()
             LlvmKernelModule.clean_all()
+
+    old_snapshot.finalize()
+    new_snapshot.finalize()
 
     if output_dir is not None and os.path.isdir(output_dir):
         print("Differences stored in {}/".format(output_dir))
@@ -365,14 +338,15 @@ def default_output_dir(src_snapshot, dest_snapshot):
     return base_dirname
 
 
-def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
-                      output_dir, show_diff, initial_indent):
+def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
+                      fun_tag, output_dir, show_diff, initial_indent):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
-    :param snapshot_old: Old snapshot directory
-    :param snapshot_new: New snapshot directory
+    :param snapshot_dir_old: Old snapshot directory.
+    :param snapshot_dir_new: New snapshot directory.
     :param fun: Name of the analysed function
+    :param fun_tag: Analysed function tag
     :param fun_result: Result of the analysis
     :param output_dir: True if the output is to be written into a file
     :param show_diff: Print syntax diffs.
@@ -413,20 +387,21 @@ def print_syntax_diff(snapshot_old, snapshot_new, fun, fun_result, fun_tag,
 
             if called_res.first.callstack:
                 output.write(
-                    text_indent("Callstack ({}):\n".format(snapshot_old),
+                    text_indent("Callstack ({}):\n".format(snapshot_dir_old),
                                 indent))
                 output.write(text_indent(
                     called_res.first.callstack.replace(
-                        os.path.join(os.path.abspath(snapshot_old), ""), ""),
-                    indent))
+                        os.path.join(os.path.abspath(snapshot_dir_old), ""),
+                        ""), indent))
                 output.write("\n\n")
             if called_res.second.callstack:
                 output.write(
-                    text_indent("Callstack ({}):\n".format(snapshot_new),
+                    text_indent("Callstack ({}):\n".format(snapshot_dir_new),
                                 indent))
                 output.write(text_indent(
                     called_res.second.callstack.replace(
-                        os.path.join(os.path.abspath(snapshot_new), ""), ""),
+                        os.path.join(os.path.abspath(snapshot_dir_new), ""),
+                        ""),
                     indent))
                 output.write("\n\n")
 
