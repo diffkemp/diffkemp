@@ -173,7 +173,7 @@ def functions_diff(mod_first, mod_second,
                 for fun_pair in missing_defs:
                     if "first" in fun_pair:
                         try:
-                            new_mod = config.source_first \
+                            new_mod = config.snapshot_first.snapshot_source \
                                 .get_module_for_symbol(fun_pair["first"])
                             if mod_first.link_modules([new_mod]):
                                 simplify = True
@@ -182,7 +182,7 @@ def functions_diff(mod_first, mod_second,
                             pass
                     if "second" in fun_pair:
                         try:
-                            new_mod = config.source_second \
+                            new_mod = config.snapshot_second.snapshot_source \
                                 .get_module_for_symbol(fun_pair["second"])
                             if mod_second.link_modules([new_mod]):
                                 simplify = True

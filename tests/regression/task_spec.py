@@ -6,6 +6,7 @@ import shutil
 from diffkemp.config import Config
 from diffkemp.llvm_ir.kernel_source import KernelSource
 from diffkemp.semdiff.result import Result
+from diffkemp.snapshot import Snapshot
 
 
 specs_path = os.path.abspath("tests/regression/test_specs")
@@ -46,7 +47,9 @@ class TaskSpec:
         # Create LLVM sources and configuration
         self.old_kernel = KernelSource(self.old_kernel_dir, True)
         self.new_kernel = KernelSource(self.new_kernel_dir, True)
-        self.config = Config(self.old_kernel, self.new_kernel, False,
+        self.old_snapshot = Snapshot(self.old_kernel, self.old_kernel)
+        self.new_snapshot = Snapshot(self.new_kernel, self.new_kernel)
+        self.config = Config(self.old_snapshot, self.new_snapshot, False,
                              self.control_flow_only, False, False, None)
 
         self.functions = dict()
