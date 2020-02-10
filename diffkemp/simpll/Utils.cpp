@@ -292,7 +292,9 @@ void simplifyFunction(Function *Fun) {
     FunctionPassManager fpm(false);
     FunctionAnalysisManager fam(false);
     pb.registerFunctionAnalyses(fam);
+#if LLVM_VERSION_MAJOR > 5
     fpm.addPass(SimplifyCFGPass{});
+#endif
     fpm.addPass(DCEPass{});
     fpm.addPass(NewGVNPass{});
     fpm.run(*Fun, fam);
