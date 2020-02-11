@@ -235,64 +235,27 @@ class ComparisonGraph:
             # its result).
             self._normalize_edge_cache.append(edge)
 
-    def get_callstack(self, side, start_fun_name, end_fun_name):
-        """
-        Finds the callstack of the specified function using breadth-first
-        search.
-
-        Returns a list of Edge objects representing the shortest path from the
-        first function to the second one.
-        """
-        start_fun = self[start_fun_name]
-        end_fun = self[end_fun_name]
-        visited = set()
-        backtracking_map = dict()
-        queue = deque()
-        queue.appendleft(start_fun)
-        end_found = False
-        while queue and not end_found:
-            current = queue.pop()
-            visited.add(current)
-            for edge in current.successors[side]:
-                if edge.target_name not in self.vertices:
-                    # Invalid successor.
-                    continue
-                target = self[edge.target_name]
-                if target in visited:
-                    continue
-                # Insert successor into queue and a pair containing the edge
-                # and the source vertex to the backtracking map.
-                backtracking_map[target] = (edge, current)
-                if target == end_fun:
-                    end_found = True
-                    break
-                queue.appendleft(target)
-        if not end_found:
-            raise ValueError("Path in graph not found")
-        # Backtrack the search to get all edges.
-        callstack_edges = []
-        current_vertex = end_fun
-        while current_vertex != start_fun:
-            edge = backtracking_map[current_vertex][0]
-            callstack_edges.append(edge)
-            current_vertex = backtracking_map[current_vertex][1]
-        return list(reversed(callstack_edges))
-
     def reachable_from(self, side, start_fun_name):
         """
         Generates a list of all functions depending on the function
         in the argument (e.g. all vertices reachable from the one specified by
         the function name including the base vertex).
+
+        The function returns two objects. The first one is the function list,
+        the second one is a backtracking map for callstacks - for each function
+        the edge used to get to its vertex in the BFS algorithm is recorded, so
+        the parent vertex and the call site can be retrieved.
         """
         start_fun = self[start_fun_name]
         original_source_files = start_fun.files
         visited = set()
-        stack = []
+        queue = deque()
         result = []
-        stack.append(start_fun)
+        backtracking_map = {}
+        queue.appendleft(start_fun)
         result.append(start_fun)
-        while stack:
-            current = stack.pop()
+        while queue:
+            current = queue.pop()
             visited.add(current)
             for edge in current.successors[side]:
                 if edge.target_name not in self.vertices:
@@ -309,12 +272,14 @@ class ComparisonGraph:
                     # comparison boundary beyond which we don't consider the
                     # results interesting.
                     continue
-                stack.append(target)
+                queue.appendleft(target)
+                if target not in backtracking_map:
+                    backtracking_map[target] = edge
                 if edge.kind == ComparisonGraph.DependencyKind.WEAK:
                     # Do not include targets of weak edges to the result.
                     continue
                 result.append(target)
-        return result
+        return result, backtracking_map
 
     def absorb_graph(self, graph):
         """
@@ -389,11 +354,26 @@ class ComparisonGraph:
                                                call.line)
                           for call in callstack])
 
+    def _yaml_callstack_to_string(self, callstack):
+        """Converts a YAML representation of a callstack (used in non-fun)
+        diffs to a string representation."""
+        return "\n".join(["{} at {}:{}".format(call["function"],
+                                               call["file"],
+                                               call["line"])
+                          for call in callstack])
+
     def graph_to_fun_pair_list(self, fun_first, fun_second):
         # Extract the functions that should be compared from the graph in
         # the form of Vertex objects.
-        vertices_to_compare = self.reachable_from(
+        called_funs_left, backtracking_map_left = self.reachable_from(
             ComparisonGraph.Side.LEFT, fun_first)
+        called_funs_right, backtracking_map_right = self.reachable_from(
+            ComparisonGraph.Side.RIGHT, fun_second)
+        # Use the intersection of called functions in the left and right
+        # module (i.e. differences in functions called in one module only
+        # are not processed).
+        vertices_to_compare = list(set(called_funs_left).intersection(
+            set(called_funs_right)))
         # Use methods from ComparisonGraph (on the graph variable) and
         # vertices_to_compare to generate objects_to_compare.
         objects_to_compare = []
@@ -409,14 +389,16 @@ class ComparisonGraph:
             for side in ComparisonGraph.Side:
                 fun = fun_first if side == ComparisonGraph.Side.LEFT \
                     else fun_second
+                backtracking_map = (backtracking_map_left
+                                    if side == ComparisonGraph.Side.LEFT
+                                    else backtracking_map_right)
                 if fun == vertex.names[side]:
                     # There is no callstack from the base function.
                     calls = None
                 else:
                     # Transform the Edge objects returned by
                     # get_shortest_path to a readable callstack.
-                    edges = self.get_callstack(
-                        side, fun, vertex.names[side])
+                    edges = _get_callstack(backtracking_map, self[fun], vertex)
                     calls = self._edge_callstack_to_string(edges)
                 # Note: a function diff is covered (i.e. hidden when empty)
                 # if and only if there is a non-function difference
@@ -439,21 +421,20 @@ class ComparisonGraph:
                     syndiff_bodies = (syndiff_bodies_left
                                       if side == ComparisonGraph.Side.LEFT
                                       else syndiff_bodies_right)
+                    backtracking_map = (backtracking_map_left
+                                        if side == ComparisonGraph.Side.LEFT
+                                        else backtracking_map_right)
                     # Convert the YAML callstack format to string.
-                    calls = ["{} at {}:{}".format(call["function"],
-                                                  call["file"],
-                                                  call["line"])
-                             for call in nonfun_diff.callstack[side]]
-                    # Join the elements in the list to get a string.
-                    calls = "\n".join(calls)
+                    calls = self._yaml_callstack_to_string(
+                        nonfun_diff.callstack[side])
                     # Append the parent function's callstack.
                     # (unless it is the base function)
                     fun = fun_first if side == ComparisonGraph.Side.LEFT \
                         else fun_second
                     if nonfun_diff.parent_fun != fun:
                         parent_calls = self._edge_callstack_to_string(
-                            self.get_callstack(
-                                side, fun, nonfun_diff.parent_fun))
+                            _get_callstack(backtracking_map, self[fun],
+                                           vertex))
                         calls = parent_calls + "\n" + calls
 
                     if isinstance(nonfun_diff, ComparisonGraph.SyntaxDiff):
@@ -480,3 +461,13 @@ class ComparisonGraph:
                 nonfun_pair.append(Result.Kind.NOT_EQUAL)
                 objects_to_compare.append(tuple(nonfun_pair))
         return objects_to_compare, syndiff_bodies_left, syndiff_bodies_right
+
+
+def _get_callstack(backtracking_map, start_vertex, end_vertex):
+    """Generates an edge callstack based on the backtracking map."""
+    if start_vertex == end_vertex:
+        return []
+    edges = [backtracking_map[end_vertex]]
+    while edges[-1].parent_vertex is not start_vertex:
+        edges.append(backtracking_map[edges[-1].parent_vertex])
+    return list(reversed(edges))

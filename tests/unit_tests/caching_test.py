@@ -137,23 +137,12 @@ def test_add_edge_weak(graph):
                                for edge in graph._normalize_edge_cache]
 
 
-def test_get_callstack(graph):
-    """
-    Tests callstack lookup.
-    Note: the case actually has two paths, therefore this also checks whether
-    the shorter one was found.
-    """
-    for side in ComparisonGraph.Side:
-        stack = graph.get_callstack(side, "looping", "missing")
-        assert len(stack) == 2
-        assert stack[0].target_name == "strength"
-        assert stack[1].target_name == "missing"
-
-
 def test_reachable_from_basic(graph):
     """Tests called function list generation (without normalization)."""
-    reachable_l = graph.reachable_from(ComparisonGraph.Side.LEFT, "do_check")
-    reachable_r = graph.reachable_from(ComparisonGraph.Side.RIGHT, "do_check")
+    reachable_l, map_l = graph.reachable_from(ComparisonGraph.Side.LEFT,
+                                              "do_check")
+    reachable_r, map_r = graph.reachable_from(ComparisonGraph.Side.RIGHT,
+                                              "do_check")
     assert (set([v.names[ComparisonGraph.Side.LEFT] for v in reachable_l]) ==
             {"do_check", "looping", "strength", "main_function",
             "side_function"})
@@ -163,6 +152,22 @@ def test_reachable_from_basic(graph):
     assert (set([v.names[ComparisonGraph.Side.RIGHT] for v in reachable_r]) ==
             {"do_check", "looping", "strength", "main_function",
              "side_function", "strength.void"})
+    # Test backtracking graphs for callstack generation.
+    assert (set([v.names for v in map_l.keys()]) ==
+            {dup("looping"), dup("main_function"), dup("strength"),
+             dup("side_function")})
+    assert (set([v.names for v in map_r.keys()]) ==
+            {dup("looping"), dup("main_function"), dup("side_function"),
+             dup("strength"), ("strength", "strength.void")})
+    for backtracking_map in [map_l, map_r]:
+        assert (backtracking_map[graph["looping"]].parent_vertex.names ==
+                dup("do_check"))
+        assert (backtracking_map[graph["main_function"]].parent_vertex.names ==
+                dup("looping"))
+        assert (backtracking_map[graph["strength"]].parent_vertex.names ==
+                dup("looping"))
+        assert (backtracking_map[graph["side_function"]].parent_vertex.names ==
+                dup("main_function"))
 
 
 def test_absort_graph(graph):
@@ -213,7 +218,7 @@ def test_reachable_from_extended(graph):
     """
     graph.normalize()
     for side in ComparisonGraph.Side:
-        reachable = graph.reachable_from(side, "side_function")
+        reachable, _ = graph.reachable_from(side, "side_function")
         # The weakly dependent "strength" function should not be in the set.
         assert (set([v.names[side] for v in reachable]) ==
                 {"side_function"})
