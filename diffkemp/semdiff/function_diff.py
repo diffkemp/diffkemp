@@ -1,12 +1,10 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
 from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
 from diffkemp.simpll.simpll import run_simpll, SimpLLException
-from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.semdiff.result import Result
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
 from threading import Timer
-import os
 import sys
 
 
@@ -162,7 +160,7 @@ def functions_semdiff(first, second, fun_first, fun_second, config):
 def functions_diff(mod_first, mod_second,
                    fun_first, fun_second,
                    glob_var, config,
-                   cache=None, simpll_cache_filename=None):
+                   cache=None, simpll_cache=None):
     """
     Compare two functions for equality.
 
@@ -189,7 +187,6 @@ def functions_diff(mod_first, mod_second,
                                                         mod_first.llvm))
 
         simplify = True
-        rollback_cache = 0
         while simplify:
             simplify = False
             if (cache and fun_first in cache.vertices and
@@ -201,39 +198,27 @@ def functions_diff(mod_first, mod_second,
                 missing_defs = []
             else:
                 # Simplify modules and get the output graph.
-                if rollback_cache > 0:
-                    # Repeating comparison after linking; remove lines
-                    # generated at the previous run from cache
-                    with open(simpll_cache_filename, "a") as simpll_cache:
-                        simpll_cache.truncate(simpll_cache.tell() -
-                                              rollback_cache)
-                        simpll_cache.seek(0, os.SEEK_END)
-                        rollback_cache = 0
+                if simpll_cache:
+                    simpll_cache.rollback()
                 first_simpl, second_simpl, graph, missing_defs = \
                     run_simpll(first=mod_first.llvm, second=mod_second.llvm,
                                fun_first=fun_first, fun_second=fun_second,
                                var=glob_var.name if glob_var else None,
                                suffix=glob_var.name if glob_var else "simpl",
-                               equal_funs=simpll_cache_filename,
+                               cache_dir=simpll_cache.directory
+                               if simpll_cache else None,
                                control_flow_only=config.control_flow_only,
                                print_asm_diffs=config.print_asm_diffs,
                                verbose=config.verbosity)
                 # Add the newly received results to the ignored functions file.
                 # Note: there won't be any duplicates, since all functions
                 # that were in the cache before will be marked as unknown.
-                if simpll_cache_filename:
-                    with open(simpll_cache_filename, "a") as simpll_cache:
-                        for vertex in graph.vertices.values():
-                            if vertex.result in [Result.Kind.ASSUMED_EQUAL,
-                                                 Result.Kind.UNKNOWN]:
-                                # The result was only assumed equal or is
-                                # unknown, i.e. it was not compared properly.
-                                continue
-                            text = "{0}:{1}\n".format(
-                                vertex.names[ComparisonGraph.Side.LEFT],
-                                vertex.names[ComparisonGraph.Side.RIGHT])
-                            simpll_cache.write(text)
-                            rollback_cache += len(text)
+                if simpll_cache:
+                    simpll_cache.update([v for v in graph.vertices.values()
+                                         if v.result not in
+                                         [Result.Kind.UNKNOWN,
+                                          Result.Kind.ASSUMED_EQUAL]])
+
                 if cache:
                     # Note: "graph" is here the partial result graph, i.e. can
                     # contain unknown results that are known in the cache.
@@ -259,6 +244,9 @@ def functions_diff(mod_first, mod_second,
                         if _link_symbol_def(config.snapshot_second, mod_second,
                                             fun_pair["second"]):
                             simplify = True
+
+        if simpll_cache:
+            simpll_cache.reset_rollback_cache()
 
         mod_first.restore_unlinked_llvm()
         mod_second.restore_unlinked_llvm()

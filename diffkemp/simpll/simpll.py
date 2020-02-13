@@ -19,7 +19,7 @@ def add_suffix(file, suffix):
 
 
 def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
-               equal_funs=None, control_flow_only=False, print_asm_diffs=False,
+               cache_dir=None, control_flow_only=False, print_asm_diffs=False,
                verbose=False):
     """
     Simplify modules to ease their semantic difference. Uses the SimpLL tool.
@@ -56,9 +56,9 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         # Suffix for output files
         if suffix:
             simpll_command.extend(["--suffix", suffix])
-        # Cache file with equal function pairs
-        if equal_funs:
-            simpll_command.extend(["--ignore-funs", equal_funs])
+        # Cache directory with equal function pairs
+        if cache_dir:
+            simpll_command.extend(["--cache-dir", cache_dir])
 
         if control_flow_only:
             simpll_command.append("--control-flow")

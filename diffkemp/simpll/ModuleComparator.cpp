@@ -36,8 +36,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                          Result(FirstFun, SecondFun));
 
     // Check if the functions is in the ignored list.
-    if (IgnoredFuns.find({FirstFun->getName(), SecondFun->getName()})
-        != IgnoredFuns.end()) {
+    if (ResCache->isFunctionPairCached(FirstFun, SecondFun)) {
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
         return;
     }

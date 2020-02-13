@@ -10,6 +10,7 @@ by the ComparisonGraph class.
 from collections import deque
 from diffkemp.semdiff.result import Result
 from enum import IntEnum
+import os
 
 
 class ComparisonGraph:
@@ -471,3 +472,80 @@ def _get_callstack(backtracking_map, start_vertex, end_vertex):
     while edges[-1].parent_vertex is not start_vertex:
         edges.append(backtracking_map[edges[-1].parent_vertex])
     return list(reversed(edges))
+
+
+class SimpLLCache:
+    """
+    A class that handles the providing of function pairs contained in the
+    comparison graph to SimpLL so it doesn't have to re-compare the functions.
+    This is done in the form of a directory containing one cache file for each
+    source file pair.
+    """
+    class CacheFile:
+        def __init__(self, directory, left_module, right_module):
+            self.left_module = left_module
+            self.right_module = right_module
+            self.filename = os.path.join(directory,
+                                         left_module.replace("/", "$") + ":" +
+                                         right_module.replace("/", "$"))
+            self.rollback_cache = 0
+
+        def add_function_pairs(self, pairs):
+            with open(self.filename, "a") as file:
+                for pair in pairs:
+                    text = "{0}:{1}\n".format(pair[0], pair[1])
+                    file.write(text)
+                    self.rollback_cache += len(text)
+
+        def rollback(self):
+            if self.rollback_cache > 0:
+                # For repeated comparison after linking; remove lines generated
+                # at the previous run from cache.
+                with open(self.filename, "a") as file:
+                    file.truncate(file.tell() - self.rollback_cache)
+                    file.seek(0, os.SEEK_END)
+                    self.reset_rollback_cache()
+
+        def reset_rollback_cache(self):
+            self.rollback_cache = 0
+
+        def clear(self):
+            os.remove(self.filename)
+
+    def __init__(self, directory):
+        self.directory = directory
+        # Map from C source file pairs (left and right module) to cache files.
+        # (There is one cache file for each such pair).
+        self.cache_map = {}
+
+    def update(self, vertices):
+        """Update the cache to include vertices passed in the vertices
+        argument."""
+        # Sort vertices into a map based on source file pairs.
+        vertex_map = {}
+        for vertex in vertices:
+            if vertex.files not in vertex_map:
+                vertex_map[vertex.files] = []
+            vertex_map[vertex.files].append(vertex)
+        # Update each cache file at once using the generated map to avoid
+        # unneccessary overhead from opening and closing files.
+        for files, vertices_in_file in vertex_map.items():
+            if files not in self.cache_map:
+                self.cache_map[files] = SimpLLCache.CacheFile(self.directory,
+                                                              files[0],
+                                                              files[1])
+            cache_file = self.cache_map[files]
+            cache_file.add_function_pairs([v.names for v in vertices_in_file])
+
+    def rollback(self):
+        for cache_file in self.cache_map.values():
+            cache_file.rollback()
+
+    def reset_rollback_cache(self):
+        for cache_file in self.cache_map.values():
+            cache_file.reset_rollback_cache()
+
+    def clear(self):
+        for cache_file in self.cache_map.values():
+            cache_file.clear()
+        os.rmdir(self.directory)

@@ -16,6 +16,7 @@
 #include "DebugInfo.h"
 #include "DifferentialFunctionComparator.h"
 #include "ModuleComparator.h"
+#include "ResultsCache.h"
 #include "Utils.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/ControlFlowSlicer.h"
@@ -156,14 +157,15 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                                                         config.FirstFun),
                  mam.getResult<CalledFunctionsAnalysis>(*config.Second,
                                                         config.SecondFun));
+    ResultsCache ResCache(config.CacheDir);
 
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First,
                              *config.Second,
                              config.ControlFlowOnly,
                              config.PrintAsmDiffs,
-                             config.IgnoredFuns,
                              &DI,
+                             &ResCache,
                              StructSizeMapL,
                              StructSizeMapR,
                              StructDIL,

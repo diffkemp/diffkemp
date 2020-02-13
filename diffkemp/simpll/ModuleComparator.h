@@ -17,6 +17,7 @@
 
 #include "DebugInfo.h"
 #include "Result.h"
+#include "ResultsCache.h"
 #include "Utils.h"
 #include "passes/StructureDebugInfoAnalysis.h"
 #include "passes/StructureSizeAnalysis.h"
@@ -44,24 +45,25 @@ class ModuleComparator {
 
     std::vector<GlobalValuePair> MissingDefs;
 
-    /// Functions that need not be compared (passed from the user);
-    std::set<std::pair<std::string, std::string>> &IgnoredFuns;
-
     /// DebugInfo class storing results from analysing debug information
     const DebugInfo *DI;
+
+    /// Cache used for dynamic lookup of already compared functions using
+    /// data passed from DiffKemp.
+    ResultsCache *ResCache;
 
     ModuleComparator(Module &First,
                      Module &Second,
                      bool controlFlowOnly,
                      bool showAsmDiffs,
-                     std::set<std::pair<std::string, std::string>> &IgnoredFuns,
                      const DebugInfo *DI,
+                     ResultsCache *ResCache,
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR,
                      StructureDebugInfoAnalysis::Result &StructDIMapL,
                      StructureDebugInfoAnalysis::Result &StructDIMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-              showAsmDiffs(showAsmDiffs), IgnoredFuns(IgnoredFuns), DI(DI),
+              showAsmDiffs(showAsmDiffs), DI(DI), ResCache(ResCache),
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
               StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR) {}
 
