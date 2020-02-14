@@ -1,7 +1,9 @@
-"""Unit tests for the ComparisonGraph class."""
+"""Unit tests for the ComparisonGraph and SimpLLCache class."""
 
-from diffkemp.semdiff.caching import ComparisonGraph
+from diffkemp.semdiff.caching import ComparisonGraph, SimpLLCache
 from diffkemp.semdiff.result import Result
+from tempfile import mkdtemp
+import os
 import pytest
 
 
@@ -262,3 +264,110 @@ def test_graph_to_fun_pair_list(graph):
     assert {obj[2] for obj in objects_to_compare} == {Result.Kind.NOT_EQUAL}
     assert syndiff_bodies_left == {"MACRO": "5"}
     assert syndiff_bodies_right == {"MACRO": "5L"}
+
+
+@pytest.fixture
+def cache_file():
+    yield SimpLLCache.CacheFile(mkdtemp(), "/test/f1/1.ll", "/test/f2/2.ll")
+
+
+def test_cache_file_init(cache_file):
+    """Tests the constructor of the SimpLLCache.CacheFile class."""
+    assert cache_file.left_module == "/test/f1/1.ll"
+    assert cache_file.right_module == "/test/f2/2.ll"
+    assert cache_file.filename.endswith("$test$f1$1.ll:$test$f2$2.ll")
+
+
+def test_cache_file_add_function_pairs(cache_file):
+    """Tests adding function pairs to a single cache file."""
+    cache_file.add_function_pairs([("f1", "f2"), ("g1", "g2")])
+    with open(cache_file.filename, "r") as file:
+        assert file.readlines() == ["f1:f2\n", "g1:g2\n"]
+
+
+def test_cache_file_rollback(cache_file):
+    """Tests cache file rollback for a single cache file."""
+    cache_file.add_function_pairs([("f1", "f2"), ("g1", "g2")])
+    cache_file.rollback()
+    with open(cache_file.filename, "r") as file:
+        assert file.readlines() == []
+
+
+def test_cache_file_reset_rollback_cache(cache_file):
+    """Tests rollback cache reset for a single cache file."""
+    cache_file.add_function_pairs([("f1", "f2"), ("g1", "g2")])
+    cache_file.reset_rollback_cache()
+    cache_file.add_function_pairs([("h1", "h2"), ("i1", "i2")])
+    cache_file.rollback()
+    with open(cache_file.filename, "r") as file:
+        assert file.readlines() == ["f1:f2\n", "g1:g2\n"]
+
+
+def test_cache_file_clear(cache_file):
+    """Tests the clear method which deletes the cache file."""
+    cache_file.add_function_pairs([("f1", "f2")])
+    cache_file.clear()
+    assert not os.path.exists(cache_file.filename)
+
+
+@pytest.fixture
+def simpll_cache():
+    yield SimpLLCache(mkdtemp())
+
+
+@pytest.fixture
+def vertices():
+    yield [ComparisonGraph.Vertex(dup("f"),
+                                  Result.Kind.EQUAL,
+                                  ("/test/f1/1.ll", "/test/f2/2.ll")),
+           ComparisonGraph.Vertex(dup("h"),
+                                  Result.Kind.NOT_EQUAL,
+                                  ("/test/f1/1.ll", "/test/f2/3.ll")),
+           ComparisonGraph.Vertex(dup("g"),
+                                  Result.Kind.NOT_EQUAL,
+                                  ("/test/f1/1.ll", "/test/f2/2.ll"))]
+
+
+def test_simpll_cache_update(simpll_cache, vertices):
+    """Tests updating of a SimpLL cache with vertices from a graph."""
+    simpll_cache.update(vertices)
+    assert os.path.exists(os.path.join(simpll_cache.directory,
+                                       "$test$f1$1.ll:$test$f2$2.ll"))
+    assert os.path.exists(os.path.join(simpll_cache.directory,
+                                       "$test$f1$1.ll:$test$f2$3.ll"))
+    with open(os.path.join(simpll_cache.directory,
+                           "$test$f1$1.ll:$test$f2$2.ll"), "r") as file:
+        assert file.readlines() == ["f:f\n", "g:g\n"]
+    with open(os.path.join(simpll_cache.directory,
+                           "$test$f1$1.ll:$test$f2$3.ll"), "r") as file:
+        assert file.readlines() == ["h:h\n"]
+
+
+def test_simpll_cache_rollback(simpll_cache, vertices):
+    """Tests cache rollback for an entire SimpLLCache."""
+    simpll_cache.update(vertices)
+    simpll_cache.rollback()
+    for name in ["$test$f1$1.ll:$test$f2$2.ll", "$test$f1$1.ll:$test$f2$3.ll"]:
+        with open(os.path.join(simpll_cache.directory, name), "r") as file:
+            assert file.readlines() == []
+
+
+def test_simpll_cache_reset_rollback_cache(simpll_cache, vertices):
+    """Tests rollback cache reset for an entire SimpLLCache."""
+    simpll_cache.update(vertices[1:])
+    simpll_cache.reset_rollback_cache()
+    simpll_cache.update(vertices[:1])
+    simpll_cache.rollback()
+    with open(os.path.join(simpll_cache.directory,
+                           "$test$f1$1.ll:$test$f2$2.ll"), "r") as file:
+        assert file.readlines() == ["g:g\n"]
+    with open(os.path.join(simpll_cache.directory,
+                           "$test$f1$1.ll:$test$f2$3.ll"), "r") as file:
+        assert file.readlines() == ["h:h\n"]
+
+
+def test_simpll_cache_clear(simpll_cache, vertices):
+    """Tests the clear method which deletes the entire cache directory."""
+    simpll_cache.update(vertices)
+    simpll_cache.clear()
+    assert not os.path.exists(simpll_cache.directory)
