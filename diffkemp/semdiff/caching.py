@@ -55,6 +55,16 @@ class ComparisonGraph:
             self.successors = ([], [])
             self.files = files
             self.lines = lines
+            # Vertices are by default cachable, but there are some cases when
+            # it is necessary to run the comparison again.
+            self.cachable = True
+            # The result of some vertices prevents the caching of other ones.
+            # This list is used in situations when the result changes in graph
+            # merging to reset their cachable flags to True.
+            self.prevents_caching_of = []
+            # Used only for the detection of uncachable vertices in header
+            # files.
+            self.predecessors = ([], [])
 
         def __repr__(self):
             return "Vertex({0}, {1}, {2}, {3}, {4})".format(
@@ -294,6 +304,13 @@ class ComparisonGraph:
             if (name not in self.vertices or
                     self[name].result == Result.Kind.ASSUMED_EQUAL or
                     self[name].result == Result.Kind.UNKNOWN):
+                if (name in self.vertices and
+                        self[name].result == Result.Kind.ASSUMED_EQUAL and
+                        vertex.result != Result.Kind.ASSUMED_EQUAL):
+                    # If changing away from assumed equal, reset the cachable
+                    # mark for all vertices affected by the previous result.
+                    for vertex_to_reset in self[name].prevents_caching_of:
+                        vertex_to_reset.cachable = True
                 # Note: the entry to equal_funs is added automatically.
                 self[name] = vertex
 
@@ -346,6 +363,53 @@ class ComparisonGraph:
                     # vertex in the future.
                     weak_vertex.result = Result.Kind.ASSUMED_EQUAL
                 self[non_pointed_name] = weak_vertex
+
+    def populate_predecessor_lists(self):
+        """For every vertex a list of its predecessors is generated."""
+        for vertex in self.vertices.values():
+            for side in ComparisonGraph.Side:
+                for edge in vertex.successors[side]:
+                    if edge.target_name not in self.vertices:
+                        # Invalid edge target.
+                        continue
+                    successor = self[edge.target_name]
+                    successor.predecessors[side].append(vertex)
+
+    def mark_uncachable_from_assumed_equal(self):
+        """
+        This method marks some specific vertices as "uncachable", preventing
+        them from being included into the cache passed to SimpLL, therefore
+        forcing them to be re-compared.
+        This applies to functions defined in headers that call a function in a
+        non-header file with the "assumed equal" result. The reason for this is
+        that the assumed equal result may be caused by the implementation not
+        being available and the possibility of it becoming available when
+        the header is included from another source file (e.g. from the same one
+        that the implementation is in).
+        """
+        # Do a reversed BFS on the graph.
+        side = ComparisonGraph.Side.LEFT
+        for vertex in self.vertices.values():
+            if (vertex.result != Result.Kind.ASSUMED_EQUAL or
+                    vertex.files[side].endswith(".h")):
+                # Process only vertices with assumed equal results that are not
+                # in headers.
+                continue
+            queue = deque()
+            visited = set()
+            queue.appendleft(vertex)
+            while queue:
+                current = queue.pop()
+                visited.add(current)
+                for predecessor in current.predecessors[side]:
+                    if predecessor in visited:
+                        continue
+                    if not predecessor.files[side].endswith(".h"):
+                        # The problem affect only header files.
+                        continue
+                    queue.appendleft(predecessor)
+                    predecessor.cachable = False
+                    vertex.prevents_caching_of.append(predecessor)
 
     def _edge_callstack_to_string(self, callstack):
         """Converts a callstack consisting of Edge objects to a string
@@ -524,6 +588,8 @@ class SimpLLCache:
         # Sort vertices into a map based on source file pairs.
         vertex_map = {}
         for vertex in vertices:
+            if not vertex.cachable:
+                continue
             if vertex.files not in vertex_map:
                 vertex_map[vertex.files] = []
             vertex_map[vertex.files].append(vertex)

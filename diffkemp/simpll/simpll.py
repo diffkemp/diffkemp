@@ -104,6 +104,8 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
                             graph[vertex.names[ComparisonGraph.Side.RIGHT]] = \
                                 vertex
                 graph.normalize()
+                graph.populate_predecessor_lists()
+                graph.mark_uncachable_from_assumed_equal()
                 missing_defs = simpll_result["missing-defs"] \
                     if "missing-defs" in simpll_result else None
         except yaml.YAMLError:

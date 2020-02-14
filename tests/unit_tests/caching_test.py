@@ -266,6 +266,71 @@ def test_graph_to_fun_pair_list(graph):
     assert syndiff_bodies_right == {"MACRO": "5L"}
 
 
+def test_populate_predecessor_lists(graph):
+    """Tests whether all predecessors are recorded."""
+    graph.normalize()
+    graph.populate_predecessor_lists()
+    for side in ComparisonGraph.Side:
+        assert ({v.names for v in graph["main_function"].predecessors[side]}
+                == {dup("looping")})
+        assert ({v.names for v in graph["do_check"].predecessors[side]} ==
+                {dup("main_function")})
+        assert ({v.names for v in graph["missing"].predecessors[side]} ==
+                {dup("do_check"), dup("strength")})
+        assert ({v.names for v in graph["looping"].predecessors[side]} ==
+                {dup("do_check")})
+        assert ({v.names for v in graph["strength"].predecessors[side]} ==
+                {dup("looping"), dup("side_function")})
+
+
+@pytest.fixture
+def graph_uncachable():
+    """Graph used to test the marking of uncachable vertices."""
+    graph = ComparisonGraph()
+    graph["f1"] = ComparisonGraph.Vertex(
+        dup("f1"), Result.Kind.EQUAL, dup("app/f1.c"), dup(10)
+    )
+    graph["f2"] = ComparisonGraph.Vertex(
+        dup("f2"), Result.Kind.EQUAL, dup("include/h1.h"), dup(20)
+    )
+    graph["f3"] = ComparisonGraph.Vertex(
+        dup("f3"), Result.Kind.ASSUMED_EQUAL, dup("app/f2.c"), dup(20)
+    )
+    for side in ComparisonGraph.Side:
+        graph.add_edge(graph["f1"], side, ComparisonGraph.Edge("f2",
+                       "app/f1.c", 11))
+        graph.add_edge(graph["f2"], side, ComparisonGraph.Edge("f3",
+                       "include/h1.c", 21))
+    yield graph
+
+
+def test_mark_uncachable_from_assumed_equal(graph_uncachable):
+    """Tests the marking of function in headers followed by an assumed equal
+    function in a cache file as uncachable."""
+    graph_uncachable.normalize()
+    graph_uncachable.populate_predecessor_lists()
+    assert graph_uncachable["f2"].cachable
+    graph_uncachable.mark_uncachable_from_assumed_equal()
+    assert graph_uncachable["f1"].cachable
+    assert graph_uncachable["f3"].cachable
+    assert not graph_uncachable["f2"].cachable
+
+
+def test_cachability_reset_after_absorb(graph_uncachable):
+    """Tests whether the cachable attribute is reset to true after replacing
+    the assumed equal vertex causing the uncachability."""
+    graph_uncachable.normalize()
+    graph_uncachable.populate_predecessor_lists()
+    graph_uncachable.mark_uncachable_from_assumed_equal()
+    assert not graph_uncachable["f2"].cachable
+    graph_to_merge = ComparisonGraph()
+    graph_to_merge["f3"] = ComparisonGraph.Vertex(
+        dup("f3"), Result.Kind.NOT_EQUAL, dup("app/f2.c"), dup(20)
+    )
+    graph_uncachable.absorb_graph(graph_to_merge)
+    assert graph_uncachable["f2"].cachable
+
+
 @pytest.fixture
 def cache_file():
     yield SimpLLCache.CacheFile(mkdtemp(), "/test/f1/1.ll", "/test/f2/2.ll")
