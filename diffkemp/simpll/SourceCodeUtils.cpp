@@ -32,13 +32,13 @@ void MacroDiffAnalysis::collectMacroUsesAtLocation(
     std::string line = extractLineFromLocation(Loc, lineOffset);
     if (line.empty()) {
         // Source line was not found
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL_MACROS,
                         dbgs() << getDebugIndent()
                                << "Source for macro not found\n");
         return;
     }
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL_MACROS,
                     dbgs() << getDebugIndent()
                            << "Looking for all macros on line:" << line
                            << "\n");
@@ -117,7 +117,7 @@ void MacroDiffAnalysis::collectMacroUsesAtLocation(
                         // If the macro use is new (it was not in the result
                         // map, yet), add its body into the toExpand queue.
                         DEBUG_WITH_TYPE(
-                                DEBUG_SIMPLL,
+                                DEBUG_SIMPLL_MACROS,
                                 dbgs() << getDebugIndent() << "Adding macro "
                                        << newMacroUse.def->name << " : "
                                        << newMacroUse.def->body
@@ -227,7 +227,7 @@ const StringMap<MacroUse> &
                                                      int lineOffset) {
     if (!Loc || Loc->getNumOperands() == 0) {
         // DILocation has no scope or is not present - cannot get macro stack
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL_MACROS,
                         dbgs() << getDebugIndent()
                                << "Scope for macro not found\n");
         MacroUsesAtLocation.emplace(Loc, StringMap<MacroUse>());
@@ -294,7 +294,7 @@ std::vector<std::unique_ptr<SyntaxDifference>>
             std::reverse(StackR.begin(), StackR.end());
 
             DEBUG_WITH_TYPE(
-                    DEBUG_SIMPLL,
+                    DEBUG_SIMPLL_MACROS,
                     dbgs() << getDebugIndent() << "Left stack:\n\t";
                     dbgs() << getDebugIndent() << MacroUseL.second.def->body
                            << "\n";
@@ -305,7 +305,7 @@ std::vector<std::unique_ptr<SyntaxDifference>>
                                << elem.line << "\n";
                     });
             DEBUG_WITH_TYPE(
-                    DEBUG_SIMPLL,
+                    DEBUG_SIMPLL_MACROS,
                     dbgs() << getDebugIndent() << "Right stack:\n\t";
                     dbgs() << getDebugIndent() << MacroUseR->second.def->body
                            << "\n";

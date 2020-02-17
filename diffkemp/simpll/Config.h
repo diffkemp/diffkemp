@@ -21,6 +21,7 @@
 #include <llvm/Support/SourceMgr.h>
 
 #define DEBUG_SIMPLL "debug-simpll"
+#define DEBUG_SIMPLL_MACROS "debug-simpll-macros"
 
 using namespace llvm;
 
@@ -33,6 +34,7 @@ extern cl::opt<std::string> SuffixOpt;
 extern cl::opt<bool> ControlFlowOpt;
 extern cl::opt<bool> PrintCallstacksOpt;
 extern cl::opt<bool> VerboseOpt;
+extern cl::opt<bool> VerboseMacrosOpt;
 
 /// Tool configuration parsed from CLI options.
 class Config {
