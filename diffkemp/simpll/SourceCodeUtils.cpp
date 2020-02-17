@@ -15,119 +15,129 @@
 #include "SourceCodeUtils.h"
 #include "Config.h"
 #include "Utils.h"
+#include <deque>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/LineIterator.h>
 #include <llvm/Support/raw_ostream.h>
 
-/// Gets all macros used on the line in the form of a key to value map.
-std::unordered_map<std::string, MacroElement>
-        getAllMacrosOnLine(StringRef line, StringMap<MacroElement> macroMap) {
-    // Transform macroMap into a second that will contain only macros that are
-    // used on the line.
-    // Note: For the purpose of the algorithm the starting line is treated as a
-    // with a space as its key, making it an invalid identifier for a macro.
-    std::unordered_map<std::string, MacroElement> usedMacroMap;
-    bool mapChanged = true;
-    usedMacroMap[" "] = MacroElement{"<>", "<>", line, StringRef(""), 0, ""};
+/// Gets all macros used on a certain DILocation in the form of a StringMap
+/// mapping macro names to MacroUse objects
+void MacroDiffAnalysis::collectMacroUsesAtLocation(
+        DILocation *Loc, const StringMap<MacroDef> &macroDefs, int lineOffset) {
 
-    // The bodies of all macros currently present in usedMacroMap are examined;
-    // every time another macro is found in it, it is added to the map.
-    // This process is repeated over and over until it gets to a state when the
-    // map does not change after the iteration (this means that all macros
-    // already are in it).
-    while (mapChanged) {
-        mapChanged = false;
+    if (MacroUsesAtLocation.find(Loc) == MacroUsesAtLocation.end())
+        MacroUsesAtLocation.emplace(Loc, StringMap<MacroUse>());
 
-        // This vector is used to store the entries that are to be added to the
-        // map, but can't be added directly, because it would break the cycle
-        // because it is iterating over the same map.
-        std::vector<std::pair<StringRef, MacroElement>> entriesToAdd;
-
-        for (auto &Entry : usedMacroMap) {
-            // Go through the macro body to find all string that could possibly
-            // be macro identifiers. Because we know which characters the
-            // identifier starts and ends with, we can go through the string
-            // from the left, record all such substrings and test them using the
-            // macro map provided in the function arguments.
-            std::string macroBody = Entry.second.body.str();
-            expandCompositeMacroNames(
-                    Entry.second.params, Entry.second.args, macroBody);
-            std::string potentialMacroName;
-
-            for (int i = 0; i < macroBody.size(); i++) {
-                if (potentialMacroName.size() == 0) {
-                    // We are looking for the beginning of an identifier.
-                    if (isValidCharForIdentifierStart(macroBody[i]))
-                        potentialMacroName += macroBody[i];
-                } else if (!isValidCharForIdentifier(macroBody[i])
-                           || (i == (macroBody.size() - 1))) {
-                    // We found the end of the identifier.
-                    if (i == (macroBody.size() - 1)
-                        && isValidCharForIdentifier(macroBody[i]))
-                        // We found the end of the entire macro - append the
-                        // last character, too
-                        potentialMacroName += macroBody[i];
-                    auto potentialMacro = macroMap.find(potentialMacroName);
-                    if (potentialMacro != macroMap.end()) {
-                        // Macro used by the currently processed macro was
-                        // found.
-                        // Add it to entriesToAdd in order for it to be added to
-                        // the map.
-                        MacroElement macro = potentialMacro->second;
-                        macro.parentMacro = Entry.first;
-
-                        // Retrieve macro arguments
-                        std::string rawArguments =
-                                getSubstringToMatchingBracket(macroBody, i);
-                        if (macro.fullName.find("(") != std::string::npos) {
-                            // If the full name of the macro contains the
-                            // opening bracket, it means the macro has
-                            // parameters that can be parsed and put into the
-                            // MacroElement structure.
-                            std::string rawParameters =
-                                    getSubstringToMatchingBracket(
-                                            macro.fullName,
-                                            macro.fullName.find("("));
-                            macro.params = splitArgumentsList(rawParameters);
-                        }
-                        // Replace parameters from the parent macro with
-                        // arguments if the parent macro has parameters.
-                        if (!Entry.second.params.empty())
-                            rawArguments = expandMacros(Entry.second.params,
-                                                        Entry.second.args,
-                                                        rawArguments);
-                        macro.args = splitArgumentsList(rawArguments);
-
-                        entriesToAdd.push_back(
-                                {potentialMacro->first(), macro});
-                    }
-
-                    // Reset the potential identifier.
-                    potentialMacroName = "";
-                } else
-                    // We are in the middle of the identifier.
-                    potentialMacroName += macroBody[i];
-            }
-        }
-
-        int originalMapSize = usedMacroMap.size();
-        for (std::pair<StringRef, MacroElement> &Entry : entriesToAdd) {
-            if (usedMacroMap.find(Entry.first.str()) == usedMacroMap.end()) {
-                usedMacroMap[Entry.first.str()] = Entry.second;
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent() << "Adding macro "
-                                       << Entry.first << " : "
-                                       << Entry.second.body << ", parent macro "
-                                       << Entry.second.parentMacro << "\n");
-            }
-        }
-
-        if (originalMapSize < usedMacroMap.size())
-            mapChanged = true;
+    std::string line = extractLineFromLocation(Loc, lineOffset);
+    if (line.empty()) {
+        // Source line was not found
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "Source for macro not found\n");
+        return;
     }
 
-    return usedMacroMap;
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << getDebugIndent()
+                           << "Looking for all macros on line:" << line
+                           << "\n");
+
+    StringMap<MacroUse> &ResultMacroUses = MacroUsesAtLocation.at(Loc);
+
+    // Search for all macros used at the line. The algorithm uses a queue to
+    // store strings that must be explored. Initially, the queue contains the
+    // current line and every time a macro identifier is found, the
+    // corresponding macro body is added to the queue.
+    std::deque<std::pair<std::string, const MacroUse *>> toExpand;
+    toExpand.emplace_front(line, nullptr);
+    while (!toExpand.empty()) {
+        auto macroToExpand = toExpand.back();
+        toExpand.pop_back();
+
+        std::string macroBody = macroToExpand.first;
+        const MacroUse *parentMacroUse = macroToExpand.second;
+
+        if (parentMacroUse)
+            expandCompositeMacroNames(parentMacroUse->def->params,
+                                      parentMacroUse->args,
+                                      macroBody);
+
+        std::string potentialMacroName;
+        // Go through the macro body to find all strings that could possibly
+        // be macro identifiers. This is basically a FSM matching all valid C
+        // identifiers.
+        for (int i = 0; i < macroBody.size(); i++) {
+            if (potentialMacroName.empty()) {
+                // We are looking for the beginning of an identifier.
+                if (isValidCharForIdentifierStart(macroBody[i]))
+                    potentialMacroName += macroBody[i];
+            } else if (!isValidCharForIdentifier(macroBody[i])
+                       || (i == (macroBody.size() - 1))) {
+                // We found the end of the identifier.
+                if (i == (macroBody.size() - 1)
+                    && isValidCharForIdentifier(macroBody[i]))
+                    // We found the end of the entire macro - append the last
+                    // character, too
+                    potentialMacroName += macroBody[i];
+                // Check if the identifier is a macro - try to find a
+                // corresponding macro defintion.
+                auto potentialMacroDef = macroDefs.find(potentialMacroName);
+                if (ResultMacroUses.find(potentialMacroName)
+                            == ResultMacroUses.end()
+                    && potentialMacroDef != macroDefs.end()) {
+                    // Macro used by the currently processed macro was found.
+                    MacroUse newMacroUse;
+                    newMacroUse.def = &potentialMacroDef->second;
+                    newMacroUse.parent = parentMacroUse;
+                    // Use location is either the current line (for the directly
+                    // used macro) or the location of the definition of macro
+                    // which uses the current macro.
+                    newMacroUse.line = parentMacroUse
+                                               ? parentMacroUse->def->line
+                                               : Loc->getLine();
+                    newMacroUse.sourceFile =
+                            parentMacroUse ? parentMacroUse->def->sourceFile
+                                           : getSourceFilePath(Loc->getScope());
+
+                    // Retrieve macro arguments
+                    std::string rawArguments =
+                            getSubstringToMatchingBracket(macroBody, i);
+                    // Replace parameters from the parent macro with arguments
+                    // if the parent macro has parameters.
+                    if (parentMacroUse && !parentMacroUse->def->params.empty())
+                        rawArguments = expandMacros(parentMacroUse->def->params,
+                                                    parentMacroUse->args,
+                                                    rawArguments);
+                    newMacroUse.args = splitArgumentsList(rawArguments);
+
+                    auto inserted = ResultMacroUses.insert(
+                            {potentialMacroDef->second.name, newMacroUse});
+                    if (inserted.second) {
+                        // If the macro use is new (it was not in the result
+                        // map, yet), add its body into the toExpand queue.
+                        DEBUG_WITH_TYPE(
+                                DEBUG_SIMPLL,
+                                dbgs() << getDebugIndent() << "Adding macro "
+                                       << newMacroUse.def->name << " : "
+                                       << newMacroUse.def->body
+                                       << ", parent macro "
+                                       << (parentMacroUse
+                                                   ? parentMacroUse->def->name
+                                                   : "")
+                                       << "\n");
+                        toExpand.emplace_back(newMacroUse.def->body.str(),
+                                              &inserted.first->second);
+                    }
+                }
+
+                // Reset the potential identifier.
+                potentialMacroName = "";
+            } else
+                // We are in the middle of the identifier.
+                potentialMacroName += macroBody[i];
+        }
+    }
 }
 
 /// Takes a list of parameter-argument pairs and expand them on places where
@@ -210,162 +220,73 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
     return line;
 }
 
-/// Gets all macros used on a certain DILocation in the form of a key to value
-/// map.
-std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-        DILocation *LineLoc, const Module *Mod, int lineOffset) {
-    // Store generated macro maps for modules to avoid having to regenerate them
-    // many times when comparing a module that has to be inlined a lot.
-    static std::map<const DICompileUnit *, StringMap<MacroElement>>
-            MacroMapCache;
-
-    if (!LineLoc || LineLoc->getNumOperands() == 0) {
+/// Get all macros used on a certain DILocation in the form of a StringMap
+/// mapping macro names to MacroUse objects
+const StringMap<MacroUse> &
+        MacroDiffAnalysis::getAllMacroUsesAtLocation(DILocation *Loc,
+                                                     int lineOffset) {
+    if (!Loc || Loc->getNumOperands() == 0) {
         // DILocation has no scope or is not present - cannot get macro stack
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << getDebugIndent()
                                << "Scope for macro not found\n");
-        return std::unordered_map<std::string, MacroElement>();
+        MacroUsesAtLocation.emplace(Loc, StringMap<MacroUse>());
+        return MacroUsesAtLocation.at(Loc);
     }
 
-    std::string line = extractLineFromLocation(LineLoc, lineOffset);
-    if (line == "") {
-        // Source file was not found
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "Source for macro not found\n");
-        return std::unordered_map<std::string, MacroElement>();
+    // Get macro definitions (collect them if they do not exist)
+    auto compileUnit = Loc->getScope()->getSubprogram()->getUnit();
+    if (MacroDefMaps.find(compileUnit) == MacroDefMaps.end()) {
+        collectMacroDefs(compileUnit);
     }
+    const auto &macroDefMap = MacroDefMaps.at(compileUnit);
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << getDebugIndent()
-                           << "Looking for all macros on line:" << line
-                           << "\n");
-
-    // Get macro array from debug info
-    DISubprogram *Sub = LineLoc->getScope()->getSubprogram();
-    DIMacroNodeArray RawMacros = Sub->getUnit()->getMacros();
-
-    // Create a map from macro identifiers to their values.
-    StringMap<MacroElement> macroMap;
-
-    // Try loading macro map from cache.
-    if (MacroMapCache.find(Sub->getUnit()) != MacroMapCache.end())
-        macroMap = MacroMapCache[Sub->getUnit()];
-    else {
-        // Map is not in cache, generate it.
-
-        StringMap<const DIMacroFile *> macroFileMap;
-        std::vector<const DIMacroFile *> macroFileStack;
-
-        // First all DIMacroFiles (these represent directly included headers)
-        // are added to a stack.
-        for (const DIMacroNode *Node : RawMacros) {
-            if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
-                macroFileStack.push_back(File);
-        }
-
-        // Next a DFS algorithm (using the stack created in the previous
-        // step) used to add all macros that are found inside the file on
-        // the top of the stack to a map and to add all macro files
-        // referenced from the top macro file to the stack (these represent
-        // indirectly included headers).
-        while (!macroFileStack.empty()) {
-            const DIMacroFile *MF = macroFileStack.back();
-            DIMacroNodeArray A = MF->getElements();
-            macroFileStack.pop_back();
-
-            for (const DIMacroNode *Node : A)
-                if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
-                    // The macro node is another macro file - add it to the
-                    // stack
-                    macroFileStack.push_back(File);
-                else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
-                    // The macro node is an actual macro - add an object
-                    // representing it (containing its full name) with its
-                    // shortened name as the key.
-                    std::string macroName = Macro->getName().str();
-
-                    // If the macro name contains arguments, remove them for
-                    // the purpose of the map key.
-                    auto position = macroName.find('(');
-                    if (position != std::string::npos) {
-                        macroName = macroName.substr(0, position);
-                    }
-
-                    MacroElement element;
-                    element.name = macroName;
-                    element.fullName = Macro->getName();
-                    element.body = Macro->getValue();
-                    element.parentMacro = "N/A";
-                    element.sourceFile = MF->getFile()->getFilename().str();
-                    element.line = Macro->getLine();
-                    macroMap[macroName] = element;
-                }
-        }
-        // Put map into cache.
-        MacroMapCache[Sub->getUnit()] = macroMap;
+    // Collect macro usages if they do not exist (or if the line offset is
+    // non-zero) and return them
+    if (MacroUsesAtLocation.find(Loc) == MacroUsesAtLocation.end()
+        || lineOffset != 0) {
+        collectMacroUsesAtLocation(Loc, macroDefMap, lineOffset);
     }
-
-    // Add information about the original line to the map, then return the map
-    auto macrosOnLine = getAllMacrosOnLine(line, macroMap);
-    macrosOnLine[" "].sourceFile =
-            getSourceFilePath(dyn_cast<DIScope>(LineLoc->getScope()));
-    macrosOnLine[" "].line = LineLoc->getLine();
-
-    return macrosOnLine;
+    return MacroUsesAtLocation.at(Loc);
 }
 
-/// Finds macro differences at the locations of the instructions L and R and
+/// Find macro differences at the locations of the instructions L and R and
 /// return them as a vector.
 /// This is used when a difference is suspected to be in a macro in order to
 /// include that difference into ModuleComparator, and therefore avoid an
 /// empty diff.
-std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
-        const Instruction *L, const Instruction *R, int lineOffset) {
+std::vector<std::unique_ptr<SyntaxDifference>>
+        MacroDiffAnalysis::findMacroDifferences(const Instruction *L,
+                                                const Instruction *R,
+                                                int lineOffset) {
     // Try to discover a macro difference
-    auto MacrosL = getAllMacrosAtLocation(
-            L->getDebugLoc(), L->getModule(), lineOffset);
-    auto MacrosR = getAllMacrosAtLocation(
-            R->getDebugLoc(), R->getModule(), lineOffset);
+    auto &MacroUsesL = getAllMacroUsesAtLocation(L->getDebugLoc(), lineOffset);
+    auto &MacroUsesR = getAllMacroUsesAtLocation(R->getDebugLoc(), lineOffset);
 
     std::vector<std::unique_ptr<SyntaxDifference>> result;
 
-    for (auto Elem : MacrosL) {
-        if (Elem.second.name == "<>")
-            // Note: this is the final parent "macro" element representing the
-            // actual line in the source file on which the macro is used
-            continue;
+    for (const auto &MacroUseL : MacroUsesL) {
+        auto MacroUseR = MacroUsesR.find(MacroUseL.first());
 
-        auto LValue = MacrosL.find(Elem.first);
-        auto RValue = MacrosR.find(Elem.first);
-
-        if (LValue != MacrosL.end() && RValue != MacrosR.end()
-            && LValue->second.body != RValue->second.body) {
+        if (MacroUseR != MacroUsesR.end()
+            && MacroUseL.second.def->body != MacroUseR->second.def->body) {
             // Macro difference found - get the macro stacks and insert the
             // object into the macro differences array to be passed on to
             // ModuleComparator.
             CallStack StackL, StackR;
 
             // Insert all macros between the differing macro and the original
-            // macro that the line contains to the stack.
-            // Note: the lines on which are the macros have to be shifted,
-            // because we want the line on which the macro is used, not the line
-            // on which it is defined.
-            MacroElement currentElement = LValue->second;
-            while (currentElement.parentMacro != "") {
-                auto parent = MacrosL[currentElement.parentMacro];
-                StackL.push_back(CallInfo(currentElement.name + " (macro)",
-                                          parent.sourceFile,
-                                          parent.line));
-                currentElement = parent;
+            // macro that the line contains to the stack. The MacroUse object of
+            // the originally used macro has a nullptr parent.
+            for (const MacroUse *m = &MacroUseL.second; m != nullptr;
+                 m = m->parent) {
+                StackL.push_back(CallInfo(
+                        m->def->name + " (macro)", m->sourceFile, m->line));
             }
-            currentElement = RValue->second;
-            while (currentElement.parentMacro != "") {
-                auto parent = MacrosR[currentElement.parentMacro];
-                StackR.push_back(CallInfo(currentElement.name + " (macro)",
-                                          parent.sourceFile,
-                                          parent.line));
-                currentElement = parent;
+            for (const MacroUse *m = &MacroUseR->second; m != nullptr;
+                 m = m->parent) {
+                StackR.push_back(CallInfo(
+                        m->def->name + " (macro)", m->sourceFile, m->line));
             }
 
             // Invert stacks to match the format of actual call stacks
@@ -375,7 +296,8 @@ std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
             DEBUG_WITH_TYPE(
                     DEBUG_SIMPLL,
                     dbgs() << getDebugIndent() << "Left stack:\n\t";
-                    dbgs() << getDebugIndent() << LValue->second.body << "\n";
+                    dbgs() << getDebugIndent() << MacroUseL.second.def->body
+                           << "\n";
                     for (CallInfo &elem
                          : StackL) {
                         dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
@@ -385,7 +307,8 @@ std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
             DEBUG_WITH_TYPE(
                     DEBUG_SIMPLL,
                     dbgs() << getDebugIndent() << "Right stack:\n\t";
-                    dbgs() << getDebugIndent() << RValue->second.body << "\n";
+                    dbgs() << getDebugIndent() << MacroUseR->second.def->body
+                           << "\n";
                     for (CallInfo &elem
                          : StackR) {
                         dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
@@ -394,9 +317,9 @@ std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
                     });
 
             result.push_back(std::make_unique<SyntaxDifference>(
-                    Elem.first,
-                    LValue->second.body,
-                    RValue->second.body,
+                    MacroUseL.second.def->name,
+                    MacroUseL.second.def->body.str(),
+                    MacroUseR->second.def->body.str(),
                     StackL,
                     StackR,
                     L->getFunction()->getName()));
@@ -411,6 +334,72 @@ std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
         return findMacroDifferences(L, R, -1);
 
     return result;
+}
+
+/// Collect all macros defined in the given compile unit and store them into
+/// MacroDefMaps
+void MacroDiffAnalysis::collectMacroDefs(DICompileUnit *CompileUnit) {
+    // Get macros definitions from debug info
+    DIMacroNodeArray RawMacros = CompileUnit->getMacros();
+    StringMap<const DIMacroFile *> macroFileMap;
+    std::vector<const DIMacroFile *> macroFileStack;
+
+    StringMap<MacroDef> macroDefs;
+
+    // First all DIMacroFiles (these represent directly included headers)
+    // are added to a stack.
+    for (const DIMacroNode *Node : RawMacros) {
+        if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+            macroFileStack.push_back(File);
+    }
+
+    // Next a DFS algorithm (using the stack created in the previous step) used
+    // to add all macro definitions that are found inside the file on the top of
+    // the stack to a map and to add all macro files referenced from the top
+    // macro file to the stack (these represent indirectly included headers).
+    while (!macroFileStack.empty()) {
+        const DIMacroFile *MF = macroFileStack.back();
+        DIMacroNodeArray A = MF->getElements();
+        macroFileStack.pop_back();
+
+        for (const DIMacroNode *Node : A)
+            if (const DIMacroFile *File = dyn_cast<DIMacroFile>(Node))
+                // The macro node is another macro file - add it to the stack
+                macroFileStack.push_back(File);
+            else if (const DIMacro *Macro = dyn_cast<DIMacro>(Node)) {
+                // The macro node is an actual macro definition - add an object
+                // representing it (containing its full name) with its shortened
+                // name as the key to the result map.
+                std::string macroName = Macro->getName().str();
+
+                // If the macro name contains parameters, remove them for the
+                // purpose of the map key.
+                auto position = macroName.find('(');
+                if (position != std::string::npos) {
+                    macroName = macroName.substr(0, position);
+                }
+
+                MacroDef element;
+                element.name = macroName;
+                element.fullName = Macro->getName().str();
+                element.body = Macro->getValue();
+                element.sourceFile = MF->getFile()->getFilename().str();
+                element.line = Macro->getLine();
+
+                if (element.fullName.find('(') != std::string::npos) {
+                    // If the full name of the macro contains the opening
+                    // bracket, it means the macro has parameters that can be
+                    // parsed and put into the MacroElement structure.
+                    std::string rawParameters = getSubstringToMatchingBracket(
+                            element.fullName, element.fullName.find('('));
+                    element.params = splitArgumentsList(rawParameters);
+                }
+
+                macroDefs.insert({element.name, element});
+            }
+    }
+    // Put the created macro definition map into cache
+    MacroDefMaps.emplace(CompileUnit, std::move(macroDefs));
 }
 
 // Takes a string and the position of the first bracket and returns the
@@ -508,8 +497,10 @@ std::pair<std::string, std::string>
 
 /// Takes a LLVM inline assembly with the corresponding call location and
 /// retrieves the corresponding arguments in the C source code.
-std::vector<std::string> findInlineAssemblySourceArguments(
-        DILocation *LineLoc, const Module *Mod, std::string inlineAsm) {
+std::vector<std::string>
+        findInlineAssemblySourceArguments(DILocation *LineLoc,
+                                          std::string inlineAsm,
+                                          MacroDiffAnalysis *MacroDiffs) {
     // Empty inline asm string cannot be found by the function
     if (inlineAsm == "")
         return {};
@@ -520,15 +511,15 @@ std::vector<std::string> findInlineAssemblySourceArguments(
     std::string line = extractLineFromLocation(LineLoc);
     if (line == "")
         return {};
-    auto MacroMap = getAllMacrosAtLocation(LineLoc, Mod);
+    auto MacroMap = MacroDiffs->getAllMacroUsesAtLocation(LineLoc, 0);
 
     std::vector<std::string> inputs;
     std::vector<std::pair<std::string, std::string>> candidates;
 
     // Collect all inputs in which we want to search for the inline asm.
     inputs.push_back(line);
-    for (auto Elem : MacroMap)
-        inputs.push_back(Elem.second.body);
+    for (auto &Elem : MacroMap)
+        inputs.push_back(Elem.second.def->body);
 
     // Extract the candidates (i.e. the inputs that contain inline asm).
     for (auto input : inputs) {
@@ -626,23 +617,25 @@ std::vector<std::string> splitArgumentsList(std::string argumentString) {
 
 /// Takes a function name with the corresponding call location and retrieves
 /// the corresponding arguments in the C source code.
-std::vector<std::string> findFunctionCallSourceArguments(
-        DILocation *LineLoc, const Module *Mod, std::string functionName) {
+std::vector<std::string>
+        findFunctionCallSourceArguments(DILocation *LineLoc,
+                                        std::string functionName,
+                                        MacroDiffAnalysis *MacroDiffs) {
     // The function searches for the function call at two locations - the first
     // one is the line in the original C source code corresponding to the debug
     // info location, the second one are macros used on that line.
     std::string line = extractLineFromLocation(LineLoc);
     if (line == "")
         return {};
-    auto MacroMap = getAllMacrosAtLocation(LineLoc, Mod);
+    auto &MacroMap = MacroDiffs->getAllMacroUsesAtLocation(LineLoc, 0);
 
     std::vector<std::string> inputs;
     std::string argumentString;
 
     // Collect all inputs in which we want to search for the function call.
     inputs.push_back(line);
-    for (auto Elem : MacroMap)
-        inputs.push_back(Elem.second.body);
+    for (auto &Elem : MacroMap)
+        inputs.push_back(Elem.second.def->body);
 
     // Extract the function calls from them
     for (auto input : inputs) {

@@ -17,6 +17,7 @@
 #include "DifferentialFunctionComparator.h"
 #include "ModuleComparator.h"
 #include "ResultsCache.h"
+#include "SourceCodeUtils.h"
 #include "Utils.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/ControlFlowSlicer.h"
@@ -160,12 +161,14 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
     ResultsCache ResCache(config.CacheDir);
 
     // Compare functions for syntactical equivalence
+    MacroDiffAnalysis MD;
     ModuleComparator modComp(*config.First,
                              *config.Second,
                              config.ControlFlowOnly,
                              config.PrintAsmDiffs,
                              &DI,
                              &ResCache,
+                             &MD,
                              StructSizeMapL,
                              StructSizeMapR,
                              StructDIL,

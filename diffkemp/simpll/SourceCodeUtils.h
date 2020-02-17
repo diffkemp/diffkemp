@@ -12,10 +12,10 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef DIFFKEMP_SIMPLL_MACRO_UTILS_H
-#define DIFFKEMP_SIMPLL_MACRO_UTILS_H
+#ifndef DIFFKEMP_SIMPLL_SOURCE_CODE_UTILS_H
+#define DIFFKEMP_SIMPLL_SOURCE_CODE_UTILS_H
 
-#include "ModuleComparator.h"
+#include "Result.h"
 #include "Utils.h"
 
 #include <llvm/ADT/StringMap.h>
@@ -26,27 +26,72 @@
 
 using namespace llvm;
 
-/// Returned macros with value and location.
-struct MacroElement {
+/// Macro definition containing name, body, location, and parameters
+struct MacroDef {
     // The macro name is shortened, therefore it has to be stored as the whole
-    // string, because otherwise the content would be dropped on leaving the
-    // block in which the shortening is done.
+    // string, not as a StringRef (otherwise the content would be dropped after
+    // the block in which the shortening is done).
     std::string name;
-    // Full macro name. (Used for extracting parameters.)
+    // Full macro name (including parameters).
     std::string fullName;
-    // The body is in DebugInfo, parentMacro is a key in the map, therefore
-    // both can be stored by reference.
-    StringRef body, parentMacro;
-    // This is the line in the C source code on which the macro is located.
+    // The body is in DebugInfo therefore it can be stored by reference.
+    StringRef body;
+    // Location of the macro definition in C source.
     int line;
     std::string sourceFile;
-    // This is a list of the arguments of the macro and its parameters.
-    std::vector<std::string> args, params;
+    // List of the macro parameters.
+    std::vector<std::string> params;
 };
 
-/// Gets all macros used on the line in the form of a key to value map.
-std::unordered_map<std::string, MacroElement>
-        getAllMacrosOnLine(StringRef line, StringMap<StringRef> macroMap);
+/// Macro usage containing macro definition, caller macro, and arguments
+struct MacroUse {
+    // Pointer to the macro definition and to the parent macro of this usage
+    const MacroDef *def;
+    const MacroUse *parent;
+    // Location of the macro use in C source.
+    int line;
+    std::string sourceFile;
+    // List of arguments of the macro use
+    std::vector<std::string> args;
+};
+
+/// Class for finding differences in macros. Contains collections of macro
+/// definitions and macro usages
+class MacroDiffAnalysis {
+  public:
+    /// Find macro differences at the locations of the instructions L and R and
+    /// return them as a vector.
+    /// This is used when a difference is suspected to be in a macro in order to
+    /// include that difference into ModuleComparator, and therefore avoid an
+    /// empty diff.
+    std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
+            const Instruction *L, const Instruction *R, int lineOffset = 0);
+
+    /// Get all macros used on a certain DILocation in the form of a StringMap
+    /// mapping macro names to MacroUse objects
+    const StringMap<MacroUse> &getAllMacroUsesAtLocation(DILocation *Loc,
+                                                         int lineOffset = 0);
+
+  private:
+    /// Collect all macros defined in the given compile unit and store them into
+    /// MacroDefMaps
+    void collectMacroDefs(DICompileUnit *CompileUnit);
+    /// Collect all macros used at the given location and store the uses into
+    /// MacroUsesAtLocation
+    void collectMacroUsesAtLocation(DILocation *Loc,
+                                    const StringMap<MacroDef> &macroDefs,
+                                    int lineOffset = 0);
+
+    /// Collection of macro definition maps for each compilation unit
+    /// Every macro definition map is represented as a StringMap mapping macro
+    /// names to MacroDef objects.
+    std::map<DICompileUnit *, StringMap<MacroDef>> MacroDefMaps;
+    /// Collection of used macros for each program location.
+    /// All macro uses for a location are represented as a StringMap mapping
+    /// macro names to MacroUse objects. MacroUse objects contain pointers to
+    /// macro definitions stored in MacroDefMaps.
+    std::map<DILocation *, StringMap<MacroUse>> MacroUsesAtLocation;
+};
 
 /// Takes a list of parameter-argument pairs and expand them on places where
 /// are a part of a composite macro name joined by ##.
@@ -57,21 +102,8 @@ void expandCompositeMacroNames(std::vector<std::string> params,
 /// Extract the line corresponding to the DILocation from the C source file.
 std::string extractLineFromLocation(DILocation *LineLoc, int offset = 0);
 
-/// Gets all macros used on a certain DILocation in the form of a key to value
-/// map.
-std::unordered_map<std::string, MacroElement> getAllMacrosAtLocation(
-        DILocation *LineLoc, const Module *Mod, int lineOffset = 0);
-
-/// Finds macro differences at the locations of the instructions L and R and
-/// return them as a vector.
-/// This is used when a difference is suspected to be in a macro in order to
-/// include that difference into ModuleComparator, and therefore avoid an
-/// empty diff.
-std::vector<std::unique_ptr<SyntaxDifference>> findMacroDifferences(
-        const Instruction *L, const Instruction *R, int lineOffset = 0);
-
-// Takes a string and the position of the first bracket and returns the
-// substring in the brackets.
+/// Takes a string and the position of the first bracket and returns the
+/// substring in the brackets.
 std::string getSubstringToMatchingBracket(std::string str, size_t position);
 
 /// Tries to convert C source syntax of inline ASM (the input may include other
@@ -83,16 +115,20 @@ std::pair<std::string, std::string>
 
 /// Takes a LLVM inline assembly with the corresponding call location and
 /// retrieves the corresponding arguments in the C source code.
-std::vector<std::string> findInlineAssemblySourceArguments(
-        DILocation *LineLoc, const Module *Mod, std::string inlineAsm);
+std::vector<std::string>
+        findInlineAssemblySourceArguments(DILocation *LineLoc,
+                                          std::string inlineAsm,
+                                          MacroDiffAnalysis *MacroDiffs);
 
 // Takes in a string with C function call arguments and splits it into a vector.
 std::vector<std::string> splitArgumentsList(std::string argumentString);
 
 /// Takes a function name with the corresponding call location and retrieves
 /// the corresponding arguments in the C source code.
-std::vector<std::string> findFunctionCallSourceArguments(
-        DILocation *LineLoc, const Module *Mod, std::string functionName);
+std::vector<std::string>
+        findFunctionCallSourceArguments(DILocation *LineLoc,
+                                        std::string functionName,
+                                        MacroDiffAnalysis *MacroDiffs);
 
 /// Expand simple non-argument macros in string. The macros are determined by
 /// macro-body pairs.
@@ -100,4 +136,4 @@ std::string expandMacros(std::vector<std::string> macros,
                          std::vector<std::string> bodies,
                          std::string Input);
 
-#endif // DIFFKEMP_SIMPLL_MACRO_UTILS_H
+#endif // DIFFKEMP_SIMPLL_SOURCE_CODE_UTILS_H

@@ -18,6 +18,7 @@
 #include "DebugInfo.h"
 #include "Result.h"
 #include "ResultsCache.h"
+#include "SourceCodeUtils.h"
 #include "Utils.h"
 #include "passes/StructureDebugInfoAnalysis.h"
 #include "passes/StructureSizeAnalysis.h"
@@ -52,18 +53,21 @@ class ModuleComparator {
     /// data passed from DiffKemp.
     ResultsCache *ResCache;
 
+    MacroDiffAnalysis *MacroDiffs;
+
     ModuleComparator(Module &First,
                      Module &Second,
                      bool controlFlowOnly,
                      bool showAsmDiffs,
                      const DebugInfo *DI,
                      ResultsCache *ResCache,
+                     MacroDiffAnalysis *MD,
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR,
                      StructureDebugInfoAnalysis::Result &StructDIMapL,
                      StructureDebugInfoAnalysis::Result &StructDIMapR)
             : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-              showAsmDiffs(showAsmDiffs), DI(DI), ResCache(ResCache),
+              showAsmDiffs(showAsmDiffs), DI(DI), ResCache(ResCache), MacroDiffs(MD),
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
               StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR) {}
 

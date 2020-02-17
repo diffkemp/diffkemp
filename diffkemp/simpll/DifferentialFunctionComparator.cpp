@@ -365,8 +365,9 @@ int DifferentialFunctionComparator::cmpOperations(
                 findTypeDifferences(FL, FR, L->getFunction(), R->getFunction());
             }
         }
+        auto macroDiffs = ModComparator->MacroDiffs->findMacroDifferences(L, R);
         ModComparator->ComparedFuns.at({FnL, FnR})
-                .addDifferingObjects(findMacroDifferences(L, R));
+                .addDifferingObjects(std::move(macroDiffs));
     }
 
     return Result;
@@ -453,8 +454,10 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
     // First look whether this is the case described above.
     auto LineL = extractLineFromLocation(L->getDebugLoc());
     auto LineR = extractLineFromLocation(R->getDebugLoc());
-    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
-    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
+    auto &MacrosL = ModComparator->MacroDiffs->getAllMacroUsesAtLocation(
+            L->getDebugLoc(), 0);
+    auto &MacrosR = ModComparator->MacroDiffs->getAllMacroUsesAtLocation(
+            R->getDebugLoc(), 0);
     std::string NameL;
     std::string NameR;
     if (isa<CallInst>(L))
@@ -658,18 +661,20 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
     // Use the appropriate C source call argument extraction function depending
     // on whether it is an inline assembly call or not.
     if (CFL->getName().startswith(SimpllInlineAsmPrefix))
-        CArgsL = findInlineAssemblySourceArguments(
-                CIL->getDebugLoc(), CIL->getModule(), getInlineAsmString(CFL));
+        CArgsL = findInlineAssemblySourceArguments(CIL->getDebugLoc(),
+                                                   getInlineAsmString(CFL),
+                                                   ModComparator->MacroDiffs);
     else
         CArgsL = findFunctionCallSourceArguments(
-                CIL->getDebugLoc(), CIL->getModule(), CFL->getName());
+                CIL->getDebugLoc(), CFL->getName(), ModComparator->MacroDiffs);
 
     if (CFR->getName().startswith(SimpllInlineAsmPrefix))
-        CArgsR = findInlineAssemblySourceArguments(
-                CIR->getDebugLoc(), CIR->getModule(), getInlineAsmString(CFR));
+        CArgsR = findInlineAssemblySourceArguments(CIR->getDebugLoc(),
+                                                   getInlineAsmString(CFR),
+                                                   ModComparator->MacroDiffs);
     else
         CArgsR = findFunctionCallSourceArguments(
-                CIR->getDebugLoc(), CIR->getModule(), CFL->getName());
+                CIR->getDebugLoc(), CFL->getName(), ModComparator->MacroDiffs);
 
     if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
         if (mayIgnoreMacro(CArgsL[i]) && mayIgnoreMacro(CArgsR[i])
@@ -791,9 +796,11 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                     if (Res) {
                         // Try to find macros that could be causing the
                         // difference
+                        auto macroDiffs =
+                                ModComparator->MacroDiffs->findMacroDifferences(
+                                        &*InstL, &*InstR);
                         ModComparator->ComparedFuns.at({FnL, FnR})
-                                .addDifferingObjects(
-                                        findMacroDifferences(&*InstL, &*InstR));
+                                .addDifferingObjects(std::move(macroDiffs));
 
                         // Try to find assembly functions causing the difference
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)
