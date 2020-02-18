@@ -104,6 +104,11 @@ void FieldAccessFunctionGenerator::processStack(
     // only by other instructions in the stack.
     // If not, do not generate an abstraction, since this would break the code.
     for (Instruction *Inst : Stack) {
+        if (auto *GEP = dyn_cast<GetElementPtrInst>(Inst)) {
+            // All GEP operands must be constant
+            if (!GEP->hasAllConstantIndices())
+                return;
+        }
         if (Inst == Stack.back())
             continue;
         for (User *U : Inst->users()) {

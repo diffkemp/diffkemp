@@ -1015,6 +1015,15 @@ int DifferentialFunctionComparator::cmpFieldAccess(const Function *L,
     // be also equal in machine code).
     uint64_t OffsetL = 0, OffsetR = 0;
 
+    // If both field access abstractions contain just a single GEP, these can be
+    // compared normally using the cmpGEPs method.
+    if (L->front().size() == 1 && R->front().size() == 1
+        && isa<GetElementPtrInst>(L->front().front())
+        && isa<GetElementPtrInst>(R->front().front())) {
+        return cmpGEPs(dyn_cast<GEPOperator>(&L->front().front()),
+                       dyn_cast<GEPOperator>(&R->front().front()));
+    }
+
     if (!accumulateAllOffsets(L->front(), OffsetL)
         || !accumulateAllOffsets(R->front(), OffsetR))
         return 1;
