@@ -293,8 +293,11 @@ int DebugInfo::getTypeMemberIndex(const DICompositeType &type,
                 return index;
             nextOffset =
                     TypeElem->getOffsetInBits() + TypeElem->getSizeInBits();
+            if (TypeElem->getSizeInBits() > 0)
+                index++;
+        } else {
+            index++;
         }
-        index++;
     }
     return -1;
 }
