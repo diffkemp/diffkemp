@@ -988,11 +988,11 @@ bool DifferentialFunctionComparator::accumulateAllOffsets(
         const BasicBlock &BB, uint64_t &Offset) const {
     for (auto &Inst : BB) {
         if (auto GEP = dyn_cast<GetElementPtrInst>(&Inst)) {
-            APInt Offset;
+            APInt InstOffset(32, 0);
             if (!GEP->accumulateConstantOffset(BB.getModule()->getDataLayout(),
-                                               Offset))
+                                               InstOffset))
                 return false;
-            Offset += Offset.getZExtValue();
+            Offset += InstOffset.getZExtValue();
         }
     }
     return true;
@@ -1009,7 +1009,7 @@ int DifferentialFunctionComparator::cmpFieldAccess(const Function *L,
     uint64_t OffsetL = 0, OffsetR = 0;
 
     if (!accumulateAllOffsets(L->front(), OffsetL)
-        || !accumulateAllOffsets(L->front(), OffsetR))
+        || !accumulateAllOffsets(R->front(), OffsetR))
         return 1;
 
     if (OffsetL == OffsetR)
