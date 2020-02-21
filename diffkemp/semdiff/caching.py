@@ -122,6 +122,20 @@ class ComparisonGraph:
             """Adds a non-function difference."""
             self.nonfun_diffs.append(diff)
 
+        def compare_vertex_priority(self, other):
+            """
+            Compares the priority of the two vertices. If the first should be
+            prefered when merging graphs, returns False, else returns True.
+            """
+            if self.result in [Result.Kind.ASSUMED_EQUAL, Result.Kind.UNKNOWN]:
+                return True
+            # Check lengths of successor lists (this is important for cases
+            # where linking happened).
+            for side in ComparisonGraph.Side:
+                if len(other.successors[side]) > len(self.successors[side]):
+                    return True
+            return False
+
     class Edge:
         """
         Edges in the comparison graph.
@@ -302,8 +316,7 @@ class ComparisonGraph:
         """
         for name, vertex in graph.vertices.items():
             if (name not in self.vertices or
-                    self[name].result == Result.Kind.ASSUMED_EQUAL or
-                    self[name].result == Result.Kind.UNKNOWN):
+                    self[name].compare_vertex_priority(vertex)):
                 if (name in self.vertices and
                         self[name].result == Result.Kind.ASSUMED_EQUAL and
                         vertex.result != Result.Kind.ASSUMED_EQUAL):

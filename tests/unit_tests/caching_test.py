@@ -184,9 +184,19 @@ def test_absort_graph(graph):
     new_graph["do_check"] = ComparisonGraph.Vertex(
         dup("do_check"), Result.Kind.EQUAL, dup("app/mod.c"), dup(665)
     )
+    # This vertex should replace the old one (it has more successors).
+    new_graph["strength"] = ComparisonGraph.Vertex(
+        dup("strength"), Result.Kind.NOT_EQUAL, dup("app/test.h"), (5, 5)
+    )
+    for side in ComparisonGraph.Side:
+        new_graph.add_edge(new_graph["strength"], side,
+                           ComparisonGraph.Edge("missing", "app/w.c", 6))
+        new_graph.add_edge(new_graph["strength"], side,
+                           ComparisonGraph.Edge("main_function", "app/w.c", 7))
     graph.absorb_graph(new_graph)
     assert graph["missing"].result == Result.Kind.NOT_EQUAL
     assert graph["do_check"].result == Result.Kind.NOT_EQUAL
+    assert graph["strength"].result == Result.Kind.NOT_EQUAL
 
 
 def test_normalize(graph):
