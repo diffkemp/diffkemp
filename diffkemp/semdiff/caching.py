@@ -37,6 +37,13 @@ class ComparisonGraph:
         WEAK = 0
         STRONG = 1
 
+        @classmethod
+        def from_yaml(cls, yaml):
+            if yaml:
+                return ComparisonGraph.DependencyKind.WEAK
+            else:
+                return ComparisonGraph.DependencyKind.STRONG
+
     class Vertex:
         """
         Vertex in the comparison graph.
@@ -158,7 +165,9 @@ class ComparisonGraph:
         @classmethod
         def from_yaml(cls, callee):
             """Generates an Edge object from YAML returned by SimpLL."""
-            return cls(callee["function"], callee["file"], int(callee["line"]))
+            res = cls(callee["function"], callee["file"], int(callee["line"]))
+            res.kind = ComparisonGraph.DependencyKind.from_yaml(callee["weak"])
+            return res
 
     class NonFunDiff:
         """

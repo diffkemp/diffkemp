@@ -208,12 +208,34 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                                                        DI,
                                                        this);
             result = fCompSecond.compare();
-            // If the functions are equal after the inlining, we do not want to
-            // report the called functions as unequal in case they are compared
-            // as such alone - only the equivalence inside the compared function
-            // matters here.
-            if (!result)
-                ComparedFuns.erase({InlinedFunFirst, InlinedFunSecond});
+            // If the functions are equal after the inlining and there is a
+            // call to the inlined function, mark it as weak.
+            if (!result) {
+                if (InlinedFunFirst)
+                    for (const CallInfo &CI :
+                         ComparedFuns.at({FirstFun, SecondFun}).First.calls) {
+                        if (CI.fun == InlinedFunFirst->getName().str()) {
+                            CallInfo NewCI = CI;
+                            ComparedFuns.at({FirstFun, SecondFun})
+                                    .First.calls.erase(CI);
+                            NewCI.weak = true;
+                            ComparedFuns.at({FirstFun, SecondFun})
+                                    .First.calls.insert(NewCI);
+                        }
+                    }
+                if (InlinedFunSecond)
+                    for (const CallInfo &CI :
+                         ComparedFuns.at({FirstFun, SecondFun}).Second.calls) {
+                        if (CI.fun == InlinedFunSecond->getName().str()) {
+                            CallInfo NewCI = CI;
+                            ComparedFuns.at({FirstFun, SecondFun})
+                                    .Second.calls.erase(CI);
+                            NewCI.weak = true;
+                            ComparedFuns.at({FirstFun, SecondFun})
+                                    .Second.calls.insert(NewCI);
+                        }
+                    }
+            }
 
             DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
             if (result == 0) {

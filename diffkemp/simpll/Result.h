@@ -30,11 +30,12 @@ struct CallInfo {
     std::string fun;
     std::string file;
     unsigned line;
+    bool weak;
 
     // Default constructor needed for YAML serialisation.
     CallInfo() {}
     CallInfo(const std::string &fun, const std::string &file, unsigned int line)
-            : fun(fun), file(file), line(line) {}
+            : fun(fun), file(file), line(line), weak(false) {}
     bool operator<(const CallInfo &Rhs) const { return fun < Rhs.fun; }
 };
 

@@ -25,6 +25,7 @@ template <> struct MappingTraits<CallInfo> {
         io.mapRequired("function", callinfo.fun);
         io.mapRequired("file", callinfo.file);
         io.mapRequired("line", callinfo.line);
+        io.mapRequired("weak", callinfo.weak);
     }
 };
 } // namespace llvm::yaml
