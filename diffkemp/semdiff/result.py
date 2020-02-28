@@ -61,7 +61,7 @@ class Result:
         self.second = Result.Entity(second_name)
         self.diff = None
         self.macro_diff = None
-        self.cache = None
+        self.graph = None
         self.inner = dict()
 
     def __str__(self):
@@ -76,9 +76,10 @@ class Result:
         # The current result is joined with the inner result (the result with
         # a higher priority is chosen from the two).
         self.kind = Result.Kind(max(int(self.kind), int(result.kind)))
-        # The cache of the latest inner result is the cache (graph) of the
-        # outer one.
-        self.cache = result.cache
+        # The graph of the latest inner result is the graph of the outer one.
+        # Note: this is true because the graph is built incrementally, reusing
+        # the already known results from the previous comparison.
+        self.graph = result.graph
 
     def report_symbol_stat(self, show_errors=False):
         """
@@ -152,7 +153,7 @@ class Result:
                 unique_diffs.add(UniqueDiff(inner_res))
 
         # Generate counts
-        compared = len(self.cache.vertices)
+        compared = len(self.graph.vertices)
         total = len(unique_diffs)
         functions = len([r for r in unique_diffs
                          if r.res.first.diff_kind == "function"])

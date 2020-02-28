@@ -83,34 +83,34 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
 
         missing_defs = None
         try:
-            graph = ComparisonGraph()
+            result_graph = ComparisonGraph()
             simpll_result = yaml.safe_load(simpll_out)
             if simpll_result is not None:
                 if "function-results" in simpll_result:
                     for fun_result in simpll_result["function-results"]:
                         # Create the vertex from the result and insert it into
                         # the graph.
-                        vertex = ComparisonGraph.Vertex.from_yaml(fun_result,
-                                                                  graph)
+                        vertex = ComparisonGraph.Vertex.from_yaml(
+                            fun_result, result_graph)
                         # Prefer pointed name to ensure that a difference
                         # contaning the variant function as either the left or
                         # the right side has its name in the key.
                         # This is useful because one can tell this is a weak
                         # vertex from its name.
                         if "." in vertex.names[ComparisonGraph.Side.LEFT]:
-                            graph[vertex.names[ComparisonGraph.Side.LEFT]] = \
-                                vertex
+                            result_graph[vertex.names[
+                                ComparisonGraph.Side.LEFT]] = vertex
                         else:
-                            graph[vertex.names[ComparisonGraph.Side.RIGHT]] = \
-                                vertex
-                graph.normalize()
-                graph.populate_predecessor_lists()
-                graph.mark_uncachable_from_assumed_equal()
+                            result_graph[vertex.names[
+                                ComparisonGraph.Side.RIGHT]] = vertex
+                result_graph.normalize()
+                result_graph.populate_predecessor_lists()
+                result_graph.mark_uncachable_from_assumed_equal()
                 missing_defs = simpll_result["missing-defs"] \
                     if "missing-defs" in simpll_result else None
         except yaml.YAMLError:
             pass
 
-        return first_out, second_out, graph, missing_defs
+        return first_out, second_out, result_graph, missing_defs
     except CalledProcessError:
         raise SimpLLException("Simplifying files failed")

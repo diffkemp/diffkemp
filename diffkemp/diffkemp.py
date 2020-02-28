@@ -236,8 +236,8 @@ def compare(args):
         else:
             group_dir = None
 
-        cache = None
-        simpll_cache = SimpLLCache(mkdtemp())
+        result_graph = None
+        cache = SimpLLCache(mkdtemp())
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
             new_fun_desc = new_snapshot.get_by_name(fun, group_name)
@@ -261,9 +261,9 @@ def compare(args):
             fun_result = functions_diff(
                 mod_first=old_fun_desc.mod, mod_second=new_fun_desc.mod,
                 fun_first=fun, fun_second=fun,
-                glob_var=glob_var, config=config, cache=cache,
-                simpll_cache=simpll_cache)
-            cache = fun_result.cache
+                glob_var=glob_var, config=config,
+                prev_result_graph=result_graph, function_cache=cache)
+            result_graph = fun_result.graph
 
             if fun_result is not None:
                 if args.regex_filter is not None:
