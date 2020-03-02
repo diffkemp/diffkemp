@@ -47,22 +47,10 @@ int main(int argc, const char **argv) {
                      config.ControlFlowOnly);
     config.refreshFunctions();
 
-    ComparisonResult Result;
+    OverallResult Result;
     simplifyModulesDiff(config, Result);
 
     reportOutput(config, Result);
-
-    // Split list of non-equal function pairs into two sets.
-    std::set<Function *> MainFunsFirst;
-    std::transform(Result.nonequalFuns.begin(),
-                   Result.nonequalFuns.end(),
-                   std::inserter(MainFunsFirst, MainFunsFirst.begin()),
-                   [](FunPair &p) { return p.first; });
-    std::set<Function *> MainFunsSecond;
-    std::transform(Result.nonequalFuns.begin(),
-                   Result.nonequalFuns.end(),
-                   std::inserter(MainFunsSecond, MainFunsSecond.begin()),
-                   [](FunPair &p) { return p.second; });
 
     // Write LLVM IR to output files
     writeIRToFile(*config.First, config.FirstOutFile);

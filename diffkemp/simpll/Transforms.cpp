@@ -16,6 +16,7 @@
 #include "DebugInfo.h"
 #include "DifferentialFunctionComparator.h"
 #include "ModuleComparator.h"
+#include "ResultsCache.h"
 #include "Utils.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/ControlFlowSlicer.h"
@@ -105,7 +106,7 @@ void preprocessModule(Module &Mod,
 /// 3. Using debug information to compute offsets of the corresponding GEP
 ///    indices. Offsets are stored inside LLVM metadata.
 /// 4. Removing bodies of functions that are syntactically equivalent.
-void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
+void simplifyModulesDiff(Config &config, OverallResult &Result) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies.
     AnalysisManager<Module, Function *> mam(false);
@@ -156,6 +157,7 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
                                                         config.FirstFun),
                  mam.getResult<CalledFunctionsAnalysis>(*config.Second,
                                                         config.SecondFun));
+    ResultsCache ResCache(config.CacheDir);
 
     // Compare functions for syntactical equivalence
     ModuleComparator modComp(*config.First,
@@ -163,6 +165,7 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
                              config.ControlFlowOnly,
                              config.PrintAsmDiffs,
                              &DI,
+                             &ResCache,
                              StructSizeMapL,
                              StructSizeMapR,
                              StructDIL,
@@ -174,13 +177,16 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << "Syntactic comparison results:\n");
         bool allEqual = true;
-        for (auto &funPair : modComp.ComparedFuns) {
-            if (funPair.second == ModuleComparator::NOT_EQUAL) {
+        for (auto &funPairResult : modComp.ComparedFuns) {
+            if (!funPairResult.first.first->isIntrinsic()
+                && !isSimpllAbstraction(funPairResult.first.first)) {
+                Result.functionResults.push_back(
+                        std::move(funPairResult.second));
+            }
+            if (funPairResult.second.kind == Result::Kind::NOT_EQUAL) {
                 allEqual = false;
-                Result.nonequalFuns.emplace_back(funPair.first.first,
-                                                 funPair.first.second);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << funPair.first.first->getName()
+                                dbgs() << funPairResult.first.first->getName()
                                        << " are syntactically different\n");
             }
         }
@@ -204,35 +210,5 @@ void simplifyModulesDiff(Config &config, ComparisonResult &Result) {
             }
         }
     }
-
     Result.missingDefs = modComp.MissingDefs;
-    Result.differingObjects = std::move(modComp.DifferingObjects);
-    Result.coveredFuns = modComp.CoveredFuns;
-}
-
-/// Recursively mark callees of a function with 'alwaysinline' attribute.
-void markCalleesAlwaysInline(Function &Fun,
-                             const std::set<Function *> IgnoreFuns) {
-    for (auto &BB : Fun) {
-        for (auto &Instr : BB) {
-            if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
-                auto CalledFun = CallInstr->getCalledFunction();
-                if (!CalledFun || CalledFun->isDeclaration()
-                    || CalledFun->isIntrinsic()
-                    || IgnoreFuns.find(CalledFun) != IgnoreFuns.end())
-                    continue;
-
-                if (CalledFun->hasFnAttribute(Attribute::AttrKind::NoInline))
-                    CalledFun->removeFnAttr(Attribute::AttrKind::NoInline);
-                if (!CalledFun->hasFnAttribute(
-                            Attribute::AttrKind::AlwaysInline)) {
-                    CalledFun->addFnAttr(Attribute::AttrKind::AlwaysInline);
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << "Inlining: "
-                                           << CalledFun->getName() << "\n");
-                    markCalleesAlwaysInline(*CalledFun, IgnoreFuns);
-                }
-            }
-        }
-    }
 }

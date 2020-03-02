@@ -28,21 +28,6 @@ typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
 
-/// Type for call stack entry: contains the called function and its call
-/// location (file and line).
-struct CallInfo {
-    std::string fun;
-    std::string file;
-    unsigned line;
-
-    // Default constructor needed for YAML serialisation.
-    CallInfo() {}
-    CallInfo(const std::string &fun, const std::string &file, unsigned int line)
-            : fun(fun), file(file), line(line) {}
-};
-/// Call stack - list of call entries
-typedef std::vector<CallInfo> CallStack;
-
 /// Extract called function from a called value. Handles situation when the
 /// called value is a bitcast.
 const Function *getCalledFunction(const Value *CalledValue);
@@ -75,10 +60,7 @@ std::string joinPath(StringRef DirName, StringRef FileName);
 
 /// Get absolute path to a file in which the given function is defined.
 /// Requires debug info to work correctly.
-std::string getFileForFun(Function *Fun);
-
-/// Get call stack for calling Dest from Src
-CallStack getCallStack(Function &Src, Function &Dest);
+std::string getFileForFun(const Function *Fun);
 
 /// Check if function has side-effect.
 bool hasSideEffect(const Function &Fun);

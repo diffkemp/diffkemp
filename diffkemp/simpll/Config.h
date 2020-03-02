@@ -57,6 +57,8 @@ class Config {
     // Output files
     std::string FirstOutFile;
     std::string SecondOutFile;
+    // Cache file directory.
+    std::string CacheDir;
 
     // Keep only control-flow related instructions
     bool ControlFlowOnly;

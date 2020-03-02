@@ -16,11 +16,26 @@ class Result:
         """
         NONE = 0
         EQUAL_SYNTAX = 1
-        EQUAL = 2
-        NOT_EQUAL = 3
-        UNKNOWN = 4
-        TIMEOUT = 5
-        ERROR = 6
+        ASSUMED_EQUAL = 2
+        EQUAL = 3
+        NOT_EQUAL = 4
+        UNKNOWN = 5
+        TIMEOUT = 6
+        ERROR = 7
+
+        @staticmethod
+        def from_string(string):
+            dictionary = {
+                "none": Result.Kind.NONE,
+                "equal-syntax": Result.Kind.EQUAL_SYNTAX,
+                "equal": Result.Kind.EQUAL,
+                "assumed-equal": Result.Kind.ASSUMED_EQUAL,
+                "not-equal": Result.Kind.NOT_EQUAL,
+                "unknown": Result.Kind.UNKNOWN,
+                "timeout": Result.Kind.TIMEOUT,
+                "error": Result.Kind.ERROR
+            }
+            return dictionary[string]
 
         def __str__(self):
             return self.name.lower().replace("_", " ")
@@ -46,6 +61,7 @@ class Result:
         self.second = Result.Entity(second_name)
         self.diff = None
         self.macro_diff = None
+        self.graph = None
         self.inner = dict()
 
     def __str__(self):
@@ -60,6 +76,10 @@ class Result:
         # The current result is joined with the inner result (the result with
         # a higher priority is chosen from the two).
         self.kind = Result.Kind(max(int(self.kind), int(result.kind)))
+        # The graph of the latest inner result is the graph of the outer one.
+        # Note: this is true because the graph is built incrementally, reusing
+        # the already known results from the previous comparison.
+        self.graph = result.graph
 
     def report_symbol_stat(self, show_errors=False):
         """
@@ -133,6 +153,7 @@ class Result:
                 unique_diffs.add(UniqueDiff(inner_res))
 
         # Generate counts
+        compared = len(self.graph.vertices)
         total = len(unique_diffs)
         functions = len([r for r in unique_diffs
                          if r.res.first.diff_kind == "function"])
@@ -147,6 +168,7 @@ class Result:
         empty = len([r for r in unique_diffs if r.res.diff == ""])
 
         # Print statistics
+        print("Functions compared:      {}".format(compared))
         print("Total differences:       {}".format(total))
         if total == 0:
             return

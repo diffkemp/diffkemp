@@ -38,26 +38,10 @@ void preprocessModule(Module &Mod,
                       GlobalVariable *Var,
                       bool ControlFlowOnly);
 
-/// Structure to represent the output value of simplifyModulesDiff containing
-/// several vectors that are all outputs of ModuleComparator.
-struct ComparisonResult {
-    std::vector<FunPair> nonequalFuns;
-    std::vector<GlobalValuePair> missingDefs;
-    std::vector<std::unique_ptr<NonFunctionDifference>> differingObjects;
-    std::set<std::string> coveredFuns;
-};
-
 /// Simplify two corresponding modules for the purpose of their subsequent
 /// semantic difference analysis. Tries to remove all the code that is
 /// syntactically equal between the modules which should decrease the complexity
 /// of the semantic diff.
-void simplifyModulesDiff(Config &config, ComparisonResult &Result);
-
-/// Preprocessing transformations - run independently on each module at the
-/// end.
-/// \param Mod Module to simplify.
-/// \param Main Function that is to be compared in the module. Can be set to
-///             NULL, but specifying this optimizes the transformations.
-void postprocessModule(Module &Mod, const std::set<Function *> &MainFuns);
+void simplifyModulesDiff(Config &config, OverallResult &Result);
 
 #endif // DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H

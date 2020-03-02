@@ -101,6 +101,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     const DataLayout &LayoutL, &LayoutR;
 
+    mutable const DebugLoc *CurrentLocL, *CurrentLocR;
+
     ModuleComparator *ModComparator;
 
     /// Looks for inline assembly differences between the certain values.
