@@ -15,6 +15,7 @@
 #ifndef DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
 #define DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
 
+#include "Config.h"
 #include "DebugInfo.h"
 #include "Result.h"
 #include "ResultsCache.h"
@@ -30,7 +31,7 @@ using namespace llvm;
 class ModuleComparator {
     Module &First;
     Module &Second;
-    bool controlFlowOnly, showAsmDiffs;
+    const Config &config;
 
   public:
     /// Storing results of function comparisons.
@@ -51,23 +52,21 @@ class ModuleComparator {
 
     /// Cache used for dynamic lookup of already compared functions using
     /// data passed from DiffKemp.
-    ResultsCache *ResCache;
+    ResultsCache ResCache;
 
-    MacroDiffAnalysis *MacroDiffs;
+    /// Analysis of differences in macros
+    MacroDiffAnalysis MacroDiffs;
 
     ModuleComparator(Module &First,
                      Module &Second,
-                     bool controlFlowOnly,
-                     bool showAsmDiffs,
+                     const Config &config,
                      const DebugInfo *DI,
-                     ResultsCache *ResCache,
-                     MacroDiffAnalysis *MD,
                      StructureSizeAnalysis::Result &StructSizeMapL,
                      StructureSizeAnalysis::Result &StructSizeMapR,
                      StructureDebugInfoAnalysis::Result &StructDIMapL,
                      StructureDebugInfoAnalysis::Result &StructDIMapR)
-            : First(First), Second(Second), controlFlowOnly(controlFlowOnly),
-              showAsmDiffs(showAsmDiffs), DI(DI), ResCache(ResCache), MacroDiffs(MD),
+            : First(First), Second(Second), config(config), DI(DI),
+              ResCache(config.CacheDir), MacroDiffs(),
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
               StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR) {}
 

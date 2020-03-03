@@ -36,7 +36,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                          Result(FirstFun, SecondFun));
 
     // Check if the functions is in the ignored list.
-    if (ResCache->isFunctionPairCached(FirstFun, SecondFun)) {
+    if (ResCache.isFunctionPairCached(FirstFun, SecondFun)) {
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
         return;
     }
@@ -54,7 +54,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         if (hasSuffix(SecondFunName))
             SecondFunName = dropSuffix(SecondFunName);
 
-        if (controlFlowOnly) {
+        if (config.ControlFlowOnly) {
             // If checking control flow only, it suffices that one of the
             // functions is a declaration to treat them equal.
             if (FirstFunName == SecondFunName)
@@ -99,8 +99,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     }
 
     // Comparing functions with bodies using custom FunctionComparator.
-    DifferentialFunctionComparator fComp(
-            FirstFun, SecondFun, controlFlowOnly, showAsmDiffs, DI, this);
+    DifferentialFunctionComparator fComp(FirstFun, SecondFun, config, DI, this);
     int result = fComp.compare();
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
@@ -201,12 +200,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // Reset the function diff result
             ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
             // Re-run the comparison
-            DifferentialFunctionComparator fCompSecond(FirstFun,
-                                                       SecondFun,
-                                                       controlFlowOnly,
-                                                       showAsmDiffs,
-                                                       DI,
-                                                       this);
+            DifferentialFunctionComparator fCompSecond(
+                    FirstFun, SecondFun, config, DI, this);
             result = fCompSecond.compare();
             // If the functions are equal after the inlining and there is a
             // call to the inlined function, mark it as weak.

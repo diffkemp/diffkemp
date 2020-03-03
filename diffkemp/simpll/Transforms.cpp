@@ -158,17 +158,12 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                                                         config.FirstFun),
                  mam.getResult<CalledFunctionsAnalysis>(*config.Second,
                                                         config.SecondFun));
-    ResultsCache ResCache(config.CacheDir);
 
     // Compare functions for syntactical equivalence
-    MacroDiffAnalysis MD;
     ModuleComparator modComp(*config.First,
                              *config.Second,
-                             config.ControlFlowOnly,
-                             config.PrintAsmDiffs,
+                             config,
                              &DI,
-                             &ResCache,
-                             &MD,
                              StructSizeMapL,
                              StructSizeMapR,
                              StructDIL,
