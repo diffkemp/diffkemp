@@ -98,13 +98,15 @@ if [ "${DIFFKEMP_CHECK}" = true ]; then
     FIND_EXCLUSIONS=( -not -path "*llvm-lib/*" )
     if [ "${git_root}" = "${PWD}" ]; then
         START_PATH="diffkemp/"
+        TESTS_START_PATH="tests/unit_tests/simpll/"
     else
         START_PATH="${git_root}/diffkemp/"
+        TESTS_START_PATH="${git_root}/tests/unit_tests/simpll/"
     fi
 fi
 
 # Get filenames to process.
-FILENAMES=$(find "${START_PATH}" \
+FILENAMES=$(find "${START_PATH}" "${TESTS_START_PATH}" \
 "${FIND_EXCLUSIONS[@]}" "${FIND_OPTIONS[@]}" 2> /dev/null)
 
 # Check commands and directory files.

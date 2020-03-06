@@ -69,7 +69,33 @@ class Config {
     // Show call stacks for non-equal functions
     bool PrintCallStacks;
 
+    // Constructor for command-line use.
     Config();
+    // Constructor for other use than from the command line.
+    Config(std::string FirstFunName,
+           std::string SecondFunName,
+           std::string FirstModule,
+           std::string SecondModule,
+           std::string CacheDir,
+           bool ControlFlowOnly = false,
+           bool PrintAsmDiffs = true,
+           bool PrintCallStacks = true)
+            : First(parseIRFile(FirstModule, err, context_first)),
+              Second(parseIRFile(SecondModule, err, context_second)),
+              FirstOutFile("/dev/null"), SecondOutFile("/dev/null"),
+              CacheDir(CacheDir), ControlFlowOnly(ControlFlowOnly),
+              PrintAsmDiffs(PrintAsmDiffs), PrintCallStacks(PrintCallStacks) {}
+    // Constructor without module loading (for tests).
+    Config(std::string FirstFunName,
+           std::string SecondFunName,
+           std::string CacheDir,
+           bool ControlFlowOnly = false,
+           bool PrintAsmDiffs = true,
+           bool PrintCallStacks = true)
+            : First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
+              SecondOutFile("/dev/null"), CacheDir(CacheDir),
+              ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
+              PrintCallStacks(PrintCallStacks) {}
 
     void refreshFunctions();
 };

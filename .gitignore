@@ -6,6 +6,7 @@ __pycache__/
 # Build files
 .Python
 build/
+tests/unit_tests/simpll/runTests
 
 # Distribution / packaging
 .Python
