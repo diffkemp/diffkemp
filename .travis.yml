@@ -80,5 +80,5 @@ before_script:
   - rhel-kernel-get/rhel-kernel-get.py 4.11 --output-dir kernel
 
 script:
+  - tests/unit_tests/simpll/runTests
   - pytest tests
-
