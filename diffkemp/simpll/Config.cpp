@@ -46,6 +46,9 @@ cl::opt<bool> PrintCallstacksOpt(
 cl::opt<bool>
         VerboseOpt("verbose",
                    cl::desc("Show verbose output (debugging information)."));
+cl::opt<bool> VerboseMacrosOpt("verbose-macros",
+                               cl::desc("Show debugging information for "
+                                        "discovering macro differences"));
 cl::opt<bool> PrintAsmDiffsOpt(
         "print-asm-diffs",
         cl::desc("Print raw differences in inline assembly code "
@@ -99,10 +102,25 @@ Config::Config()
         // Parse --cache-dir option - directory with cache diles from DiffKemp.
         CacheDir = CacheDirOpt;
     }
+
+    std::vector<std::string> debugTypes;
     if (VerboseOpt) {
         // Enable debugging output in passes
+        debugTypes.emplace_back(DEBUG_SIMPLL);
+    }
+    if (VerboseMacrosOpt) {
+        // Enable debugging output when finding macro differences
+        debugTypes.emplace_back(DEBUG_SIMPLL_MACROS);
+    }
+    if (!debugTypes.empty()) {
         DebugFlag = true;
-        setCurrentDebugType(DEBUG_SIMPLL);
+        // Transform vector of strings into char ** (array of char *)
+        std::vector<const char *> types;
+        std::transform(debugTypes.begin(),
+                       debugTypes.end(),
+                       std::back_inserter(types),
+                       [](const std::string &s) { return s.c_str(); });
+        setCurrentDebugTypes(&types[0], debugTypes.size());
     }
 }
 

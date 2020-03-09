@@ -31,12 +31,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
   public:
     DifferentialFunctionComparator(const Function *F1,
                                    const Function *F2,
-                                   bool controlFlowOnly,
-                                   bool showAsmDiff,
+                                   const Config &config,
                                    const DebugInfo *DI,
                                    ModuleComparator *MC)
-            : FunctionComparator(F1, F2, nullptr), DI(DI),
-              controlFlowOnly(controlFlowOnly), showAsmDiff(showAsmDiff),
+            : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
               LayoutL(F1->getParent()->getDataLayout()),
               LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
 
@@ -96,8 +94,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                       const Value *Const) const;
 
   private:
+    const Config &config;
     const DebugInfo *DI;
-    bool controlFlowOnly, showAsmDiff;
 
     const DataLayout &LayoutL, &LayoutR;
 

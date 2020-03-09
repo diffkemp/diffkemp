@@ -249,7 +249,7 @@ int DifferentialFunctionComparator::cmpOperations(
                         }
                     }
 
-                    if (Result && controlFlowOnly
+                    if (Result && config.ControlFlowOnly
                         && abs(CL->getNumOperands() - CR->getNumOperands())
                                    == 1) {
                         needToCmpOperands = false;
@@ -280,7 +280,7 @@ int DifferentialFunctionComparator::cmpOperations(
     if (Result) {
         // Do not make difference between signed and unsigned for control flow
         // only
-        if (controlFlowOnly && isa<ICmpInst>(L) && isa<ICmpInst>(R)) {
+        if (config.ControlFlowOnly && isa<ICmpInst>(L) && isa<ICmpInst>(R)) {
             auto *ICmpL = dyn_cast<ICmpInst>(L);
             auto *ICmpR = dyn_cast<ICmpInst>(R);
             if (ICmpL->getUnsignedPredicate()
@@ -365,8 +365,9 @@ int DifferentialFunctionComparator::cmpOperations(
                 findTypeDifferences(FL, FR, L->getFunction(), R->getFunction());
             }
         }
+        auto macroDiffs = ModComparator->MacroDiffs.findMacroDifferences(L, R);
         ModComparator->ComparedFuns.at({FnL, FnR})
-                .addDifferingObjects(findMacroDifferences(L, R));
+                .addDifferingObjects(std::move(macroDiffs));
     }
 
     return Result;
@@ -453,8 +454,10 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
     // First look whether this is the case described above.
     auto LineL = extractLineFromLocation(L->getDebugLoc());
     auto LineR = extractLineFromLocation(R->getDebugLoc());
-    auto MacrosL = getAllMacrosAtLocation(L->getDebugLoc(), L->getModule());
-    auto MacrosR = getAllMacrosAtLocation(R->getDebugLoc(), R->getModule());
+    auto &MacrosL = ModComparator->MacroDiffs.getAllMacroUsesAtLocation(
+            L->getDebugLoc(), 0);
+    auto &MacrosR = ModComparator->MacroDiffs.getAllMacroUsesAtLocation(
+            R->getDebugLoc(), 0);
     std::string NameL;
     std::string NameR;
     if (isa<CallInst>(L))
@@ -551,7 +554,7 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
 /// Check if the given operation can be ignored (it does not affect semantics)
 /// for control flow only diffs.
 bool DifferentialFunctionComparator::mayIgnore(const User *Inst) const {
-    if (controlFlowOnly)
+    if (config.ControlFlowOnly)
         return isa<AllocaInst>(Inst) || isCast(Inst);
     else {
         if (isa<AllocaInst>(Inst))
@@ -658,18 +661,20 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
     // Use the appropriate C source call argument extraction function depending
     // on whether it is an inline assembly call or not.
     if (CFL->getName().startswith(SimpllInlineAsmPrefix))
-        CArgsL = findInlineAssemblySourceArguments(
-                CIL->getDebugLoc(), CIL->getModule(), getInlineAsmString(CFL));
+        CArgsL = findInlineAssemblySourceArguments(CIL->getDebugLoc(),
+                                                   getInlineAsmString(CFL),
+                                                   &ModComparator->MacroDiffs);
     else
         CArgsL = findFunctionCallSourceArguments(
-                CIL->getDebugLoc(), CIL->getModule(), CFL->getName());
+                CIL->getDebugLoc(), CFL->getName(), &ModComparator->MacroDiffs);
 
     if (CFR->getName().startswith(SimpllInlineAsmPrefix))
-        CArgsR = findInlineAssemblySourceArguments(
-                CIR->getDebugLoc(), CIR->getModule(), getInlineAsmString(CFR));
+        CArgsR = findInlineAssemblySourceArguments(CIR->getDebugLoc(),
+                                                   getInlineAsmString(CFR),
+                                                   &ModComparator->MacroDiffs);
     else
         CArgsR = findFunctionCallSourceArguments(
-                CIR->getDebugLoc(), CIR->getModule(), CFL->getName());
+                CIR->getDebugLoc(), CFL->getName(), &ModComparator->MacroDiffs);
 
     if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
         if (mayIgnoreMacro(CArgsL[i]) && mayIgnoreMacro(CArgsR[i])
@@ -791,13 +796,15 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                     if (Res) {
                         // Try to find macros that could be causing the
                         // difference
+                        auto macroDiffs =
+                                ModComparator->MacroDiffs.findMacroDifferences(
+                                        &*InstL, &*InstR);
                         ModComparator->ComparedFuns.at({FnL, FnR})
-                                .addDifferingObjects(
-                                        findMacroDifferences(&*InstL, &*InstR));
+                                .addDifferingObjects(std::move(macroDiffs));
 
                         // Try to find assembly functions causing the difference
                         if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)
-                            && showAsmDiff) {
+                            && config.PrintAsmDiffs) {
                             ModComparator->ComparedFuns.at({FnL, FnR})
                                     .addDifferingObjects(findAsmDifference(
                                             dyn_cast<CallInst>(&*InstL),
@@ -1008,6 +1015,15 @@ int DifferentialFunctionComparator::cmpFieldAccess(const Function *L,
     // be also equal in machine code).
     uint64_t OffsetL = 0, OffsetR = 0;
 
+    // If both field access abstractions contain just a single GEP, these can be
+    // compared normally using the cmpGEPs method.
+    if (L->front().size() == 1 && R->front().size() == 1
+        && isa<GetElementPtrInst>(L->front().front())
+        && isa<GetElementPtrInst>(R->front().front())) {
+        return cmpGEPs(dyn_cast<GEPOperator>(&L->front().front()),
+                       dyn_cast<GEPOperator>(&R->front().front()));
+    }
+
     if (!accumulateAllOffsets(L->front(), OffsetL)
         || !accumulateAllOffsets(R->front(), OffsetR))
         return 1;
@@ -1091,7 +1107,7 @@ int DifferentialFunctionComparator::cmpConstants(const Constant *L,
     if (Result == 0)
         return Result;
 
-    if (controlFlowOnly) {
+    if (config.ControlFlowOnly) {
         // Look whether the constants is a cast ConstantExpr
         const ConstantExpr *UEL = dyn_cast<ConstantExpr>(L);
         const ConstantExpr *UER = dyn_cast<ConstantExpr>(R);
@@ -1184,13 +1200,13 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
 
     // Compare integer types (except the boolean type) as the same when
     // comparing the control flow only.
-    if (L->isIntegerTy() && R->isIntegerTy() && controlFlowOnly) {
+    if (L->isIntegerTy() && R->isIntegerTy() && config.ControlFlowOnly) {
         if (L->getIntegerBitWidth() == 1 || R->getIntegerBitWidth() == 1)
             return !(L->getIntegerBitWidth() == R->getIntegerBitWidth());
         return 0;
     }
 
-    if (!L->isArrayTy() || !R->isArrayTy() || !controlFlowOnly)
+    if (!L->isArrayTy() || !R->isArrayTy() || !config.ControlFlowOnly)
         return FunctionComparator::cmpTypes(L, R);
 
     ArrayType *AL = dyn_cast<ArrayType>(L);
@@ -1203,7 +1219,7 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
 int DifferentialFunctionComparator::cmpAPInts(const APInt &L,
                                               const APInt &R) const {
     int Result = FunctionComparator::cmpAPInts(L, R);
-    if (!controlFlowOnly || !Result) {
+    if (!config.ControlFlowOnly || !Result) {
         return Result;
     } else {
         // The function ugt uses APInt::compare, which can compare only integers
