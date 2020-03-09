@@ -7,7 +7,7 @@ Summary:        A tool for analyzing differences in kernel functions
 
 License:        ASL 2.0
 URL:            https://github.com/viktormalik/diffkemp
-Source0:        https://github.com/viktormalik/diffkemp/archive/v%{version}.tar.gz#/%{name}-%{version}-%{release}.tar.gz
+Source0:        https://github.com/viktormalik/diffkemp/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 Source1:        %pypi_source llvmcpy %{llvmcpy_version}
 
 BuildRequires:  gcc gcc-c++ cmake ninja-build
