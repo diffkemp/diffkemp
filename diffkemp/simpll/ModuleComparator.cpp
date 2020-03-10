@@ -209,26 +209,14 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 if (InlinedFunFirst)
                     for (const CallInfo &CI :
                          ComparedFuns.at({FirstFun, SecondFun}).First.calls) {
-                        if (CI.fun == InlinedFunFirst->getName().str()) {
-                            CallInfo NewCI = CI;
-                            ComparedFuns.at({FirstFun, SecondFun})
-                                    .First.calls.erase(CI);
-                            NewCI.weak = true;
-                            ComparedFuns.at({FirstFun, SecondFun})
-                                    .First.calls.insert(NewCI);
-                        }
+                        if (CI.fun == InlinedFunFirst->getName().str())
+                            CI.weak = true;
                     }
                 if (InlinedFunSecond)
                     for (const CallInfo &CI :
                          ComparedFuns.at({FirstFun, SecondFun}).Second.calls) {
-                        if (CI.fun == InlinedFunSecond->getName().str()) {
-                            CallInfo NewCI = CI;
-                            ComparedFuns.at({FirstFun, SecondFun})
-                                    .Second.calls.erase(CI);
-                            NewCI.weak = true;
-                            ComparedFuns.at({FirstFun, SecondFun})
-                                    .Second.calls.insert(NewCI);
-                        }
+                        if (CI.fun == InlinedFunSecond->getName().str())
+                            CI.weak = true;
                     }
             }
 

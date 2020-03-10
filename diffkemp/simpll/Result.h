@@ -30,7 +30,7 @@ struct CallInfo {
     std::string fun;
     std::string file;
     unsigned line;
-    bool weak;
+    mutable bool weak;
 
     // Default constructor needed for YAML serialisation.
     CallInfo() {}
