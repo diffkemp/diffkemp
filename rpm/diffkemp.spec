@@ -1,7 +1,7 @@
 %define llvmcpy_version 0.1.5
 
 Name:           diffkemp
-Version:        0.2.0
+Version:        0.2.1
 Release:        1%{?dist}
 Summary:        A tool for analyzing differences in kernel functions
 
@@ -74,6 +74,10 @@ cd ..
 
 
 %changelog
+* Thu Mar 12 2020 Viktor Malik <vmalik@redhat.com> - 0.2.1-1
+- Require diffutils
+- Bugfix
+
 * Mon Mar 09 2020 Viktor Malik <vmalik@redhat.com> - 0.2.0-1
 - Detection of differences in types
 - Improved snapshot format
