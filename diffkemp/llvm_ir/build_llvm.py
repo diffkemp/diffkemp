@@ -15,9 +15,10 @@ class LlvmKernelBuilder:
     """
     def __init__(self, kernel_dir):
         self.kernel_dir = os.path.abspath(kernel_dir)
-        # GCC compiler header
-        self.gcc_compiler_header = os.path.join(self.kernel_dir,
-                                                "include/linux/compiler-gcc.h")
+        # Compiler headers (containing 'asm goto' constructions)
+        self.compiler_headers = [os.path.join(self.kernel_dir, h) for h in
+                                 ["include/linux/compiler-gcc.h",
+                                  "include/linux/compiler_types.h"]]
         # Prepare kernel so that it can be built with Clang
         self.initialize()
         # Caching built modules to reuse them
@@ -40,24 +41,26 @@ class LlvmKernelBuilder:
         The original GCC compiler header is kept since it is needed when
         compiling the kernel using GCC.
         """
-        command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
-                   self.gcc_compiler_header]
-        try:
-            check_call(command)
-        except CalledProcessError:
-            pass
+        for header in self.compiler_headers:
+            command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
+                       header]
+            try:
+                check_call(command)
+            except CalledProcessError:
+                pass
 
     def _enable_asm_goto(self):
         """
         Restore the original 'asm goto' semantics.
         This is done by restoring the GCC header from backup.
         """
-        command = ["sed", "-i", "s/asm (\"goto(\" #x \")\")/asm goto(x)/g",
-                   self.gcc_compiler_header]
-        try:
-            check_call(command)
-        except CalledProcessError:
-            pass
+        for header in self.compiler_headers:
+            command = ["sed", "-i", "s/asm (\"goto(\" #x \")\")/asm goto(x)/g",
+                       header]
+            try:
+                check_call(command)
+            except CalledProcessError:
+                pass
 
     @staticmethod
     def _strip_bash_quotes(gcc_param):
@@ -165,22 +168,37 @@ class LlvmKernelBuilder:
             os.remove(obj)
 
     @staticmethod
-    def _extract_gcc_command(command):
+    def _extract_command(command, programs):
         """
-        Extract a single gcc or ld command from a list of commands separated
-        by ;.
+        Extract a single command running one of the specified programs from
+        a list of commands separated by ;.
         """
         for c in command.split(";"):
-            if c.lstrip().startswith("gcc") or c.lstrip().startswith("ld"):
+            if any([c.lstrip().startswith(prog) for prog in programs]):
                 return c.lstrip()
         return None
 
     @staticmethod
-    def _extract_gcc_command_list(commands):
+    def _extract_gcc_command(command):
+        """
+        Extract a single gcc command from a list of commands separated by ;.
+        """
+        return LlvmKernelBuilder._extract_command(command, ["gcc"])
+
+    @staticmethod
+    def _extract_gcc_or_ld_command(command):
+        """
+        Extract a single gcc or ld command from a list of commands separated
+        by ;.
+        """
+        return LlvmKernelBuilder._extract_command(command, ["gcc", "ld"])
+
+    @staticmethod
+    def _extract_gcc_or_ld_command_list(commands):
         """Extract all gcc and ld commands from a list of commands."""
         result = []
         for c in commands:
-            command = LlvmKernelBuilder._extract_gcc_command(c)
+            command = LlvmKernelBuilder._extract_gcc_or_ld_command(c)
             if command:
                 result.append(command)
         return result
@@ -244,7 +262,7 @@ class LlvmKernelBuilder:
         try:
             output = check_output(command).decode("utf-8")
             return file_name, \
-                self._extract_gcc_command_list(output.splitlines())
+                self._extract_gcc_or_ld_command_list(output.splitlines())
         except CalledProcessError as e:
             if e.returncode == 2:
                 # If the target does not exist, replace "_" by "-" and try
@@ -253,8 +271,8 @@ class LlvmKernelBuilder:
                 command[4] = "{}.ko".format(file_name)
                 try:
                     output = check_output(command).decode("utf-8")
-                    return file_name, \
-                        self._extract_gcc_command_list(output.splitlines())
+                    return file_name, self._extract_gcc_or_ld_command_list(
+                        output.splitlines())
                 except CalledProcessError:
                     raise BuildException(
                         "Could not build module {}".format(mod_name))
