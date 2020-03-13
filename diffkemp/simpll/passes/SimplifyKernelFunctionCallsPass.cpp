@@ -29,7 +29,7 @@
 /// Checks if the argument is of integer type.
 void replaceArgByZero(CallInst *Call, unsigned index) {
     auto OldArg = dyn_cast<ConstantInt>(Call->getArgOperand(index));
-    if (OldArg->getType()->isIntegerTy()) {
+    if (OldArg && OldArg->getType()->isIntegerTy()) {
         Call->setArgOperand(index,
                             ConstantInt::get(OldArg->getType(),
                                              APInt(OldArg->getBitWidth(), 0)));
@@ -40,7 +40,7 @@ void replaceArgByZero(CallInst *Call, unsigned index) {
 /// Checks if the argument is of integer type.
 void replaceArgByNull(CallInst *Call, unsigned index) {
     auto OldArg = Call->getArgOperand(index);
-    if (OldArg->getType()->isPointerTy()) {
+    if (OldArg && OldArg->getType()->isPointerTy()) {
         Call->setArgOperand(index,
                             ConstantPointerNull::get(
                                     dyn_cast<PointerType>(OldArg->getType())));
@@ -110,6 +110,7 @@ PreservedAnalyses
                 if (CalledFun->getName() == "warn_slowpath_null"
                     || CalledFun->getName() == "warn_slowpath_fmt"
                     || CalledFun->getName() == "__might_sleep"
+                    || CalledFun->getName() == "__might_fault"
                     || CalledFun->getName() == "acpi_ut_predefined_warning") {
                     replaceArgByNull(CallInstr, 0);
                     replaceArgByZero(CallInstr, 1);
