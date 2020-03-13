@@ -981,6 +981,7 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
             // Externally defined constants (those without initializer
             // and with different names) need to have their definitions linked.
             ModComparator->MissingDefs.push_back({GVarL, GVarR});
+            return 1;
         }
 
         else
