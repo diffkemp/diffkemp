@@ -15,6 +15,7 @@ jobs:
         - sudo update-alternatives --install /usr/local/bin/clang-format clang-format /usr/bin/clang-format-$LLVM_VERSION 100
         - export PATH=`echo $PATH | sed -e 's#:/usr/local/clang-7.0.0/bin##'`
       install:
+        - pip3 install -r requirements.txt
       before_script:
       script:
         - flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
