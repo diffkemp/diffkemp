@@ -84,7 +84,9 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         missing_defs = None
         try:
             result_graph = ComparisonGraph()
-            simpll_result = yaml.safe_load(simpll_out)
+            yaml_loader = (yaml.CSafeLoader if "CSafeLoader" in yaml.__dict__
+                           else yaml.SafeLoader)
+            simpll_result = yaml.load(simpll_out, Loader=yaml_loader)
             if simpll_result is not None:
                 if "function-results" in simpll_result:
                     for fun_result in simpll_result["function-results"]:
