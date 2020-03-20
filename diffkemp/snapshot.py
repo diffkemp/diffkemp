@@ -188,14 +188,19 @@ class Snapshot:
             self.kernel_source = KernelSource(yaml_dict["source_kernel_dir"],
                                               True)
 
-        for g in yaml_dict["list"]:
+        if "sysctl" in yaml_dict["list"][0]:
+            self.kind = "sysctl"
+            groups = yaml_dict["list"]
+        else:
+            groups = [yaml_dict["list"]]
+        for g in groups:
             if "sysctl" in g:
                 self.kind = "sysctl"
                 group = g["sysctl"]
                 functions = g["functions"]
             else:
                 group = None
-                functions = yaml_dict["list"]
+                functions = g
             self.fun_groups[group] = self.FunctionGroup()
             for f in functions:
                 self.add_fun(f["name"],
