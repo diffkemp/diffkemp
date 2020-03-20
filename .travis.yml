@@ -46,6 +46,7 @@ addons:
       - kmod
       - libelf-dev
       - libssl-dev
+      - libyaml-dev
       - ninja-build
       - rpm2cpio
 

@@ -177,7 +177,9 @@ class Snapshot:
         relative to the root directory.
         :param yaml_file: Contents of the YAML file.
         """
-        yaml_file = yaml.safe_load(yaml_file)
+        yaml_loader = (yaml.CSafeLoader if "CSafeLoader" in yaml.__dict__
+                       else yaml.SafeLoader)
+        yaml_file = yaml.load(yaml_file, Loader=yaml_loader)
         yaml_dict = yaml_file[0]
 
         self.created_time = yaml_dict["created_time"]
