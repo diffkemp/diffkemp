@@ -30,6 +30,7 @@ class KernelSource:
         self.kernel_dir = os.path.abspath(kernel_dir)
         self.builder = LlvmKernelBuilder(kernel_dir) if with_builder else None
         self.modules = dict()
+        self.cscope_cache = dict()
 
     def initialize(self):
         """
@@ -106,6 +107,9 @@ class KernelSource:
                            usage.
         :return: List of found cscope entries.
         """
+        if (symbol, definition) in self.cscope_cache:
+            return self.cscope_cache[(symbol, definition)]
+
         self.build_cscope_database()
         try:
             command = ["cscope", "-d", "-L"]
@@ -117,8 +121,10 @@ class KernelSource:
             with open(os.devnull, "w") as devnull:
                 cscope_output = check_output(command, stderr=devnull).decode(
                     'utf-8')
-            return [l for l in cscope_output.splitlines() if
-                    l.split()[0].endswith("c")]
+            result = [l for l in cscope_output.splitlines() if
+                      l.split()[0].endswith("c")]
+            self.cscope_cache[(symbol, definition)] = result
+            return result
         except CalledProcessError:
             return []
 
