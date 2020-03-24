@@ -25,4 +25,7 @@
 /// \param Result The overall result of the comparison
 void reportOutput(Config &config, OverallResult &Result);
 
+/// Report the overall result in YAML format to a string.
+std::string reportOutputToString(Config &config, OverallResult &result);
+
 #endif // DIFFKEMP_SIMPLL_OUTPUT_H

@@ -76,15 +76,15 @@ class Config {
            std::string SecondFunName,
            std::string FirstModule,
            std::string SecondModule,
+           std::string FirstOutFile,
+           std::string SecondOutFile,
            std::string CacheDir,
+           std::string Variable = "",
            bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
-           bool PrintCallStacks = true)
-            : First(parseIRFile(FirstModule, err, context_first)),
-              Second(parseIRFile(SecondModule, err, context_second)),
-              FirstOutFile("/dev/null"), SecondOutFile("/dev/null"),
-              CacheDir(CacheDir), ControlFlowOnly(ControlFlowOnly),
-              PrintAsmDiffs(PrintAsmDiffs), PrintCallStacks(PrintCallStacks) {}
+           bool PrintCallStacks = true,
+           bool Verbose = false,
+           bool VerboseMacros = false);
     // Constructor without module loading (for tests).
     Config(std::string FirstFunName,
            std::string SecondFunName,
@@ -92,10 +92,14 @@ class Config {
            bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true)
-            : First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
+            : First(nullptr), Second(nullptr), FirstFunName(FirstFunName),
+              SecondFunName(SecondFunName), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
               ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
               PrintCallStacks(PrintCallStacks) {}
+
+    /// Sets debug types specified in the vector.
+    void setDebugTypes(std::vector<std::string> &debugTypes);
 
     void refreshFunctions();
 };

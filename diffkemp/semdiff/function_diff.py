@@ -215,7 +215,8 @@ def functions_diff(mod_first, mod_second,
                                if function_cache else None,
                                control_flow_only=config.control_flow_only,
                                print_asm_diffs=config.print_asm_diffs,
-                               verbose=config.verbosity)
+                               verbose=config.verbosity,
+                               use_ffi=config.use_ffi)
                 # Add the newly received results to the ignored functions file.
                 # Note: there won't be any duplicates, since all functions
                 # that were in the cache before will be marked as unknown.

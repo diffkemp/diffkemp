@@ -112,6 +112,11 @@ Config::Config()
         // Enable debugging output when finding macro differences
         debugTypes.emplace_back(DEBUG_SIMPLL_MACROS);
     }
+    setDebugTypes(debugTypes);
+}
+
+/// Sets debug types specified in the vector.
+void Config::setDebugTypes(std::vector<std::string> &debugTypes) {
     if (!debugTypes.empty()) {
         DebugFlag = true;
         // Transform vector of strings into char ** (array of char *)
@@ -122,6 +127,45 @@ Config::Config()
                        [](const std::string &s) { return s.c_str(); });
         setCurrentDebugTypes(&types[0], debugTypes.size());
     }
+}
+
+// Constructor for other use than from the command line.
+Config::Config(std::string FirstFunName,
+               std::string SecondFunName,
+               std::string FirstModule,
+               std::string SecondModule,
+               std::string FirstOutFile,
+               std::string SecondOutFile,
+               std::string CacheDir,
+               std::string Variable,
+               bool ControlFlowOnly,
+               bool PrintAsmDiffs,
+               bool PrintCallStacks,
+               bool Verbose,
+               bool VerboseMacros)
+        : First(parseIRFile(FirstModule, err, context_first)),
+          Second(parseIRFile(SecondModule, err, context_second)),
+          FirstFunName(FirstFunName), SecondFunName(SecondFunName),
+          FirstOutFile(FirstOutFile), SecondOutFile(SecondOutFile),
+          CacheDir(CacheDir), ControlFlowOnly(ControlFlowOnly),
+          PrintAsmDiffs(PrintAsmDiffs), PrintCallStacks(PrintCallStacks) {
+    refreshFunctions();
+
+    if (!Variable.empty()) {
+        FirstVar = First->getGlobalVariable(Variable, true);
+        SecondVar = Second->getGlobalVariable(Variable, true);
+    }
+
+    std::vector<std::string> debugTypes;
+    if (Verbose) {
+        // Enable debugging output in passes
+        debugTypes.emplace_back(DEBUG_SIMPLL);
+    }
+    if (VerboseMacros) {
+        // Enable debugging output when finding macro differences
+        debugTypes.emplace_back(DEBUG_SIMPLL_MACROS);
+    }
+    setDebugTypes(debugTypes);
 }
 
 void Config::refreshFunctions() {

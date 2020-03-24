@@ -7,6 +7,7 @@ __pycache__/
 .Python
 build/
 tests/unit_tests/simpll/runTests
+diffkemp/simpll/_simpll.c
 
 # Distribution / packaging
 .Python
@@ -126,3 +127,6 @@ diff-*/
 # RPM packages
 *.rpm
 *.srpm
+
+# Debugger files
+.gdb_history
