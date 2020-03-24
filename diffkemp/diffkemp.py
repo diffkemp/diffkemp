@@ -77,6 +77,9 @@ def __make_argument_parser():
                             help="show functions that are either unknown or \
                             ended with an error in statistics",
                             action="store_true")
+    compare_ap.add_argument("--enable-simpll-ffi",
+                            help="calls SimpLL through FFI",
+                            action="store_true")
     compare_ap.set_defaults(func=compare)
     return ap
 
@@ -223,7 +226,7 @@ def compare(args):
 
     config = Config(old_snapshot, new_snapshot, args.show_diff,
                     args.control_flow_only, args.print_asm_diffs,
-                    args.verbose, args.semdiff_tool)
+                    args.verbose, args.enable_simpll_ffi, args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old)
 

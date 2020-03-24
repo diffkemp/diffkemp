@@ -129,3 +129,12 @@ void reportOutput(Config &config, OverallResult &result) {
     llvm::yaml::Output output(outs());
     output << result;
 }
+
+/// Report the overall result in YAML format to a string.
+std::string reportOutputToString(Config &config, OverallResult &result) {
+    std::string DumpStr;
+    llvm::raw_string_ostream DumpStrm(DumpStr);
+    llvm::yaml::Output output(DumpStrm);
+    output << result;
+    return DumpStrm.str();
+}
