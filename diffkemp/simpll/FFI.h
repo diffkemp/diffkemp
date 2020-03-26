@@ -27,14 +27,33 @@ struct config {
     int VerboseMacros;
 };
 
-void runSimpLL(const char *ModL,
-               const char *ModR,
-               const char *ModLOut,
-               const char *ModROut,
-               const char *FunL,
-               const char *FunR,
-               struct config Conf,
-               char *Output);
+void *loadModule(const char *Path);
+
+void freeModule(void *ModRaw);
+
+/// Clones modules to get separate copies of them and runs the simplification
+/// and comparison on the copies.
+void cloneAndRunSimpLL(void *ModL,
+                       void *ModR,
+                       const char *ModLOut,
+                       const char *ModROut,
+                       const char *FunL,
+                       const char *FunR,
+                       struct config Conf,
+                       char *Output);
+
+/// Loads modules from the specified filers and runs the simplification and
+/// comparison on the loaded objects, which are discarded after the comparison.
+void parseAndRunSimpLL(const char *ModL,
+                       const char *ModR,
+                       const char *ModLOut,
+                       const char *ModROut,
+                       const char *FunL,
+                       const char *FunR,
+                       struct config Conf,
+                       char *Output);
+
+void shutdownSimpLL();
 
 #ifdef __cplusplus
 }

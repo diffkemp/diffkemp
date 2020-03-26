@@ -16,14 +16,29 @@ ffibuilder.cdef("""
         int VerboseMacros;
     };
 
-    void runSimpLL(const char *ModL,
-                   const char *ModR,
-                   const char *ModLOut,
-                   const char *ModROut,
-                   const char *FunL,
-                   const char *FunR,
-                   struct config Conf,
-                   char *Output);
+    void *loadModule(const char *Path);
+
+    void freeModule(void *ModRaw);
+
+    void cloneAndRunSimpLL(void *ModL,
+                           void *ModR,
+                           const char *ModLOut,
+                           const char *ModROut,
+                           const char *FunL,
+                           const char *FunR,
+                           struct config Conf,
+                           char *Output);
+
+    void parseAndRunSimpLL(const char *ModL,
+                           const char *ModR,
+                           const char *ModLOut,
+                           const char *ModROut,
+                           const char *FunL,
+                           const char *FunR,
+                           struct config Conf,
+                           char *Output);
+
+    void shutdownSimpLL();
 """)
 
 llvm_libs = ["irreader", "passes", "support"]

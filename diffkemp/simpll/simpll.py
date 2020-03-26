@@ -9,6 +9,15 @@ from subprocess import check_call, check_output, CalledProcessError
 import yaml
 
 
+class SimpLLModule:
+    """Represents a Module class in LLVM."""
+    def __init__(self, path):
+        self.pointer = lib.loadModule(ffi.new("char []", path.encode("ascii")))
+
+    def __del__(self):
+        lib.freeModule(self.pointer)
+
+
 class SimpLLException(Exception):
     pass
 
@@ -60,10 +69,11 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         fun_right = ffi.new("char []", fun_second.encode("ascii"))
 
         try:
-            lib.runSimpLL(module_left, module_right, module_left_out,
-                          module_right_out, fun_left, fun_right,
-                          conf_struct[0], output)
+            lib.parseAndRunSimpLL(module_left, module_right,
+                                  module_left_out, module_right_out, fun_left,
+                                  fun_right, conf_struct[0], output)
             simpll_out = ffi.string(output)
+            lib.shutdownSimpLL()
         except ffi.error:
             raise SimpLLException("Simplifying files failed")
     else:

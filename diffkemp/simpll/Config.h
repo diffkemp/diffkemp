@@ -76,8 +76,8 @@ class Config {
     // Constructor for other use than from the command line.
     Config(std::string FirstFunName,
            std::string SecondFunName,
-           std::string FirstModule,
-           std::string SecondModule,
+           std::unique_ptr<Module> FirstModule,
+           std::unique_ptr<Module> SecondModule,
            std::string FirstOutFile,
            std::string SecondOutFile,
            std::string CacheDir,
