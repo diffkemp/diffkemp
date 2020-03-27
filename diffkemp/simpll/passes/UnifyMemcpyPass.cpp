@@ -34,11 +34,17 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                                          Call->getArgOperand(1),
                                          Call->getArgOperand(2),
                                          0);
-#else
+#elif LLVM_VERSION_MAJOR < 10
                     builder.CreateMemCpy(Call->getArgOperand(0),
                                          0,
                                          Call->getArgOperand(1),
                                          0,
+                                         Call->getArgOperand(2));
+#else
+                    builder.CreateMemCpy(Call->getArgOperand(0),
+                                         MaybeAlign(0),
+                                         Call->getArgOperand(1),
+                                         MaybeAlign(0),
                                          Call->getArgOperand(2));
 #endif
                     // __memcpy returns pointer to the destination

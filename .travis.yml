@@ -26,6 +26,7 @@ jobs:
     - env: LLVM_VERSION=7
     - env: LLVM_VERSION=8
     - env: LLVM_VERSION=9
+    - env: LLVM_VERSION=10
 
 addons:
   apt:
@@ -37,6 +38,7 @@ addons:
       - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main"
       - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
       - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+      - sourceline: "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-10 main"
     packages:
       - bc
       - cpio
