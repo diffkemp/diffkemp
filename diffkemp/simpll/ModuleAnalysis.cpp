@@ -27,6 +27,7 @@
 #include "passes/ReduceFunctionMetadataPass.h"
 #include "passes/RemoveLifetimeCallsPass.h"
 #include "passes/RemoveUnusedReturnValuesPass.h"
+#include "passes/SeparateCallsToBitcastPass.h"
 #include "passes/SimplifyKernelFunctionCallsPass.h"
 #include "passes/SimplifyKernelGlobalsPass.h"
 #include "passes/StructHashGeneratorPass.h"
@@ -48,7 +49,7 @@
 ///    the value of the global variable.
 ///    This is only run if Var is specified.
 /// 2. Removal of the arguments of calls to printing functions.
-///    These arguments do not affect the code functionallity.
+///    These arguments do not affect the code functionality.
 ///    TODO: this should be switchable by a CLI option.
 /// 3. Unification of memcpy variants so that all use the llvm.memcpy intrinsic.
 /// 4. Dead code elimination.
@@ -81,6 +82,7 @@ void preprocessModule(Module &Mod,
     fpm.addPass(DCEPass{});
     fpm.addPass(LowerExpectIntrinsicPass{});
     fpm.addPass(ReduceFunctionMetadataPass{});
+    fpm.addPass(SeparateCallsToBitcastPass{});
 
     for (auto &Fun : Mod)
         fpm.run(Fun, fam);
