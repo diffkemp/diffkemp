@@ -22,6 +22,7 @@ jobs:
         - flake8 tests
         - tools/check-clang-format.sh -d
     - env: LLVM_VERSION=5.0
+      if: type = cron
     - env: LLVM_VERSION=6.0
     - env: LLVM_VERSION=7
     - env: LLVM_VERSION=8
