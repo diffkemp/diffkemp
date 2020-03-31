@@ -1,4 +1,4 @@
-//===------------ Transforms.cpp - Simplifications of modules -------------===//
+//===---- ModuleAnalysis.cpp - Transformation and comparison of modules ---===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -7,12 +7,12 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// This file contains implementations of functions simplifying two LLVM modules
-/// so that they can be more easily compared for semantic difference.
+/// This file contains implementations of functions doing the actual semantic
+/// comparison of functions and their dependencies in their modules.
 ///
 //===----------------------------------------------------------------------===//
 
-#include "Transforms.h"
+#include "ModuleAnalysis.h"
 #include "DebugInfo.h"
 #include "DifferentialFunctionComparator.h"
 #include "ModuleComparator.h"
@@ -36,6 +36,8 @@
 #include "passes/VarDependencySlicer.h"
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
 #include <llvm/Transforms/Scalar/DCE.h>
 #include <llvm/Transforms/Scalar/LowerExpectIntrinsic.h>
@@ -209,4 +211,36 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
         }
     }
     Result.missingDefs = modComp.MissingDefs;
+}
+
+/// Write LLVM IR of a module into a file.
+/// \param Mod LLVM module to write.
+/// \param FileName Path to the file to write to.
+void writeIRToFile(Module &Mod, StringRef FileName) {
+    std::error_code errorCode;
+    raw_fd_ostream stream(FileName, errorCode, sys::fs::F_None);
+    Mod.print(stream, nullptr);
+    stream.close();
+}
+
+/// Run pre-process passes on the modules specified in the config and compare
+/// them using simplifyModulesDiff. The output is written to files specified
+/// in config.
+void processAndCompare(Config &config, OverallResult &Result) {
+    // Run transformations
+    preprocessModule(*config.First,
+                     config.FirstFun,
+                     config.FirstVar,
+                     config.ControlFlowOnly);
+    preprocessModule(*config.Second,
+                     config.SecondFun,
+                     config.SecondVar,
+                     config.ControlFlowOnly);
+    config.refreshFunctions();
+
+    simplifyModulesDiff(config, Result);
+
+    // Write LLVM IR to output files
+    writeIRToFile(*config.First, config.FirstOutFile);
+    writeIRToFile(*config.Second, config.SecondOutFile);
 }
