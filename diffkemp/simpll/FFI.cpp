@@ -14,6 +14,7 @@
 
 #include "FFI.h"
 #include "Config.h"
+#include "ModuleAnalysis.h"
 #include "Output.h"
 #include <cstring>
 
@@ -39,19 +40,9 @@ void runSimpLL(const char *ModL,
                   Conf.PrintCallStacks,
                   Conf.Verbose,
                   Conf.VerboseMacros);
-    // Run transformations
-    preprocessModule(*config.First,
-                     config.FirstFun,
-                     config.FirstVar,
-                     config.ControlFlowOnly);
-    preprocessModule(*config.Second,
-                     config.SecondFun,
-                     config.SecondVar,
-                     config.ControlFlowOnly);
-    config.refreshFunctions();
 
     OverallResult Result;
-    simplifyModulesDiff(config, Result);
+    processAndCompare(config, Result);
 
     std::string outputString = reportOutputToString(config, Result);
     strcpy(Output, outputString.c_str());

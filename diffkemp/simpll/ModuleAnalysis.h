@@ -1,4 +1,4 @@
-//===------------- Transforms.h - Simplifications of modules --------------===//
+//===----- ModuleAnalysis.h - Transformation and comparison of modules ----===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -7,9 +7,8 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// This file contains the declaration of functions that do the actual
-/// simplification of programs so that they are later easier to be compared for
-/// semantic difference.
+/// This file contains the declaration of functions doing the actual semantic
+/// comparison of functions and their dependencies in their modules.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -43,5 +42,10 @@ void preprocessModule(Module &Mod,
 /// syntactically equal between the modules which should decrease the complexity
 /// of the semantic diff.
 void simplifyModulesDiff(Config &config, OverallResult &Result);
+
+/// Run pre-process passes on the modules specified in the config and compare
+/// them using simplifyModulesDiff. The output is written to files specified
+/// in config.
+void processAndCompare(Config &config, OverallResult &Result);
 
 #endif // DIFFKEMP_SIMPLL_INDEPENDENTPASSES_H
