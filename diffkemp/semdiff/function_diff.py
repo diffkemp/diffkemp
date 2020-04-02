@@ -201,11 +201,8 @@ def functions_diff(mod_first, mod_second,
                 first_simpl = ""
                 second_simpl = ""
                 curr_result_graph = prev_result_graph
-                missing_defs = []
             else:
                 # Simplify modules and get the output graph.
-                if function_cache:
-                    function_cache.rollback()
                 first_simpl, second_simpl, curr_result_graph, missing_defs = \
                     run_simpll(first=mod_first.llvm, second=mod_second.llvm,
                                fun_first=fun_first, fun_second=fun_second,
@@ -217,43 +214,41 @@ def functions_diff(mod_first, mod_second,
                                print_asm_diffs=config.print_asm_diffs,
                                verbose=config.verbosity,
                                use_ffi=config.use_ffi)
-                # Add the newly received results to the ignored functions file.
-                # Note: there won't be any duplicates, since all functions
-                # that were in the cache before will be marked as unknown.
-                if function_cache:
-                    function_cache.update([v for v in
-                                           curr_result_graph.vertices.values()
-                                           if v.result not in
-                                           [Result.Kind.UNKNOWN,
-                                            Result.Kind.ASSUMED_EQUAL]])
+                if missing_defs:
+                    # If there are missing function definitions, try to find
+                    # their implementation, link them to the current modules,
+                    # and rerun the simplification.
+                    for fun_pair in missing_defs:
+                        if "first" in fun_pair:
+                            if _link_symbol_def(config.snapshot_first,
+                                                mod_first,
+                                                fun_pair["first"]):
+                                simplify = True
 
-                if prev_result_graph:
+                        if "second" in fun_pair:
+                            if _link_symbol_def(config.snapshot_second,
+                                                mod_second,
+                                                fun_pair["second"]):
+                                simplify = True
+                if prev_result_graph and not simplify:
                     # Note: "curr_result_graph" is here the partial result
                     # graph, i.e. can contain unknown results that are known in
                     # the graph from the previous comparison.
                     prev_result_graph.absorb_graph(curr_result_graph)
                     curr_result_graph = prev_result_graph
-            objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
-                curr_result_graph.graph_to_fun_pair_list(fun_first, fun_second)
-            funs_to_compare = list([o for o in objects_to_compare
-                                    if o[0].diff_kind == "function"])
-            if funs_to_compare and missing_defs:
-                # If there are missing function definitions, try to find their
-                # implementation, link them to the current modules, and rerun
-                # the simplification.
-                for fun_pair in missing_defs:
-                    if "first" in fun_pair:
-                        if _link_symbol_def(config.snapshot_first, mod_first,
-                                            fun_pair["first"]):
-                            simplify = True
 
-                    if "second" in fun_pair:
-                        if _link_symbol_def(config.snapshot_second, mod_second,
-                                            fun_pair["second"]):
-                            simplify = True
+                    # Add the newly received results to the ignored functions
+                    # file.
+                    # Note: there won't be any duplicates, since all functions
+                    # that were in the cache before will be marked as unknown.
+                    if function_cache:
+                        function_cache.update(
+                            [v for v in curr_result_graph.vertices.values()
+                             if v.result not in [Result.Kind.UNKNOWN,
+                                                 Result.Kind.ASSUMED_EQUAL]])
 
-        if function_cache:
-            function_cache.reset_rollback_cache()
+        objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
+            curr_result_graph.graph_to_fun_pair_list(fun_first, fun_second)
 
         mod_first.restore_unlinked_llvm()
         mod_second.restore_unlinked_llvm()
