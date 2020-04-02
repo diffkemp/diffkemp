@@ -28,37 +28,47 @@ class LlvmKernelBuilder:
         """
         Prepare kernel so that it can be compiled into LLVM IR.
         """
-        self._disable_asm_goto()
+        self._disable_asm_features()
 
     def finalize(self):
         """Restore the kernel state."""
-        self._enable_asm_goto()
+        self._enable_asm_features()
 
-    def _disable_asm_goto(self):
+    def _disable_asm_features(self):
         """
-        Transform 'asm goto(x)' command into 'asm("goto(x)")'.
-        This is because LLVM does not support asm goto yet.
-        The original GCC compiler header is kept since it is needed when
-        compiling the kernel using GCC.
+        Disable asm features that are not supported by older versions of LLVM.
+        - transform 'asm goto(x)' command into 'asm("goto(x)")'
+        - disable usage of 'asm inline'
         """
         for header in self.compiler_headers:
-            command = ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
-                       header]
+            commands = [
+                ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
+                 header],
+                ["sed", "-i",
+                 "/#ifdef CONFIG_CC_HAS_ASM_INLINE/i "
+                 "#undef CONFIG_CC_HAS_ASM_INLINE \\/\\/ DiffKemp generated",
+                 header],
+            ]
             try:
-                check_call(command)
+                for command in commands:
+                    check_call(command)
             except CalledProcessError:
                 pass
 
-    def _enable_asm_goto(self):
-        """
-        Restore the original 'asm goto' semantics.
-        This is done by restoring the GCC header from backup.
-        """
+    def _enable_asm_features(self):
+        """Restore the original 'asm goto' and 'asm inline' semantics."""
         for header in self.compiler_headers:
-            command = ["sed", "-i", "s/asm (\"goto(\" #x \")\")/asm goto(x)/g",
-                       header]
+            commands = [
+                ["sed", "-i", "s/asm (\"goto(\" #x \")\")/asm goto(x)/g",
+                 header],
+                ["sed", "-i",
+                 "/#undef CONFIG_CC_HAS_ASM_INLINE "
+                 "\\/\\/ DiffKemp generated/d",
+                 header],
+            ]
             try:
-                check_call(command)
+                for command in commands:
+                    check_call(command)
             except CalledProcessError:
                 pass
 
