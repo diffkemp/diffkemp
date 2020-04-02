@@ -405,6 +405,8 @@ class KernelSource:
             # Copy linked sources and headers.
             for source in mod.get_included_sources():
                 src_source = source
+                if not src_source.startswith(self.kernel_dir):
+                    continue
                 dest_source = os.path.join(
                     target_dir, os.path.relpath(source, self.kernel_dir))
                 if not os.path.isfile(dest_source):

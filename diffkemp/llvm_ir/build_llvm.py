@@ -305,7 +305,7 @@ class LlvmKernelBuilder:
             cwd = os.getcwd()
             os.chdir(self.kernel_dir)
 
-            name = source_file[:-2]
+            name = os.path.relpath(source_file, self.kernel_dir)[:-2]
             try:
                 # Get GCC command for building the .o file
                 command = self.kbuild_object_command("{}.o".format(name))
