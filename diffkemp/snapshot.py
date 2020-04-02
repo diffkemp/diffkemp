@@ -183,6 +183,8 @@ class Snapshot:
         yaml_dict = yaml_file[0]
 
         self.created_time = yaml_dict["created_time"]
+        self.created_time = self.created_time.replace(
+            tzinfo=datetime.timezone.utc)
 
         if os.path.isdir(yaml_dict["source_kernel_dir"]):
             self.kernel_source = KernelSource(yaml_dict["source_kernel_dir"],
@@ -236,7 +238,7 @@ class Snapshot:
         # Create the top level YAML structure.
         yaml_dict = [{
             "diffkemp_version": pkg_resources.require("diffkemp")[0].version,
-            "created_time": datetime.datetime.utcnow(),
+            "created_time": datetime.datetime.now(datetime.timezone.utc),
             "kind": "function_list" if self.fun_kind is None else
             "systcl_group_list",
             "list": fun_yaml_dict[0]["functions"] if None in self.fun_groups
