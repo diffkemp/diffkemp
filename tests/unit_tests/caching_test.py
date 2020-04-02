@@ -360,24 +360,6 @@ def test_cache_file_add_function_pairs(cache_file):
         assert file.readlines() == ["f1:f2\n", "g1:g2\n"]
 
 
-def test_cache_file_rollback(cache_file):
-    """Tests cache file rollback for a single cache file."""
-    cache_file.add_function_pairs([("f1", "f2"), ("g1", "g2")])
-    cache_file.rollback()
-    with open(cache_file.filename, "r") as file:
-        assert file.readlines() == []
-
-
-def test_cache_file_reset_rollback_cache(cache_file):
-    """Tests rollback cache reset for a single cache file."""
-    cache_file.add_function_pairs([("f1", "f2"), ("g1", "g2")])
-    cache_file.reset_rollback_cache()
-    cache_file.add_function_pairs([("h1", "h2"), ("i1", "i2")])
-    cache_file.rollback()
-    with open(cache_file.filename, "r") as file:
-        assert file.readlines() == ["f1:f2\n", "g1:g2\n"]
-
-
 def test_cache_file_clear(cache_file):
     """Tests the clear method which deletes the cache file."""
     cache_file.add_function_pairs([("f1", "f2")])
@@ -413,29 +395,6 @@ def test_simpll_cache_update(simpll_cache, vertices):
     with open(os.path.join(simpll_cache.directory,
                            "$test$f1$1.ll:$test$f2$2.ll"), "r") as file:
         assert file.readlines() == ["f:f\n", "g:g\n"]
-    with open(os.path.join(simpll_cache.directory,
-                           "$test$f1$1.ll:$test$f2$3.ll"), "r") as file:
-        assert file.readlines() == ["h:h\n"]
-
-
-def test_simpll_cache_rollback(simpll_cache, vertices):
-    """Tests cache rollback for an entire SimpLLCache."""
-    simpll_cache.update(vertices)
-    simpll_cache.rollback()
-    for name in ["$test$f1$1.ll:$test$f2$2.ll", "$test$f1$1.ll:$test$f2$3.ll"]:
-        with open(os.path.join(simpll_cache.directory, name), "r") as file:
-            assert file.readlines() == []
-
-
-def test_simpll_cache_reset_rollback_cache(simpll_cache, vertices):
-    """Tests rollback cache reset for an entire SimpLLCache."""
-    simpll_cache.update(vertices[1:])
-    simpll_cache.reset_rollback_cache()
-    simpll_cache.update(vertices[:1])
-    simpll_cache.rollback()
-    with open(os.path.join(simpll_cache.directory,
-                           "$test$f1$1.ll:$test$f2$2.ll"), "r") as file:
-        assert file.readlines() == ["g:g\n"]
     with open(os.path.join(simpll_cache.directory,
                            "$test$f1$1.ll:$test$f2$3.ll"), "r") as file:
         assert file.readlines() == ["h:h\n"]

@@ -574,26 +574,12 @@ class SimpLLCache:
             self.filename = os.path.join(directory,
                                          left_module.replace("/", "$") + ":" +
                                          right_module.replace("/", "$"))
-            self.rollback_cache = 0
 
         def add_function_pairs(self, pairs):
             with open(self.filename, "a") as file:
                 for pair in pairs:
                     text = "{0}:{1}\n".format(pair[0], pair[1])
                     file.write(text)
-                    self.rollback_cache += len(text)
-
-        def rollback(self):
-            if self.rollback_cache > 0:
-                # For repeated comparison after linking; remove lines generated
-                # at the previous run from cache.
-                with open(self.filename, "a") as file:
-                    file.truncate(file.tell() - self.rollback_cache)
-                    file.seek(0, os.SEEK_END)
-                    self.reset_rollback_cache()
-
-        def reset_rollback_cache(self):
-            self.rollback_cache = 0
 
         def clear(self):
             os.remove(self.filename)
@@ -624,14 +610,6 @@ class SimpLLCache:
                                                               files[1])
             cache_file = self.cache_map[files]
             cache_file.add_function_pairs([v.names for v in vertices_in_file])
-
-    def rollback(self):
-        for cache_file in self.cache_map.values():
-            cache_file.rollback()
-
-    def reset_rollback_cache(self):
-        for cache_file in self.cache_map.values():
-            cache_file.reset_rollback_cache()
 
     def clear(self):
         for cache_file in self.cache_map.values():
