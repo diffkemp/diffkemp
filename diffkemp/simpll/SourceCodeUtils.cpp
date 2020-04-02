@@ -405,6 +405,8 @@ void MacroDiffAnalysis::collectMacroDefs(DICompileUnit *CompileUnit) {
 // Takes a string and the position of the first bracket and returns the
 // substring in the brackets.
 std::string getSubstringToMatchingBracket(std::string str, size_t position) {
+    if (position == std::string::npos)
+        return "";
     int bracketCounter = 0;
     std::string output;
 
