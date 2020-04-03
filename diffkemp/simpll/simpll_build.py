@@ -8,6 +8,7 @@ ffibuilder.cdef("""
     struct config {
         const char *CacheDir;
         const char *Variable;
+        int OutputLlvmIR;
         int ControlFlowOnly;
         int PrintAsmDiffs;
         int PrintCallStacks;

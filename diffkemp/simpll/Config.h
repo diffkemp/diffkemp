@@ -62,6 +62,8 @@ class Config {
     // Cache file directory.
     std::string CacheDir;
 
+    // Save the simplified IR of the module to a file.
+    bool OutputLlvmIR;
     // Keep only control-flow related instructions
     bool ControlFlowOnly;
     // Print raw differences in inline assembly.
@@ -80,6 +82,7 @@ class Config {
            std::string SecondOutFile,
            std::string CacheDir,
            std::string Variable = "",
+           bool OutputLlvmIR = false,
            bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,

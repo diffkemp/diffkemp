@@ -63,6 +63,9 @@ def __make_argument_parser():
                             help="specify root dirs for the compared kernels")
     compare_ap.add_argument("--function", "-f",
                             help="compare only selected function")
+    compare_ap.add_argument("--output-llvm-ir",
+                            help="output each simplified module to a file",
+                            action="store_true")
     compare_ap.add_argument("--control-flow-only",
                             help=SUPPRESS,
                             action="store_true")
@@ -225,8 +228,9 @@ def compare(args):
         new_snapshot.filter([args.function])
 
     config = Config(old_snapshot, new_snapshot, args.show_diff,
-                    args.control_flow_only, args.print_asm_diffs,
-                    args.verbose, args.enable_simpll_ffi, args.semdiff_tool)
+                    args.output_llvm_ir, args.control_flow_only,
+                    args.print_asm_diffs, args.verbose, args.enable_simpll_ffi,
+                    args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old)
 
