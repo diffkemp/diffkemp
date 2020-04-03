@@ -29,6 +29,9 @@ cl::opt<std::string> VariableOpt(
         "var",
         cl::value_desc("variable"),
         cl::desc("Do analysis w.r.t. the value of the given variable"));
+cl::opt<bool> OutputLlvmIROpt(
+        "output-llvm-ir",
+        cl::value_desc("Output each simplified module to a file."));
 cl::opt<std::string>
         SuffixOpt("suffix",
                   cl::value_desc("suffix"),
@@ -68,8 +71,8 @@ Config::Config()
         : First(parseIRFile(FirstFileOpt, err, context_first)),
           Second(parseIRFile(SecondFileOpt, err, context_second)),
           FirstOutFile(FirstFileOpt), SecondOutFile(SecondFileOpt),
-          ControlFlowOnly(ControlFlowOpt), PrintAsmDiffs(PrintAsmDiffsOpt),
-          PrintCallStacks(PrintCallstacksOpt) {
+          OutputLlvmIR(OutputLlvmIROpt), ControlFlowOnly(ControlFlowOpt),
+          PrintAsmDiffs(PrintAsmDiffsOpt), PrintCallStacks(PrintCallstacksOpt) {
     if (!FunctionOpt.empty()) {
         // Parse --fun option - find functions with given names.
         // The option can be either single function name (same for both modules)
@@ -138,6 +141,7 @@ Config::Config(std::string FirstFunName,
                std::string SecondOutFile,
                std::string CacheDir,
                std::string Variable,
+               bool OutputLlvmIR,
                bool ControlFlowOnly,
                bool PrintAsmDiffs,
                bool PrintCallStacks,
@@ -147,8 +151,9 @@ Config::Config(std::string FirstFunName,
           Second(parseIRFile(SecondModule, err, context_second)),
           FirstFunName(FirstFunName), SecondFunName(SecondFunName),
           FirstOutFile(FirstOutFile), SecondOutFile(SecondOutFile),
-          CacheDir(CacheDir), ControlFlowOnly(ControlFlowOnly),
-          PrintAsmDiffs(PrintAsmDiffs), PrintCallStacks(PrintCallStacks) {
+          CacheDir(CacheDir), OutputLlvmIR(OutputLlvmIR),
+          ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
+          PrintCallStacks(PrintCallStacks) {
     refreshFunctions();
 
     if (!Variable.empty()) {

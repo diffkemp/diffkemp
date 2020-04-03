@@ -240,7 +240,9 @@ void processAndCompare(Config &config, OverallResult &Result) {
 
     simplifyModulesDiff(config, Result);
 
-    // Write LLVM IR to output files
-    writeIRToFile(*config.First, config.FirstOutFile);
-    writeIRToFile(*config.Second, config.SecondOutFile);
+    if (config.OutputLlvmIR) {
+        // Write LLVM IR to output files
+        writeIRToFile(*config.First, config.FirstOutFile);
+        writeIRToFile(*config.Second, config.SecondOutFile);
+    }
 }
