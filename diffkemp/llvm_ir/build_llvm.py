@@ -41,6 +41,8 @@ class LlvmKernelBuilder:
         - disable usage of 'asm inline'
         """
         for header in self.compiler_headers:
+            if not os.path.isfile(header):
+                continue
             commands = [
                 ["sed", "-i", "s/asm goto(x)/asm (\"goto(\" #x \")\")/g",
                  header],
@@ -50,14 +52,17 @@ class LlvmKernelBuilder:
                  header],
             ]
             try:
-                for command in commands:
-                    check_call(command)
+                with open(os.devnull, "w") as devnull:
+                    for command in commands:
+                        check_call(command, stderr=devnull)
             except CalledProcessError:
                 pass
 
     def _enable_asm_features(self):
         """Restore the original 'asm goto' and 'asm inline' semantics."""
         for header in self.compiler_headers:
+            if not os.path.isfile(header):
+                continue
             commands = [
                 ["sed", "-i", "s/asm (\"goto(\" #x \")\")/asm goto(x)/g",
                  header],
@@ -67,8 +72,9 @@ class LlvmKernelBuilder:
                  header],
             ]
             try:
-                for command in commands:
-                    check_call(command)
+                with open(os.devnull, "w") as devnull:
+                    for command in commands:
+                        check_call(command, stderr=devnull)
             except CalledProcessError:
                 pass
 
