@@ -26,22 +26,6 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Function *Main,
         Module *ModOther) {
 
-    // These attributes are invalid for void functions
-    Attribute::AttrKind badAttributes[] = {
-            Attribute::AttrKind::ByVal,
-            Attribute::AttrKind::InAlloca,
-            Attribute::AttrKind::Nest,
-            Attribute::AttrKind::NoAlias,
-            Attribute::AttrKind::NoCapture,
-            Attribute::AttrKind::NonNull,
-            Attribute::AttrKind::ReadNone,
-            Attribute::AttrKind::ReadOnly,
-            Attribute::AttrKind::SExt,
-            Attribute::AttrKind::StructRet,
-            Attribute::AttrKind::ZExt,
-            Attribute::AttrKind::Dereferenceable,
-            Attribute::AttrKind::DereferenceableOrNull};
-
     auto &CalledFuns = mam.getResult<CalledFunctionsAnalysis>(Mod, Main);
 
     // Initial list of functions to iterate over.
@@ -117,18 +101,10 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                                          Fun->getLinkage(),
                                          OriginalName,
                                          Fun->getParent());
-            Fun_Clone->copyAttributesFrom(Fun);
-            Fun_Clone->setSubprogram(Fun->getSubprogram());
+            copyFunctionProperties(Fun, Fun_Clone);
             if (Fun->getMetadata("inlineasm"))
                 Fun_Clone->setMetadata("inlineasm",
                                        Fun->getMetadata("inlineasm"));
-            for (Function::arg_iterator AI = Fun->arg_begin(),
-                                        AE = Fun->arg_end(),
-                                        NAI = Fun_Clone->arg_begin();
-                 AI != AE;
-                 ++AI, ++NAI) {
-                NAI->takeName(AI);
-            }
         }
         Fun_Clone->setName(OriginalName);
 
@@ -140,29 +116,12 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Function *Fun_New = Function::Create(
                 FT_New, Fun->getLinkage(), Fun->getName(), Fun->getParent());
 
-        // Copy the attributes from the old function and delete the ones
-        // related to the return value
-        Fun_New->copyAttributesFrom(Fun);
-        for (Attribute::AttrKind AK : badAttributes) {
-            Fun_New->removeAttribute(AttributeList::ReturnIndex, AK);
-            Fun_New->removeAttribute(AttributeList::FunctionIndex, AK);
-        }
-        Fun_New->setAttributes(cleanAttributeList(Fun_New->getAttributes()));
+        copyFunctionProperties(Fun, Fun_New);
 
         // Set the right function name and subprogram
         Fun_New->setName(OriginalName + ".void");
-        Fun_New->setSubprogram(Fun->getSubprogram());
         if (Fun->getMetadata("inlineasm"))
             Fun_New->setMetadata("inlineasm", Fun->getMetadata("inlineasm"));
-
-        // Set the names of all arguments of the new function
-        for (Function::arg_iterator AI = Fun->arg_begin(),
-                                    AE = Fun->arg_end(),
-                                    NAI = Fun_New->arg_begin();
-             AI != AE;
-             ++AI, ++NAI) {
-            NAI->takeName(AI);
-        }
 
         // Copy the function body.
         Fun_New->getBasicBlockList().splice(Fun_New->begin(),
@@ -205,20 +164,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
 
                 // Insert the new instruction next to the old one
                 CallInst *CI_New = CallInst::Create(Fun_New, Args_AR, "", CI);
+                copyCallInstProperties(CI, CI_New);
 
-                // Copy additional properties
-                CI_New->setAttributes(CI->getAttributes());
-                for (Attribute::AttrKind AK : badAttributes) {
-                    // Remove incompatibile attributes
-                    CI_New->removeAttribute(AttributeList::ReturnIndex, AK);
-                    CI_New->removeAttribute(AttributeList::FunctionIndex, AK);
-                }
-                CI_New->setAttributes(
-                        cleanAttributeList(CI_New->getAttributes()));
-                CI_New->setDebugLoc(CI->getDebugLoc());
-                CI_New->setCallingConv(CI->getCallingConv());
-                if (CI->isTailCall())
-                    CI_New->setTailCall();
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel();
                                 dbgs() << getDebugIndent()
                                        << "Replacing :" << *CI << "\n"
@@ -245,10 +192,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                                                         Args_AR,
                                                         "",
                                                         II);
-
                 // Copy additional properties
                 II_New->setAttributes(II->getAttributes());
-                for (Attribute::AttrKind AK : badAttributes) {
+                for (Attribute::AttrKind AK : badVoidAttributes) {
                     // Remove incompatibile attributes
                     II_New->removeAttribute(AttributeList::ReturnIndex, AK);
                     II_New->removeAttribute(AttributeList::FunctionIndex, AK);

@@ -15,7 +15,6 @@
 #include "Config.h"
 #include <algorithm>
 #include <iostream>
-#include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/IR/PassManager.h>
@@ -34,6 +33,22 @@
 
 /// Level of debug indentation. Each level corresponds to two characters.
 static unsigned int debugIndentLevel = 0;
+
+// Invalid attributes for void functions and calls.
+std::vector<Attribute::AttrKind> badVoidAttributes = {
+        Attribute::AttrKind::ByVal,
+        Attribute::AttrKind::InAlloca,
+        Attribute::AttrKind::Nest,
+        Attribute::AttrKind::NoAlias,
+        Attribute::AttrKind::NoCapture,
+        Attribute::AttrKind::NonNull,
+        Attribute::AttrKind::ReadNone,
+        Attribute::AttrKind::ReadOnly,
+        Attribute::AttrKind::SExt,
+        Attribute::AttrKind::StructRet,
+        Attribute::AttrKind::ZExt,
+        Attribute::AttrKind::Dereferenceable,
+        Attribute::AttrKind::DereferenceableOrNull};
 
 /// Extract called function from a called value Handles situation when the
 /// called value is a bitcast.
@@ -613,6 +628,50 @@ Type *getCSourceIdentifierType(
 
         // If everything failed, return null.
         return nullptr;
+    }
+}
+
+/// Copies properties from one call instruction to another.
+void copyCallInstProperties(CallInst *srcCall, CallInst *destCall) {
+    destCall->setAttributes(srcCall->getAttributes());
+    destCall->setCallingConv(srcCall->getCallingConv());
+
+    if (srcCall->isTailCall()) {
+        destCall->setTailCall();
+    }
+
+    if (!srcCall->getType()->isVoidTy() && destCall->getType()->isVoidTy()) {
+        // Remove attributes that are incompatible with void calls.
+        for (Attribute::AttrKind AK : badVoidAttributes) {
+            destCall->removeAttribute(AttributeList::ReturnIndex, AK);
+            destCall->removeAttribute(AttributeList::FunctionIndex, AK);
+        }
+
+        destCall->setAttributes(cleanAttributeList(destCall->getAttributes()));
+    }
+}
+
+/// Copies properties from one function to another.
+void copyFunctionProperties(Function *srcFun, Function *destFun) {
+    destFun->copyAttributesFrom(srcFun);
+    destFun->setSubprogram(srcFun->getSubprogram());
+
+    if (!srcFun->getType()->isVoidTy() && destFun->getType()->isVoidTy()) {
+        for (Attribute::AttrKind AK : badVoidAttributes) {
+            // Remove attributes that are incompatible with void functions.
+            destFun->removeAttribute(AttributeList::ReturnIndex, AK);
+            destFun->removeAttribute(AttributeList::FunctionIndex, AK);
+        }
+        destFun->setAttributes(cleanAttributeList(destFun->getAttributes()));
+    }
+
+    // Set the names of all arguments of the new function
+    for (Function::arg_iterator AI = srcFun->arg_begin(),
+                                AE = srcFun->arg_end(),
+                                NAI = destFun->arg_begin();
+         AI != AE;
+         ++AI, ++NAI) {
+        NAI->takeName(AI);
     }
 }
 
