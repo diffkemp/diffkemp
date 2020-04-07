@@ -85,7 +85,7 @@ PreservedAnalyses
                                               ConstantPointerNull::get(OpType)},
                                              "",
                                              &Instr);
-                    newCall->setDebugLoc(CallInstr->getDebugLoc());
+                    copyCallInstProperties(CallInstr, newCall);
                     CallInstr->replaceAllUsesWith(newCall);
                     toRemove.push_back(&Instr);
                 } else if (isPrintFunction(CalledFun->getName())) {
@@ -100,7 +100,7 @@ PreservedAnalyses
                              ConstantPointerNull::get(Op1Type)},
                             "",
                             &Instr);
-                    newCall->setDebugLoc(CallInstr->getDebugLoc());
+                    copyCallInstProperties(CallInstr, newCall);
                     CallInstr->replaceAllUsesWith(newCall);
                     toRemove.push_back(&Instr);
                 }

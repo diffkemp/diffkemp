@@ -17,6 +17,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
 #include <unordered_map>
 
 using namespace llvm;
@@ -27,6 +28,9 @@ enum Program { First, Second };
 typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
+
+// Invalid attributes for void functions and calls.
+extern std::vector<Attribute::AttrKind> badVoidAttributes;
 
 /// Extract called function from a called value. Handles situation when the
 /// called value is a bitcast.
@@ -130,6 +134,12 @@ std::string getIdentifierForValue(
         const std::map<std::pair<StructType *, uint64_t>, StringRef>
                 &StructFieldNames,
         const Function *Parent = nullptr);
+
+/// Copies properties from one call instruction to another.
+void copyCallInstProperties(CallInst *srcCall, CallInst *destCall);
+
+/// Copies properties from one function to another.
+void copyFunctionProperties(Function *srcFun, Function *destFun);
 
 /// Converts value to its string representation.
 /// Note: Currently the only place that calls this is returns.gdb, which lacks

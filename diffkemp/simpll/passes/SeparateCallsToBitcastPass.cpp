@@ -93,15 +93,7 @@ PreservedAnalyses
                     // source function and bitcasted arguments.
                     auto newCall = CallInst::Create(srcFun, newArgs, "", Call);
                     Instruction *replacementValue = newCall;
-
-                    // Copy properties of the original call instruction.
-                    newCall->setAttributes(Call->getAttributes());
-                    newCall->setDebugLoc(Call->getDebugLoc());
-                    newCall->setCallingConv(Call->getCallingConv());
-
-                    if (Call->isTailCall()) {
-                        newCall->setTailCall();
-                    }
+                    copyCallInstProperties(Call, newCall);
 
                     if (Call->getType() != newCall->getType()
                         && !newCall->getType()->isVoidTy()) {
