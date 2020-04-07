@@ -1,7 +1,7 @@
 %define llvmcpy_version 0.1.5
 
 Name:           diffkemp
-Version:        0.2.1
+Version:        0.2.2
 Release:        1%{?dist}
 Summary:        A tool for analyzing differences in kernel functions
 
@@ -76,6 +76,12 @@ cd ..
 
 
 %changelog
+* Tue Apr 07 2020 Viktor Malik <vmalik@redhat.com> - 0.2.2-1
+- Support kernel 5.x versions
+- Support for LLVM 10
+- Experimental: build diffkemp-simpll as a shared library
+- Bugfixes and optimisations
+
 * Thu Mar 12 2020 Viktor Malik <vmalik@redhat.com> - 0.2.1-1
 - Require diffutils
 - Bugfix
