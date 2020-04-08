@@ -170,7 +170,8 @@ class LlvmKernelBuilder:
         """
         opt_command = ["opt", "-S", llvm_file, "-o", llvm_file]
         opt_command.extend(["-lowerswitch", "-mem2reg", "-loop-simplify",
-                            "-simplifycfg", "-gvn", "-dce", "-constmerge"])
+                            "-simplifycfg", "-gvn", "-dce", "-constmerge",
+                            "-mergereturn", "-simplifycfg"])
         try:
             with open(os.devnull, "w") as devnull:
                 check_call(opt_command, stderr=devnull)
