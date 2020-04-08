@@ -29,6 +29,20 @@
 std::set<std::string> ignoredMacroList = {
         "__COUNTER__", "__FILE__", "__LINE__", "__DATE__", "__TIME__"};
 
+/// Run comparison of PHI instructions after comparing everything else. This is
+/// to ensure that values and blocks incoming to PHIs are properly matched in
+/// time of PHI comparison.
+int DifferentialFunctionComparator::compare() {
+    int Res = FunctionComparator::compare();
+    if (Res == 0) {
+        for (auto &PhiPair : phisToCompare)
+            if (cmpPHIs(PhiPair.first, PhiPair.second))
+                return 1;
+        return 0;
+    }
+    return Res;
+}
+
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
@@ -296,6 +310,19 @@ int DifferentialFunctionComparator::cmpOperations(
                 BranchNew->setSuccessor(1, tmpSucc);
                 return 0;
             }
+        }
+    }
+
+    // If PHI nodes are compared and they have the same number of incoming
+    // values, treat them as equal for now. They will be compared at the end,
+    // after all their incoming values have been compared and matched.
+    if (isa<PHINode>(L) && isa<PHINode>(R)) {
+        auto PhiL = dyn_cast<PHINode>(L);
+        auto PhiR = dyn_cast<PHINode>(R);
+        if (PhiL->getNumIncomingValues() == PhiR->getNumIncomingValues()) {
+            needToCmpOperands = false;
+            phisToCompare.emplace_back(PhiL, PhiR);
+            return 0;
         }
     }
 
@@ -1301,4 +1328,25 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
            || cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2))
            || cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2))
            || STyL->getStructName() != STyR->getStructName();
+}
+
+/// Comparing PHI instructions.
+/// Handle different order of incoming values - for each incoming value-block
+/// pair, try to find a matching pair in the other PHI instruction.
+/// In order to work properly, all the incoming values and blocks should already
+/// be analysed.
+int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
+                                            const PHINode *PhiR) const {
+    for (unsigned i = 0; i < PhiL->getNumIncomingValues(); ++i) {
+        bool match = false;
+        for (unsigned j = 0; j < PhiR->getNumIncomingValues(); ++j) {
+            if (!cmpValues(PhiL->getIncomingBlock(i), PhiR->getIncomingBlock(j))
+                && !cmpValues(PhiL->getIncomingValue(i),
+                              PhiR->getIncomingValue(j)))
+                match = true;
+        }
+        if (!match)
+            return 1;
+    }
+    return 0;
 }

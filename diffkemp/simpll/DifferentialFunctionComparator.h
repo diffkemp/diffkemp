@@ -38,6 +38,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
               LayoutL(F1->getParent()->getDataLayout()),
               LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
 
+    int compare() override;
+
   protected:
     /// Specific comparison of GEP instructions/operators.
     /// Handles situation when there is an offset between matching GEP indices
@@ -92,6 +94,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Comparing of a structure size with a constant
     int cmpStructTypeSizeWithConstant(StructType *Type,
                                       const Value *Const) const;
+    /// Comparing PHI instructions
+    int cmpPHIs(const PHINode *PhiL, const PHINode *PhiR) const;
 
   private:
     const Config &config;
@@ -101,6 +105,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     mutable const DebugLoc *CurrentLocL, *CurrentLocR;
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
+    mutable std::vector<std::pair<const PHINode *, const PHINode *>>
+            phisToCompare;
 
     ModuleComparator *ModComparator;
 
