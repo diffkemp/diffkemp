@@ -35,7 +35,7 @@
 static unsigned int debugIndentLevel = 0;
 
 // Invalid attributes for void functions and calls.
-std::vector<Attribute::AttrKind> badVoidAttributes = {
+static std::vector<Attribute::AttrKind> badVoidAttributes = {
         Attribute::AttrKind::ByVal,
         Attribute::AttrKind::InAlloca,
         Attribute::AttrKind::Nest,

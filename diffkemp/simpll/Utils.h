@@ -29,9 +29,6 @@ typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
 
-// Invalid attributes for void functions and calls.
-extern std::vector<Attribute::AttrKind> badVoidAttributes;
-
 /// Extract called function from a called value. Handles situation when the
 /// called value is a bitcast.
 const Function *getCalledFunction(const Value *CalledValue);
