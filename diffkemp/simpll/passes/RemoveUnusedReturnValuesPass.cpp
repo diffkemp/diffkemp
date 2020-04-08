@@ -58,13 +58,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         for (Use &U : Fun->uses()) {
             // Figure out whether the return value is used after each call.
             if (U.getUser()->use_empty()
-                && ((isa<CallInst>(U.getUser())
-                     && (dyn_cast<CallInst>(U.getUser())->getCalledFunction())
-                                == Fun)
-                    || (isa<InvokeInst>(U.getUser())
-                        && (dyn_cast<InvokeInst>(U.getUser())
-                                    ->getCalledFunction())
-                                   == Fun))) {
+                && (isa<CallInst>(U.getUser())
+                    && (dyn_cast<CallInst>(U.getUser())->getCalledFunction())
+                               == Fun)) {
                 // The instruction can be replaced.
                 toReplace.push_back(dyn_cast<Instruction>(U.getUser()));
             }
@@ -174,43 +170,6 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                                 decreaseDebugIndentLevel());
                 // Erase the old instruction
                 CI->eraseFromParent();
-            } else if (InvokeInst *II = dyn_cast<InvokeInst>(I)) {
-                // First copy all arguments to an array and create
-                // the new instruction
-                std::vector<Value *> Args;
-
-                for (Value *A : II->arg_operands()) {
-                    Args.push_back(A);
-                }
-
-                ArrayRef<Value *> Args_AR(Args);
-
-                // Insert the new instruction next to the old one
-                InvokeInst *II_New = InvokeInst::Create(Fun_New,
-                                                        II->getNormalDest(),
-                                                        II->getUnwindDest(),
-                                                        Args_AR,
-                                                        "",
-                                                        II);
-                // Copy additional properties
-                II_New->setAttributes(II->getAttributes());
-                for (Attribute::AttrKind AK : badVoidAttributes) {
-                    // Remove incompatibile attributes
-                    II_New->removeAttribute(AttributeList::ReturnIndex, AK);
-                    II_New->removeAttribute(AttributeList::FunctionIndex, AK);
-                }
-                II_New->setAttributes(
-                        cleanAttributeList(II_New->getAttributes()));
-                II_New->setDebugLoc(II->getDebugLoc());
-                II_New->setCallingConv(II->getCallingConv());
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel();
-                                dbgs() << getDebugIndent()
-                                       << "Replacing :" << *II << "\n"
-                                       << getDebugIndent()
-                                       << "     with :" << *II_New << "\n";
-                                decreaseDebugIndentLevel());
-                // Erase the old instruction
-                II->eraseFromParent();
             }
         }
 
