@@ -277,6 +277,28 @@ int DifferentialFunctionComparator::cmpOperations(
             findMacroFunctionDifference(L, R);
         }
     }
+
+    // Handling branches with inverse conditions.
+    // If such branches are found, successors of one of them are swapped, since
+    // their order is important in different parts of FunctionComparator (in
+    // particular in compare()).
+    if (isa<BranchInst>(L) && isa<BranchInst>(R)) {
+        auto BranchL = dyn_cast<BranchInst>(L);
+        auto BranchR = dyn_cast<BranchInst>(R);
+        if (BranchL->isConditional() && BranchR->isConditional()) {
+            auto conds = std::make_pair(BranchL->getCondition(),
+                                        BranchR->getCondition());
+            if (inverseConditions.find(conds) != inverseConditions.end()) {
+                // Swap successors of one of the branches
+                BranchInst *BranchNew = const_cast<BranchInst *>(BranchR);
+                auto *tmpSucc = BranchNew->getSuccessor(0);
+                BranchNew->setSuccessor(0, BranchNew->getSuccessor(1));
+                BranchNew->setSuccessor(1, tmpSucc);
+                return 0;
+            }
+        }
+    }
+
     if (Result) {
         // Do not make difference between signed and unsigned for control flow
         // only
@@ -299,9 +321,6 @@ int DifferentialFunctionComparator::cmpOperations(
                 return cmpNumbers(dyn_cast<AllocaInst>(L)->getAlignment(),
                                   dyn_cast<AllocaInst>(R)->getAlignment());
         }
-    }
-
-    if (Result) {
         // Check whether there is an additional cast because of a structure type
         // change.
         if (isa<CastInst>(L) || isa<CastInst>(R)) {
@@ -363,6 +382,30 @@ int DifferentialFunctionComparator::cmpOperations(
                 && isSimpllFieldAccessAbstraction(FL)
                 && isSimpllFieldAccessAbstraction(FR)) {
                 findTypeDifferences(FL, FR, L->getFunction(), R->getFunction());
+            }
+        }
+        // Handle inverse conditions
+        if (isa<CmpInst>(L) && isa<CmpInst>(R)) {
+            auto CmpL = dyn_cast<CmpInst>(L);
+            auto CmpR = dyn_cast<CmpInst>(R);
+
+            // All users of the conditions must be branching instructions
+            if (std::all_of(
+                        CmpL->users().begin(),
+                        CmpL->users().end(),
+                        [](const User *user) { return isa<BranchInst>(*user); })
+                && std::all_of(CmpR->users().begin(),
+                               CmpR->users().end(),
+                               [](const User *user) {
+                                   return isa<BranchInst>(*user);
+                               })) {
+
+                // It is sufficient to compare the predicates here since the
+                // operands are compared in cmpBasicBlocks.
+                if (CmpL->getPredicate() == CmpR->getInversePredicate()) {
+                    inverseConditions.emplace(L, R);
+                    return 0;
+                }
             }
         }
         auto macroDiffs = ModComparator->MacroDiffs.findMacroDifferences(L, R);

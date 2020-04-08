@@ -100,6 +100,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     const DataLayout &LayoutL, &LayoutR;
 
     mutable const DebugLoc *CurrentLocL, *CurrentLocR;
+    mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
 
     ModuleComparator *ModComparator;
 
