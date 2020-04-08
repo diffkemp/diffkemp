@@ -35,11 +35,12 @@ cd llvmcpy-%{llvmcpy_version}
 
 
 %build
+mkdir build
+# SimpLL (C++ part)
+%cmake -S . -B build -GNinja
+%ninja_build -C build
 # Python part
 %py3_build
-# SimpLL (C++ part)
-%cmake . -GNinja
-%ninja_build
 # llvmcpy Python package
 cd llvmcpy-%{llvmcpy_version}
 %py3_build
@@ -47,12 +48,12 @@ cd ..
 
 
 %install
-# Python part
-%py3_install
 # SimpLL (C++ part)
-%ninja_install
+%ninja_install -C build
 mkdir -p %{buildroot}/%{_bindir}
 install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
+# Python part
+%py3_install
 # llvmcpy Python package
 cd llvmcpy-%{llvmcpy_version}
 %py3_install
@@ -63,11 +64,12 @@ cd ..
 %license LICENSE
 %doc README.md
 # Python part
-%{python3_sitelib}/%{name}-*.egg-info/
-%{python3_sitelib}/%{name}
+%{python3_sitearch}/%{name}-*.egg-info/
+%{python3_sitearch}/%{name}
 # SimpLL (C++ part)
 %{_bindir}/%{name}
 %{_bindir}/%{name}-simpll
+%{_libdir}/libsimpll-lib.so
 # llvmcpy Python package
 %{python3_sitelib}/llvmcpy-%{llvmcpy_version}-*.egg-info/
 %{python3_sitelib}/llvmcpy
