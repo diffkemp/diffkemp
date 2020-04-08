@@ -8,7 +8,8 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build .
 # Add googletest directly to our build. This adds the following targets:
 # gtest, gtest_main, gmock and gmock_main
 add_subdirectory("${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
-                 "${CMAKE_CURRENT_BINARY_DIR}/googletest-build")
+                 "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
+                 EXCLUDE_FROM_ALL)
 
 # Disable RTTI to link with SimpLL correctly.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")

@@ -6,6 +6,8 @@ add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
+include(GNUInstallDirs)
+
 add_subdirectory(diffkemp/simpll)
 
 option(BUILD_LLREVE "Build the LLReve tool for semantic comparison" OFF)
