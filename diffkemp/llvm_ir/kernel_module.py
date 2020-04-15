@@ -3,16 +3,19 @@ Kernel modules in LLVM IR.
 Functions for working with parameters of modules.
 """
 
-from llvmcpy.llvm import *
+from diffkemp.simpll.library import SimpLLModule
+from diffkemp.simpll._simpll.lib import shutdownSimpLL
 import os
+import re
+import shutil
 from subprocess import check_call, CalledProcessError
 
-# List of standard functions that are supported, so they should not be
+# Set of standard functions that are supported, so they should not be
 # included in function collecting.
 # Some functions have multiple variants so we need to check for prefix
-supported_names = ["llvm.dbg.value", "llvm.dbg.declare"]
-supported_prefixes = ["llvm.lifetime", "kmalloc", "kzalloc", "malloc",
-                      "calloc", "__kmalloc", "devm_kzalloc"]
+supported_names = {"llvm.dbg.value", "llvm.dbg.declare"}
+supported_prefixes = {"llvm.lifetime", "kmalloc", "kzalloc", "malloc",
+                      "calloc", "__kmalloc", "devm_kzalloc"}
 
 
 def supported_kernel_fun(llvm_fun):
@@ -53,22 +56,19 @@ class LlvmKernelModule:
         self.linked_modules = set()
 
     def parse_module(self, force=False):
-        """Parse module file into LLVM module using llvmcpy library"""
+        """Parse module file into LLVM module using SimpLL"""
         if force or self.llvm_module is None:
-            buffer = create_memory_buffer_with_contents_of_file(self.llvm)
-            context = get_global_context()
-            self.llvm_module = context.parse_ir(buffer)
+            self.llvm_module = SimpLLModule(self.llvm)
 
     def clean_module(self):
         """Free the parsed LLVM module."""
         if self.llvm_module is not None:
-            self.llvm_module.dispose()
-            self.llvm_module = None
+            del self.llvm_module
 
     @staticmethod
     def clean_all():
         """Clean all statically managed LLVM memory."""
-        shutdown()
+        shutdownSimpLL()
 
     def link_modules(self, modules):
         """Link module against a list of other modules."""
@@ -99,35 +99,6 @@ class LlvmKernelModule:
             finally:
                 return any([m for m in link_llvm_modules if self.links_mod(m)])
 
-    def _extract_param_name(self, param_var):
-        """
-        Extract name of the global variable representing a module parameter
-        from the structure describing it.
-        :param param_var: LLVM expression containing the variable
-        :return Name of the variable
-        """
-        if param_var.get_kind() == GlobalVariableValueKind:
-            param_name = param_var.get_name().decode("utf-8")
-            if ("__param_arr" in param_name or
-                    "__param_string" in param_name):
-                # For array and string parameters, the actual variable is
-                # inside another structure as its last element
-                param_var_value = param_var.get_initializer()
-                # Get the last element
-                var_expr = param_var_value.get_operand(
-                    param_var_value.get_num_operands() - 1)
-                return self._extract_param_name(var_expr)
-            else:
-                return param_name
-
-        if (param_var.get_kind() == ConstantExprValueKind and
-                param_var.get_num_operands() >= 1):
-            # Variable can be inside bitcast or getelementptr, in both cases
-            # it is inside the first operand of the expression
-            return self._extract_param_name(param_var.get_operand(0))
-
-        return None
-
     def find_param_var(self, param):
         """
         Find global variable in the module that corresponds to the given param.
@@ -140,18 +111,8 @@ class LlvmKernelModule:
         :return Name of the global variable corresponding to the parameter
         """
         self.parse_module()
-        glob = self.llvm_module.get_named_global("__param_{}".format(param))
-        if not glob:
-            return None
-        # Get value of __param_#name variable
-        glob_value = glob.get_initializer()
-        # Get the last element
-        var_union = glob_value.get_operand(glob_value.get_num_operands() - 1)
-        if var_union.get_num_operands() == 1:
-            # Last element should be a struct with single element, get it
-            var = var_union.get_operand(0)
-            return KernelParam(self._extract_param_name(var), [])
-        return None
+        name = self.llvm_module.find_param_var(param)
+        return KernelParam(name, []) if name is not None else None
 
     def has_function(self, fun):
         """Check if module contains a function definition."""
@@ -170,9 +131,8 @@ class LlvmKernelModule:
         Check if the given function is a declaration (does not have body).
         """
         self.parse_module()
-        llvm_fun = self.llvm_module.get_named_function(fun)
-        return (llvm_fun.get_kind() == FunctionValueKind and
-                llvm_fun.is_declaration())
+        llvm_fun = self.llvm_module.get_function(fun)
+        return llvm_fun.is_declaration()
 
     def links_mod(self, mod):
         """
@@ -234,112 +194,21 @@ class LlvmKernelModule:
                     result.add(os.path.join(s.group(2), s.group(1)))
         return result
 
-    @staticmethod
-    def _check_gep_indices_correspond(gep, indices):
-        """
-        Checks whether the indices in the GEP correspond to the indices in
-        the list. When one list is longer than the other, the function behaves
-        like one is cut to the size of the other and compares the rest.
-        :param gep: The GEP operator. Both the instruction and the constant
-        expression are supported.
-        :param indices: A list of integers representing indices to compare the
-        GEP operator with.
-        :return: True or false based on whether the indices correspond.
-        """
-        for i in range(1, gep.get_num_operands()):
-            if (i - 1) >= len(indices):
-                break
-            op = gep.get_operand(i)
-            if (op.is_constant() and
-                    op.const_int_get_z_ext() != indices[i - 1]):
-                return False
-        return True
-
     def get_functions_using_param(self, param):
         """
         Find names of all functions using the given parameter (global variable)
         """
         self.parse_module()
-        glob = self.llvm_module.get_named_global(param.name)
-        if not glob:
-            return set()
-        result = set()
-        for use in glob.iter_uses():
-            if use.user.get_kind() == InstructionValueKind:
-                # Use is an Instruction
-                bb = use.user.instruction_parent
-                func = bb.parent
-                if (use.user.is_a_get_element_ptr_inst() and
-                        param.indices is not None):
-                    # Look whether the GEP references the desired index or not
-                    if not self._check_gep_indices_correspond(use.user,
-                                                              param.indices):
-                        continue
-                if ".old" not in func.name.decode("utf-8"):
-                    result.add(func.name.decode("utf-8"))
-            elif use.user.get_kind() == ConstantExprValueKind:
-                # Use is an Operator (typically GEP)
-                for inner_use in use.user.iter_uses():
-                    if inner_use.user.get_kind() == InstructionValueKind:
-                        bb = inner_use.user.instruction_parent
-                        func = bb.parent
-                        if (use.user.get_const_opcode() ==
-                                Opcode['GetElementPtr'] and
-                                param.indices is not None):
-                            # Look whether the GEP references the desired
-                            # index or not
-                            if not self._check_gep_indices_correspond(
-                                    use.user, param.indices):
-                                continue
-                        if ".old" not in func.name.decode("utf-8"):
-                            result.add(func.name.decode("utf-8"))
-        return result
-
-    @staticmethod
-    def _get_functions_called_by_rec(llvm_fun, result):
-        """
-        Find names of all functions that are (recursively) called by the given
-        function. Found names are stored in the 'result' list.
-        """
-        for bb in llvm_fun.iter_basic_blocks():
-            for instr in bb.iter_instructions():
-                if instr.get_instruction_opcode() == Call:
-                    called = instr.get_called()
-                    if called.get_kind() == ConstantExprValueKind:
-                        # Called function may be inside a bitcast
-                        called = called.get_operand(0)
-                    called_name = called.get_name().decode("utf-8")
-                    # Collect all unsupported functions that are called
-                    if (called.get_kind() == FunctionValueKind and
-                            called_name and
-                            not supported_kernel_fun(called) and
-                            called_name not in result):
-                        result.add(called_name)
-                        # Recursively call the method on the called function
-                        LlvmKernelModule._get_functions_called_by_rec(
-                            called, result)
-
-                # Collect also functions that are passed as parameters to
-                # instructions. For these, do not descend recursively since
-                # their body will not be analysed.
-                for opIndex in range(0, instr.get_num_operands()):
-                    op = instr.get_operand(opIndex)
-
-                    op_name = op.get_name().decode("utf-8")
-                    if (op.get_kind() == FunctionValueKind and
-                            op_name and
-                            not supported_kernel_fun(op) and
-                            op_name not in result):
-                        result.add(op_name)
+        return self.llvm_module.get_functions_using_param(param.name,
+                                                          param.indices)
 
     def get_functions_called_by(self, fun_name):
         """
         Find names of all functions (recursively) called by one of functions
         in the given set.
         """
-        result = set()
         self.parse_module()
-        llvm_fun = self.llvm_module.get_named_function(fun_name)
+        llvm_fun = self.llvm_module.get_function(fun_name)
         if llvm_fun:
-            self._get_functions_called_by_rec(llvm_fun, result)
-        return result
+            return {f.get_name() for f in llvm_fun.get_called_functions()
+                    if f.get_name() not in supported_names.union({fun_name})}

@@ -1,21 +1,12 @@
 """
 Simplifying LLVM modules with the SimpLL tool.
 """
+from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.simpll._simpll import ffi, lib
-from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
 import os
 from subprocess import check_call, check_output, CalledProcessError
 import yaml
-
-
-class SimpLLModule:
-    """Represents a Module class in LLVM."""
-    def __init__(self, path):
-        self.pointer = lib.loadModule(ffi.new("char []", path.encode("ascii")))
-
-    def __del__(self):
-        lib.freeModule(self.pointer)
 
 
 class SimpLLException(Exception):

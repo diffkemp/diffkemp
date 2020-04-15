@@ -16,12 +16,6 @@ def mod():
     source.finalize()
 
 
-def test_get_sysctl(mod):
-    """Test getting sysctl definition."""
-    sysctl = mod._get_sysctl("wmem_max")
-    assert sysctl.is_a_constant_struct()
-
-
 def test_get_proc_fun(mod):
     """Test getting proc function for a sysctl."""
     assert mod.get_proc_fun("wmem_max") == "proc_dointvec_minmax"

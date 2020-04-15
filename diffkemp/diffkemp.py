@@ -6,7 +6,7 @@ from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
-from diffkemp.simpll.simpll import SimpLLModule
+from diffkemp.simpll.library import SimpLLModule
 from tempfile import mkdtemp
 import errno
 import os

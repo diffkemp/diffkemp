@@ -155,9 +155,7 @@ class SysctlTaskSpec(TaskSpec):
     def build_sysctl_module(self):
         """Build the compared sysctl modules into LLVM."""
         self.old_sysctl_module = self.old_kernel.get_sysctl_module(self.name)
-        self.old_sysctl_module.parse_sysctls(self.name)
         self.new_sysctl_module = self.new_kernel.get_sysctl_module(self.name)
-        self.new_sysctl_module.parse_sysctls(self.name)
 
 
 class ModuleParamSpec(TaskSpec):

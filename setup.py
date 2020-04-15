@@ -8,5 +8,5 @@ setup(name="diffkemp",
       url="https://github.com/viktormalik/diffkemp",
       packages=find_packages(),
       setup_requires=["cffi"],
-      install_requires=["llvmcpy", "pyyaml", "cffi"],
+      install_requires=["pyyaml", "cffi"],
       cffi_modules=["./diffkemp/simpll/simpll_build.py:ffibuilder"])
