@@ -13,6 +13,7 @@ Source1:        %pypi_source llvmcpy %{llvmcpy_version}
 BuildRequires:  gcc gcc-c++ cmake ninja-build
 BuildRequires:  llvm-devel
 BuildRequires:  python3-devel
+BuildRequires:  git
 Requires:       cscope
 Requires:       clang llvm-devel
 Requires:       make
@@ -58,6 +59,11 @@ install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
 cd llvmcpy-%{llvmcpy_version}
 %py3_install
 cd ..
+
+
+%check
+# Run SimpLL unit tests
+tests/unit_tests/simpll/runTests
 
 
 %files
