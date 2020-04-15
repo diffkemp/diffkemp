@@ -29,6 +29,20 @@
 std::set<std::string> ignoredMacroList = {
         "__COUNTER__", "__FILE__", "__LINE__", "__DATE__", "__TIME__"};
 
+/// Run comparison of PHI instructions after comparing everything else. This is
+/// to ensure that values and blocks incoming to PHIs are properly matched in
+/// time of PHI comparison.
+int DifferentialFunctionComparator::compare() {
+    int Res = FunctionComparator::compare();
+    if (Res == 0) {
+        for (auto &PhiPair : phisToCompare)
+            if (cmpPHIs(PhiPair.first, PhiPair.second))
+                return 1;
+        return 0;
+    }
+    return Res;
+}
+
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
@@ -277,6 +291,41 @@ int DifferentialFunctionComparator::cmpOperations(
             findMacroFunctionDifference(L, R);
         }
     }
+
+    // Handling branches with inverse conditions.
+    // If such branches are found, successors of one of them are swapped, since
+    // their order is important in different parts of FunctionComparator (in
+    // particular in compare()).
+    if (isa<BranchInst>(L) && isa<BranchInst>(R)) {
+        auto BranchL = dyn_cast<BranchInst>(L);
+        auto BranchR = dyn_cast<BranchInst>(R);
+        if (BranchL->isConditional() && BranchR->isConditional()) {
+            auto conds = std::make_pair(BranchL->getCondition(),
+                                        BranchR->getCondition());
+            if (inverseConditions.find(conds) != inverseConditions.end()) {
+                // Swap successors of one of the branches
+                BranchInst *BranchNew = const_cast<BranchInst *>(BranchR);
+                auto *tmpSucc = BranchNew->getSuccessor(0);
+                BranchNew->setSuccessor(0, BranchNew->getSuccessor(1));
+                BranchNew->setSuccessor(1, tmpSucc);
+                return 0;
+            }
+        }
+    }
+
+    // If PHI nodes are compared and they have the same number of incoming
+    // values, treat them as equal for now. They will be compared at the end,
+    // after all their incoming values have been compared and matched.
+    if (isa<PHINode>(L) && isa<PHINode>(R)) {
+        auto PhiL = dyn_cast<PHINode>(L);
+        auto PhiR = dyn_cast<PHINode>(R);
+        if (PhiL->getNumIncomingValues() == PhiR->getNumIncomingValues()) {
+            needToCmpOperands = false;
+            phisToCompare.emplace_back(PhiL, PhiR);
+            return 0;
+        }
+    }
+
     if (Result) {
         // Do not make difference between signed and unsigned for control flow
         // only
@@ -299,9 +348,6 @@ int DifferentialFunctionComparator::cmpOperations(
                 return cmpNumbers(dyn_cast<AllocaInst>(L)->getAlignment(),
                                   dyn_cast<AllocaInst>(R)->getAlignment());
         }
-    }
-
-    if (Result) {
         // Check whether there is an additional cast because of a structure type
         // change.
         if (isa<CastInst>(L) || isa<CastInst>(R)) {
@@ -363,6 +409,30 @@ int DifferentialFunctionComparator::cmpOperations(
                 && isSimpllFieldAccessAbstraction(FL)
                 && isSimpllFieldAccessAbstraction(FR)) {
                 findTypeDifferences(FL, FR, L->getFunction(), R->getFunction());
+            }
+        }
+        // Handle inverse conditions
+        if (isa<CmpInst>(L) && isa<CmpInst>(R)) {
+            auto CmpL = dyn_cast<CmpInst>(L);
+            auto CmpR = dyn_cast<CmpInst>(R);
+
+            // All users of the conditions must be branching instructions
+            if (std::all_of(
+                        CmpL->users().begin(),
+                        CmpL->users().end(),
+                        [](const User *user) { return isa<BranchInst>(*user); })
+                && std::all_of(CmpR->users().begin(),
+                               CmpR->users().end(),
+                               [](const User *user) {
+                                   return isa<BranchInst>(*user);
+                               })) {
+
+                // It is sufficient to compare the predicates here since the
+                // operands are compared in cmpBasicBlocks.
+                if (CmpL->getPredicate() == CmpR->getInversePredicate()) {
+                    inverseConditions.emplace(L, R);
+                    return 0;
+                }
             }
         }
         auto macroDiffs = ModComparator->MacroDiffs.findMacroDifferences(L, R);
@@ -1258,4 +1328,25 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
            || cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2))
            || cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2))
            || STyL->getStructName() != STyR->getStructName();
+}
+
+/// Comparing PHI instructions.
+/// Handle different order of incoming values - for each incoming value-block
+/// pair, try to find a matching pair in the other PHI instruction.
+/// In order to work properly, all the incoming values and blocks should already
+/// be analysed.
+int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
+                                            const PHINode *PhiR) const {
+    for (unsigned i = 0; i < PhiL->getNumIncomingValues(); ++i) {
+        bool match = false;
+        for (unsigned j = 0; j < PhiR->getNumIncomingValues(); ++j) {
+            if (!cmpValues(PhiL->getIncomingBlock(i), PhiR->getIncomingBlock(j))
+                && !cmpValues(PhiL->getIncomingValue(i),
+                              PhiR->getIncomingValue(j)))
+                match = true;
+        }
+        if (!match)
+            return 1;
+    }
+    return 0;
 }

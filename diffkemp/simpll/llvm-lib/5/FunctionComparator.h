@@ -82,7 +82,7 @@ public:
       : FnL(F1), FnR(F2), GlobalNumbers(GN) {}
 
   /// Test whether the two functions have equivalent behaviour.
-  int compare();
+  virtual int compare();
   /// Hash a function. Equivalent functions will have the same hash, and unequal
   /// functions will have different hashes with high probability.
   typedef uint64_t FunctionHash;
