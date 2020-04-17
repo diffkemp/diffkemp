@@ -67,14 +67,11 @@ PreservedAnalyses
                             newArgs.push_back(*arg);
                         } else {
                             // Bitcast the argument so that the types match.
-                            auto newArg = CastInst::Create(
-                                    Instruction::BitCast,
-                                    *arg,
-                                    paramType,
-                                    "",
-                                    newArgs.empty() ? cast<Instruction>(Call)
-                                                    : cast<Instruction>(
-                                                            newArgs.back()));
+                            auto newArg = CastInst::Create(Instruction::BitCast,
+                                                           *arg,
+                                                           paramType,
+                                                           "",
+                                                           Call);
 
                             newArg->setDebugLoc(Call->getDebugLoc());
                             newArgs.push_back(newArg);
