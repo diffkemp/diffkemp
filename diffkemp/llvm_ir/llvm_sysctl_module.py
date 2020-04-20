@@ -1,9 +1,9 @@
 """
-Kernel module containing definitions of sysctl options compiled into LLVM IR.
-Contains reference to LlvmKernelModule and additional sysctl-specific fields
+LLVM module containing definitions of kernel sysctl options compiled into
+LLVM IR. Contains reference to LlvmModule and additional sysctl-specific fields
 and methods.
 """
-from diffkemp.llvm_ir.kernel_module import KernelParam
+from diffkemp.llvm_ir.llvm_module import LlvmParam
 from diffkemp.simpll.library import SimpLLSysctlTable
 
 
@@ -62,11 +62,11 @@ class LlvmSysctlModule:
     def get_child(self, sysctl_name):
         """Get the name of the child node of the given sysctl table entry."""
         result = self.table_object.get_child(sysctl_name)
-        return (KernelParam(result[0], result[1])
+        return (LlvmParam(result[0], result[1])
                 if result is not None else None)
 
     def get_data(self, sysctl_name):
         """Get the name of the data variable for the given sysctl option."""
         result = self.table_object.get_data(sysctl_name)
-        return (KernelParam(result[0], result[1])
+        return (LlvmParam(result[0], result[1])
                 if result is not None else None)

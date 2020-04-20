@@ -1,7 +1,7 @@
 """
 Simplifying LLVM modules with the SimpLL tool.
 """
-from diffkemp.llvm_ir.kernel_module import LlvmKernelModule
+from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.simpll._simpll import ffi, lib
 import os
@@ -131,8 +131,8 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
                     second_out_name],
                    stderr=stderr)
 
-    first_out = LlvmKernelModule(first_out_name)
-    second_out = LlvmKernelModule(second_out_name)
+    first_out = LlvmModule(first_out_name)
+    second_out = LlvmModule(second_out_name)
 
     missing_defs = None
     try:
