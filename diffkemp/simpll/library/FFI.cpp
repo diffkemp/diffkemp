@@ -23,8 +23,8 @@
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <unordered_map>
 
-/// Map to store LLVMContext objects for modules with the module names as keys.
-std::unordered_map<std::string, std::unique_ptr<LLVMContext>> ContextMap;
+/// Map to store LLVMContext objects for modules.
+std::unordered_map<Module *, std::unique_ptr<LLVMContext>> ContextMap;
 
 /// Map that manages unique pointers to modules.
 std::unordered_map<Module *, std::unique_ptr<Module>> ModuleMap;
@@ -95,10 +95,11 @@ template <class T> struct ptr_array stringContainerToPtrArray(T Container) {
 extern "C" {
 void *loadModule(const char *Path) {
     SMDiagnostic err;
-    ContextMap[Path] = std::make_unique<LLVMContext>();
-    std::unique_ptr<Module> Mod = parseIRFile(Path, err, *ContextMap[Path]);
+    std::unique_ptr<LLVMContext> Ctx = std::make_unique<LLVMContext>();
+    std::unique_ptr<Module> Mod = parseIRFile(Path, err, *Ctx.get());
     Module *ModPtr = Mod.get();
     ModuleMap[ModPtr] = std::move(Mod);
+    ContextMap[ModPtr] = std::move(Ctx);
     return (void *)ModPtr;
 }
 
@@ -106,7 +107,7 @@ void freeModule(void *ModRaw) {
     Module *Mod = (Module *)ModRaw;
     std::string name = Mod->getName();
     ModuleMap.erase(Mod);
-    ContextMap.erase(name);
+    ContextMap.erase(Mod);
 }
 
 void freePointerArray(struct ptr_array PtrArr) { delete[] PtrArr.arr; }
@@ -260,8 +261,13 @@ void cloneAndRunSimpLL(void *ModL,
                        const char *FunR,
                        struct config Conf,
                        char *Output) {
+#if LLVM_VERSION_MAJOR < 7
+    runSimpLL(CloneModule((Module *)ModL),
+              CloneModule((Module *)ModR),
+#else
     runSimpLL(CloneModule(*((Module *)ModL)),
               CloneModule(*((Module *)ModR)),
+#endif
               ModLOut,
               ModROut,
               FunL,
