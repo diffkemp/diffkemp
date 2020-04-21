@@ -18,6 +18,7 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/PassManager.h>
 #include <set>
+#include <vector>
 
 using namespace llvm;
 
@@ -30,10 +31,12 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
   public:
     PreservedAnalyses run(Function &Fun,
                           FunctionAnalysisManager &fam,
-                          GlobalVariable *Var);
+                          GlobalVariable *Var,
+                          std::vector<int> Indices);
 
   private:
     GlobalVariable *Variable = nullptr;
+    std::vector<int> Indices;
     // Instructions directly dependent on the parameter
     std::set<const Instruction *> DependentInstrs = {};
     // Instructions that must be included

@@ -56,6 +56,9 @@ cl::opt<bool> PrintAsmDiffsOpt(
         "print-asm-diffs",
         cl::desc("Print raw differences in inline assembly code "
                  "(does not apply to macros)."));
+cl::list<int> IndicesOpt(
+        "var-index",
+        cl::desc("Indices of GEP instruction found in sysctl definiton"));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -95,6 +98,11 @@ Config::Config()
         // Parse --var option - find global variables with given name.
         FirstVar = First->getGlobalVariable(VariableOpt, true);
         SecondVar = Second->getGlobalVariable(VariableOpt, true);
+    }
+    if (!IndicesOpt.empty()) {
+        for (auto i : IndicesOpt) {
+            Indices.push_back(i);
+        }
     }
     if (!SuffixOpt.empty()) {
         // Parse --suffix option - add suffix to the names of output files.

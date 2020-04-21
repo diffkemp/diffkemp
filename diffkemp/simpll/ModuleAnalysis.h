@@ -35,6 +35,7 @@ using namespace llvm;
 void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
+                      std::vector<int> Indices,
                       bool ControlFlowOnly);
 
 /// Simplify two corresponding modules for the purpose of their subsequent

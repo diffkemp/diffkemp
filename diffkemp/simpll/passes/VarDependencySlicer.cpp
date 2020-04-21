@@ -25,11 +25,13 @@
 
 PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                                            FunctionAnalysisManager &fam,
-                                           GlobalVariable *Var) {
+                                           GlobalVariable *Var,
+                                           std::vector<int> Indices) {
     if (Fun.isDeclaration())
         return PreservedAnalyses::all();
 
     Variable = Var;
+    this->Indices = Indices;
     // Clear all sets
     DependentInstrs.clear();
     IncludedInstrs.clear();
@@ -46,9 +48,36 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
             continue;
         for (auto &Instr : BB) {
             bool dependent = false;
-            for (auto &Op : Instr.operands()) {
-                if (checkDependency(&Op))
-                    dependent = true;
+            if (auto GEPInstr = dyn_cast<GetElementPtrInst>(&Instr)) {
+                if (dyn_cast<GlobalVariable>(GEPInstr->getOperand(0))
+                    == Variable) {
+                    if (GEPInstr->hasAllConstantIndices()) {
+                        std::vector<int> gep_indicies;
+                        for (int i = 1; i < GEPInstr->getNumIndices(); i++) {
+                            ConstantInt *CI = dyn_cast<ConstantInt>(
+                                    GEPInstr->getOperand(i));
+                            gep_indicies.push_back(CI->getZExtValue());
+                        }
+                        if (Indices == gep_indicies)
+                            dependent = true;
+                        else {
+                            gep_indicies.clear();
+                            APInt InstOffset(64, 0);
+                            GEPInstr->accumulateConstantOffset(
+                                    BB.getModule()->getDataLayout(),
+                                    InstOffset);
+                            if (Indices[0] == InstOffset.getZExtValue()) {
+                                dependent = true;
+                            }
+                        }
+                    } else
+                        dependent = true;
+                }
+            } else {
+                for (auto &Op : Instr.operands()) {
+                    if (checkDependency(&Op))
+                        dependent = true;
+                }
             }
             if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
                 // Call instructions
@@ -283,6 +312,31 @@ bool VarDependencySlicer::checkDependency(const Use *Op) {
     bool result = false;
     if (dyn_cast<GlobalVariable>(Op) == Variable) {
         result = true;
+    } else if (auto GEPOp = dyn_cast<GEPOperator>(Op)) {
+        if (dyn_cast<GlobalVariable>(GEPOp->getOperand(0)) == Variable) {
+            if (GEPOp->hasAllConstantIndices()) {
+
+                std::vector<int> gep_indicies;
+                for (int i = 1; i <= GEPOp->getNumIndices(); i++) {
+                    ConstantInt *CI =
+                            dyn_cast<ConstantInt>(GEPOp->getOperand(i));
+                    gep_indicies.push_back(CI->getZExtValue());
+                }
+                if (Indices == gep_indicies)
+                    result = true;
+                else {
+                    gep_indicies.clear();
+                    APInt InstOffset(64, 0);
+                    GEPOp->accumulateConstantOffset(
+                            Variable->getParent()->getDataLayout(), InstOffset);
+                    if (Indices[0] == InstOffset.getZExtValue()) {
+                        result = true;
+                    }
+                }
+            } else {
+                result = false;
+            }
+        }
     } else if (auto OpInst = dyn_cast<Instruction>(Op)) {
         if (isDependent(OpInst)) {
             result = true;

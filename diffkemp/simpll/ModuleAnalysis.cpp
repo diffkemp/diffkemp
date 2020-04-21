@@ -57,16 +57,21 @@
 void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
+                      std::vector<int> Indices,
                       bool ControlFlowOnly) {
     if (Var) {
         // Slicing of the program w.r.t. the value of a global variable
-        PassManager<Function, FunctionAnalysisManager, GlobalVariable *> fpm;
+        PassManager<Function,
+                    FunctionAnalysisManager,
+                    GlobalVariable *,
+                    std::vector<int>>
+                fpm;
         FunctionAnalysisManager fam(false);
         PassBuilder pb;
         pb.registerFunctionAnalyses(fam);
 
         fpm.addPass(VarDependencySlicer{});
-        fpm.run(*Main, fam, Var);
+        fpm.run(*Main, fam, Var, Indices);
     }
 
     // Function passes
@@ -233,10 +238,12 @@ void processAndCompare(Config &config, OverallResult &Result) {
     preprocessModule(*config.First,
                      config.FirstFun,
                      config.FirstVar,
+                     config.Indices,
                      config.ControlFlowOnly);
     preprocessModule(*config.Second,
                      config.SecondFun,
                      config.SecondVar,
+                     config.Indices,
                      config.ControlFlowOnly);
     config.refreshFunctions();
 
