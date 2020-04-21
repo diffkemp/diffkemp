@@ -211,6 +211,7 @@ def functions_diff(mod_first, mod_second,
                                cache_dir=function_cache.directory
                                if function_cache else None,
                                control_flow_only=config.control_flow_only,
+                               output_llvm_ir=config.output_llvm_ir,
                                print_asm_diffs=config.print_asm_diffs,
                                verbose=config.verbosity,
                                use_ffi=config.use_ffi)
