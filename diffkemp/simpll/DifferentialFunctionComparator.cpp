@@ -522,6 +522,10 @@ bool DifferentialFunctionComparator::maySkipInstruction(
         }
         return maySkipCast(Inst);
     }
+    if (isZeroGEP(Inst)) {
+        ignoredInstructions.insert({Inst, Inst->getOperand(0)});
+        return true;
+    }
     if (auto Load = dyn_cast<LoadInst>(Inst)) {
         return maySkipLoad(Load);
     }
@@ -678,10 +682,14 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
     auto replacementIt = ignoredInstructions.find(Replaced);
     if (replacementIt == ignoredInstructions.end()) {
         // Before failing, check whether the replaced value is an ignorable
-        // bitcast. If so, return the replacement operand.
+        // bitcast or zero GEP. If so, return the replacement operand.
         auto BitCast = dyn_cast<BitCastOperator>(Replaced);
         if (BitCast && maySkipCast(BitCast)) {
             return BitCast->getOperand(0);
+        }
+        auto GEP = dyn_cast<GEPOperator>(Replaced);
+        if (GEP && isZeroGEP(GEP)) {
+            return GEP->getOperand(0);
         }
         return nullptr;
     }
