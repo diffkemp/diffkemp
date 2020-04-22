@@ -825,9 +825,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             CurrentLocL = &InstL->getDebugLoc();
         if ((&InstR->getDebugLoc())->get())
             CurrentLocR = &InstR->getDebugLoc();
-        bool needToCmpOperands = true;
 
-        if (int Res = cmpOperations(&*InstL, &*InstR, needToCmpOperands)) {
+        if (int Res = cmpOperationsWithOperands(&*InstL, &*InstR)) {
             // Some operations not affecting semantics and control flow may be
             // ignored (currently allocas and casts). This may help to handle
             // some small changes that do not affect semantics (it is also
@@ -844,53 +843,32 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                     InstR++;
                 continue;
             }
-            return Res;
-        }
-        if (needToCmpOperands) {
-            assert(InstL->getNumOperands() == InstR->getNumOperands());
 
-            for (unsigned i = 0, e = InstL->getNumOperands(); i != e; ++i) {
-                Value *OpL = InstL->getOperand(i);
-                Value *OpR = InstR->getOperand(i);
+            if (Res) {
+                // The instructions are indeed different, try to find the source
+                // of the difference.
 
-                if (int Res = cmpValues(OpL, OpR)) {
-                    if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
-                        Res = cmpCallArgumentUsingCSource(
-                                dyn_cast<CallInst>(&*InstL),
-                                dyn_cast<CallInst>(&*InstR),
-                                OpL,
-                                OpR,
-                                i);
-                    }
+                // Try to find macros that could be causing the difference
+                auto macroDiffs =
+                        ModComparator->MacroDiffs.findMacroDifferences(&*InstL,
+                                                                       &*InstR);
+                ModComparator->ComparedFuns.at({FnL, FnR})
+                        .addDifferingObjects(std::move(macroDiffs));
 
-                    if (Res) {
-                        // Try to find macros that could be causing the
-                        // difference
-                        auto macroDiffs =
-                                ModComparator->MacroDiffs.findMacroDifferences(
-                                        &*InstL, &*InstR);
-                        ModComparator->ComparedFuns.at({FnL, FnR})
-                                .addDifferingObjects(std::move(macroDiffs));
-
-                        // Try to find assembly functions causing the difference
-                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)
-                            && config.PrintAsmDiffs) {
-                            ModComparator->ComparedFuns.at({FnL, FnR})
-                                    .addDifferingObjects(findAsmDifference(
-                                            dyn_cast<CallInst>(&*InstL),
-                                            dyn_cast<CallInst>(&*InstR)));
-                        }
-
-                        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR))
-                            processCallInstDifference(
+                // Try to find assembly functions causing the difference
+                if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)
+                    && config.PrintAsmDiffs) {
+                    ModComparator->ComparedFuns.at({FnL, FnR})
+                            .addDifferingObjects(findAsmDifference(
                                     dyn_cast<CallInst>(&*InstL),
-                                    dyn_cast<CallInst>(&*InstR));
-
-                        return Res;
-                    }
+                                    dyn_cast<CallInst>(&*InstR)));
                 }
-                // cmpValues should ensure this is true.
-                assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);
+
+                if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR))
+                    processCallInstDifference(dyn_cast<CallInst>(&*InstL),
+                                              dyn_cast<CallInst>(&*InstR));
+
+                return Res;
             }
         }
 
@@ -1347,6 +1325,39 @@ int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
         }
         if (!match)
             return 1;
+    }
+    return 0;
+}
+
+/// Compare two instructions along with their operands.
+int DifferentialFunctionComparator::cmpOperationsWithOperands(
+        const Instruction *L, const Instruction *R) const {
+    // Contains code copied out of the original cmpBasicBlocks since it is more
+    // convenient to have the code in a separate function.
+
+    bool needToCmpOperands = true;
+    if (int Res = cmpOperations(L, R, needToCmpOperands))
+        return Res;
+    if (needToCmpOperands) {
+        assert(L->getNumOperands() == R->getNumOperands());
+
+        for (unsigned i = 0, e = L->getNumOperands(); i != e; ++i) {
+            Value *OpL = L->getOperand(i);
+            Value *OpR = R->getOperand(i);
+
+            if (int Res = cmpValues(OpL, OpR)) {
+                if (isa<CallInst>(L) && isa<CallInst>(R)) {
+                    Res = cmpCallArgumentUsingCSource(dyn_cast<CallInst>(L),
+                                                      dyn_cast<CallInst>(R),
+                                                      OpL,
+                                                      OpR,
+                                                      i);
+                }
+                return Res;
+            }
+            // cmpValues should ensure this is true.
+            assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);
+        }
     }
     return 0;
 }
