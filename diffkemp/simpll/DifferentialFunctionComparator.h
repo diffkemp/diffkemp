@@ -73,6 +73,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                      Value *OpL,
                                      Value *OpR,
                                      unsigned i) const;
+    /// Compare two instructions along with their operands.
+    int cmpOperationsWithOperands(const Instruction *L,
+                                  const Instruction *R) const;
     /// Detect cast instructions and ignore them when comparing the control flow
     /// only. (The rest is the same as in LLVM.)
     int cmpBasicBlocks(const BasicBlock *BBL,
