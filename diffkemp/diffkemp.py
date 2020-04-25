@@ -173,6 +173,7 @@ def generate(args):
                                 name=data_fun,
                                 llvm_mod=data_mod,
                                 glob_var=data.name,
+                                var_indices=data.indices,
                                 tag="function using sysctl data "
                                     "variable \"{}\"".format(data.name),
                                 group=sysctl)
