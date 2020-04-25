@@ -37,6 +37,7 @@ extern cl::opt<bool> ControlFlowOpt;
 extern cl::opt<bool> PrintCallstacksOpt;
 extern cl::opt<bool> VerboseOpt;
 extern cl::opt<bool> VerboseMacrosOpt;
+extern cl::opt<bool> NoMissingDefsInPreprocessOpt;
 extern cl::list<int> IndicesOpt;
 
 /// Tool configuration parsed from CLI options.
@@ -73,6 +74,8 @@ class Config {
     bool PrintAsmDiffs;
     // Show call stacks for non-equal functions
     bool PrintCallStacks;
+    // Don't print missingDefs in preprocess phase
+    bool NoMissingDefsInPreprocess;
 
     // Indices for GEP instuction dependency check
     std::vector<int> Indices;

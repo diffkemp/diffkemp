@@ -36,7 +36,9 @@ void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
                       std::vector<int> Indices,
-                      bool ControlFlowOnly);
+                      bool ControlFlowOnly,
+                      bool NoMissingDefsInPreprocess,
+                      OverallResult &Result);
 
 /// Simplify two corresponding modules for the purpose of their subsequent
 /// semantic difference analysis. Tries to remove all the code that is

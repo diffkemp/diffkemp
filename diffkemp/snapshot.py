@@ -214,7 +214,7 @@ class Snapshot:
                                      self.snapshot_source.kernel_dir),
                                      f["llvm"]))
                              if f["llvm"] else None,
-                             f["glob_var"],
+                             f["glob_var"], f["glob_var_indices"],
                              f["tag"],
                              group)
 

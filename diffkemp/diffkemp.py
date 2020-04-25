@@ -262,7 +262,9 @@ def compare(args):
                 continue
 
             # If function has a global variable, set it
-            glob_var = KernelParam(old_fun_desc.glob_var) \
+            glob_var = KernelParam(
+                old_fun_desc.glob_var,
+                old_fun_desc.var_indices) \
                 if old_fun_desc.glob_var else None
 
             # Run the semantic diff
