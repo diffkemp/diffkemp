@@ -788,7 +788,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpBasicBlocksInlining) {
     CallInst *CL = CallInst::Create(AuxFL->getFunctionType(), AuxFL, "", RetL);
     AllocaInst *AllR = new AllocaInst(Type::getInt8Ty(CtxR), 0, "var", RetR);
 
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 1);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     std::pair<const CallInst *, const CallInst *> expectedPair{CL, nullptr};
     ASSERT_EQ(ModComp->tryInline, expectedPair);
 
@@ -800,7 +800,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpBasicBlocksInlining) {
     AllocaInst *AllL = new AllocaInst(Type::getInt8Ty(CtxL), 0, "var", RetL);
     CallInst *CR = CallInst::Create(AuxFR->getFunctionType(), AuxFR, "", RetR);
 
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), -1);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     expectedPair = {nullptr, CR};
     ASSERT_EQ(ModComp->tryInline, expectedPair);
 
@@ -821,7 +821,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpBasicBlocksInlining) {
     ReturnInst::Create(CtxL, BBL);
     ReturnInst::Create(CtxR, BBR);
 
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 1);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     expectedPair = {CL, CR};
     ASSERT_EQ(ModComp->tryInline, expectedPair);
 }
@@ -963,7 +963,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesPointerCasts) {
 
     // First, cmpBasicBlocks must be run to identify instructions to ignore
     // and then, cmpValues should ignore those instructions.
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 0);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(PtrL, PtrR, true), 0);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, PtrR, true), 0);
 }
@@ -987,13 +987,13 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesCastFromUnion) {
 
     // First, cmpBasicBlocks must be run to identify instructions to ignore
     // and then, cmpValues should ignore those instructions.
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 0);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR), 0);
 
     BBR->getTerminator()->eraseFromParent();
     ReturnInst::Create(CtxR, ConstR2, BBR);
 
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 1);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR2), 1);
 }
 
@@ -1011,11 +1011,11 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesIntTrunc) {
 
     // First, cmpBasicBlocks must be run to identify instructions to ignore
     // and then, cmpValues should ignore those instructions.
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 1);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR), -1);
 
     Conf.ControlFlowOnly = true;
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 0);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR), 0);
     ASSERT_EQ(DiffComp->testCmpValues(ConstR, CastL), 0);
     Conf.ControlFlowOnly = false;
@@ -1037,7 +1037,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesIntExt) {
 
     // First, cmpBasicBlocks must be run to identify instructions to ignore
     // and then, cmpValues should ignore those instructions.
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 1);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR), 0);
 
     CastL->eraseFromParent();
@@ -1052,7 +1052,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesIntExt) {
     ReturnInst::Create(CtxL, ArithmL, BBL);
     ReturnInst::Create(CtxR, ArithmR, BBR);
 
-    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 1);
+    DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL2, ConstR), -1);
 }
 
@@ -1402,6 +1402,122 @@ TEST_F(DifferentialFunctionComparatorTest, CmpInverseBranchesNegation) {
     ReturnInst::Create(CtxL, ConstantInt::getFalse(CtxL), BBLF);
     ReturnInst::Create(CtxR, ConstantInt::getTrue(CtxR), BBRT);
     ReturnInst::Create(CtxR, ConstantInt::getFalse(CtxR), BBRF);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+/// Check detection of code relocation.
+TEST_F(DifferentialFunctionComparatorTest, CodeRelocation) {
+    // Left function:
+    //
+    // %0:
+    //   %var = alloca %struct.struct
+    //   %gep1 = getelementptr %var, 0, 0
+    //   %load1 = load %gep1
+    //   %icmp = icmp ne %load1, 0
+    //   br %icmp,
+    //
+    // %1:
+    //   %gep2 = getelementptr %var, 0, 1
+    //   %load2 = load %gep2
+    //   ret %load2
+    //
+    // %2:
+    //   ret 0
+    //
+    // Right function:
+    //
+    // %0:
+    //   %var = alloca %struct.struct
+    //   %gep1 = getelementptr %var, 0, 0
+    //   %load1 = load %gep1
+    //   %gep2 = getelementptr %var, 0, 1     // these two instructions were
+    //   %load2 = load %gep2                  // safely relocated
+    //   %icmp = icmp ne %load1, 0
+    //   br %icmp,
+    //
+    // %1:
+    //   ret %load2
+    //
+    // %2:
+    //   ret 0
+
+    StructType *STyL = StructType::create(
+            {Type::getInt32Ty(CtxL), Type::getInt32Ty(CtxL)});
+    STyL->setName("struct");
+    StructType *STyR = StructType::create(
+            {Type::getInt32Ty(CtxR), Type::getInt32Ty(CtxR)});
+    STyR->setName("struct");
+
+    BasicBlock *BB1L = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BB1R = BasicBlock::Create(CtxR, "", FR);
+    BasicBlock *BB2L = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BB2R = BasicBlock::Create(CtxR, "", FR);
+    BasicBlock *BB3L = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BB3R = BasicBlock::Create(CtxR, "", FR);
+
+    auto VarL = new AllocaInst(STyL, 0, "var", BB1L);
+    auto VarR = new AllocaInst(STyR, 0, "var", BB1R);
+
+    GetElementPtrInst *GEP1L = GetElementPtrInst::Create(
+            STyL,
+            VarL,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
+            "gep1",
+            BB1L);
+    GetElementPtrInst *GEP1R = GetElementPtrInst::Create(
+            STyR,
+            VarR,
+            {ConstantInt::get(Type::getInt32Ty(CtxR), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxR), 0)},
+            "gep1",
+            BB1R);
+
+    auto Load1L = new LoadInst(Type::getInt32Ty(CtxL), GEP1L, "load1", BB1L);
+    auto Load1R = new LoadInst(Type::getInt32Ty(CtxR), GEP1R, "load1", BB1R);
+
+    // Relocated instructions on the right side
+    GetElementPtrInst *GEP2R = GetElementPtrInst::Create(
+            STyR,
+            VarR,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "gep2",
+            BB1R);
+    auto Load2R = new LoadInst(Type::getInt32Ty(CtxR), GEP2R, "load2", BB1R);
+
+    auto ICmpL = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_NE,
+                                  Load1L,
+                                  ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+                                  "icmp",
+                                  BB1L);
+    auto ICmpR = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_NE,
+                                  Load1R,
+                                  ConstantInt::get(Type::getInt32Ty(CtxR), 0),
+                                  "icmp",
+                                  BB1R);
+
+    BranchInst::Create(BB2L, BB3L, ICmpL, BB1L);
+    BranchInst::Create(BB2R, BB3R, ICmpR, BB1R);
+
+    // Relocated instructions on the left side
+    GetElementPtrInst *GEP2L = GetElementPtrInst::Create(
+            STyL,
+            VarL,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "gep2",
+            BB2L);
+    auto Load2L = new LoadInst(Type::getInt32Ty(CtxL), GEP2L, "load2", BB2L);
+    ReturnInst::Create(CtxL, Load2L, BB2L);
+
+    ReturnInst::Create(CtxR, Load2R, BB2R);
+
+    ReturnInst::Create(CtxL, ConstantInt::get(Type::getInt32Ty(CtxL), 0), BB3L);
+    ReturnInst::Create(CtxR, ConstantInt::get(Type::getInt32Ty(CtxR), 0), BB3R);
 
     ASSERT_EQ(DiffComp->compare(), 0);
 }

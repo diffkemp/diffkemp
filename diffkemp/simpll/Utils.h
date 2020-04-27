@@ -29,6 +29,7 @@ enum Program { First, Second };
 typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
+typedef std::pair<const CallInst *, const CallInst *> CallPair;
 
 /// Instructions pointer set.
 typedef SmallPtrSet<const Instruction *, 32> InstructionSet;

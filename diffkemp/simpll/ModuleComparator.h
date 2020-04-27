@@ -81,8 +81,7 @@ class ModuleComparator {
 
     /// Pointer to a function that is called just by one of the compared
     /// functions and needs to be inlined.
-    std::pair<const CallInst *, const CallInst *> tryInline = {nullptr,
-                                                               nullptr};
+    CallPair tryInline = {nullptr, nullptr};
 
   protected:
     enum InliningResult {
