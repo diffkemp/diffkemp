@@ -106,7 +106,7 @@ class FunctionComparator {
 
   protected:
   /// Start the comparison.
-  void beginCompare() {
+  virtual void beginCompare() {
     sn_mapL.clear();
     sn_mapR.clear();
   }

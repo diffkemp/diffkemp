@@ -57,6 +57,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
             DifferingInstructions;
 
   protected:
+    /// Initialize relocation info
+    void beginCompare() override;
     /// Specific comparison of GEP instructions/operators.
     /// Handles situation when there is an offset between matching GEP indices
     /// in the compared modules (when a struct type has different fields).
@@ -116,6 +118,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                       const Value *Const) const;
     /// Comparing PHI instructions
     int cmpPHIs(const PHINode *PhiL, const PHINode *PhiR) const;
+    /// Try to find a matching instruction that has been moved forward in one of
+    /// the basic blocks. If such instruction if found, a relocation is created.
+    bool findMatchingOpWithOffset(BasicBlock::const_iterator &InstL,
+                                  BasicBlock::const_iterator &InstR,
+                                  Program prog_to_search) const;
 
   private:
     friend class PatternComparator;
@@ -135,6 +142,28 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// retrieval of mapped values based on assigned numbers.
     mutable std::unordered_map<int, std::pair<const Value *, const Value *>>
             mappedValuesBySn;
+
+    /// Relocation information type. Supports relocation of a sequential block
+    /// of code.
+    struct RelocationInfo {
+        // Current status of the relocation.
+        //  - None: no unresolved relocation found
+        //  - Stored: found a block of code between instructions begin and end
+        //            that is present in program prog, but was possibly
+        //            relocated in the other program
+        //  - Matching: trying to match the previously found relocated block
+        //              to some block in the other program, after this is done,
+        //              the comparison will continue from instruction restore
+        //              in prog
+        enum Status { None, Stored, Matching };
+        Status status = None;
+        Program prog;
+        BasicBlock::const_iterator begin;
+        BasicBlock::const_iterator end;
+        BasicBlock::const_iterator restore;
+        CallPair tryInlineBackup;
+    };
+    mutable RelocationInfo Reloc;
 
     mutable PatternComparator PatternComp;
     ModuleComparator *ModComparator;
