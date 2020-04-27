@@ -110,6 +110,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
     mutable std::vector<std::pair<const PHINode *, const PHINode *>>
             phisToCompare;
+    mutable std::set<const Value *> ignoredInstructions;
 
     ModuleComparator *ModComparator;
 
