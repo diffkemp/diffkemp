@@ -84,10 +84,11 @@ bool isFollowingFieldAccessInstruction(const Instruction *NextInst,
 /// Extracts source types for all GEPs in a field access operation.
 std::vector<Type *> getFieldAccessSourceTypes(const GetElementPtrInst *FA) {
     std::vector<Type *> TypeVec;
-    for (const Instruction *I = FA;
-         !I->isTerminator()
-         && isFollowingFieldAccessInstruction(I->getNextNode(), I);
-         I = I->getNextNode()) {
+    const Instruction *LastFAInst = nullptr;
+    for (const Instruction *I = FA; !I->isTerminator(); I = I->getNextNode()) {
+        if (LastFAInst && !isFollowingFieldAccessInstruction(I, LastFAInst))
+            continue;
+        LastFAInst = I;
         if (auto GEP = dyn_cast<GetElementPtrInst>(I)) {
             TypeVec.push_back(GEP->getSourceElementType());
             // If the GEP has a GEP constant expression as its argument, add it

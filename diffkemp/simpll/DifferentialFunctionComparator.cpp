@@ -1391,48 +1391,20 @@ void DifferentialFunctionComparator::findDifference(
         }
     }
 
-    // If the instructions are GEPs, check for a type difference in a field
-    // access operation.
-    if (isa<GetElementPtrInst>(L) && isa<GetElementPtrInst>(R)) {
-        auto GEPL = dyn_cast<GetElementPtrInst>(L);
-        auto GEPR = dyn_cast<GetElementPtrInst>(R);
-
-        findTypeDifferences(GEPL, GEPR, L->getFunction(), R->getFunction());
-    }
-
-    // Check whether there is an additional cast because of a structure type
-    // change.
-    if (isa<CastInst>(L) || isa<CastInst>(R)) {
-        auto Cast = isa<CastInst>(L) ? dyn_cast<CastInst>(L)
-                                     : dyn_cast<CastInst>(R);
-        const GetElementPtrInst *FA;
-        LoadInst *LI;
-        PointerType *PTy;
-        StructType *STy;
-        // Check if the operator of a cast is part of a field access
-        // operation (either directly or through a load).
-        if (((FA = getFieldAccessStart(Cast))
-             || ((LI = dyn_cast<LoadInst>(Cast->getOperand(0)))
-                 && (FA = getFieldAccessStart(LI->getOperand(0)))))
-            && (PTy = dyn_cast<PointerType>(FA->getOperand(0)->getType()))
-            && (STy = dyn_cast<StructType>(PTy->getPointerElementType()))
-            && STy->hasName()) {
-            // Value is casted after being extracted from a structure.
-            // There is probably a change in the structure type causing
-            // the cast.
-            // Try to find the type in the other module.
-            auto OtherSTy = ((Cast == L) ? R : L)
-                                    ->getModule()
-                                    ->getTypeByName(STy->getName());
-            if (OtherSTy) {
-                if (Cast == L)
-                    findTypeDifference(
-                            STy, OtherSTy, L->getFunction(), R->getFunction());
-                else
-                    findTypeDifference(
-                            OtherSTy, STy, L->getFunction(), R->getFunction());
-            }
-        }
+    // Check whether there is a field access difference because of
+    // a structure type change.
+    // Note: if one field access is longer than the other, it is possible
+    // that a difference is found when the pointer is already outside the
+    // field access in one of the modules. For this reason the previous
+    // instruction is also tested for the presence of a field access.
+    auto FAL = getFieldAccessStart(L);
+    auto FAR = getFieldAccessStart(R);
+    if (!FAL && L->getPrevNode())
+        FAL = getFieldAccessStart(L->getPrevNode());
+    if (!FAR && R->getPrevNode())
+        FAR = getFieldAccessStart(R->getPrevNode());
+    if (FAL && FAR) {
+        findTypeDifferences(FAL, FAR, L->getFunction(), R->getFunction());
     }
 
     // Check whether there is a load type difference because of a structure
