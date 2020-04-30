@@ -144,6 +144,8 @@ void copyFunctionProperties(Function *srcFun, Function *destFun);
 /// methods.
 std::string valueToString(const Value *Val);
 
+Constant *getConstantFromString(Constant *initializer, std::string Val);
+
 /// Converts type to its (LLVM IR) string representation.
 std::string typeToString(Type *Ty);
 

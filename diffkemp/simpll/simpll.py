@@ -121,7 +121,10 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
                 print(" ".join(simpll_command))
 
             simpll_out = check_output(simpll_command)
-        except CalledProcessError:
+        except CalledProcessError as e:
+            if e.returncode == 10:
+                raise SimpLLException(
+                    "Value of variable has incompatible type")
             raise SimpLLException("Simplifying files failed")
 
     if output_llvm_ir:
