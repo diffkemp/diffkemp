@@ -210,15 +210,19 @@ class Snapshot:
                 functions = g
             self.fun_groups[group] = self.FunctionGroup()
             for f in functions:
-                self.add_fun(f["name"],
-                             LlvmKernelModule(
-                                 os.path.join(os.path.relpath(
-                                     self.snapshot_source.kernel_dir),
-                                     f["llvm"]))
-                             if f["llvm"] else None,
-                             f["glob_var"],
-                             f["tag"],
-                             group)
+                self.add_fun(
+                    f["name"],
+                    LlvmKernelModule(
+                        os.path.join(os.path.relpath(
+                            self.snapshot_source.kernel_dir),
+                            f["llvm"]
+                        ))
+                    if f["llvm"] else None,
+                    f["glob_var"],
+                    f["glob_var_value"],
+                    f["tag"],
+                    group
+                )
 
     def to_yaml(self):
         """

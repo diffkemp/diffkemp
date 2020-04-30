@@ -368,9 +368,10 @@ def compare(args):
             fun_result = functions_diff(
                 mod_first=old_fun_desc.mod, mod_second=new_fun_desc.mod,
                 fun_first=fun, fun_second=fun,
-                glob_var=glob_var, config=config,
-                prev_result_graph=result_graph, function_cache=cache,
-                module_cache=module_cache)
+                glob_var=glob_var, glob_var_value=old_fun_desc.glob_var_value,
+                config=config, prev_result_graph=result_graph,
+                function_cache=cache, module_cache=module_cache
+            )
             result_graph = fun_result.graph
 
             if fun_result is not None:
