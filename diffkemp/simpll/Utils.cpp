@@ -657,6 +657,7 @@ Type *getCSourceIdentifierType(
 void copyCallInstProperties(CallInst *srcCall, CallInst *destCall) {
     destCall->setAttributes(srcCall->getAttributes());
     destCall->setCallingConv(srcCall->getCallingConv());
+    destCall->setDebugLoc(srcCall->getDebugLoc());
 
     if (srcCall->isTailCall()) {
         destCall->setTailCall();
