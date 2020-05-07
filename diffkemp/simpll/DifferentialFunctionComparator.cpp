@@ -1051,9 +1051,9 @@ int DifferentialFunctionComparator::cmpFieldAccess(
 
     uint64_t OffsetL = 0, OffsetR = 0;
     bool l_end = false, r_end = false;
-    while (!l_end && !r_end) {
+    while (!l_end || !r_end) {
         int offset = 0;
-        if (isConstantMemoryAccessToPtr(&*InstL, PtrL, offset)) {
+        if (!l_end && isConstantMemoryAccessToPtr(&*InstL, PtrL, offset)) {
             OffsetL += offset;
             PtrL = &*InstL;
             InstL++;
@@ -1061,7 +1061,7 @@ int DifferentialFunctionComparator::cmpFieldAccess(
             l_end = true;
         }
 
-        if (isConstantMemoryAccessToPtr(&*InstR, PtrR, offset)) {
+        if (!r_end && isConstantMemoryAccessToPtr(&*InstR, PtrR, offset)) {
             OffsetR += offset;
             PtrR = &*InstR;
             InstR++;

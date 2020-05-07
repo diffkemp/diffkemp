@@ -61,6 +61,8 @@ bool isConstantMemoryAccessToPtr(const Instruction *Inst,
                 return false;
             }
             Offset = InstOffset.getZExtValue();
+        } else {
+            Offset = 0;
         }
         return true;
     }
