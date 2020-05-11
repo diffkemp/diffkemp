@@ -95,10 +95,12 @@ std::vector<Type *> getFieldAccessSourceTypes(const GetElementPtrInst *FA) {
             TypeVec.push_back(GEP->getSourceElementType());
             // If the GEP has a GEP constant expression as its argument, add it
             // to the vector.
-            if (auto InnerGEP =
+            // Note: two casts have to be used because the class for a GEP
+            // constant expression (GetElementPtrConstantExpr) is private.
+            if (auto InnerConstExpr =
                         dyn_cast<ConstantExpr>(GEP->getPointerOperand())) {
-                TypeVec.push_back(dyn_cast<GEPOperator>(InnerGEP)
-                                          ->getSourceElementType());
+                if (auto InnerGEP = dyn_cast<GEPOperator>(InnerConstExpr))
+                    TypeVec.push_back(InnerGEP->getSourceElementType());
             }
         }
     }
