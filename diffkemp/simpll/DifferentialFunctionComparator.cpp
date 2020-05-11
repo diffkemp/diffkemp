@@ -968,8 +968,15 @@ void DifferentialFunctionComparator::findTypeDifferences(
         StructType *STyR = dyn_cast<StructType>(SrcTypesR[i]);
         if (!STyL || !STyR)
             continue;
-        if (!STyL->hasName() || !STyR->hasName()
-            || (STyL->getName() != STyR->getName()))
+        if (!STyL->hasName() || !STyR->hasName())
+            continue;
+        std::string STyLShortName = hasSuffix(STyL->getName())
+                                            ? dropSuffix(STyL->getName())
+                                            : STyL->getName().str();
+        std::string STyRShortName = hasSuffix(STyR->getName())
+                                            ? dropSuffix(STyR->getName())
+                                            : STyR->getName().str();
+        if (STyLShortName != STyRShortName)
             continue;
         findTypeDifference(STyL, STyR, L, R);
     }
