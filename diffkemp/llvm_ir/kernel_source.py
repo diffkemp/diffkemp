@@ -121,8 +121,8 @@ class KernelSource:
             with open(os.devnull, "w") as devnull:
                 cscope_output = check_output(command, stderr=devnull).decode(
                     'utf-8')
-            result = [l for l in cscope_output.splitlines() if
-                      l.split()[0].endswith("c")]
+            result = [line for line in cscope_output.splitlines() if
+                      line.split()[0].endswith("c")]
             self.cscope_cache[(symbol, definition)] = result
             return result
         except CalledProcessError:
