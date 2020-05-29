@@ -110,7 +110,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
     mutable std::vector<std::pair<const PHINode *, const PHINode *>>
             phisToCompare;
-    mutable std::set<const Value *> ignoredInstructions;
+    mutable std::unordered_map<const Value *, const Value *>
+            ignoredInstructions;
 
     ModuleComparator *ModComparator;
 
@@ -152,9 +153,24 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// constant (if not, it returns false).
     bool accumulateAllOffsets(const BasicBlock &BB, uint64_t &Offset) const;
 
-    /// Check if the given operation can be ignored (it does not affect
-    /// semantics) for control flow only diffs.
-    bool mayIgnore(const User *Inst) const;
+    /// Check if the given instruction can be ignored (it does not affect
+    /// semantics). Replacements of ignorable instructions are stored
+    /// inside the ignored instructions map.
+    bool maySkipInstruction(const Instruction *Inst) const;
+
+    /// Check whether the given cast can be ignored (it does not affect
+    /// semantics. First operands of ignorable casts are stored as their
+    /// replacements inside the ignored instructions map.
+    bool maySkipCast(const User *Cast) const;
+
+    /// Check whether the given instruction is a repetitive variant of a
+    /// previous load with no store instructions in between. Replacements of
+    /// ignorable loads are stored inside the ignored instructions map.
+    bool maySkipLoad(const LoadInst *Load) const;
+
+    /// Retrive the replacement for the given value from the ignored
+    /// instructions map. Try to generate the replacement if a bitcast is given.
+    const Value *getReplacementValue(const Value *Replaced) const;
 
     /// Does additional operations in cases when a difference between two
     /// CallInsts or their arguments is detected.
@@ -163,7 +179,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// they are not compared in cmpBasicBlocks because there is another
     /// difference).
     /// 2. Try to inline the functions.
-    /// 3. Look a macro-function differenfce.
+    /// 3. Look a macro-function difference.
     void processCallInstDifference(const CallInst *CL,
                                    const CallInst *CR) const;
 };
