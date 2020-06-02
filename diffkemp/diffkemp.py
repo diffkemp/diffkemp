@@ -6,6 +6,7 @@ from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
+from diffkemp.simpll.library import SimpLLModule
 from tempfile import mkdtemp
 import errno
 import os
@@ -82,6 +83,11 @@ def __make_argument_parser():
                             action="store_true")
     compare_ap.add_argument("--enable-simpll-ffi",
                             help="calls SimpLL through FFI",
+                            action="store_true")
+    compare_ap.add_argument("--enable-module-cache",
+                            help="loads frequently used modules to memory and \
+                            uses them in SimpLL (experimental, currently \
+                            slower in most cases)",
                             action="store_true")
     compare_ap.set_defaults(func=compare)
     return ap
@@ -201,6 +207,40 @@ def generate(args):
     snapshot.finalize()
 
 
+def _generate_module_cache(functions, group_name, other_snapshot,
+                           min_frequency):
+    """
+    Preloads frequently used modules and stores them in a name-module
+    dictionary (in the form on a SimpLLModule object).
+    :param functions: List of pairs of functions to be compared along
+    with their description objects
+    :param group_name: Name of the group the functions are in
+    :param other_snapshot: Snapshot object for looking up the functions
+    in the other snapshot
+    :param min_frequency: Minimal frequency for a module to be included into
+    the cache
+    :return: Dictionary where the keys are module filenames and the values
+    are SimpLLModule objects
+    """
+    module_frequency_map = dict()
+    for fun, old_fun_desc in functions:
+        # Check if the function exists in the other snapshot
+        new_fun_desc = other_snapshot.get_by_name(fun, group_name)
+        if not new_fun_desc:
+            continue
+        for fun_desc in [old_fun_desc, new_fun_desc]:
+            if not fun_desc.mod:
+                continue
+            if fun_desc.mod.llvm not in module_frequency_map:
+                module_frequency_map[fun_desc.mod.llvm] = 0
+            module_frequency_map[fun_desc.mod.llvm] += 1
+    module_cache = dict()
+    for mod, frequency in module_frequency_map.items():
+        if frequency >= min_frequency:
+            module_cache[mod] = SimpLLModule(mod)
+    return module_cache
+
+
 def compare(args):
     """
     Compare snapshots of linux kernels. Runs the semantic comparison and shows
@@ -245,6 +285,15 @@ def compare(args):
 
         result_graph = None
         cache = SimpLLCache(mkdtemp())
+
+        if args.enable_module_cache:
+            module_cache = _generate_module_cache(group.functions.items(),
+                                                  group_name,
+                                                  new_snapshot,
+                                                  3)
+        else:
+            module_cache = None
+
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
             new_fun_desc = new_snapshot.get_by_name(fun, group_name)
@@ -269,7 +318,8 @@ def compare(args):
                 mod_first=old_fun_desc.mod, mod_second=new_fun_desc.mod,
                 fun_first=fun, fun_second=fun,
                 glob_var=glob_var, config=config,
-                prev_result_graph=result_graph, function_cache=cache)
+                prev_result_graph=result_graph, function_cache=cache,
+                module_cache=module_cache)
             result_graph = fun_result.graph
 
             if fun_result is not None:

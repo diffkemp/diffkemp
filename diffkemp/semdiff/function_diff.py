@@ -160,7 +160,9 @@ def functions_semdiff(first, second, fun_first, fun_second, config):
 def functions_diff(mod_first, mod_second,
                    fun_first, fun_second,
                    glob_var, config,
-                   prev_result_graph=None, function_cache=None):
+                   prev_result_graph=None,
+                   function_cache=None,
+                   module_cache=None):
     """
     Compare two functions for equality.
 
@@ -214,7 +216,8 @@ def functions_diff(mod_first, mod_second,
                                output_llvm_ir=config.output_llvm_ir,
                                print_asm_diffs=config.print_asm_diffs,
                                verbose=config.verbosity,
-                               use_ffi=config.use_ffi)
+                               use_ffi=config.use_ffi,
+                               module_cache=module_cache)
                 if missing_defs:
                     # If there are missing function definitions, try to find
                     # their implementation, link them to the current modules,
