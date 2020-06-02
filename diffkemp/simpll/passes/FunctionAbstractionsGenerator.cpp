@@ -14,7 +14,6 @@
 
 #include "FunctionAbstractionsGenerator.h"
 #include "CalledFunctionsAnalysis.h"
-#include "FieldAccessFunctionGenerator.h"
 #include "Utils.h"
 #include <Config.h>
 #include <llvm/ADT/Hashing.h>
@@ -168,8 +167,7 @@ bool isSimpllAbstractionDeclaration(const Function *Fun) {
 
 /// Returns true if the function is a SimpLL abstraction.
 bool isSimpllAbstraction(const Function *Fun) {
-    return isSimpllAbstractionDeclaration(Fun)
-           || isSimpllFieldAccessAbstraction(Fun);
+    return isSimpllAbstractionDeclaration(Fun);
 }
 
 /// Extracts inline assembly code string from abstraction.

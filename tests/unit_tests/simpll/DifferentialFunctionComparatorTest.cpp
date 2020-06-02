@@ -18,7 +18,6 @@
 #include <ModuleComparator.h>
 #include <ResultsCache.h>
 #include <gtest/gtest.h>
-#include <passes/FieldAccessFunctionGenerator.h>
 #include <passes/StructureDebugInfoAnalysis.h>
 #include <passes/StructureSizeAnalysis.h>
 
@@ -970,72 +969,6 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFunctions) {
             &ModR);
     ASSERT_EQ(testFunctionComparison(AuxFL, AuxFR), 0);
     ASSERT_EQ(ModComp->ComparedFuns.find({AuxFL, AuxFR}),
-              ModComp->ComparedFuns.end());
-}
-
-/// Tests the comparison of field access abstractions using cmpGlobalValues.
-TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFieldAccesses) {
-    // Create the structure types for the test case.
-    StructType *UnionL = StructType::create({Type::getInt8Ty(CtxL)});
-    UnionL->setName("union.test");
-    StructType *STyL = StructType::create(UnionL);
-    STyL->setName("struct.test");
-    StructType *STyR = StructType::create({Type::getInt8Ty(CtxR)});
-    STyR->setName("struct.test");
-
-    // Create the abstractions and create GEPs inside them.
-    Function *AuxFL = Function::Create(
-            FunctionType::get(PointerType::get(Type::getInt8Ty(CtxL), 0),
-                              {PointerType::get(STyL, 0)},
-                              false),
-            GlobalValue::InternalLinkage,
-            SimpllFieldAccessFunName + ".0",
-            &ModL);
-    Function *AuxFR = Function::Create(
-            FunctionType::get(PointerType::get(Type::getInt8Ty(CtxL), 0),
-                              {PointerType::get(STyR, 0)},
-                              false),
-            GlobalValue::InternalLinkage,
-            SimpllFieldAccessFunName + ".0",
-            &ModR);
-
-    BasicBlock *BBL = BasicBlock::Create(CtxL, "", AuxFL);
-    BasicBlock *BBR = BasicBlock::Create(CtxR, "", AuxFR);
-
-    GetElementPtrInst *GEPL1 = GetElementPtrInst::Create(
-            STyL,
-            AuxFL->arg_begin(),
-            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
-             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
-            "",
-            BBL);
-    GetElementPtrInst *GEPL2 = GetElementPtrInst::Create(
-            UnionL,
-            GEPL1,
-            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
-             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
-            "",
-            BBL);
-    GetElementPtrInst *GEPR = GetElementPtrInst::Create(
-            STyR,
-            AuxFR->arg_begin(),
-            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
-             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
-            "",
-            BBR);
-    ReturnInst::Create(CtxL, GEPL1, BBL);
-    ReturnInst::Create(CtxR, GEPR, BBR);
-
-    // Compare the field accesses.
-    ASSERT_EQ(testFunctionComparison(AuxFL, AuxFR), 0);
-    ASSERT_EQ(ModComp->ComparedFuns.find({AuxFL, AuxFR}),
-              ModComp->ComparedFuns.end());
-
-    // Compare the field access again with a different name.
-    AuxFL->setName("not-a-field-access");
-    AuxFR->setName("not-a-field-access");
-    ASSERT_EQ(testFunctionComparison(AuxFL, AuxFR), 0);
-    ASSERT_NE(ModComp->ComparedFuns.find({AuxFL, AuxFR}),
               ModComp->ComparedFuns.end());
 }
 

@@ -16,7 +16,6 @@
 #include "Config.h"
 #include "FieldAccessUtils.h"
 #include "SourceCodeUtils.h"
-#include "passes/FieldAccessFunctionGenerator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <deque>
 #include <llvm/IR/CFG.h>

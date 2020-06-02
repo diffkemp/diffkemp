@@ -21,7 +21,6 @@
 #include "Utils.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/ControlFlowSlicer.h"
-#include "passes/FieldAccessFunctionGenerator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include "passes/MergeNumberedFunctionsPass.h"
 #include "passes/ReduceFunctionMetadataPass.h"

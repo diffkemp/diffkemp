@@ -16,7 +16,6 @@
 #include "Config.h"
 #include "DifferentialFunctionComparator.h"
 #include "Utils.h"
-#include "passes/FieldAccessFunctionGenerator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
@@ -129,19 +128,6 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     !inlineSecond
                             ? nullptr
                             : getCalledFunction(inlineSecond->getCalledValue());
-            // Here it is good to make some changes to the variables.
-            // If we have two functions to inline and one of them is a field
-            // access abstraction, postponing the inlining of the abstraction
-            // to the point all other functions are inlined is useful for
-            // structure type difference detection (because it relies on them).
-            if (inlineFirst && inlineSecond
-                && isSimpllFieldAccessAbstraction(InlinedFunFirst)
-                && !isSimpllFieldAccessAbstraction(InlinedFunSecond))
-                inlineFirst = nullptr;
-            if (inlineFirst && inlineSecond
-                && isSimpllFieldAccessAbstraction(InlinedFunSecond)
-                && !isSimpllFieldAccessAbstraction(InlinedFunFirst))
-                inlineSecond = nullptr;
             // If the called function is a declaration, add it to missingDefs.
             // Otherwise, inline the call and simplify the function.
             // The above is done for the first and the second call to inline.
