@@ -24,7 +24,7 @@
 AnalysisKey FunctionAbstractionsGenerator::Key;
 
 /// Creates a new function for each type of function that is called indirectly
-/// or as an inline assembly.
+/// and for each pair of assembly code and constraint.
 FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
         Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
     FunMap funAbstractions;
