@@ -24,8 +24,10 @@ const std::string SimpllIndirectFunctionPrefix = "simpll__indirect.";
 
 using namespace llvm;
 
-/// Generates abstractions for indirect function calls and for inline assemblies
-/// Implemented as a Function pass.
+/// Generates abstractions for indirect function calls and for inline
+/// assemblies. One abstraction function corresponds to one function type in the
+/// case of indirect calls and to one pair of inline assembly code and
+/// constraint in the case of inline assembly values.
 class FunctionAbstractionsGenerator
         : public AnalysisInfoMixin<FunctionAbstractionsGenerator> {
   public:
