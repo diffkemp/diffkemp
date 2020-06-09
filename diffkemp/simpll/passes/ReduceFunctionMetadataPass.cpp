@@ -27,5 +27,5 @@ PreservedAnalyses
     // function inlining, discarding the attribute.
     Fun.setLinkage(GlobalValue::LinkageTypes::ExternalLinkage);
 
-    return PreservedAnalyses();
+    return PreservedAnalyses::all();
 }
