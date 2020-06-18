@@ -65,7 +65,7 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
             ArrayType *NewType = ArrayType::get(
                     Used->getType()->getArrayElementType(), newValues.size());
             Constant *Used_New = ConstantArray::get(NewType, newValues);
-            // The initialized type has changed, therefore the whole global
+            // The initializer type has changed, therefore the whole global
             // variable has to be replaced.
             GlobalVariable *GUsed_New = new GlobalVariable(Mod,
                                                            NewType,
@@ -82,13 +82,13 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
     // Remove kernel symbol
     for (GlobalVariable *V : kSymstoDelete) {
         Constant *Initializer = V->getInitializer();
+        bool isStruct = isa<ConstantStruct>(Initializer);
 
-        // Remove the global variable itself
+        // Remove the global variable itself.
         V->eraseFromParent();
 
-        // Remove its initializer and if it is a struct, also remove its first
-        // member (
-        if (Initializer) {
+        // Remove its initializer if it was a struct.
+        if (isStruct && Initializer) {
             Initializer->destroyConstant();
         }
     }
