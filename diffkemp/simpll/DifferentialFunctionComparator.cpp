@@ -58,6 +58,43 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
         // The original function says the GEPs are equal - return the value
         return OriginalResult;
 
+    if (isa<ArrayType>(GEPL->getSourceElementType())
+        && isa<ArrayType>(GEPR->getSourceElementType())) {
+        // When the only difference is the size of the accessed array,
+        // it is not considered a semantic change if the index type is an enum
+
+        if (GEPL->getNumOperands() != 3 || GEPR->getNumOperands() != 3)
+            // We only handle GEPs that access exactly one array element
+            return OriginalResult;
+
+        if (GEPL->getSourceElementType()->getArrayNumElements()
+            == GEPR->getSourceElementType()->getArrayNumElements())
+            return OriginalResult;
+
+        auto *STyL = cast<SequentialType>(GEPL->getSourceElementType());
+        auto *STyR = cast<SequentialType>(GEPR->getSourceElementType());
+        if (int Res = cmpTypes(STyL->getElementType(), STyR->getElementType()))
+            // The array element type must be the same
+            return Res;
+
+        for (unsigned i = 0, e = GEPL->getNumOperands(); i != e; ++i) {
+            if (int Res = cmpValues(GEPL->getOperand(i), GEPR->getOperand(i)))
+                return Res;
+        }
+
+        auto TypeL = getVariableTypeInfo(GEPL->getOperand(2));
+        auto TypeR = getVariableTypeInfo(GEPR->getOperand(2));
+
+        if (!TypeL || !TypeR)
+            return OriginalResult;
+
+        if (TypeL->getTag() == dwarf::DW_TAG_enumeration_type
+            && TypeR->getTag() == dwarf::DW_TAG_enumeration_type)
+            return 0;
+
+        return OriginalResult;
+    }
+
     if (!isa<StructType>(GEPL->getSourceElementType())
         || !isa<StructType>(GEPR->getSourceElementType()))
         // One of the types in not a structure - the original function is
@@ -733,6 +770,14 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
     BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
 
     while (InstL != InstLE && InstR != InstRE) {
+        if (isDebugInfo(*InstL)) {
+            InstL++;
+            continue;
+        }
+        if (isDebugInfo(*InstR)) {
+            InstR++;
+            continue;
+        }
         if ((&InstL->getDebugLoc())->get())
             CurrentLocL = &InstL->getDebugLoc();
         if ((&InstR->getDebugLoc())->get())

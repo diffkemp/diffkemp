@@ -479,3 +479,42 @@ void DebugInfo::removeFunctionsDebugInfo(Module &Mod) {
     for (auto &F : Mod)
         fpm.run(F, fam);
 }
+
+DICompositeType *getVariableTypeInfo(Value *Val) {
+    if (!Val->getType()->isIntegerTy())
+        return nullptr;
+
+    if (isa<Argument>(Val) || isa<AllocaInst>(Val)) {
+        // Val must be a parameter or a local variable so that we are able to
+        // extract its debug info
+        auto Fun =
+                isa<Argument>(Val)
+                        ? dyn_cast<Argument>(Val)->getParent()
+                        : dyn_cast<AllocaInst>(Val)->getParent()->getParent();
+
+        for (auto &Inst : instructions(Fun)) {
+            auto DbgInst = dyn_cast<DbgValueInst>(&Inst);
+            if (!DbgInst)
+                continue;
+
+            auto ValMD = dyn_cast<MetadataAsValue>(DbgInst->getOperand(0))
+                                 ->getMetadata();
+            auto DbgVal = dyn_cast<ValueAsMetadata>(ValMD)->getValue();
+
+            if (DbgVal != Val)
+                continue;
+
+            auto VarMD = dyn_cast<MetadataAsValue>(DbgInst->getOperand(1))
+                                 ->getMetadata();
+            auto LocVar = dyn_cast<DILocalVariable>(VarMD);
+
+            return dyn_cast<DICompositeType>(LocVar->getType());
+        }
+    }
+
+    auto Instr = dyn_cast<Instruction>(Val);
+    if (Instr && isCast(Instr))
+        return getVariableTypeInfo(Instr->getOperand(0));
+
+    return nullptr;
+}
