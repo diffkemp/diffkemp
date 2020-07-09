@@ -18,6 +18,7 @@
 #include "Utils.h"
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
 #include <llvm/IR/PassManager.h>
 #include <llvm/IR/TypeFinder.h>
 #include <llvm/IR/ValueMap.h>
@@ -52,10 +53,6 @@ class DebugInfo {
         calculateMacroAlignments();
         collectLocalVariables(CalledFirst, LocalVariableMapL);
         collectLocalVariables(CalledSecond, LocalVariableMapR);
-        // Remove calls to debug info intrinsics from the functions - it may
-        // cause some non-equalities in FunctionComparator.
-        removeFunctionsDebugInfo(modFirst);
-        removeFunctionsDebugInfo(modSecond);
     };
 
     /// Maps structure type and index to struct member names
@@ -162,5 +159,10 @@ bool isDebugInfo(const Instruction &Instr);
 
 /// Get name of a struct type as it is specified in the C source.
 std::string getStructTypeName(const StructType *type);
+
+/// Get type of given Value
+/// \param Val Value of variable.
+/// \return Variable type debug info.
+DICompositeType *getVariableTypeInfo(Value *Val);
 
 #endif // DIFFKEMP_SIMPLL_DEBUGINFO_H
