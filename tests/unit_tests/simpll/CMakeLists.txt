@@ -17,8 +17,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 enable_testing()
 
 include_directories(${CMAKE_SOURCE_DIR}/diffkemp/simpll)
+
 file(GLOB pass_tests passes/*.cpp)
-add_executable(runTests SimpLLTest.cpp DifferentialFunctionComparatorTest.cpp ${pass_tests})
+add_executable(runTests SimpLLTest.cpp DifferentialFunctionComparatorTest.cpp
+               FieldAccessUtilsTest.cpp ${pass_tests})
+
 set_target_properties(runTests
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

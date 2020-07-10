@@ -73,6 +73,9 @@ bool isAllocFunction(const Function &Fun);
 /// expression)
 bool isCast(const Value *Val);
 
+/// Returns true if the given instruction is a GEP with all indices equal to 0
+bool isZeroGEP(const Value *Val);
+
 /// Run simplification passes on the function
 ///  - simplify CFG
 ///  - dead code elimination
@@ -80,9 +83,6 @@ void simplifyFunction(Function *Fun);
 
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val);
-
-/// Extracts source types for all GEPs in a field accecss abstraction.
-std::vector<Type *> getFieldAccessSourceTypes(const Function *FA);
 
 /// Extract struct type of the value.
 /// Works if the value is of pointer type which can be even bitcasted.

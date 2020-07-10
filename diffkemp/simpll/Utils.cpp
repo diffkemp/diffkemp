@@ -198,6 +198,22 @@ bool isCast(const Value *Val) {
     return false;
 }
 
+/// Returns true if the given value is a GEP instruction with all indices equal
+/// to zero.
+bool isZeroGEP(const Value *Val) {
+    if (isa<GetElementPtrInst>(Val)) {
+        auto Inst = dyn_cast<User>(Val);
+        for (unsigned i = 1; i < Inst->getNumOperands(); ++i) {
+            auto Int = dyn_cast<ConstantInt>(Inst->getOperand(i));
+            if (!(Int && Int->getZExtValue() == 0)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val) {
     if (auto *IntVal = dyn_cast<ConstantInt>(Val)) {
@@ -227,23 +243,6 @@ StructType *getStructType(const Value *Value) {
     } else
         Type = dyn_cast<StructType>(Value->getType());
     return Type;
-}
-
-/// Extracts source types for all GEPs in a field accecss abstraction.
-std::vector<Type *> getFieldAccessSourceTypes(const Function *FA) {
-    std::vector<Type *> TypeVec;
-    const BasicBlock *BB = &*FA->begin();
-    for (const Instruction &I : *BB) {
-        if (auto GEP = dyn_cast<GetElementPtrInst>(&I)) {
-            TypeVec.push_back(GEP->getSourceElementType());
-            // If the GEP has another GEP as its argument, add it to the vector.
-            if (auto InnerGEP =
-                        dyn_cast<GEPOperator>(GEP->getPointerOperand())) {
-                TypeVec.push_back(InnerGEP->getSourceElementType());
-            }
-        }
-    }
-    return TypeVec;
 }
 
 /// Run simplification passes on the function

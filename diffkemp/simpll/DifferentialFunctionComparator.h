@@ -84,8 +84,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// GlobalNumberState object, since that approach does not fit the use case
     /// of comparing functions in two different modules.
     int cmpGlobalValues(GlobalValue *L, GlobalValue *R) const override;
-    /// Specific comparing of structure field access.
-    int cmpFieldAccess(const Function *L, const Function *R) const;
+    /// Specific comparing of sequences of field accesses.
+    int cmpFieldAccess(BasicBlock::const_iterator &InstL,
+                       BasicBlock::const_iterator &InstR) const;
     /// Specific comparing of values. Handles values generated from macros
     /// whose value changed and values where at least one of them is a cast.
     int cmpValues(const Value *L, const Value *R) const override;
@@ -128,9 +129,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
             findAsmDifference(const CallInst *IL, const CallInst *IR) const;
 
     /// Finds all differences between source types in GEPs inside two field
-    /// access abstractions and records them using findTypeDifference.
-    void findTypeDifferences(const Function *FAL,
-                             const Function *FAR,
+    /// access operations and records them using findTypeDifference.
+    void findTypeDifferences(const GetElementPtrInst *FAL,
+                             const GetElementPtrInst *FAR,
                              const Function *L,
                              const Function *R) const;
 
@@ -139,10 +140,6 @@ class DifferentialFunctionComparator : public FunctionComparator {
                             StructType *R,
                             const Function *FL,
                             const Function *FR) const;
-
-    /// Find type differences between calls to field access abstractions.
-    void findTypeDifferenceInChainedFieldAccess(const CallInst *CL,
-                                                const CallInst *CR) const;
 
     /// Detects a change from a function to a macro between two instructions.
     /// This is necessary because such a change isn't visible in C source.

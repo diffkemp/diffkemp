@@ -21,7 +21,6 @@
 #include "Utils.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/ControlFlowSlicer.h"
-#include "passes/FieldAccessFunctionGenerator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include "passes/MergeNumberedFunctionsPass.h"
 #include "passes/ReduceFunctionMetadataPass.h"
@@ -146,7 +145,6 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                 Module *>
             mpm;
     mpm.addPass(RemoveUnusedReturnValuesPass{});
-    mpm.addPass(FieldAccessFunctionGenerator{});
     mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
     mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
 

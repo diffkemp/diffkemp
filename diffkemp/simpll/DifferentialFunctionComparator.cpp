@@ -14,8 +14,8 @@
 
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
+#include "FieldAccessUtils.h"
 #include "SourceCodeUtils.h"
-#include "passes/FieldAccessFunctionGenerator.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <deque>
 #include <llvm/IR/CFG.h>
@@ -187,12 +187,6 @@ void DifferentialFunctionComparator::processCallInstDifference(
     if (!isSimpllAbstractionDeclaration(CalledL)
         && !isSimpllAbstractionDeclaration(CalledR))
         ModComparator->tryInline = {CL, CR};
-    // If the call instructions are both calls to field access abstractions,
-    // try to find a type difference between them.
-    if (isSimpllFieldAccessAbstraction(CalledL)
-        && isSimpllFieldAccessAbstraction(CalledR))
-        findTypeDifferences(
-                CalledL, CalledR, CL->getFunction(), CR->getFunction());
 
     // Look for a macro-function difference.
     findMacroFunctionDifference(CL, CR);
@@ -328,73 +322,6 @@ int DifferentialFunctionComparator::cmpOperations(
     return Result;
 }
 
-/// Finds all differences between source types in GEPs inside two field access
-/// abstractions and records them using findTypeDifference.
-void DifferentialFunctionComparator::findTypeDifferences(
-        const Function *FAL,
-        const Function *FAR,
-        const Function *L,
-        const Function *R) const {
-    std::vector<Type *> SrcTypesL = getFieldAccessSourceTypes(FAL);
-    std::vector<Type *> SrcTypesR = getFieldAccessSourceTypes(FAR);
-    for (int i = 0; i < std::min(SrcTypesL.size(), SrcTypesR.size()); i++) {
-        StructType *STyL = dyn_cast<StructType>(SrcTypesL[i]);
-        StructType *STyR = dyn_cast<StructType>(SrcTypesR[i]);
-        if (!STyL || !STyR)
-            continue;
-        if (!STyL->hasName() || !STyR->hasName()
-            || (STyL->getName() != STyR->getName()))
-            continue;
-        findTypeDifference(STyL, STyR, L, R);
-    }
-}
-
-/// Find and record a difference between structure types.
-void DifferentialFunctionComparator::findTypeDifference(
-        StructType *L,
-        StructType *R,
-        const Function *FL,
-        const Function *FR) const {
-    if (cmpTypes(L, R)) {
-        std::unique_ptr<TypeDifference> diff =
-                std::make_unique<TypeDifference>();
-        diff->name = L->getName().startswith("struct.") ? L->getName().substr(7)
-                                                        : L->getName();
-
-        // Try to get the debug info for the structure type.
-        DICompositeType *DCTyL = nullptr, *DCTyR = nullptr;
-        if (ModComparator->StructDIMapL.find(diff->name)
-            != ModComparator->StructDIMapL.end()) {
-            DCTyL = ModComparator->StructDIMapL[diff->name];
-        }
-        if (ModComparator->StructDIMapR.find(diff->name)
-            != ModComparator->StructDIMapR.end()) {
-            DCTyR = ModComparator->StructDIMapR[diff->name];
-        }
-        if (!DCTyL || !DCTyR)
-            // Debug info not found.
-            return;
-
-        diff->function = FL->getName();
-        diff->FileL = joinPath(DCTyL->getDirectory(), DCTyL->getFilename());
-        diff->FileR = joinPath(DCTyR->getDirectory(), DCTyR->getFilename());
-        // Note: for some reason the starting line of the struct in the debug
-        // info is the first attribute, skipping the actual declaration.
-        // This is fixed by decrementing the line number.
-        diff->LineL = DCTyL->getLine() - 1;
-        diff->LineR = DCTyR->getLine() - 1;
-        diff->StackL.push_back(CallInfo{diff->name + " (type)",
-                                        FL->getSubprogram()->getFilename(),
-                                        FL->getSubprogram()->getLine()});
-        diff->StackR = CallStack();
-        diff->StackR.push_back(CallInfo{diff->name + " (type)",
-                                        FR->getSubprogram()->getFilename(),
-                                        FR->getSubprogram()->getLine()});
-        ModComparator->ComparedFuns.at({FnL, FnR})
-                .addDifferingObject(std::move(diff));
-    }
-}
-
 /// Detects a change from a function to a macro between two instructions.
 /// This is necessary because such a change isn't visible in C source.
 void DifferentialFunctionComparator::findMacroFunctionDifference(
@@ -521,6 +448,10 @@ bool DifferentialFunctionComparator::maySkipInstruction(
             return true;
         }
         return maySkipCast(Inst);
+    }
+    if (isZeroGEP(Inst)) {
+        ignoredInstructions.insert({Inst, Inst->getOperand(0)});
+        return true;
     }
     if (auto Load = dyn_cast<LoadInst>(Inst)) {
         return maySkipLoad(Load);
@@ -678,10 +609,14 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
     auto replacementIt = ignoredInstructions.find(Replaced);
     if (replacementIt == ignoredInstructions.end()) {
         // Before failing, check whether the replaced value is an ignorable
-        // bitcast. If so, return the replacement operand.
+        // bitcast or zero GEP. If so, return the replacement operand.
         auto BitCast = dyn_cast<BitCastOperator>(Replaced);
         if (BitCast && maySkipCast(BitCast)) {
             return BitCast->getOperand(0);
+        }
+        auto GEP = dyn_cast<GEPOperator>(Replaced);
+        if (GEP && isZeroGEP(GEP)) {
+            return GEP->getOperand(0);
         }
         return nullptr;
     }
@@ -804,6 +739,17 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             CurrentLocR = &InstR->getDebugLoc();
 
         if (int Res = cmpOperationsWithOperands(&*InstL, &*InstR)) {
+            // Detect a difference caused by a field access change that does
+            // not affect semantics.
+            // Note: this has to be done here, because cmpFieldAccess moves the
+            // instruction iterators to the end of the field access if the
+            // field accesses are equal.
+            if (Res && isa<GetElementPtrInst>(&*InstL)
+                && isa<GetElementPtrInst>(&*InstR)) {
+                if (cmpFieldAccess(InstL, InstR) == 0)
+                    continue;
+            }
+
             // Some operations not affecting semantics and control flow may be
             // ignored (currently allocas and casts). This may help to handle
             // some small changes that do not affect semantics (it is also
@@ -829,15 +775,6 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 findDifference(&*InstL, &*InstR);
                 return Res;
             }
-        }
-
-        if (isa<CallInst>(&*InstL) && isa<CallInst>(&*InstR)) {
-            // Try to find a type difference in chained field accesses.
-            // This has to be done even if the operations are equal, since field
-            // accesses return a pointer and all pointers are compared as equal
-            // in FunctionComparator.
-            findTypeDifferenceInChainedFieldAccess(dyn_cast<CallInst>(&*InstL),
-                                                   dyn_cast<CallInst>(&*InstR));
         }
 
         ++InstL;
@@ -971,14 +908,8 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                         ModComparator->compareFunctions(FunL, FunR);
                 }
 
-                if (FunL->getName().startswith(SimpllFieldAccessFunName)
-                    && FunR->getName().startswith(SimpllFieldAccessFunName)) {
-                    // Compare field access abstractions using a special
-                    // method.
-                    return cmpFieldAccess(FunL, FunR);
-                } else if (FunL->getName().startswith(SimpllInlineAsmPrefix)
-                           && FunR->getName().startswith(
-                                   SimpllInlineAsmPrefix)) {
+                if (FunL->getName().startswith(SimpllInlineAsmPrefix)
+                    && FunR->getName().startswith(SimpllInlineAsmPrefix)) {
                     // Compare inline assembly code abstractions using metadata
                     // generated in FunctionAbstractionGenerator.
                     StringRef asmL = getInlineAsmString(FunL);
@@ -1022,39 +953,142 @@ bool DifferentialFunctionComparator::accumulateAllOffsets(
     return true;
 }
 
-/// Specific comparing of structure field access.
-int DifferentialFunctionComparator::cmpFieldAccess(const Function *L,
-                                                   const Function *R) const {
-    // First compute the complete offset of all GEPs in both functions.
+/// Finds all differences between source types in GEPs inside two field access
+/// operations and records them using findTypeDifference.
+void DifferentialFunctionComparator::findTypeDifferences(
+        const GetElementPtrInst *FAL,
+        const GetElementPtrInst *FAR,
+        const Function *L,
+        const Function *R) const {
+    std::vector<Type *> SrcTypesL = getFieldAccessSourceTypes(FAL);
+    std::vector<Type *> SrcTypesR = getFieldAccessSourceTypes(FAR);
+    for (int i = 0; i < std::min(SrcTypesL.size(), SrcTypesR.size()); i++) {
+        StructType *STyL = dyn_cast<StructType>(SrcTypesL[i]);
+        StructType *STyR = dyn_cast<StructType>(SrcTypesR[i]);
+        if (!STyL || !STyR)
+            continue;
+        if (!STyL->hasName() || !STyR->hasName())
+            continue;
+        std::string STyLShortName = hasSuffix(STyL->getName())
+                                            ? dropSuffix(STyL->getName())
+                                            : STyL->getName().str();
+        std::string STyRShortName = hasSuffix(STyR->getName())
+                                            ? dropSuffix(STyR->getName())
+                                            : STyR->getName().str();
+        if (STyLShortName != STyRShortName)
+            continue;
+        findTypeDifference(STyL, STyR, L, R);
+    }
+}
+
+/// Find and record a difference between structure types.
+void DifferentialFunctionComparator::findTypeDifference(
+        StructType *L,
+        StructType *R,
+        const Function *FL,
+        const Function *FR) const {
+    if (cmpTypes(L, R)) {
+        std::unique_ptr<TypeDifference> diff =
+                std::make_unique<TypeDifference>();
+        diff->name = L->getName().startswith("struct.") ? L->getName().substr(7)
+                                                        : L->getName();
+
+        // Try to get the debug info for the structure type.
+        DICompositeType *DCTyL = nullptr, *DCTyR = nullptr;
+        if (ModComparator->StructDIMapL.find(diff->name)
+            != ModComparator->StructDIMapL.end()) {
+            DCTyL = ModComparator->StructDIMapL[diff->name];
+        }
+        if (ModComparator->StructDIMapR.find(diff->name)
+            != ModComparator->StructDIMapR.end()) {
+            DCTyR = ModComparator->StructDIMapR[diff->name];
+        }
+        if (!DCTyL || !DCTyR)
+            // Debug info not found.
+            return;
+
+        diff->function = FL->getName();
+        diff->FileL = joinPath(DCTyL->getDirectory(), DCTyL->getFilename());
+        diff->FileR = joinPath(DCTyR->getDirectory(), DCTyR->getFilename());
+        // Note: for some reason the starting line of the struct in the debug
+        // info is the first attribute, skipping the actual declaration.
+        // This is fixed by decrementing the line number.
+        diff->LineL = DCTyL->getLine() - 1;
+        diff->LineR = DCTyR->getLine() - 1;
+        diff->StackL.push_back(CallInfo{diff->name + " (type)",
+                                        FL->getSubprogram()->getFilename(),
+                                        FL->getSubprogram()->getLine()});
+        diff->StackR = CallStack();
+        diff->StackR.push_back(CallInfo{diff->name + " (type)",
+                                        FR->getSubprogram()->getFilename(),
+                                        FR->getSubprogram()->getLine()});
+        ModComparator->ComparedFuns.at({FnL, FnR})
+                .addDifferingObject(std::move(diff));
+    }
+}
+
+/// Specific comparing of sequences of field accesses.
+int DifferentialFunctionComparator::cmpFieldAccess(
+        BasicBlock::const_iterator &InstL,
+        BasicBlock::const_iterator &InstR) const {
+    // Compare the complete offset of an unbroken sequence of GEP and bitcast
+    // in each module, starting from InstL and InstR, respectively.
     // It is possible that although the process contains unpacking several
     // anonymous unions and structs, the offset stays the same, which means that
     // without a doubt this is semantically equal (and probably would, in fact,
     // be also equal in machine code).
-    uint64_t OffsetL = 0, OffsetR = 0;
 
-    // If both field access abstractions contain just a single GEP, these can be
-    // compared normally using the cmpGEPs method.
-    if (L->front().size() == 1 && R->front().size() == 1
-        && isa<GetElementPtrInst>(L->front().front())
-        && isa<GetElementPtrInst>(R->front().front())) {
-        return cmpGEPs(dyn_cast<GEPOperator>(&L->front().front()),
-                       dyn_cast<GEPOperator>(&R->front().front()));
-    }
+    // Backup the instruction iterators - if the comparison is not successful,
+    // we'll have to restore them.
+    auto FirstInstL = InstL;
+    auto FirstInstR = InstR;
 
-    if (!accumulateAllOffsets(L->front(), OffsetL)
-        || !accumulateAllOffsets(R->front(), OffsetR))
+    auto GEPL = dyn_cast<GetElementPtrInst>(InstL);
+    auto GEPR = dyn_cast<GetElementPtrInst>(InstR);
+
+    if (!(GEPL && GEPR))
         return 1;
 
-    if (OffsetL == OffsetR)
-        // If the complete offsets are the same, the field accesses are
-        // semantically also the same (the source and target type are compared
-        // in cmpOperations and cmpBasicBlocks as the instruction type and
-        // operand type).
-        return 0;
+    if (!GEPL->hasAllConstantIndices() || !GEPR->hasAllConstantIndices())
+        return 1;
 
-    // If all of the specific comparisons failed, report non-equal, which will
-    // lead to inling of the abstractions and comparing the instuction the
-    // usual way.
+    const Value *PtrL = GEPL->getOperand(0);
+    const Value *PtrR = GEPR->getOperand(0);
+
+    if (int CmpPtrs = cmpValues(PtrL, PtrR))
+        return CmpPtrs;
+
+    uint64_t OffsetL = 0, OffsetR = 0;
+    bool l_end = false, r_end = false;
+    while (!l_end || !r_end) {
+        int offset = 0;
+        if (!l_end && isConstantMemoryAccessToPtr(&*InstL, PtrL, offset)) {
+            OffsetL += offset;
+            PtrL = &*InstL;
+            InstL++;
+        } else {
+            l_end = true;
+        }
+
+        if (!r_end && isConstantMemoryAccessToPtr(&*InstR, PtrR, offset)) {
+            OffsetR += offset;
+            PtrR = &*InstR;
+            InstR++;
+        } else {
+            r_end = true;
+        }
+    }
+
+    if (OffsetL == OffsetR) {
+        // Makes sure that the resulting pointers coming out of the sequences
+        // are synchronized (have the same serial number).
+        cmpValues(PtrL, PtrR);
+        return 0;
+    }
+
+    // Restore instruction iterators to their original values
+    InstL = FirstInstL;
+    InstR = FirstInstR;
     return 1;
 }
 
@@ -1366,103 +1400,34 @@ void DifferentialFunctionComparator::findDifference(
         }
     }
 
-    // Check whether there is an additional cast because of a structure type
-    // change.
-    if (isa<CastInst>(L) || isa<CastInst>(R)) {
-        auto Cast = isa<CastInst>(L) ? dyn_cast<CastInst>(L)
-                                     : dyn_cast<CastInst>(R);
-        Value *Op = stripAllCasts(Cast->getOperand(0));
-        CallInst *CI;
-        LoadInst *LI;
-        Function *Fun;
-        PointerType *PTy;
-        StructType *STy;
-        // Check if the operator of a cast is a call to a field access
-        // abstraction from a named structure type (either directly or through a
-        // load).
-        if (((CI = dyn_cast<CallInst>(Op))
-             || ((LI = dyn_cast<LoadInst>(Op))
-                 && (CI = dyn_cast<CallInst>(
-                             stripAllCasts(LI->getOperand(0))))))
-            && (Fun = getCalledFunction(CI->getCalledValue()))
-            && isSimpllFieldAccessAbstraction(Fun)
-            && (PTy = dyn_cast<PointerType>(CI->getOperand(0)->getType()))
-            && (STy = dyn_cast<StructType>(PTy->getPointerElementType()))
-            && STy->hasName()) {
-            // Value is casted after being extracted from a structure.
-            // There is probably a change in the structure type causing
-            // the cast.
-            // Try to find the type in the other structure.
-            auto OtherSTy = R->getModule()->getTypeByName(STy->getName());
-            if (OtherSTy) {
-                if (Cast == L)
-                    findTypeDifference(
-                            STy, OtherSTy, L->getFunction(), R->getFunction());
-                else
-                    findTypeDifference(
-                            OtherSTy, STy, L->getFunction(), R->getFunction());
-            }
-        }
+    // Check whether there is a field access difference because of
+    // a structure type change.
+    // Note: if one field access is longer than the other, it is possible
+    // that a difference is found when the pointer is already outside the
+    // field access in one of the modules. For this reason the previous
+    // instruction is also tested for the presence of a field access.
+    auto FAL = getFieldAccessStart(L);
+    auto FAR = getFieldAccessStart(R);
+    if (!FAL && L->getPrevNode())
+        FAL = getFieldAccessStart(L->getPrevNode());
+    if (!FAR && R->getPrevNode())
+        FAR = getFieldAccessStart(R->getPrevNode());
+    if (FAL && FAR) {
+        findTypeDifferences(FAL, FAR, L->getFunction(), R->getFunction());
     }
 
-    // Check whether there is a load type difference because of a structure type
-    // change.
+    // Check whether there is a load type difference because of a structure
+    // type change.
     if (isa<LoadInst>(L) && isa<LoadInst>(R)
         && cmpTypes(L->getType(), R->getType())) {
-        Value *OpL = stripAllCasts(L->getOperand(0));
-        Value *OpR = stripAllCasts(R->getOperand(0));
-        CallInst *CL;
-        CallInst *CR;
-        Function *FL;
-        Function *FR;
-        // Check whether both load instructions operate on the return value of a
-        // call of a field access abstraction from named structure types of the
-        // same name.
-        if ((CL = dyn_cast<CallInst>(OpL)) && (CR = dyn_cast<CallInst>(OpR))
-            && (FL = getCalledFunction(CL->getCalledValue()))
-            && (FR = getCalledFunction(CR->getCalledValue()))
-            && isSimpllFieldAccessAbstraction(FL)
-            && isSimpllFieldAccessAbstraction(FR)) {
-            findTypeDifferences(FL, FR, L->getFunction(), R->getFunction());
-        }
-    }
-}
-
-/// Find type differences between calls to field access abstractions.
-void DifferentialFunctionComparator::findTypeDifferenceInChainedFieldAccess(
-        const CallInst *CL, const CallInst *CR) const {
-    const Function *CalledL = getCalledFunction(CL->getCalledValue());
-    const Function *CalledR = getCalledFunction(CR->getCalledValue());
-
-    if (isSimpllFieldAccessAbstraction(CalledL)
-        && isSimpllFieldAccessAbstraction(CalledR)
-        && isa<PointerType>(CL->getType()) && isa<PointerType>(CR->getType())
-        && (dyn_cast<PointerType>(CL->getType())->getElementType()
-            != dyn_cast<PointerType>(CR->getType())->getElementType())) {
-        // It is possible that the abstractions are a part of a longer field
-        // access chain. In this case it is necessary to look for the
-        // possibility of a structure type change in the previous field access
-        // call (which wouldn't be done otherwise because the detection is based
-        // on loads).
-        // Note: the fact that the chain hasn't been generated as a single
-        // abstraction is caused by Clang separating the debug scopes of each
-        // part.
-        auto FACallL = dyn_cast<CallInst>(CL->getOperand(0));
-        auto FACallR = dyn_cast<CallInst>(CR->getOperand(0));
-        auto FAOpL = FACallL ? getCalledFunction(FACallL->getCalledValue())
-                             : nullptr;
-        auto FAOpR = FACallR ? getCalledFunction(FACallR->getCalledValue())
-                             : nullptr;
-
-        // Check whether the field access operand is another field access.
-        // Furthermore check if the second field access takes a structure
-        // pointer.
-        if (FAOpL && FAOpR && isSimpllFieldAccessAbstraction(FAOpL)
-            && isSimpllFieldAccessAbstraction(FAOpR)) {
-            // Field access operand is another field access call.
-            // Compare all of its source types for structure type differences.
-            findTypeDifferences(
-                    FAOpL, FAOpR, CL->getFunction(), CR->getFunction());
+        const GetElementPtrInst *FAL;
+        const GetElementPtrInst *FAR;
+        // Check whether both load instructions operate on the result of a
+        // a field access operation from named structure types of the same
+        // name.
+        if ((FAL = getFieldAccessStart(L->getOperand(0)))
+            && (FAR = getFieldAccessStart(R->getOperand(0)))) {
+            findTypeDifferences(FAL, FAR, L->getFunction(), R->getFunction());
         }
     }
 }

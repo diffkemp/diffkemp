@@ -18,7 +18,6 @@
 #include <ModuleComparator.h>
 #include <ResultsCache.h>
 #include <gtest/gtest.h>
-#include <passes/FieldAccessFunctionGenerator.h>
 #include <passes/StructureDebugInfoAnalysis.h>
 #include <passes/StructureSizeAnalysis.h>
 
@@ -122,6 +121,14 @@ class TestComparator : public DifferentialFunctionComparator {
         if (!keepSN)
             beginCompare();
         return cmpTypes(TyL, TyR);
+    }
+
+    int testCmpFieldAccess(BasicBlock::const_iterator &InstL,
+                           BasicBlock::const_iterator &InstR,
+                           bool keepSN = false) {
+        if (!keepSN)
+            beginCompare();
+        return cmpFieldAccess(InstL, InstR);
     }
 
     void setLeftSerialNumber(const Value *Val, int i) { sn_mapL[Val] = i; }
@@ -965,72 +972,6 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFunctions) {
               ModComp->ComparedFuns.end());
 }
 
-/// Tests the comparison of field access abstractions using cmpGlobalValues.
-TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFieldAccesses) {
-    // Create the structure types for the test case.
-    StructType *UnionL = StructType::create({Type::getInt8Ty(CtxL)});
-    UnionL->setName("union.test");
-    StructType *STyL = StructType::create(UnionL);
-    STyL->setName("struct.test");
-    StructType *STyR = StructType::create({Type::getInt8Ty(CtxR)});
-    STyR->setName("struct.test");
-
-    // Create the abstractions and create GEPs inside them.
-    Function *AuxFL = Function::Create(
-            FunctionType::get(PointerType::get(Type::getInt8Ty(CtxL), 0),
-                              {PointerType::get(STyL, 0)},
-                              false),
-            GlobalValue::InternalLinkage,
-            SimpllFieldAccessFunName + ".0",
-            &ModL);
-    Function *AuxFR = Function::Create(
-            FunctionType::get(PointerType::get(Type::getInt8Ty(CtxL), 0),
-                              {PointerType::get(STyR, 0)},
-                              false),
-            GlobalValue::InternalLinkage,
-            SimpllFieldAccessFunName + ".0",
-            &ModR);
-
-    BasicBlock *BBL = BasicBlock::Create(CtxL, "", AuxFL);
-    BasicBlock *BBR = BasicBlock::Create(CtxR, "", AuxFR);
-
-    GetElementPtrInst *GEPL1 = GetElementPtrInst::Create(
-            STyL,
-            AuxFL->arg_begin(),
-            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
-             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
-            "",
-            BBL);
-    GetElementPtrInst *GEPL2 = GetElementPtrInst::Create(
-            UnionL,
-            GEPL1,
-            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
-             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
-            "",
-            BBL);
-    GetElementPtrInst *GEPR = GetElementPtrInst::Create(
-            STyR,
-            AuxFR->arg_begin(),
-            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
-             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
-            "",
-            BBR);
-    ReturnInst::Create(CtxL, GEPL1, BBL);
-    ReturnInst::Create(CtxR, GEPR, BBR);
-
-    // Compare the field accesses.
-    ASSERT_EQ(testFunctionComparison(AuxFL, AuxFR), 0);
-    ASSERT_EQ(ModComp->ComparedFuns.find({AuxFL, AuxFR}),
-              ModComp->ComparedFuns.end());
-
-    // Compare the field access again with a different name.
-    AuxFL->setName("not-a-field-access");
-    AuxFR->setName("not-a-field-access");
-    ASSERT_EQ(testFunctionComparison(AuxFL, AuxFR), 0);
-    ASSERT_NE(ModComp->ComparedFuns.find({AuxFL, AuxFR}),
-              ModComp->ComparedFuns.end());
-}
-
 /// Test the comparison of constant global variables with missing initializers
 /// using cmpGlobalValues (they should be added to the list of missing
 /// definitions).
@@ -1202,5 +1143,194 @@ TEST_F(DifferentialFunctionComparatorTest, CmpConstants) {
     ASSERT_EQ(DiffComp->testCmpConstants(ConstR, ConstL), 0);
     ASSERT_EQ(DiffComp->testCmpConstants(ConstL2, ConstR), -1);
     ASSERT_EQ(DiffComp->testCmpConstants(ConstR, ConstL2), 1);
+}
+
+/// Tests comparison of field access operations with the same offset.
+TEST_F(DifferentialFunctionComparatorTest, CmpFieldAccessSameOffset) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Create two structure types, one with an added union. Then create two
+    // other structure types with the original ones being their second field.
+    auto StrL = StructType::create(
+            {Type::getInt8Ty(CtxL), Type::getInt8Ty(CtxL)}, "struct.test");
+    auto Union = StructType::create({Type::getInt8Ty(CtxR)}, "union.test");
+    auto StrR =
+            StructType::create({Type::getInt8Ty(CtxR), Union}, "struct.test");
+    auto StrL2 =
+            StructType::create({Type::getInt8Ty(CtxL), StrL}, "struct.test2");
+    auto StrR2 =
+            StructType::create({Type::getInt8Ty(CtxR), StrR}, "struct.test2");
+
+    // Create allocas of struct.test2 and a series of GEPs that first get the
+    // second field of struct.test2 (of type struct.test1), then the second
+    // field of struct.test1 (which is an union the second function).
+    // In the second function a bitcast is created to cast the union back to
+    // the inner type.
+    auto AllocaL = new AllocaInst(StrL2, 0, "", BBL);
+    auto AllocaR = new AllocaInst(StrR2, 0, "", BBR);
+
+    auto GEPL = GetElementPtrInst::Create(
+            StrL2,
+            AllocaL,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "",
+            BBL);
+    auto GEPR = GetElementPtrInst::Create(
+            StrR2,
+            AllocaR,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "",
+            BBR);
+    auto GEPL2 = GetElementPtrInst::Create(
+            StrL,
+            GEPL,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "",
+            BBL);
+    auto GEPR2 = GetElementPtrInst::Create(
+            StrR,
+            GEPR,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "",
+            BBR);
+    auto CastR = CastInst::Create(Instruction::CastOps::BitCast,
+                                  GEPR2,
+                                  PointerType::get(Type::getInt8Ty(CtxR), 0),
+                                  "",
+                                  BBR);
+
+    auto RetL = ReturnInst::Create(CtxL, BBL);
+    auto RetR = ReturnInst::Create(CtxR, BBR);
+
+    // Check if the field accesses are compared correctly and the instruction
+    // iterators are at the correct place.
+    BasicBlock::const_iterator InstL = BBL->begin();
+    InstL++;
+    BasicBlock::const_iterator InstR = BBR->begin();
+    InstR++;
+
+    ASSERT_EQ(DiffComp->testCmpFieldAccess(InstL, InstR), 0);
+    // The iterators should point to the instructions following the field access
+    // operations if they are equal.
+    ASSERT_EQ(&*InstL, RetL);
+    ASSERT_EQ(&*InstR, RetR);
+}
+
+/// Tests comparison of field access operations with a different offset.
+TEST_F(DifferentialFunctionComparatorTest, CmpFieldAccessDifferentOffset) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Create two structure types, one with an added union.
+    auto StrL = StructType::create(
+            {Type::getInt8Ty(CtxL), Type::getInt8Ty(CtxL)}, "struct.test");
+    auto Union = StructType::create({Type::getInt8Ty(CtxR)}, "union.test");
+    auto StrR =
+            StructType::create({Type::getInt8Ty(CtxR), Union}, "struct.test");
+
+    // Create allocas of struct.test, then a series of GEPs where in the first
+    // function the first field of struct.test is accessed and in the second one
+    // the second field is accessed, followed by a bitcast from the union type.
+    auto AllocaL = new AllocaInst(StrL, 0, "", BBL);
+    auto AllocaR = new AllocaInst(StrR, 0, "", BBR);
+
+    auto GEPL = GetElementPtrInst::Create(
+            StrL,
+            AllocaL,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 0)},
+            "",
+            BBL);
+    auto GEPR = GetElementPtrInst::Create(
+            StrR,
+            AllocaR,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "",
+            BBR);
+    auto CastR = CastInst::Create(Instruction::CastOps::BitCast,
+                                  GEPR,
+                                  PointerType::get(Type::getInt8Ty(CtxR), 0),
+                                  "",
+                                  BBR);
+
+    auto RetL = ReturnInst::Create(CtxL, BBL);
+    auto RetR = ReturnInst::Create(CtxR, BBR);
+
+    // Check if the field accesses are compared correctly and the instruction
+    // iterators are at the correct place.
+    BasicBlock::const_iterator InstL = BBL->begin();
+    InstL++;
+    BasicBlock::const_iterator InstR = BBR->begin();
+    InstR++;
+
+    ASSERT_EQ(DiffComp->testCmpFieldAccess(InstL, InstR), 1);
+    // The iterators should point to the beginning of the field access
+    // operations if they are not equal.
+    ASSERT_EQ(&*InstL, GEPL);
+    ASSERT_EQ(&*InstR, GEPR);
+}
+
+/// Tests comparison of field access operations where one ends with a bitcast
+/// of a different value than the previous instruction.
+TEST_F(DifferentialFunctionComparatorTest, CmpFieldAccessBrokenChain) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Create two structure types, one with an added union.
+    auto StrL = StructType::create(
+            {Type::getInt8Ty(CtxL), Type::getInt8Ty(CtxL)}, "struct.test");
+    auto Union = StructType::create({Type::getInt8Ty(CtxR)}, "union.test");
+    auto StrR =
+            StructType::create({Type::getInt8Ty(CtxR), Union}, "struct.test");
+
+    // Create allocas of struct.test, then a series of GEPs where in both
+    // function the second field is accessed, in the second one followed by
+    // a bitcast of the alloca (not of the GEP, used to break the field access
+    // operation).
+    auto AllocaL = new AllocaInst(StrL, 0, "", BBL);
+    auto AllocaR = new AllocaInst(StrR, 0, "", BBR);
+
+    auto GEPL = GetElementPtrInst::Create(
+            StrL,
+            AllocaL,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "",
+            BBL);
+    auto GEPR = GetElementPtrInst::Create(
+            StrR,
+            AllocaR,
+            {ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), 1)},
+            "",
+            BBR);
+    auto CastR = CastInst::Create(Instruction::CastOps::BitCast,
+                                  AllocaR,
+                                  PointerType::get(Type::getInt8Ty(CtxR), 0),
+                                  "",
+                                  BBR);
+
+    auto RetL = ReturnInst::Create(CtxL, BBL);
+    auto RetR = ReturnInst::Create(CtxR, BBR);
+
+    // Check if the field accesses are compared correctly and the instruction
+    // iterators are at the correct place.
+    BasicBlock::const_iterator InstL = BBL->begin();
+    InstL++;
+    BasicBlock::const_iterator InstR = BBR->begin();
+    InstR++;
+
+    ASSERT_EQ(DiffComp->testCmpFieldAccess(InstL, InstR), 0);
+    // The iterators should point to the end of the field access operations
+    // (i.e. to the return instruction in the left function and to the cast
+    // in the other one).
+    ASSERT_EQ(&*InstL, RetL);
+    ASSERT_EQ(&*InstR, CastR);
 }
 #endif
