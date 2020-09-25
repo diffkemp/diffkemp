@@ -31,8 +31,9 @@ class TestComparator : public DifferentialFunctionComparator {
                    const Function *F2,
                    const Config &config,
                    const DebugInfo *DI,
+                   const PatternComparator &PC,
                    ModuleComparator *MC)
-            : DifferentialFunctionComparator(F1, F2, config, DI, MC) {}
+            : DifferentialFunctionComparator(F1, F2, config, DI, PC, MC) {}
     int testCompareSignature(bool keepSN = false) {
         if (!keepSN)
             beginCompare();
@@ -154,7 +155,7 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
     Function *FL, *FR;
 
     // Objects necessary to create a DifferentialFunctionComparator.
-    Config Conf{"F", "F", ""};
+    Config Conf{"F", "F", "", ""};
     std::set<const Function *> CalledFirst;
     std::set<const Function *> CalledSecond;
     ResultsCache Cache{""};
@@ -210,8 +211,12 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
         generateDebugMetadata();
 
         // Finally create the comparator.
-        DiffComp = std::make_unique<TestComparator>(
-                FL, FR, Conf, DbgInfo.get(), ModComp.get());
+        DiffComp = std::make_unique<TestComparator>(FL,
+                                                    FR,
+                                                    Conf,
+                                                    DbgInfo.get(),
+                                                    ModComp.get()->PatternComp,
+                                                    ModComp.get());
     }
 
     /// Generates a file, compile unit and subprogram for each module.

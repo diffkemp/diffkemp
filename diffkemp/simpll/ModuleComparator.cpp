@@ -105,7 +105,8 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "\n");
 
     // Comparing functions with bodies using custom FunctionComparator.
-    DifferentialFunctionComparator fComp(FirstFun, SecondFun, config, DI, this);
+    DifferentialFunctionComparator fComp(
+            FirstFun, SecondFun, config, DI, PatternComp, this);
     int result = fComp.compare();
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
@@ -198,7 +199,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
             // Re-run the comparison
             DifferentialFunctionComparator fCompSecond(
-                    FirstFun, SecondFun, config, DI, this);
+                    FirstFun, SecondFun, config, DI, PatternComp, this);
             result = fCompSecond.compare();
             // If the functions are equal after the inlining and there is a
             // call to the inlined function, mark it as weak.

@@ -33,9 +33,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    const Config &config,
                                    const DebugInfo *DI,
+                                   const PatternComparator &PC,
                                    ModuleComparator *MC)
             : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
-              LayoutL(F1->getParent()->getDataLayout()),
+              PatternComp(PC), LayoutL(F1->getParent()->getDataLayout()),
               LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
 
     int compare() override;
@@ -109,6 +110,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
   private:
     const Config &config;
     const DebugInfo *DI;
+    const PatternComparator &PatternComp;
 
     const DataLayout &LayoutL, &LayoutR;
 

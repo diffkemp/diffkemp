@@ -64,7 +64,7 @@ template <class T> struct ptr_array stringContainerToPtrArray(T Container) {
 extern "C" {
 void *loadModule(const char *Path) {
     std::string PathString(Path);
-    Module * LoadedModule = loadModule(PathString, ModuleMap, ContextMap);
+    Module *LoadedModule = loadModule(PathString, ModuleMap, ContextMap);
     return (void *)LoadedModule;
 }
 
