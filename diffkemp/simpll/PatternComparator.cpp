@@ -61,6 +61,9 @@ PatternComparator::~PatternComparator() {
     PatternContexts.clear();
 }
 
+/// Checks whether any valid difference patterns are loaded.
+bool PatternComparator::hasPatterns() { return !Patterns.empty(); }
+
 /// Add a new LLVM IR difference pattern file.
 void PatternComparator::addPattern(std::string &path) {
     Module *PatternModule = loadModule(path, PatternModules, PatternContexts);
@@ -94,9 +97,6 @@ void PatternComparator::addPattern(std::string &path) {
     }
 }
 
-/// Checks whether any valid difference patterns are loaded.
-bool PatternComparator::hasPatterns() { return !Patterns.empty(); }
-
 /// Load the given LLVM IR based difference pattern YAML configuration.
 void PatternComparator::loadConfig(std::string &configPath) {
     auto configFile = MemoryBuffer::getFile(configPath);
@@ -127,12 +127,64 @@ void PatternComparator::loadConfig(std::string &configPath) {
     }
 }
 
-/// Retrives pattern metadata attached to the given instruction.
-void PatternComparator::getPatternMetadata(const Instruction &Inst) {
+/// Retrives pattern metadata attached to the given instruction, returning
+/// true for valid pattern metadata nodes.
+bool PatternComparator::getPatternMetadata(PatternMetadata &metadata,
+                                           const Instruction &Inst) {
     auto instMetadata = Inst.getMetadata(MetadataName);
     if (!instMetadata) {
-        return;
+        return false;
     }
 
-    // TODO: Parse pattern metadata operands.
+    // Erase previous metadata information.
+    metadata = {};
+
+    int operandIndex = 0;
+    while (operandIndex < instMetadata->getNumOperands()) {
+        int indexOffset =
+                parseMetadataOperand(metadata, instMetadata, operandIndex);
+
+        // Continue only when the metadata operand gets parsed successfully.
+        if (indexOffset < 0) {
+            return false;
+        }
+
+        operandIndex += indexOffset;
+    }
+
+    return true;
+}
+
+/// Parses a single pattern metadata operand, including all dependent operands.
+/// The total metadata operand offset is returned unless the parsing fails.
+int PatternComparator::parseMetadataOperand(PatternMetadata &patternMetadata,
+                                            const MDNode *instMetadata,
+                                            const int index) {
+    if (auto type = dyn_cast<MDString>(instMetadata->getOperand(index).get())) {
+        // basic-block-limit metadata: string type, int limit.
+        if (type->getString() == "basic-block-limit") {
+            ConstantAsMetadata *limitConst;
+            if (instMetadata->getNumOperands() > (index + 1)
+                && (limitConst = dyn_cast<ConstantAsMetadata>(
+                            instMetadata->getOperand(index + 1).get()))) {
+                if (auto limit =
+                            dyn_cast<ConstantInt>(limitConst->getValue())) {
+                    patternMetadata.basicBlockLimit =
+                            limit->getValue().getZExtValue();
+                    return 2;
+                }
+            }
+            // basic-block-limit-end metadata: string type.
+        } else if (type->getString() == "basic-block-limit-end") {
+            patternMetadata.basicBlockLimitEnd = true;
+            return 1;
+        }
+    }
+
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << getDebugIndent()
+                           << "Failed to parse pattern metadata "
+                           << "from node " << *instMetadata << ".\n");
+
+    return -1;
 }

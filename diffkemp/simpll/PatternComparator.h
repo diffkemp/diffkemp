@@ -57,6 +57,10 @@ class PatternComparator {
     /// Checks whether any difference patterns are loaded.
     bool hasPatterns();
 
+    /// Retrives pattern metadata attached to the given instruction, returning
+    /// true for valid pattern metadata nodes.
+    bool getPatternMetadata(PatternMetadata &metadata, const Instruction &Inst);
+
   private:
     /// Settings applied to all pattern files.
     StringMap<std::string> GlobalSettings;
@@ -70,8 +74,11 @@ class PatternComparator {
     /// Load the given configuration file.
     void loadConfig(std::string &configPath);
 
-    /// Retrives pattern metadata attached to the given instruction.
-    void getPatternMetadata(const Instruction &Inst);
+    /// Parses a single pattern metadata operand, including all dependent
+    /// operands.
+    int parseMetadataOperand(PatternMetadata &patternMetadata,
+                             const MDNode *instMetadata,
+                             const int index);
 };
 
 #endif // DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H
