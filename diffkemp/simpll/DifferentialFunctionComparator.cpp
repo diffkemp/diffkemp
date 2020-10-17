@@ -41,6 +41,8 @@ int DifferentialFunctionComparator::compare() {
         for (auto &PhiPair : phisToCompare)
             if (cmpPHIs(PhiPair.first, PhiPair.second))
                 return 1;
+        // Functions are equal so we don't have differing instructions
+        DifferingInstructions = {nullptr, nullptr};
         return 0;
     }
     return Res;
@@ -198,6 +200,9 @@ int DifferentialFunctionComparator::cmpOperations(
         const Instruction *L,
         const Instruction *R,
         bool &needToCmpOperands) const {
+    // Need to store comparing instructions in DifferingInstructions pair
+    DifferingInstructions = {L, R};
+
     int Result = FunctionComparator::cmpOperations(L, R, needToCmpOperands);
 
     // Check whether the instruction is a call instruction.
@@ -1430,4 +1435,21 @@ void DifferentialFunctionComparator::findDifference(
             findTypeDifferences(FAL, FAR, L->getFunction(), R->getFunction());
         }
     }
+}
+
+bool DifferentialFunctionComparator::equal(const Instruction *InstL,
+                                           const Instruction *InstR) {
+    auto L = sn_mapL.find(InstL);
+    auto R = sn_mapR.find(InstR);
+
+    if (L == sn_mapL.end() || R == sn_mapR.end())
+        // Values are not in maps
+        return false;
+
+    if (std::make_pair(InstL, InstR) == DifferingInstructions)
+        // The instructions are the last instructions that were compared as
+        // non-equal.
+        return false;
+
+    return L->second == R->second;
 }
