@@ -39,6 +39,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
               LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
 
     int compare() override;
+    /// Check if two instructions were already compared as equal.
+    bool equal(const Instruction *L, const Instruction *R);
+    /// Storing pointers to instructions in which functions started to differ.
+    mutable std::pair<const Instruction *, const Instruction *>
+            DifferingInstructions;
 
   protected:
     /// Specific comparison of GEP instructions/operators.
