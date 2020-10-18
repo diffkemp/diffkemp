@@ -33,7 +33,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    const Config &config,
                                    const DebugInfo *DI,
-                                   const PatternComparator &PC,
+                                   const PatternComparator *PC,
                                    ModuleComparator *MC)
             : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
               PatternComp(PC), LayoutL(F1->getParent()->getDataLayout()),
@@ -110,7 +110,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
   private:
     const Config &config;
     const DebugInfo *DI;
-    const PatternComparator &PatternComp;
+    const PatternComparator *PatternComp;
 
     const DataLayout &LayoutL, &LayoutR;
 

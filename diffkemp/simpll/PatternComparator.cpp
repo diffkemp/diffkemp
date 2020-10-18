@@ -35,11 +35,11 @@ template <> struct MappingTraits<PatternConfiguration> {
 } // namespace llvm::yaml
 
 /// Name for pattern metadata nodes.
-const StringRef PatternComparator::MetadataName = "diffkemp.pattern";
+const std::string PatternComparator::MetadataName = "diffkemp.pattern";
 /// Prefix for the new side of difference patterns.
-const StringRef PatternComparator::NewPrefix = "new_";
+const std::string PatternComparator::NewPrefix = "new_";
 /// Prefix for the old side of difference patterns.
-const StringRef PatternComparator::OldPrefix = "old_";
+const std::string PatternComparator::OldPrefix = "old_";
 
 /// Create a new comparator based on the given configuration.
 PatternComparator::PatternComparator(std::string configPath) {
@@ -85,13 +85,19 @@ void PatternComparator::addPattern(std::string &path) {
             // Find the corresponding pattern function with the old prefix.
             auto oldFunction = PatternModule->getFunction(oldName);
             if (oldFunction) {
-                Patterns.emplace(name, &Function, oldFunction);
+                Pattern newPattern =
+                        *Patterns.emplace(name.str(), &Function, oldFunction)
+                                 .first;
 
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent()
-                                       << "Loaded difference pattern "
-                                       << name.str() << " from module " << path
-                                       << ".\n");
+                if (initializePattern(newPattern)) {
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                    dbgs() << getDebugIndent()
+                                           << "Loaded difference pattern "
+                                           << name.str() << " from module "
+                                           << path << ".\n");
+                } else {
+                    Patterns.erase(newPattern);
+                }
             }
         }
     }
@@ -125,6 +131,48 @@ void PatternComparator::loadConfig(std::string &configPath) {
     for (auto &patternFile : config.patternFiles) {
         addPattern(patternFile);
     }
+}
+
+/// Initializes a pattern, loading all metadata and start positions. Unless
+/// the start position is chosen by metadata, it is set to the first differing
+/// pair of pattern instructions. Patterns with conflicting differences in
+/// concurrent branches are skipped, returning false.
+bool PatternComparator::initializePattern(Pattern &pattern) {
+    PatternMetadata metadata;
+
+    // Initialize the new side of the pattern.
+    for (auto &&BB : pattern.newPattern->getBasicBlockList()) {
+        for (auto &Inst : BB) {
+            if (getPatternMetadata(metadata, Inst)) {
+                pattern.metadataMap[&Inst] = metadata;
+                if (!pattern.newStartPosition && metadata.firstDifference) {
+                    pattern.newStartPosition = &Inst;
+                }
+                metadata = {};
+            }
+        }
+    }
+
+    // Initialize the old side of the pattern.
+    for (auto &&BB : pattern.oldPattern->getBasicBlockList()) {
+        for (auto &Inst : BB) {
+            metadata = {};
+            if (getPatternMetadata(metadata, Inst)) {
+                pattern.metadataMap[&Inst] = metadata;
+                if (!pattern.oldStartPosition && metadata.firstDifference) {
+                    pattern.oldStartPosition = &Inst;
+                }
+                metadata = {};
+            }
+        }
+    }
+
+    // TODO: Search for the first difference if not given in metadata.
+    if (!pattern.newStartPosition || !pattern.oldStartPosition) {
+        return false;
+    }
+
+    return true;
 }
 
 /// Retrives pattern metadata attached to the given instruction, returning
@@ -161,8 +209,8 @@ int PatternComparator::parseMetadataOperand(PatternMetadata &patternMetadata,
                                             const MDNode *instMetadata,
                                             const int index) {
     if (auto type = dyn_cast<MDString>(instMetadata->getOperand(index).get())) {
-        // basic-block-limit metadata: string type, int limit.
         if (type->getString() == "basic-block-limit") {
+            // basic-block-limit metadata: string type, int limit.
             ConstantAsMetadata *limitConst;
             if (instMetadata->getNumOperands() > (index + 1)
                 && (limitConst = dyn_cast<ConstantAsMetadata>(
@@ -174,9 +222,13 @@ int PatternComparator::parseMetadataOperand(PatternMetadata &patternMetadata,
                     return 2;
                 }
             }
-            // basic-block-limit-end metadata: string type.
         } else if (type->getString() == "basic-block-limit-end") {
+            // basic-block-limit-end metadata: string type.
             patternMetadata.basicBlockLimitEnd = true;
+            return 1;
+        } else if (type->getString() == "first-difference") {
+            // first-difference metadata: string type.
+            patternMetadata.firstDifference = true;
             return 1;
         }
     }
