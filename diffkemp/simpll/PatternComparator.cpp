@@ -14,6 +14,7 @@
 
 #include "PatternComparator.h"
 #include "Config.h"
+#include "ModuleAnalysis.h"
 #include "Utils.h"
 #include "library/ModuleLoader.h"
 #include <algorithm>
@@ -61,8 +62,24 @@ PatternComparator::~PatternComparator() {
     PatternContexts.clear();
 }
 
+/// Initializes a new pattern comparison againts the given function pair.
+PatternComparator *PatternComparator::initialize(const Function *NewFun,
+                                                 const Function *OldFun) {
+    // Save the functions.
+    this->NewFun = NewFun;
+    this->NewFun = OldFun;
+
+    // Reset the comparison state.
+    for (auto &&pattern : Patterns) {
+        pattern.newPosition = nullptr;
+        pattern.oldPosition = nullptr;
+    }
+
+    return this;
+}
+
 /// Checks whether any valid difference patterns are loaded.
-bool PatternComparator::hasPatterns() { return !Patterns.empty(); }
+bool PatternComparator::hasPatterns() const { return !Patterns.empty(); }
 
 /// Add a new LLVM IR difference pattern file.
 void PatternComparator::addPattern(std::string &path) {
@@ -74,6 +91,9 @@ void PatternComparator::addPattern(std::string &path) {
                                << "module " << path << ".\n");
         return;
     }
+
+    // Proprocess the module to match the structure of compared modules.
+    preprocessModule(*PatternModule, nullptr, nullptr, false);
 
     for (auto &Function : PatternModule->getFunctionList()) {
         // Select only functions starting with the new prefix.
@@ -178,7 +198,7 @@ bool PatternComparator::initializePattern(Pattern &pattern) {
 /// Retrives pattern metadata attached to the given instruction, returning
 /// true for valid pattern metadata nodes.
 bool PatternComparator::getPatternMetadata(PatternMetadata &metadata,
-                                           const Instruction &Inst) {
+                                           const Instruction &Inst) const {
     auto instMetadata = Inst.getMetadata(MetadataName);
     if (!instMetadata) {
         return false;
@@ -207,7 +227,7 @@ bool PatternComparator::getPatternMetadata(PatternMetadata &metadata,
 /// The total metadata operand offset is returned unless the parsing fails.
 int PatternComparator::parseMetadataOperand(PatternMetadata &patternMetadata,
                                             const MDNode *instMetadata,
-                                            const int index) {
+                                            const int index) const {
     if (auto type = dyn_cast<MDString>(instMetadata->getOperand(index).get())) {
         if (type->getString() == "basic-block-limit") {
             // basic-block-limit metadata: string type, int limit.

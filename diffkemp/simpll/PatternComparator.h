@@ -17,8 +17,8 @@
 
 #include <llvm/ADT/StringMap.h>
 #include <llvm/IR/Module.h>
-#include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace llvm;
@@ -59,17 +59,28 @@ struct Pattern {
     /// Comparison start position for the old part of the pattern.
     const Instruction *oldStartPosition = nullptr;
     /// Current comparison position for the new part of the pattern.
-    Instruction *newPosition = nullptr;
+    mutable Instruction *newPosition = nullptr;
     /// Current comparison position for the old part of the pattern.
-    Instruction *oldPosition = nullptr;
+    mutable Instruction *oldPosition = nullptr;
 
     Pattern(const std::string &name,
             const Function *newPattern,
             const Function *oldPattern)
             : name(name), newPattern(newPattern), oldPattern(oldPattern) {}
 
-    bool operator<(const Pattern &Rhs) const { return name < Rhs.name; }
+    bool operator==(const Pattern &Rhs) const {
+        return newPattern == Rhs.newPattern && oldPattern == Rhs.oldPattern;
+    }
 };
+
+// Define a hash function for difference patterns.
+namespace std {
+template <> struct hash<Pattern> {
+    std::size_t operator()(const Pattern &pattern) const noexcept {
+        return std::hash<std::string>()(pattern.name);
+    }
+};
+} // namespace std
 
 /// Compares difference patterns againts functions, possibly eliminating reports
 /// of prior semantic differences.
@@ -81,28 +92,35 @@ class PatternComparator {
     static const std::string NewPrefix;
     /// Prefix for the old side of difference patterns.
     static const std::string OldPrefix;
-    /// Usable differential function comparator instance.
-    DifferentialFunctionComparator *FunComp = nullptr;
+    /// Function against which new sides of patterns should be compared.
+    const Function *NewFun;
+    /// Function against which new sides of patterns should be compared.
+    const Function *OldFun;
 
     PatternComparator(std::string configPath);
 
     ~PatternComparator();
 
+    /// Initializes a new pattern comparison againts the given function pair.
+    PatternComparator *initialize(const Function *NewFun,
+                                  const Function *OldFun);
+
     /// Add a new difference pattern.
     void addPattern(std::string &path);
 
     /// Checks whether any difference patterns are loaded.
-    bool hasPatterns();
+    bool hasPatterns() const;
 
     /// Retrives pattern metadata attached to the given instruction, returning
     /// true for valid pattern metadata nodes.
-    bool getPatternMetadata(PatternMetadata &metadata, const Instruction &Inst);
+    bool getPatternMetadata(PatternMetadata &metadata,
+                            const Instruction &Inst) const;
 
   private:
     /// Settings applied to all pattern files.
     StringMap<std::string> GlobalSettings;
     /// Set of loaded difference patterns.
-    std::set<Pattern> Patterns;
+    std::unordered_set<Pattern> Patterns;
     /// Map of loaded pattern modules.
     std::unordered_map<Module *, std::unique_ptr<Module>> PatternModules;
     /// Map of loaded pattern module contexts.
@@ -118,7 +136,7 @@ class PatternComparator {
     /// operands.
     int parseMetadataOperand(PatternMetadata &patternMetadata,
                              const MDNode *instMetadata,
-                             const int index);
+                             const int index) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H

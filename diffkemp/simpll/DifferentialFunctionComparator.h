@@ -33,11 +33,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    const Config &config,
                                    const DebugInfo *DI,
-                                   const PatternComparator *PC,
+                                   PatternComparator *PC,
                                    ModuleComparator *MC)
             : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
-              PatternComp(PC), LayoutL(F1->getParent()->getDataLayout()),
-              LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
+              LayoutL(F1->getParent()->getDataLayout()),
+              LayoutR(F2->getParent()->getDataLayout()),
+              PatternComp(PC ? PC->initialize(F1, F2) : nullptr),
+              ModComparator(MC) {}
 
     int compare() override;
     /// Check if two instructions were already compared as equal.
@@ -110,7 +112,6 @@ class DifferentialFunctionComparator : public FunctionComparator {
   private:
     const Config &config;
     const DebugInfo *DI;
-    const PatternComparator *PatternComp;
 
     const DataLayout &LayoutL, &LayoutR;
 
@@ -121,6 +122,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::unordered_map<const Value *, const Value *>
             ignoredInstructions;
 
+    PatternComparator *PatternComp;
     ModuleComparator *ModComparator;
 
     /// Try to find a syntax difference that could be causing the semantic

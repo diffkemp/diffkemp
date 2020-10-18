@@ -31,7 +31,7 @@ class TestComparator : public DifferentialFunctionComparator {
                    const Function *F2,
                    const Config &config,
                    const DebugInfo *DI,
-                   const PatternComparator *PC,
+                   PatternComparator *PC,
                    ModuleComparator *MC)
             : DifferentialFunctionComparator(F1, F2, config, DI, PC, MC) {}
     int testCompareSignature(bool keepSN = false) {
