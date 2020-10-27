@@ -798,7 +798,17 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
         if ((&InstR->getDebugLoc())->get())
             CurrentLocR = &InstR->getDebugLoc();
 
-        if (int Res = cmpOperationsWithOperands(&*InstL, &*InstR)) {
+        // Compare the instructions.
+        int Res = cmpOperationsWithOperands(&*InstL, &*InstR);
+
+        // Try to match the current instruction pair to any of the
+        // currently active difference patterns.
+        bool PatternMatched = false;
+        if (PatComparator.matchActivePattern(&*InstL, &*InstR)) {
+            PatternMatched = true;
+        }
+
+        if (Res) {
             // Detect a difference caused by a field access change that does
             // not affect semantics.
             // Note: this has to be done here, because cmpFieldAccess moves the
@@ -829,11 +839,21 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 continue;
             }
 
-            if (Res) {
-                // The instructions are indeed different, try to find the source
-                // of the difference.
-                findDifference(&*InstL, &*InstR);
-                return Res;
+            // The difference cannot be skipped. Try to match it to one of the
+            // loaded difference patterns. Continue the comparison if a suitable
+            // starting pattern match gets found.
+            if (PatComparator.matchPatternStart(&*InstL, &*InstR)) {
+                PatternMatched = true;
+            }
+
+            // TODO: Process pattern completeness.
+            if (!PatternMatched) {
+                if (Res) {
+                    // The instructions are indeed different, try to find the
+                    // source of the difference.
+                    findDifference(&*InstL, &*InstR);
+                    return Res;
+                }
             }
         }
 

@@ -31,9 +31,9 @@ class TestComparator : public DifferentialFunctionComparator {
                    const Function *F2,
                    const Config &config,
                    const DebugInfo *DI,
-                   PatternComparator *PC,
+                   const PatternSet *PS,
                    ModuleComparator *MC)
-            : DifferentialFunctionComparator(F1, F2, config, DI, PC, MC) {}
+            : DifferentialFunctionComparator(F1, F2, config, DI, PS, MC) {}
     int testCompareSignature(bool keepSN = false) {
         if (!keepSN)
             beginCompare();
@@ -215,7 +215,7 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
                                                     FR,
                                                     Conf,
                                                     DbgInfo.get(),
-                                                    &ModComp.get()->PatternComp,
+                                                    &ModComp.get()->Patterns,
                                                     ModComp.get());
     }
 

@@ -19,6 +19,7 @@
 #include "DebugInfo.h"
 #include "FunctionComparator.h"
 #include "ModuleComparator.h"
+#include "PatternComparator.h"
 #include "Utils.h"
 
 using namespace llvm;
@@ -33,13 +34,12 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    const Config &config,
                                    const DebugInfo *DI,
-                                   PatternComparator *PC,
+                                   const PatternSet *PS,
                                    ModuleComparator *MC)
             : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
               LayoutL(F1->getParent()->getDataLayout()),
               LayoutR(F2->getParent()->getDataLayout()),
-              PatternComp(PC ? PC->initialize(F1, F2) : nullptr),
-              ModComparator(MC) {}
+              PatComparator(PatternComparator(PS, F1, F2)), ModComparator(MC) {}
 
     int compare() override;
     /// Check if two instructions were already compared as equal.
@@ -122,7 +122,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::unordered_map<const Value *, const Value *>
             ignoredInstructions;
 
-    PatternComparator *PatternComp;
+    mutable PatternComparator PatComparator;
     ModuleComparator *ModComparator;
 
     /// Try to find a syntax difference that could be causing the semantic
