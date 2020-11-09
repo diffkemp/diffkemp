@@ -9,17 +9,23 @@
 /// \file
 /// This file contains the implementation of the LLVM code pattern matcher. The
 /// pattern matcher is a comparator extension of the LLVM FunctionComparator
-/// tailored to difference pattern instruction comparison. Compared to the LLVM
-/// FunctionComparator, the comparison is performed lazily, one instruction at
-/// a time.
+/// tailored to difference pattern comparison.
 ///
 //===----------------------------------------------------------------------===//
 
 #include "PatternFunctionComparator.h"
 
-/// Compare a module and a pattern instruction along with their operands.
+/// Compare the module function and the difference pattern starting from the
+/// given module instruction.
+int PatternFunctionComparator::compareFromInst(const Instruction *ModInst) {
+    // TODO: Do an actual pattern comparison.
+    return 1;
+}
+
+/// Compare a module function instruction with a pattern instruction along
+/// with their operands.
 int PatternFunctionComparator::cmpOperationsWithOperands(
         const Instruction *ModInst, const Instruction *PatInst) const {
-    // TODO: Do an actual comparison.
-    return true;
+    // TODO: Do an actual instruction comparison.
+    return 1;
 }

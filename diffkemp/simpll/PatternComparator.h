@@ -8,7 +8,7 @@
 ///
 /// \file
 /// This file contains the declaration of the LLVM code pattern finder and
-/// comparator.
+/// comparison manager.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -22,18 +22,6 @@
 
 using namespace llvm;
 
-/// Representation of an actively matched difference pattern pair.
-struct ActivePattern {
-    /// Current comparison position for the new part of the pattern.
-    mutable const Instruction *NewPosition;
-    /// Current comparison position for the old part of the pattern.
-    mutable const Instruction *OldPosition;
-
-    ActivePattern(const Pattern *Parent)
-            : NewPosition(Parent->NewStartPosition),
-              OldPosition(Parent->OldStartPosition) {}
-};
-
 /// Compares difference patterns against functions, possibly eliminating reports
 /// of prior semantic differences.
 class PatternComparator {
@@ -42,22 +30,12 @@ class PatternComparator {
                       const Function *NewFun,
                       const Function *OldFun);
 
-    /// Tries to match the given instruction pair to the starting instructions
-    /// of one of the patterns. Returns true if a valid match is found.
-    bool matchPatternStart(const Instruction *NewInst,
-                           const Instruction *OldInst);
-
-    /// Tries to match the given instruction pair to one of the active patterns.
-    /// Returns true if a valid match is found.
-    bool matchActivePattern(const Instruction *NewInst,
-                            const Instruction *OldInst);
+    /// Tries to match a difference pattern starting with instructions that may
+    /// be matched to the given instruction pair. Returns true if a valid match
+    /// is found.
+    bool matchPattern(const Instruction *NewInst, const Instruction *OldInst);
 
   private:
-    /// Parent set of difference patterns.
-    const PatternSet *Patterns;
-    /// Map of loaded and active difference patterns.
-    std::unordered_map<const Pattern *, std::vector<ActivePattern>>
-            ActivePatterns;
     /// Map of pattern function comparators associated with the current set of
     /// patterns and the currently compared functions.
     std::unordered_map<const Pattern *,
