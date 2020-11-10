@@ -19,7 +19,8 @@
 using namespace llvm::yaml;
 
 // CallInfo to YAML
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct MappingTraits<CallInfo> {
     static void mapping(IO &io, CallInfo &callinfo) {
         io.mapRequired("function", callinfo.fun);
@@ -28,14 +29,16 @@ template <> struct MappingTraits<CallInfo> {
         io.mapRequired("weak", callinfo.weak);
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 // Vector of CallInfo objects to YAML (used both for callstacks and sets of
 // callees).
 LLVM_YAML_IS_SEQUENCE_VECTOR(CallInfo)
 
 // FunctionInfo to YAML
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct MappingTraits<FunctionInfo> {
     static void mapping(IO &io, FunctionInfo &info) {
         std::string name = info.name;
@@ -47,10 +50,12 @@ template <> struct MappingTraits<FunctionInfo> {
         io.mapOptional("calls", calls);
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 // NonFunctionDifference (stored in unique_ptr) to YAML
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct MappingTraits<std::unique_ptr<NonFunctionDifference>> {
     static void mapping(IO &io, std::unique_ptr<NonFunctionDifference> &diff) {
         io.mapRequired("name", diff->name);
@@ -69,12 +74,14 @@ template <> struct MappingTraits<std::unique_ptr<NonFunctionDifference>> {
         }
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 LLVM_YAML_IS_SEQUENCE_VECTOR(std::unique_ptr<NonFunctionDifference>)
 
 // Result::Kind to YAML
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct ScalarEnumerationTraits<Result::Kind> {
     static void enumeration(IO &io, Result::Kind &kind) {
         io.enumCase(kind, "equal", Result::Kind::EQUAL);
@@ -83,10 +90,12 @@ template <> struct ScalarEnumerationTraits<Result::Kind> {
         io.enumCase(kind, "unknown", Result::Kind::UNKNOWN);
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 // Result to YAML
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct MappingTraits<Result> {
     static void mapping(IO &io, Result &result) {
         io.mapRequired("result", result.kind);
@@ -95,12 +104,14 @@ template <> struct MappingTraits<Result> {
         io.mapOptional("differing-objects", result.DifferingObjects);
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 LLVM_YAML_IS_SEQUENCE_VECTOR(Result)
 
 // GlobalValue (used for missing definitions) to YAML
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct MappingTraits<GlobalValuePair> {
     static void mapping(IO &io, GlobalValuePair &globvals) {
         std::string nameFirst = globvals.first ? globvals.first->getName() : "";
@@ -110,19 +121,22 @@ template <> struct MappingTraits<GlobalValuePair> {
         io.mapOptional("second", nameSecond, std::string());
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 LLVM_YAML_IS_SEQUENCE_VECTOR(GlobalValuePair)
 
 // OverallResult to YAML
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct MappingTraits<OverallResult> {
     static void mapping(IO &io, OverallResult &result) {
         io.mapOptional("function-results", result.functionResults);
         io.mapOptional("missing-defs", result.missingDefs);
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 /// Report the overall result in YAML format to stdout.
 void reportOutput(Config &config, OverallResult &result) {
