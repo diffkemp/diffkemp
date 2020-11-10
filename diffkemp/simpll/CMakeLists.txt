@@ -6,6 +6,13 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
   llvm-lib/${LLVM_VERSION_MAJOR}/FunctionComparator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/FunctionComparator.cpp)
 
+# Add color coding to compiler diagnostics
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_compile_options (-fcolor-diagnostics)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options (-fdiagnostics-color=always)
+endif()
+
 file(GLOB srcs *.cpp)
 list(REMOVE_ITEM srcs SimpLL.cpp)
 file(GLOB passes passes/*.cpp)
