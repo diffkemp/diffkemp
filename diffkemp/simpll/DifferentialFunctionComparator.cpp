@@ -232,7 +232,8 @@ int DifferentialFunctionComparator::cmpOperations(
                     }
 
                     if (Result && config.ControlFlowOnly
-                        && abs(CL->getNumOperands() - CR->getNumOperands())
+                        && std::abs(static_cast<long>(CL->getNumOperands())
+                                    - CR->getNumOperands())
                                    == 1) {
                         needToCmpOperands = false;
                         return cmpCallsWithExtraArg(CL, CR);
