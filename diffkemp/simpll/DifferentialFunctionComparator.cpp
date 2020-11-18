@@ -732,7 +732,9 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
 
 /// Detect cast instructions and ignore them when comparing the control flow
 /// only.
-/// Note: this function was copied from FunctionComparator.
+/// Note: Parts of this function have been adapted from FunctionComparator.
+/// Therefore, LLVM licensing also applies here. See the LICENSE information
+/// in the appropriate llvm-lib subdirectory for more details.
 int DifferentialFunctionComparator::cmpBasicBlocks(
         const BasicBlock *BBL, const BasicBlock *BBR) const {
     BasicBlock::const_iterator InstL = BBL->begin(), InstLE = BBL->end();
