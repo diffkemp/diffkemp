@@ -14,7 +14,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "PatternComparator.h"
-#include "DebugInfo.h"
+#include "Config.h"
+#include "Utils.h"
 
 PatternComparator::PatternComparator(const PatternSet *Patterns,
                                      const Function *NewFun,
@@ -22,9 +23,9 @@ PatternComparator::PatternComparator(const PatternSet *Patterns,
     // Populate the pattern function comparator map.
     for (auto &Pattern : *Patterns) {
         auto NewPatFunComparator = std::make_unique<PatternFunctionComparator>(
-                NewFun, Pattern.NewPattern, Patterns);
+                NewFun, Pattern.NewPattern, &Pattern);
         auto OldPatFunComparator = std::make_unique<PatternFunctionComparator>(
-                OldFun, Pattern.OldPattern, Patterns);
+                OldFun, Pattern.OldPattern, &Pattern);
 
         PatFunComparators.emplace(
                 &Pattern,
@@ -39,11 +40,23 @@ PatternComparator::PatternComparator(const PatternSet *Patterns,
 bool PatternComparator::matchPattern(const Instruction *NewInst,
                                      const Instruction *OldInst) {
     for (auto &&PatFunComparatorPair : PatFunComparators) {
+        auto PatComparators = &PatFunComparatorPair.second;
+        PatComparators->first->setStartInstruction(NewInst);
+        PatComparators->second->setStartInstruction(OldInst);
+
         // Compare the modules with patterns based on the given module
         // instruction pair.
-        auto PatComparators = &PatFunComparatorPair.second;
-        if (!PatComparators->first->compareFromInst(NewInst)
-            && !PatComparators->second->compareFromInst(OldInst)) {
+        if (PatComparators->first->compare() == 0
+            && PatComparators->second->compare() == 0) {
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                            dbgs() << getDebugIndent()
+                                   << "Found a match for pattern "
+                                   << PatFunComparatorPair.first->Name << "\n");
+
+            // Save the result since the match is valid.
+            PatComparators->first->saveResult(&InstMatches);
+            PatComparators->second->saveResult(&InstMatches);
+
             // TODO: Should return an elaborate comparison result map
             //       with matched instructions which may be ignored.
             return true;

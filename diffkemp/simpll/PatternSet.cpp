@@ -27,14 +27,16 @@ using namespace llvm::yaml;
 using namespace llvm::sys::path;
 
 // YAML to PatternConfiguration mapping
-namespace llvm::yaml {
+namespace llvm {
+namespace yaml {
 template <> struct MappingTraits<PatternConfiguration> {
     static void mapping(IO &IO, PatternConfiguration &Config) {
         IO.mapOptional("on_parse_failure", Config.OnParseFailure);
         IO.mapOptional("patterns", Config.PatternFiles);
     }
 };
-} // namespace llvm::yaml
+} // namespace yaml
+} // namespace llvm
 
 /// Name for pattern metadata nodes.
 const std::string PatternSet::MetadataName = "diffkemp.pattern";
@@ -72,9 +74,6 @@ bool PatternSet::getPatternMetadata(PatternMetadata &Metadata,
         return false;
     }
 
-    // Erase previous metadata information.
-    Metadata = {};
-
     int OperandIndex = 0;
     while (OperandIndex < InstMetadata->getNumOperands()) {
         int IndexOffset =
@@ -89,40 +88,6 @@ bool PatternSet::getPatternMetadata(PatternMetadata &Metadata,
     }
 
     return true;
-}
-
-/// Checks whether the difference pattern set is empty.
-bool PatternSet::empty() const noexcept { return Patterns.empty(); }
-
-/// Returns a constant iterator pointing to the first difference pattern.
-std::unordered_set<Pattern>::iterator PatternSet::begin() noexcept {
-    return Patterns.begin();
-}
-
-/// Returns a constant iterator pointing beyond the last difference pattern.
-std::unordered_set<Pattern>::iterator PatternSet::end() noexcept {
-    return Patterns.end();
-}
-
-/// Returns a constant iterator pointing to the first difference pattern.
-std::unordered_set<Pattern>::const_iterator PatternSet::begin() const noexcept {
-    return Patterns.begin();
-}
-
-/// Returns a constant iterator pointing beyond the last difference pattern.
-std::unordered_set<Pattern>::const_iterator PatternSet::end() const noexcept {
-    return Patterns.end();
-}
-
-/// Returns a constant iterator pointing to the first difference pattern.
-std::unordered_set<Pattern>::const_iterator PatternSet::cbegin() const
-        noexcept {
-    return Patterns.cbegin();
-}
-
-/// Returns a constant iterator pointing beyond the last difference pattern.
-std::unordered_set<Pattern>::const_iterator PatternSet::cend() const noexcept {
-    return Patterns.cend();
 }
 
 /// Load the given LLVM IR based difference pattern YAML configuration.
@@ -157,7 +122,6 @@ void PatternSet::loadConfig(std::string &ConfigPath) {
 
 /// Add a new LLVM IR difference pattern file.
 void PatternSet::addPattern(std::string &Path) {
-
     Module *PatternModule = loadModule(Path, PatternModules, PatternContexts);
     if (!PatternModule) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
@@ -166,9 +130,6 @@ void PatternSet::addPattern(std::string &Path) {
                                << "module " << Path << ".\n");
         return;
     }
-
-    // Proprocess the module to match the structure of compared modules.
-    preprocessModule(*PatternModule, nullptr, nullptr, false);
 
     for (auto &Function : PatternModule->getFunctionList()) {
         // Select only functions starting with the new prefix.
@@ -205,6 +166,7 @@ bool PatternSet::initializePattern(Pattern &Pat) {
     // Initialize the new side of the pattern.
     for (auto &&BB : Pat.NewPattern->getBasicBlockList()) {
         for (auto &Inst : BB) {
+            Metadata = {};
             if (getPatternMetadata(Metadata, Inst)) {
                 Pat.MetadataMap[&Inst] = Metadata;
                 if (!Pat.NewStartPosition && Metadata.FirstDifference) {
@@ -217,6 +179,7 @@ bool PatternSet::initializePattern(Pattern &Pat) {
     // Initialize the old side of the pattern.
     for (auto &&BB : Pat.OldPattern->getBasicBlockList()) {
         for (auto &Inst : BB) {
+            Metadata = {};
             if (getPatternMetadata(Metadata, Inst)) {
                 Pat.MetadataMap[&Inst] = Metadata;
                 if (!Pat.OldStartPosition && Metadata.FirstDifference) {

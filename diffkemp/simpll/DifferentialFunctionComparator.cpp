@@ -832,7 +832,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // The difference cannot be skipped. Try to match it to one of the
             // loaded difference patterns. Continue the comparison if a suitable
             // starting pattern match gets found.
-            if (PatComparator.matchPattern(&*InstL, &*InstR)) {
+            if (PatternComp.matchPattern(&*InstL, &*InstR)) {
                 // TODO: Process comparison results.
                 continue;
             }

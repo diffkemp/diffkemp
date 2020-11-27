@@ -92,25 +92,37 @@ class PatternSet {
                             const Instruction &Inst) const;
 
     /// Checks whether the difference pattern set is empty.
-    bool empty() const noexcept;
+    bool empty() const noexcept { return Patterns.empty(); }
 
     /// Returns a constant iterator pointing to the first difference pattern.
-    std::unordered_set<Pattern>::iterator begin() noexcept;
+    std::unordered_set<Pattern>::iterator begin() noexcept {
+        return Patterns.begin();
+    }
 
     /// Returns a constant iterator pointing beyond the last difference pattern.
-    std::unordered_set<Pattern>::iterator end() noexcept;
+    std::unordered_set<Pattern>::iterator end() noexcept {
+        return Patterns.end();
+    }
 
     /// Returns a constant iterator pointing to the first difference pattern.
-    std::unordered_set<Pattern>::const_iterator begin() const noexcept;
+    std::unordered_set<Pattern>::const_iterator begin() const noexcept {
+        return Patterns.begin();
+    }
 
     /// Returns a constant iterator pointing beyond the last difference pattern.
-    std::unordered_set<Pattern>::const_iterator end() const noexcept;
+    std::unordered_set<Pattern>::const_iterator end() const noexcept {
+        return Patterns.end();
+    }
 
     /// Returns a constant iterator pointing to the first difference pattern.
-    std::unordered_set<Pattern>::const_iterator cbegin() const noexcept;
+    std::unordered_set<Pattern>::const_iterator cbegin() const noexcept {
+        return Patterns.cbegin();
+    }
 
     /// Returns a constant iterator pointing beyond the last difference pattern.
-    std::unordered_set<Pattern>::const_iterator cend() const noexcept;
+    std::unordered_set<Pattern>::const_iterator cend() const noexcept {
+        return Patterns.cend();
+    }
 
   private:
     /// Name for pattern metadata nodes.

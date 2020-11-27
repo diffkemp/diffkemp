@@ -30,6 +30,10 @@ class PatternComparator {
                       const Function *NewFun,
                       const Function *OldFun);
 
+    /// Map of matched instructions and their comparison replacements, combined
+    /// for all matching patterns.
+    InstructionMap InstMatches;
+
     /// Tries to match a difference pattern starting with instructions that may
     /// be matched to the given instruction pair. Returns true if a valid match
     /// is found.
