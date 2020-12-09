@@ -45,7 +45,15 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::pair<const Instruction *, const Instruction *>
             DifferingInstructions;
 
+    friend class EquivalenceSlicer;
+
   protected:
+    /// When values must exist it is possible to erase instructions from
+    /// synchronisation maps
+    bool valuesMustExist = false;
+    mutable std::vector<std::pair<const PHINode *, const PHINode *>>
+            phisToCompare;
+
     /// Specific comparison of GEP instructions/operators.
     /// Handles situation when there is an offset between matching GEP indices
     /// in the compared modules (when a struct type has different fields).
@@ -81,6 +89,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Compare two instructions along with their operands.
     int cmpOperationsWithOperands(const Instruction *L,
                                   const Instruction *R) const;
+    /// Compares basic blocks from specified instructions
+    int cmpBasicBlocksFromInstructions(const BasicBlock *BBL,
+                                       const BasicBlock *BBR,
+                                       BasicBlock::const_iterator InstL,
+                                       BasicBlock::const_iterator InstR) const;
     /// Detect cast instructions and ignore them when comparing the control flow
     /// only. (The rest is the same as in LLVM.)
     int cmpBasicBlocks(const BasicBlock *BBL,
@@ -106,6 +119,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Comparing PHI instructions
     int cmpPHIs(const PHINode *PhiL, const PHINode *PhiR) const;
 
+    std::pair<DenseMap<const Value *, int> *, DenseMap<const Value *, int> *>
+            getSnMaps();
+    /// Returns actual size of synchronization maps
+    int getSizeOfMaps() const;
+
   private:
     const Config &config;
     const DebugInfo *DI;
@@ -114,8 +132,6 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     mutable const DebugLoc *CurrentLocL, *CurrentLocR;
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
-    mutable std::vector<std::pair<const PHINode *, const PHINode *>>
-            phisToCompare;
     mutable std::unordered_map<const Value *, const Value *>
             ignoredInstructions;
 
@@ -184,6 +200,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// 3. Look a macro-function difference.
     void processCallInstDifference(const CallInst *CL,
                                    const CallInst *CR) const;
+
+    /// Removes instructions in synchronization maps from given number
+    void eraseFromMaps(int num) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
