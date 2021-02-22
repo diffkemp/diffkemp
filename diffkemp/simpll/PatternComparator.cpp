@@ -37,12 +37,12 @@ PatternComparator::PatternComparator(const PatternSet *Patterns,
 /// Tries to match a difference pattern starting with instructions that may
 /// be matched to the given instruction pair. Returns true if a valid match
 /// is found.
-bool PatternComparator::matchPattern(const Instruction *NewInst,
-                                     const Instruction *OldInst) {
+bool PatternComparator::matchPattern(const Instruction *InstL,
+                                     const Instruction *InstR) {
     for (auto &&PatFunComparatorPair : PatFunComparators) {
         auto PatComparators = &PatFunComparatorPair.second;
-        PatComparators->first->setStartInstruction(NewInst);
-        PatComparators->second->setStartInstruction(OldInst);
+        PatComparators->first->setStartInstruction(InstR);  // New side
+        PatComparators->second->setStartInstruction(InstL); // Old side
 
         // Compare the modules with patterns based on the given module
         // instruction pair.
@@ -53,15 +53,36 @@ bool PatternComparator::matchPattern(const Instruction *NewInst,
                                    << "Found a match for pattern "
                                    << PatFunComparatorPair.first->Name << "\n");
 
-            // Save the result since the match is valid.
-            PatComparators->first->saveResult(&InstMatches);
-            PatComparators->second->saveResult(&InstMatches);
-
-            // TODO: Should return an elaborate comparison result map
-            //       with matched instructions which may be ignored.
+            // Create a new instruction mapping since the match is valid.
+            InstMappings.clear();
+            processPatternMatch(PatFunComparatorPair.first, PatComparators);
             return true;
         }
     }
 
     return false;
+}
+
+/// Create the resulting instruction mapping and add all matched
+/// instructions into the combined instruction set.
+void PatternComparator::processPatternMatch(
+        const Pattern *Pat,
+        const PatternFunctionComparatorPair *PatComparators) {
+    for (auto &&InstPair : PatComparators->first->InstMatchMap) {
+        // Add the matched instruction into the set of matched instructions.
+        AllInstMatches.insert(InstPair.second);
+
+        // If the instruction is mapped, create the mapping as well.
+        if (Pat->FinalMapping.find(InstPair.first) != Pat->FinalMapping.end()) {
+            auto MappedPatternInst = Pat->FinalMapping[InstPair.first];
+            auto MappedModuleInst =
+                    PatComparators->second->InstMatchMap[MappedPatternInst];
+            InstMappings[MappedModuleInst] = InstPair.second;
+        }
+    }
+
+    // Process the matched instructions from the second pattern side.
+    for (auto &&InstPair : PatComparators->second->InstMatchMap) {
+        AllInstMatches.insert(InstPair.second);
+    }
 }

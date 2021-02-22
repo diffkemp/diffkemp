@@ -14,6 +14,8 @@
 #ifndef DIFFKEMP_SIMPLL_PATTERNSET_H
 #define DIFFKEMP_SIMPLL_PATTERNSET_H
 
+#include <llvm/ADT/DenseMap.h>
+#include <llvm/ADT/SmallPtrSet.h>
 #include <llvm/ADT/StringMap.h>
 #include <llvm/IR/Module.h>
 #include <unordered_map>
@@ -21,6 +23,12 @@
 #include <vector>
 
 using namespace llvm;
+
+/// Instruction to instruction mapping.
+typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
+
+/// Instructions pointer set.
+typedef SmallPtrSet<const Instruction *, 32> InstructionSet;
 
 // Forward declaration of the DifferentialFunctionComparator.
 class DifferentialFunctionComparator;
@@ -32,7 +40,9 @@ struct PatternMetadata {
     /// End of the previous basic block limit.
     bool BasicBlockLimitEnd = false;
     /// Marker for the first differing instruction pair.
-    bool FirstDifference = false;
+    bool PatternStart = false;
+    /// Marker for the last differing instruction pair.
+    bool PatternEnd = false;
 };
 
 /// Representation of the whole difference pattern configuration.
@@ -52,7 +62,10 @@ struct Pattern {
     /// Function corresponding to the old part of the pattern.
     const Function *OldPattern;
     /// Map of all included pattern metadata.
-    std::unordered_map<const Instruction *, PatternMetadata> MetadataMap;
+    mutable std::unordered_map<const Instruction *, PatternMetadata>
+            MetadataMap;
+    /// Final instruction mapping associated with the pattern.
+    mutable InstructionMap FinalMapping;
     /// Comparison start position for the new part of the pattern.
     const Instruction *NewStartPosition = nullptr;
     /// Comparison start position for the old part of the pattern.
@@ -82,6 +95,15 @@ template <> struct hash<Pattern> {
 /// of prior semantic differences.
 class PatternSet {
   public:
+    /// Name for the function defining final instuction mapping.
+    static const std::string MappingFunctionName;
+    /// Name for pattern metadata nodes.
+    static const std::string MetadataName;
+    /// Prefix for the new side of difference patterns.
+    static const std::string NewPrefix;
+    /// Prefix for the old side of difference patterns.
+    static const std::string OldPrefix;
+
     PatternSet(std::string ConfigPath);
 
     ~PatternSet();
@@ -125,12 +147,10 @@ class PatternSet {
     }
 
   private:
-    /// Name for pattern metadata nodes.
-    static const std::string MetadataName;
-    /// Prefix for the new side of difference patterns.
-    static const std::string NewPrefix;
-    /// Prefix for the old side of difference patterns.
-    static const std::string OldPrefix;
+    /// Basic information about the final instruction mapping present on one
+    /// side of a pattern.
+    using MappingInfo = std::pair<const Instruction *, int>;
+
     /// Settings applied to all pattern files.
     StringMap<std::string> GlobalSettings;
     /// Map of loaded pattern modules.
@@ -146,8 +166,15 @@ class PatternSet {
     /// Add a new difference pattern.
     void addPattern(std::string &Path);
 
-    /// Initializes a pattern, loading all metadata and start positions.
+    /// Initializes a pattern, loading all metadata, start positions, and the
+    /// final instruction mapping.
     bool initializePattern(Pattern &Pat);
+
+    /// Initializes a single side of a pattern, loading all metadata, start
+    /// positions, and retrevies instruction mapping information.
+    void initializePatternSide(Pattern &Pat,
+                               MappingInfo &MapInfo,
+                               bool IsNewSide);
 
     /// Parses a single pattern metadata operand, including all dependent
     /// operands.

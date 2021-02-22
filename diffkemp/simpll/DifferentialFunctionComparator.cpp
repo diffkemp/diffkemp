@@ -669,6 +669,25 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
     return replacementIt->second;
 }
 
+/// Creates new value mappings according to the current pattern match.
+void DifferentialFunctionComparator::createPatternMapping() const {
+    for (auto &&MappedInstPair : PatternComp.InstMappings) {
+        sn_mapL[MappedInstPair.first] = sn_mapL.size();
+        sn_mapR[MappedInstPair.second] = sn_mapR.size();
+    }
+}
+
+/// Check if the given instruction has been matched to a pattern and,
+/// therefore, does not need to be analyzed nor mapped again.
+bool DifferentialFunctionComparator::isPartOfPattern(
+        const Instruction *Inst) const {
+    if (PatternComp.AllInstMatches.find(Inst)
+        == PatternComp.AllInstMatches.end()) {
+        return false;
+    }
+    return true;
+}
+
 /// Does additional comparisons based on the C source to determine whether two
 /// call function arguments that may be compared as non-equal by LLVM are
 /// actually semantically equal.
@@ -793,6 +812,19 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             InstR++;
             continue;
         }
+
+        // Skip instructions matched to a pattern because such instructions have
+        // been analyzed by the pattern function comparator and have already
+        // been mapped according to the pattern.
+        if (isPartOfPattern(&*InstL)) {
+            InstL++;
+            continue;
+        }
+        if (isPartOfPattern(&*InstR)) {
+            InstR++;
+            continue;
+        }
+
         if ((&InstL->getDebugLoc())->get())
             CurrentLocL = &InstL->getDebugLoc();
         if ((&InstR->getDebugLoc())->get())
@@ -833,7 +865,9 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // loaded difference patterns. Continue the comparison if a suitable
             // starting pattern match gets found.
             if (PatternComp.matchPattern(&*InstL, &*InstR)) {
-                // TODO: Process comparison results.
+                sn_mapL.erase(&*InstL);
+                sn_mapR.erase(&*InstR);
+                createPatternMapping();
                 continue;
             }
 

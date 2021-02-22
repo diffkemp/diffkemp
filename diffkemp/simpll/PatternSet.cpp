@@ -38,6 +38,8 @@ template <> struct MappingTraits<PatternConfiguration> {
 } // namespace yaml
 } // namespace llvm
 
+/// Name for the function defining final instuction mapping.
+const std::string PatternSet::MappingFunctionName = "diffkemp.mapping";
 /// Name for pattern metadata nodes.
 const std::string PatternSet::MetadataName = "diffkemp.pattern";
 /// Prefix for the new side of difference patterns.
@@ -156,36 +158,41 @@ void PatternSet::addPattern(std::string &Path) {
     }
 }
 
-/// Initializes a pattern, loading all metadata and start positions. Unless
-/// the start position is chosen by metadata, it is set to the first differing
-/// pair of pattern instructions. Patterns with conflicting differences in
-/// concurrent branches are skipped, returning false.
+/// Initializes a pattern, loading all metadata, start positions, and the final
+/// instruction mapping. Unless the start position is chosen by metadata, it is
+/// set to the first differing pair of pattern instructions. Patterns with
+/// conflicting differences in concurrent branches are skipped, returning false.
 bool PatternSet::initializePattern(Pattern &Pat) {
-    PatternMetadata Metadata;
+    MappingInfo NewMappingInfo;
+    MappingInfo OldMappingInfo;
 
-    // Initialize the new side of the pattern.
-    for (auto &&BB : Pat.NewPattern->getBasicBlockList()) {
-        for (auto &Inst : BB) {
-            Metadata = {};
-            if (getPatternMetadata(Metadata, Inst)) {
-                Pat.MetadataMap[&Inst] = Metadata;
-                if (!Pat.NewStartPosition && Metadata.FirstDifference) {
-                    Pat.NewStartPosition = &Inst;
-                }
-            }
-        }
+    // Initialize both pattern sides.
+    initializePatternSide(Pat, NewMappingInfo, true);
+    initializePatternSide(Pat, OldMappingInfo, false);
+
+    // Create references for the expected final instruction mapping.
+    if (NewMappingInfo.second != OldMappingInfo.second) {
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "The number of mapped instructions does "
+                               << "not match in pattern " << Pat.Name << ".\n");
+        return false;
     }
-
-    // Initialize the old side of the pattern.
-    for (auto &&BB : Pat.OldPattern->getBasicBlockList()) {
-        for (auto &Inst : BB) {
-            Metadata = {};
-            if (getPatternMetadata(Metadata, Inst)) {
-                Pat.MetadataMap[&Inst] = Metadata;
-                if (!Pat.OldStartPosition && Metadata.FirstDifference) {
-                    Pat.OldStartPosition = &Inst;
-                }
+    if (NewMappingInfo.first && OldMappingInfo.first) {
+        for (int i = 0; i < NewMappingInfo.second; ++i) {
+            auto NewMappedInst =
+                    dyn_cast<Instruction>(NewMappingInfo.first->getOperand(i));
+            auto OldMappedInst =
+                    dyn_cast<Instruction>(OldMappingInfo.first->getOperand(i));
+            if (!NewMappedInst || !OldMappedInst) {
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << getDebugIndent()
+                                       << "Instruction mapping in pattern "
+                                       << Pat.Name << " contains values that "
+                                       << "do not reference instructions.\n");
+                return false;
             }
+            Pat.FinalMapping[NewMappedInst] = OldMappedInst;
         }
     }
 
@@ -197,6 +204,62 @@ bool PatternSet::initializePattern(Pattern &Pat) {
     return true;
 }
 
+/// Initializes a single side of a pattern, loading all metadata, start
+/// positions, and retrevies instruction mapping information.
+void PatternSet::initializePatternSide(Pattern &Pat,
+                                       MappingInfo &MapInfo,
+                                       bool IsNewSide) {
+    PatternMetadata Metadata;
+    const Function *PatternSide;
+    const Instruction **StartPosition;
+    const Instruction *MappingInstruction = nullptr;
+    if (IsNewSide) {
+        PatternSide = Pat.NewPattern;
+        StartPosition = &Pat.NewStartPosition;
+    } else {
+        PatternSide = Pat.OldPattern;
+        StartPosition = &Pat.OldStartPosition;
+    }
+
+    // Initialize the selected pattern side.
+    for (auto &&BB : PatternSide->getBasicBlockList()) {
+        for (auto &Inst : BB) {
+            // Load instruction metadata.
+            Metadata = {};
+            if (getPatternMetadata(Metadata, Inst)) {
+                Pat.MetadataMap[&Inst] = Metadata;
+                // If present, register start position metadata.
+                if (!*StartPosition && Metadata.PatternStart) {
+                    *StartPosition = &Inst;
+                }
+            }
+            // Load instruction mapping information from the first mapping call
+            // or pattern function return.
+            auto Call = dyn_cast<CallInst>(&Inst);
+            if (!MappingInstruction
+                && (isa<ReturnInst>(Inst)
+                    || (Call && Call->getCalledFunction()
+                        && Call->getCalledFunction()->getName()
+                                   == MappingFunctionName))) {
+                MappingInstruction = &Inst;
+            }
+        }
+    }
+
+    // Get the number of possible instruction mapping operands.
+    int MappedOperandsCount = 0;
+    if (MappingInstruction) {
+        MappedOperandsCount = MappingInstruction->getNumOperands();
+        // Ignore the last operand of calls since it references the called
+        // function.
+        if (isa<CallInst>(MappingInstruction)) {
+            --MappedOperandsCount;
+        }
+    }
+    // Generate mapping information.
+    MapInfo = {MappingInstruction, MappedOperandsCount};
+}
+
 /// Parses a single pattern metadata operand, including all dependent operands.
 /// The total metadata operand offset is returned unless the parsing fails.
 int PatternSet::parseMetadataOperand(PatternMetadata &PatternMetadata,
@@ -205,10 +268,12 @@ int PatternSet::parseMetadataOperand(PatternMetadata &PatternMetadata,
     // Metadata offsets
     const int BasicBlockLimitOffset = 2;
     const int BasicBlockLimitEndOffset = 1;
-    const int FirstDifferenceOffset = 1;
+    const int PatternStartOffset = 1;
+    const int PatternEndOffset = 1;
 
     if (auto Type = dyn_cast<MDString>(InstMetadata->getOperand(Index).get())) {
-        if (Type->getString() == "basic-block-limit") {
+        auto TypeName = Type->getString();
+        if (TypeName == "basic-block-limit") {
             // basic-block-limit metadata: string type, int limit.
             ConstantAsMetadata *LimitConst;
             if (InstMetadata->getNumOperands() > (Index + 1)
@@ -221,14 +286,18 @@ int PatternSet::parseMetadataOperand(PatternMetadata &PatternMetadata,
                     return BasicBlockLimitOffset;
                 }
             }
-        } else if (Type->getString() == "basic-block-limit-end") {
+        } else if (TypeName == "basic-block-limit-end") {
             // basic-block-limit-end metadata: string type.
             PatternMetadata.BasicBlockLimitEnd = true;
             return BasicBlockLimitEndOffset;
-        } else if (Type->getString() == "first-difference") {
-            // first-difference metadata: string type.
-            PatternMetadata.FirstDifference = true;
-            return FirstDifferenceOffset;
+        } else if (TypeName == "pattern-start") {
+            // pattern-start metadata: string type.
+            PatternMetadata.PatternStart = true;
+            return PatternStartOffset;
+        } else if (TypeName == "pattern-end") {
+            // pattern-end metadata: string type.
+            PatternMetadata.PatternEnd = true;
+            return PatternEndOffset;
         }
     }
 

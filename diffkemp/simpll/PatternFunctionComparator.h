@@ -23,15 +23,15 @@
 
 using namespace llvm;
 
-/// Unordered mapping of instructions.
-typedef std::unordered_map<const Instruction *, const Instruction *>
-        InstructionMap;
-
 /// Extension of LLVM FunctionComparator which compares a difference pattern
 /// against its corresponding module function. Compared functions are expected
 /// to lie in different modules.
 class PatternFunctionComparator : protected FunctionComparator {
   public:
+    /// Pattern instructions matched to their respective module replacement
+    /// instructions. Pattern instructions are used as keys.
+    mutable InstructionMap InstMatchMap;
+
     PatternFunctionComparator(const Function *ModFun,
                               const Function *PatFun,
                               const Pattern *ParentPattern)
@@ -46,9 +46,6 @@ class PatternFunctionComparator : protected FunctionComparator {
     /// Set the starting module instruction.
     void setStartInstruction(const Instruction *StartModInst);
 
-    /// Save the local match result into the combined result pool.
-    void saveResult(InstructionMap *CombinedInstMatches) const;
-
   protected:
     /// Clear all result structures to prepare for a new comparison.
     void beginCompare();
@@ -62,8 +59,9 @@ class PatternFunctionComparator : protected FunctionComparator {
     int cmpBasicBlocks(const BasicBlock *BBL,
                        const BasicBlock *BBR) const override;
 
-    /// Compare a module function values with a pattern value.
-    int cmpValues(const Value *L, const Value *R) const override;
+    /// Compare global values by their names, because their indexes are not
+    /// expected to be the same.
+    int cmpGlobalValues(GlobalValue *L, GlobalValue *R) const override;
 
   private:
     /// Whether the comparator has been created for the new side of the pattern.
@@ -72,8 +70,6 @@ class PatternFunctionComparator : protected FunctionComparator {
     const Pattern *ParentPattern;
     /// The staring instruction of the compared module function.
     mutable const Instruction *StartInst;
-    /// Map of matched instructions and their comparison replacements.
-    mutable InstructionMap InstMatches;
 
     /// Position the basic block instruction iterator forward to the given
     /// starting instruction.

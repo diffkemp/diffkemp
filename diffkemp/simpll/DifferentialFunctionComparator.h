@@ -180,6 +180,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
             getReplacementValue(const Value *Replaced,
                                 DenseMap<const Value *, int> &sn_map) const;
 
+    /// Creates new value mappings according to the current pattern match.
+    void createPatternMapping() const;
+
+    /// Check if the given instruction has been matched to a pattern and,
+    /// therefore, does not need to be analyzed nor mapped again.
+    bool isPartOfPattern(const Instruction *Inst) const;
+
     /// Does additional operations in cases when a difference between two
     /// CallInsts or their arguments is detected.
     /// This consists of three parts:
