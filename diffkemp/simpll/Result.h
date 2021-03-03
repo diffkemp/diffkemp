@@ -64,7 +64,7 @@ struct FunctionInfo {
     /// @param Callee Called function.
     /// @param Call line.
     void addCall(const Function *Callee, int l) {
-        calls.insert(CallInfo(Callee->getName(), file, l));
+        calls.insert(CallInfo(Callee->getName().str(), file, l));
     }
 };
 

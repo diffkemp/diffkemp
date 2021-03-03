@@ -29,10 +29,10 @@ StructureSizeAnalysis::Result StructureSizeAnalysis::run(
             uint64_t STySize = Mod.getDataLayout().getTypeAllocSize(STy);
             auto Elem = Res.find(STySize);
             if (Elem != Res.end()) {
-                Elem->second.insert(STy->getStructName());
+                Elem->second.insert(STy->getStructName().str());
             } else {
                 std::set<std::string> Set;
-                Set.insert(STy->getStructName());
+                Set.insert(STy->getStructName().str());
                 Res[STySize] = Set;
             }
         }

@@ -121,19 +121,14 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             ConstFunPair missingDefs;
             bool inlined = false;
             Function *InlinedFunFirst =
-                    !inlineFirst
-                            ? nullptr
-                            : getCalledFunction(inlineFirst->getCalledValue());
+                    !inlineFirst ? nullptr : getCalledFunction(inlineFirst);
             Function *InlinedFunSecond =
-                    !inlineSecond
-                            ? nullptr
-                            : getCalledFunction(inlineSecond->getCalledValue());
+                    !inlineSecond ? nullptr : getCalledFunction(inlineSecond);
             // If the called function is a declaration, add it to missingDefs.
             // Otherwise, inline the call and simplify the function.
             // The above is done for the first and the second call to inline.
             if (inlineFirst) {
-                const Function *toInline =
-                        getCalledFunction(inlineFirst->getCalledValue());
+                const Function *toInline = getCalledFunction(inlineFirst);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent() << "Try to inline "
                                        << toInline->getName() << " in first\n");
@@ -146,13 +141,12 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         missingDefs.first = toInline;
                 } else {
                     InlineFunctionInfo ifi;
-                    if (InlineFunction(inlineFirst, ifi, nullptr, false))
+                    if (inlineCall(inlineFirst))
                         inlined = true;
                 }
             }
             if (inlineSecond) {
-                const Function *toInline =
-                        getCalledFunction(inlineSecond->getCalledValue());
+                const Function *toInline = getCalledFunction(inlineSecond);
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent() << "Try to inline "
                                        << toInline->getName()
@@ -166,7 +160,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                         missingDefs.second = toInline;
                 } else {
                     InlineFunctionInfo ifi;
-                    if (InlineFunction(inlineSecond, ifi, nullptr, false))
+                    if (inlineCall(inlineSecond))
                         inlined = true;
                 }
             }

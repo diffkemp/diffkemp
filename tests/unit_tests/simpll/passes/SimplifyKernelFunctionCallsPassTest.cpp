@@ -11,6 +11,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include <Utils.h>
 #include <gtest/gtest.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/InlineAsm.h>
@@ -80,7 +81,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, InlineAsm) {
     ASSERT_NE(Iter, BB->end());
     auto Call1 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(Call1);
-    ASSERT_EQ(Call1->getCalledValue(), Asm1);
+    ASSERT_EQ(getCallee(Call1), Asm1);
     ASSERT_EQ(Call1->getNumArgOperands(), 2);
     ASSERT_EQ(Call1->getOperand(0)->getType(),
               PointerType::get(Type::getInt8Ty(Ctx), 0));
@@ -94,7 +95,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, InlineAsm) {
     ASSERT_NE(Iter, BB->end());
     auto Call2 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(Call2);
-    ASSERT_EQ(Call2->getCalledValue(), Asm2);
+    ASSERT_EQ(getCallee(Call2), Asm2);
     ASSERT_EQ(Call2->getNumArgOperands(), 2);
     ASSERT_EQ(Call2->getOperand(0), AuxPtr);
     ASSERT_EQ(Call2->getOperand(1)->getType(), Type::getInt64Ty(Ctx));
@@ -169,7 +170,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, PrintFun) {
         ASSERT_NE(Iter, BB->end());
         auto Call = dyn_cast<CallInst>(&*Iter);
         ASSERT_TRUE(Call);
-        ASSERT_EQ(Call->getCalledValue(), (i == 0) ? FunPrintk : FunDevWarn);
+        ASSERT_EQ(Call->getCalledFunction(), (i == 0) ? FunPrintk : FunDevWarn);
         ASSERT_EQ(Call->getNumArgOperands(), 2);
         ASSERT_TRUE(isa<ConstantPointerNull>(Call->getOperand(0)));
         ASSERT_TRUE(isa<ConstantPointerNull>(Call->getOperand(1)));
@@ -225,7 +226,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, DebugFun) {
     ASSERT_NE(Iter, BB->end());
     auto Call = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(Call);
-    ASSERT_EQ(Call->getCalledValue(), FunMightSleep);
+    ASSERT_EQ(Call->getCalledFunction(), FunMightSleep);
     ASSERT_EQ(Call->getNumArgOperands(), 3);
     ASSERT_TRUE(isa<ConstantPointerNull>(Call->getOperand(0)));
     ASSERT_EQ(Call->getOperand(1)->getType(), Type::getInt32Ty(Ctx));

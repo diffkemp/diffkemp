@@ -102,7 +102,7 @@ std::vector<std::string>
         if (!StringConst || !StringConst->isString())
             continue;
         // Remove \0 from the end of the string.
-        std::string Name = StringConst->getAsString().rtrim('\0');
+        std::string Name = StringConst->getAsString().rtrim('\0').str();
 
         // Parse sysctl pattern.
         std::istringstream SysctlPatternStream;

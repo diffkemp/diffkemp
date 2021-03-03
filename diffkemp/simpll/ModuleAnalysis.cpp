@@ -35,6 +35,9 @@
 #include "passes/UnifyMemcpyPass.h"
 #include "passes/VarDependencySlicer.h"
 #include <llvm/IR/PassManager.h>
+#if LLVM_VERSION_MAJOR >= 11
+#include <llvm/IR/PassManagerImpl.h>
+#endif
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>

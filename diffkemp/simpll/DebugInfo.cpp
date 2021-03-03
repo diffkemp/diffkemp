@@ -50,7 +50,7 @@ bool isDebugInfo(const Function &Fun) {
 /// Get C name of the struct type. This can be extracted from the LLVM struct
 /// name by stripping off the 'struct.' prefix and the '.*' suffix.
 std::string getStructTypeName(const StructType *type) {
-    std::string name = type->getName();
+    std::string name = type->getName().str();
     name.erase(0, std::string("struct.").length());
     if (name.find_last_of(".") != std::string::npos)
         name.erase(name.find_last_of("."));
@@ -368,14 +368,14 @@ void DebugInfo::calculateMacroAlignments() {
     for (auto *CompileUnit : DebugInfoSecond.compile_units()) {
         for (auto *MacroNode : CompileUnit->getMacros()) {
             if (auto *Macro = dyn_cast<DIMacro>(MacroNode)) {
-                addAlignment(Macro->getName(), Macro->getValue());
+                addAlignment(Macro->getName().str(), Macro->getValue().str());
             }
         }
         for (auto *Enum : CompileUnit->getEnumTypes()) {
             for (auto *EnumField : Enum->getElements()) {
                 if (auto *Enumerator = dyn_cast<DIEnumerator>(EnumField)) {
-                    addAlignment(Enumerator->getName(),
-                                 std::to_string(Enumerator->getValue()));
+                    addAlignment(Enumerator->getName().str(),
+                                 getEnumValue(Enumerator));
                 }
             }
         }
@@ -393,15 +393,15 @@ void DebugInfo::collectMacrosWithValue(const Constant *Val) {
         for (auto *MacroNode : CompileUnit->getMacros()) {
             if (auto *Macro = dyn_cast<DIMacro>(MacroNode)) {
                 if (Macro->getValue() == valStr) {
-                    MacroUsageMap[Macro->getName()].insert(Val);
+                    MacroUsageMap[Macro->getName().str()].insert(Val);
                 }
             }
         }
         for (auto *Enum : CompileUnit->getEnumTypes()) {
             for (auto *EnumField : Enum->getElements()) {
                 if (auto *Enumerator = dyn_cast<DIEnumerator>(EnumField)) {
-                    if (std::to_string(Enumerator->getValue()) == valStr) {
-                        MacroUsageMap[Enumerator->getName()].insert(Val);
+                    if (getEnumValue(Enumerator) == valStr) {
+                        MacroUsageMap[Enumerator->getName().str()].insert(Val);
                     }
                 }
             }
@@ -420,9 +420,7 @@ void DebugInfo::collectLocalVariables(
                 if (!isa<CallInst>(Inst))
                     continue;
                 auto CInst = dyn_cast<CallInst>(&Inst);
-                if (!getCalledFunction(CInst->getCalledValue())
-                             ->getName()
-                             .startswith("llvm.dbg"))
+                if (!getCalledFunction(CInst)->getName().startswith("llvm.dbg"))
                     continue;
 
                 // Get the value name and the value itself.
@@ -434,8 +432,7 @@ void DebugInfo::collectLocalVariables(
                     continue;
 #if LLVM_VERSION_MAJOR < 6
                 MetadataAsValue *DIVal;
-                if (getCalledFunction(CInst->getCalledValue())->getName()
-                    == "llvm.dbg.declare")
+                if (getCalledFunction(CInst)->getName() == "llvm.dbg.declare")
                     DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(1));
                 else
                     DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(2));
@@ -517,4 +514,12 @@ DICompositeType *getVariableTypeInfo(Value *Val) {
         return getVariableTypeInfo(Instr->getOperand(0));
 
     return nullptr;
+}
+
+std::string getEnumValue(const DIEnumerator *Enum) {
+#if LLVM_VERSION_MAJOR >= 11
+    return Enum->getValue().toString(10, false);
+#else
+    return std::to_string(Enum->getValue());
+#endif
 }

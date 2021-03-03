@@ -161,10 +161,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
         // Collect and clear all instruction that can be removed
         for (auto &Inst : BB) {
             if (!isIncluded(&Inst) && !Inst.isTerminator()) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
-                    dbgs() << "Clearing ";
-                    Inst.print(dbgs());
-                });
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                { dbgs() << "Clearing " << Inst << "\n"; });
                 Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
                 toRemove.push_back(&Inst);
             }
@@ -175,6 +173,17 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     for (auto &Inst : toRemove) {
         Inst->eraseFromParent();
     }
+
+    // If the return instruction is not included, we can transform the function
+    // to return void
+    if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
+        && !Fun.getReturnType()->isVoidTy()) {
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Changing return type of " << Fun.getName()
+                               << " to void.\n");
+        changeToVoid(Fun);
+    }
+
     // Clear BBs except first that have no incoming edges
     for (auto BB_it = ++Fun.begin(); BB_it != Fun.end();) {
         BasicBlock *BB = &*BB_it++;
@@ -207,16 +216,6 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     // @TODO There is a pass in LLVM for this but it fails. It might be fixed
     //       in a newer version of LLVM.
     deleteUnreachableBlocks(Fun);
-
-    // If the return instruction is not included, we can transform the function
-    // to return void
-    if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
-        && !Fun.getReturnType()->isVoidTy()) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << "Changing return type of " << Fun.getName()
-                               << " to void.\n");
-        changeToVoid(Fun);
-    }
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, {
         dbgs() << "Function " << Fun.getName().str() << " after cleanup:\n";

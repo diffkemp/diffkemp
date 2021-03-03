@@ -11,6 +11,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include <Utils.h>
 #include <gtest/gtest.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -56,26 +57,31 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     // because by replacing the cast the return value would be lost.
     // Note: this would of course break the stack if executed, nevertheless it
     // has to be taken into account when doing static analysis.
-    auto NewType = PointerType::get(
+    FunctionType *NewType =
             FunctionType::get(Type::getInt8Ty(Ctx),
                               {Type::getInt8Ty(Ctx), Type::getInt16Ty(Ctx)},
-                              false),
-            0);
+                              false);
     CallInst *Call1 = CallInst::Create(
-            ConstantExpr::getCast(Instruction::BitCast, Fun1, NewType),
+#if LLVM_VERSION_MAJOR >= 8
+            NewType,
+#endif
+            ConstantExpr::getCast(
+                    Instruction::BitCast, Fun1, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt8Ty(Ctx), 0),
              ConstantInt::get(Type::getInt16Ty(Ctx), 1)},
             "",
             BB);
 
     // Cast one of the arguments to a different integer size.
-    NewType = PointerType::get(
-            FunctionType::get(Type::getVoidTy(Ctx),
-                              {Type::getInt16Ty(Ctx), Type::getInt16Ty(Ctx)},
-                              false),
-            0);
+    NewType = FunctionType::get(Type::getVoidTy(Ctx),
+                                {Type::getInt16Ty(Ctx), Type::getInt16Ty(Ctx)},
+                                false);
     CallInst *Call2 = CallInst::Create(
-            ConstantExpr::getCast(Instruction::BitCast, Fun1, NewType),
+#if LLVM_VERSION_MAJOR >= 8
+            NewType,
+#endif
+            ConstantExpr::getCast(
+                    Instruction::BitCast, Fun1, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt16Ty(Ctx), 0),
              ConstantInt::get(Type::getInt16Ty(Ctx), 1)},
             "",
@@ -83,23 +89,27 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
 
     // Reduce the argument number by casting. This cannot be replaced by the
     // pass because the other argument is missing in the call.
-    NewType = PointerType::get(FunctionType::get(Type::getVoidTy(Ctx),
-                                                 {Type::getInt8Ty(Ctx)},
-                                                 false),
-                               0);
+    NewType = FunctionType::get(
+            Type::getVoidTy(Ctx), {Type::getInt8Ty(Ctx)}, false);
     CallInst *Call3 = CallInst::Create(
-            ConstantExpr::getCast(Instruction::BitCast, Fun1, NewType),
+#if LLVM_VERSION_MAJOR >= 8
+            NewType,
+#endif
+            ConstantExpr::getCast(
+                    Instruction::BitCast, Fun1, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt8Ty(Ctx), 0)},
             "",
             BB);
 
     // Cast the first (non-vararg) argument.
-    NewType = PointerType::get(FunctionType::get(Type::getInt8Ty(Ctx),
-                                                 {Type::getInt16Ty(Ctx)},
-                                                 true),
-                               0);
+    NewType = FunctionType::get(
+            Type::getInt8Ty(Ctx), {Type::getInt16Ty(Ctx)}, true);
     CallInst *Call4 = CallInst::Create(
-            ConstantExpr::getCast(Instruction::BitCast, Fun2, NewType),
+#if LLVM_VERSION_MAJOR >= 8
+            NewType,
+#endif
+            ConstantExpr::getCast(
+                    Instruction::BitCast, Fun2, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt16Ty(Ctx), 0),
              ConstantInt::get(Type::getInt8Ty(Ctx), 0)},
             "",
@@ -122,8 +132,8 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     auto TestCall1 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(TestCall1);
     ASSERT_EQ(Call1, TestCall1);
-    ASSERT_TRUE(isa<BitCastOperator>(TestCall1->getCalledValue()));
-    ASSERT_EQ(dyn_cast<BitCastOperator>(TestCall1->getCalledValue())
+    ASSERT_TRUE(isa<BitCastOperator>(getCallee(TestCall1)));
+    ASSERT_EQ(dyn_cast<BitCastOperator>(getCallee(TestCall1))
                       ->stripPointerCasts(),
               Fun1);
     ASSERT_EQ(TestCall1->getType(), Type::getInt8Ty(Ctx));
@@ -154,7 +164,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     ASSERT_NE(Iter, BB->end());
     auto TestCall2 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(TestCall2);
-    ASSERT_EQ(TestCall2->getCalledValue(), Fun1);
+    ASSERT_EQ(TestCall2->getCalledFunction(), Fun1);
     ASSERT_EQ(TestCall2->getNumArgOperands(), 2);
     ASSERT_EQ(TestCall2->getArgOperand(0), TestCast1);
     ASSERT_TRUE(isa<ConstantInt>(TestCall2->getArgOperand(1)));
@@ -169,8 +179,8 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     auto TestCall3 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(TestCall3);
     ASSERT_EQ(Call3, TestCall3);
-    ASSERT_TRUE(isa<BitCastOperator>(TestCall3->getCalledValue()));
-    ASSERT_EQ(dyn_cast<BitCastOperator>(TestCall3->getCalledValue())
+    ASSERT_TRUE(isa<BitCastOperator>(getCallee(TestCall3)));
+    ASSERT_EQ(dyn_cast<BitCastOperator>(getCallee(TestCall3))
                       ->stripPointerCasts(),
               Fun1);
     ASSERT_EQ(TestCall3->getType(), Type::getVoidTy(Ctx));
@@ -196,7 +206,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     ASSERT_NE(Iter, BB->end());
     auto TestCall4 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(TestCall4);
-    ASSERT_EQ(TestCall4->getCalledValue(), Fun2);
+    ASSERT_EQ(getCallee(TestCall4), Fun2);
     ASSERT_EQ(TestCall4->getNumArgOperands(), 2);
     ASSERT_EQ(TestCall4->getArgOperand(0), TestCast2);
     ASSERT_TRUE(isa<ConstantInt>(TestCall4->getArgOperand(1)));

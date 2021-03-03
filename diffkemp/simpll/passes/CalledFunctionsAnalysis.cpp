@@ -40,8 +40,7 @@ void CalledFunctionsAnalysis::collectCalled(const Function *Fun,
     for (auto &BB : *Fun) {
         for (auto &Inst : BB) {
             if (auto Call = dyn_cast<CallInst>(&Inst)) {
-                if (auto *CalledFun =
-                            getCalledFunction(Call->getCalledValue())) {
+                if (auto *CalledFun = getCalledFunction(Call)) {
                     collectCalled(CalledFun, Called);
                 }
             }
@@ -55,7 +54,7 @@ void CalledFunctionsAnalysis::collectCalled(const Function *Fun,
 /// Looks for functions in a value (either a function itself, or a composite
 /// type constant).
 void CalledFunctionsAnalysis::processValue(const Value *Val, Result &Called) {
-    if (auto Fun = getCalledFunction(Val))
+    if (auto Fun = valueToFunction(Val))
         collectCalled(Fun, Called);
     else if (auto GV = dyn_cast<GlobalVariable>(Val)) {
         if (GV->hasInitializer() && GV->isConstant())

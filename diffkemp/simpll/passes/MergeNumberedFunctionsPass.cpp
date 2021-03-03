@@ -31,7 +31,7 @@ PreservedAnalyses
         if (isSimpllAbstraction(&Fun) || Fun.getName().startswith("llvm."))
             // Do not merge LLVM intrinsics and SimpLL abstractions.
             continue;
-        std::string originalName = Fun.getName();
+        std::string originalName = Fun.getName().str();
         std::string strippedName = hasSuffix(originalName)
                                            ? dropSuffix(originalName)
                                            : originalName;

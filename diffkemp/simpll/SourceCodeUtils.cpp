@@ -322,7 +322,7 @@ std::vector<std::unique_ptr<SyntaxDifference>>
                     MacroUseR->second.def->body.str(),
                     StackL,
                     StackR,
-                    L->getFunction()->getName()));
+                    L->getFunction()->getName().str()));
         }
     }
 
@@ -521,7 +521,7 @@ std::vector<std::string>
     // Collect all inputs in which we want to search for the inline asm.
     inputs.push_back(line);
     for (auto &Elem : MacroMap)
-        inputs.push_back(Elem.second.def->body);
+        inputs.push_back(Elem.second.def->body.str());
 
     // Extract the candidates (i.e. the inputs that contain inline asm).
     for (auto input : inputs) {
@@ -637,7 +637,7 @@ std::vector<std::string>
     // Collect all inputs in which we want to search for the function call.
     inputs.push_back(line);
     for (auto &Elem : MacroMap)
-        inputs.push_back(Elem.second.def->body);
+        inputs.push_back(Elem.second.def->body.str());
 
     // Extract the function calls from them
     for (auto input : inputs) {
