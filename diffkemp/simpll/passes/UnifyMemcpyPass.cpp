@@ -66,20 +66,23 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                                     ConstantInt::get(
                                             MemcpyAlign->getType(), 1, false));
                     }
-#else
+#elif LLVM_VERSION_MAJOR < 10
                     for (int i : {0, 1}) {
                         if (Call->getParamAlignment(i) == 0) {
                             Call->removeParamAttr(i, Attribute::Alignment);
-#if LLVM_VERSION_MAJOR < 10
                             Call->addParamAttr(i,
                                                Attribute::getWithAlignment(
                                                        Call->getContext(), 1));
+                        }
+                    }
 #else
+                    for (int i : {0, 1}) {
+                        if (Call->getParamAlign(i) == 0) {
+                            Call->removeParamAttr(i, Attribute::Alignment);
                             Call->addParamAttr(
                                     i,
                                     Attribute::getWithAlignment(
                                             Call->getContext(), Align(1)));
-#endif
                         }
                     }
 #endif

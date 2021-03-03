@@ -38,11 +38,12 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
         for (auto &BB : Fun) {
             for (auto &Instr : BB) {
                 if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
-                    auto funCalled =
-                            getCalledFunction(CallInstr->getCalledValue());
+                    auto funCalled = getCalledFunction(CallInstr);
                     if (funCalled)
                         continue;
-                    auto CalledType = CallInstr->getCalledValue()->getType();
+
+                    Value *Callee = getCallee(CallInstr);
+                    auto CalledType = Callee->getType();
                     if (!CalledType->isPointerTy())
                         continue;
 
@@ -52,7 +53,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                             dyn_cast<PointerType>(CalledType)
                                     ->getElementType());
 
-                    std::string hash = funHash(CallInstr->getCalledValue());
+                    std::string hash = funHash(Callee);
                     auto funAbstr = funAbstractions.find(hash);
                     Function *newFun;
 
@@ -65,16 +66,14 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                                 FunType->getReturnType(), newParamTypes, false);
 
                         const std::string funName =
-                                abstractionPrefix(CallInstr->getCalledValue())
-                                + std::to_string(i++);
+                                abstractionPrefix(Callee) + std::to_string(i++);
 
                         newFun = Function::Create(newFunType,
                                                   Function::ExternalLinkage,
                                                   funName,
                                                   &Mod);
                         funAbstractions.emplace(hash, newFun);
-                        if (auto assembly = dyn_cast<InlineAsm>(
-                                    CallInstr->getCalledValue())) {
+                        if (auto assembly = dyn_cast<InlineAsm>(Callee)) {
                             // Add metadata that will be used for comparison
                             // to the abstraction.
                             MDString *asmMD =
@@ -99,7 +98,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                             args.push_back(argVal);
                     }
                     if (!CallInstr->isInlineAsm())
-                        args.push_back(CallInstr->getCalledValue());
+                        args.push_back(Callee);
                     auto newCall =
                             CallInst::Create(newFun, args, "", CallInstr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
@@ -148,7 +147,8 @@ bool trySwap(FunctionAbstractionsGenerator::FunMap &Map,
              const std::string DestName) {
     for (auto &Fun : Map) {
         if (Fun.second->getName() == DestName) {
-            const std::string srcName = Map.find(SrcHash)->second->getName();
+            const std::string srcName =
+                    Map.find(SrcHash)->second->getName().str();
             Map.find(SrcHash)->second->setName("$tmpName");
             Fun.second->setName(srcName);
             Map.find(SrcHash)->second->setName(DestName);

@@ -105,7 +105,6 @@ void *loadModule(const char *Path) {
 
 void freeModule(void *ModRaw) {
     Module *Mod = (Module *)ModRaw;
-    std::string name = Mod->getName();
     ModuleMap.erase(Mod);
     ContextMap.erase(Mod);
 }

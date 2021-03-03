@@ -73,8 +73,8 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
             == GEPR->getSourceElementType()->getArrayNumElements())
             return OriginalResult;
 
-        auto *STyL = cast<SequentialType>(GEPL->getSourceElementType());
-        auto *STyR = cast<SequentialType>(GEPR->getSourceElementType());
+        auto *STyL = cast<ArrayType>(GEPL->getSourceElementType());
+        auto *STyR = cast<ArrayType>(GEPR->getSourceElementType());
         if (int Res = cmpTypes(STyL->getElementType(), STyR->getElementType()))
             // The array element type must be the same
             return Res;
@@ -206,10 +206,8 @@ void DifferentialFunctionComparator::processCallInstDifference(
     // analogical to the cast in FunctionComparator::cmpValues and effectively
     // analogical to CallInst::getCalledFunction, which returns a non-const
     // pointer even if the CallInst itself is const).
-    Function *CalledL =
-            const_cast<Function *>(getCalledFunction(CL->getCalledValue()));
-    Function *CalledR =
-            const_cast<Function *>(getCalledFunction(CR->getCalledValue()));
+    Function *CalledL = const_cast<Function *>(getCalledFunction(CL));
+    Function *CalledR = const_cast<Function *>(getCalledFunction(CR));
     // Compare both functions using cmpGlobalValues in order to
     // ensure that any differences inside them are detected even
     // if they wouldn't be otherwise compared because of the
@@ -248,8 +246,8 @@ int DifferentialFunctionComparator::cmpOperations(
             const CallInst *CL = dyn_cast<CallInst>(L);
             const CallInst *CR = dyn_cast<CallInst>(R);
 
-            const Function *CalledL = getCalledFunction(CL->getCalledValue());
-            const Function *CalledR = getCalledFunction(CR->getCalledValue());
+            const Function *CalledL = getCalledFunction(CL);
+            const Function *CalledR = getCalledFunction(CR);
             if (CalledL && CalledR) {
                 if (CalledL->getName() == CalledR->getName()) {
                     // Check whether both instructions call an alloc function.
@@ -386,11 +384,9 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
     std::string NameL;
     std::string NameR;
     if (isa<CallInst>(L))
-        NameL = getCalledFunction(dyn_cast<CallInst>(L)->getCalledValue())
-                        ->getName();
+        NameL = getCalledFunction(dyn_cast<CallInst>(L))->getName().str();
     if (isa<CallInst>(R))
-        NameR = getCalledFunction(dyn_cast<CallInst>(R)->getCalledValue())
-                        ->getName();
+        NameR = getCalledFunction(dyn_cast<CallInst>(R))->getName().str();
 
     // Note: the line has to actually have been found for the comparison to make
     // sense.
@@ -417,18 +413,18 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
 
         std::unique_ptr<SyntaxDifference> diff =
                 std::make_unique<SyntaxDifference>();
-        diff->function = L->getFunction()->getName();
+        diff->function = L->getFunction()->getName().str();
         diff->name = trueName;
         diff->BodyL = "[macro function difference]";
         diff->BodyR = "[macro function difference]";
-        diff->StackL =
-                CallStack{CallInfo{NameL,
-                                   L->getDebugLoc()->getFile()->getFilename(),
-                                   L->getDebugLoc()->getLine()}};
-        diff->StackR =
-                CallStack{CallInfo{NameR,
-                                   R->getDebugLoc()->getFile()->getFilename(),
-                                   R->getDebugLoc()->getLine()}};
+        diff->StackL = CallStack{
+                CallInfo{NameL,
+                         L->getDebugLoc()->getFile()->getFilename().str(),
+                         L->getDebugLoc()->getLine()}};
+        diff->StackR = CallStack{
+                CallInfo{NameR,
+                         R->getDebugLoc()->getFile()->getFilename().str(),
+                         R->getDebugLoc()->getLine()}};
         ModComparator->ComparedFuns.at({FnL, FnR})
                 .addDifferingObject(std::move(diff));
     }
@@ -678,28 +674,32 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
     // Try to prepare C source argument values to be used in operand
     // comparison.
     std::vector<std::string> CArgsL, CArgsR;
-    const Function *CFL = getCalledFunction(CIL->getCalledValue());
-    const Function *CFR = getCalledFunction(CIR->getCalledValue());
+    const Function *CFL = getCalledFunction(CIL);
+    const Function *CFR = getCalledFunction(CIR);
     const BasicBlock *BBL = CIL->getParent();
     const BasicBlock *BBR = CIR->getParent();
 
     // Use the appropriate C source call argument extraction function depending
     // on whether it is an inline assembly call or not.
     if (CFL->getName().startswith(SimpllInlineAsmPrefix))
-        CArgsL = findInlineAssemblySourceArguments(CIL->getDebugLoc(),
-                                                   getInlineAsmString(CFL),
-                                                   &ModComparator->MacroDiffs);
+        CArgsL =
+                findInlineAssemblySourceArguments(CIL->getDebugLoc(),
+                                                  getInlineAsmString(CFL).str(),
+                                                  &ModComparator->MacroDiffs);
     else
-        CArgsL = findFunctionCallSourceArguments(
-                CIL->getDebugLoc(), CFL->getName(), &ModComparator->MacroDiffs);
+        CArgsL = findFunctionCallSourceArguments(CIL->getDebugLoc(),
+                                                 CFL->getName().str(),
+                                                 &ModComparator->MacroDiffs);
 
     if (CFR->getName().startswith(SimpllInlineAsmPrefix))
-        CArgsR = findInlineAssemblySourceArguments(CIR->getDebugLoc(),
-                                                   getInlineAsmString(CFR),
-                                                   &ModComparator->MacroDiffs);
+        CArgsR =
+                findInlineAssemblySourceArguments(CIR->getDebugLoc(),
+                                                  getInlineAsmString(CFR).str(),
+                                                  &ModComparator->MacroDiffs);
     else
-        CArgsR = findFunctionCallSourceArguments(
-                CIR->getDebugLoc(), CFL->getName(), &ModComparator->MacroDiffs);
+        CArgsR = findFunctionCallSourceArguments(CIR->getDebugLoc(),
+                                                 CFL->getName().str(),
+                                                 &ModComparator->MacroDiffs);
 
     if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
         if (mayIgnoreMacro(CArgsL[i]) && mayIgnoreMacro(CArgsR[i])
@@ -845,8 +845,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
 std::vector<std::unique_ptr<SyntaxDifference>>
         DifferentialFunctionComparator::findAsmDifference(
                 const CallInst *IL, const CallInst *IR) const {
-    auto FunL = getCalledFunction(IL->getCalledValue());
-    auto FunR = getCalledFunction(IR->getCalledValue());
+    auto FunL = getCalledFunction(IL);
+    auto FunR = getCalledFunction(IR);
     auto ParentL = IL->getFunction();
     auto ParentR = IR->getFunction();
 
@@ -899,14 +899,16 @@ std::vector<std::unique_ptr<SyntaxDifference>>
     diff->BodyL = AsmL.str() + " (args: " + argumentNamesL + ")";
     diff->BodyR = AsmR.str() + " (args: " + argumentNamesR + ")";
     diff->StackL = CallStack();
-    diff->StackL.push_back(CallInfo{"(generated assembly code)",
-                                    ParentL->getSubprogram()->getFilename(),
-                                    ParentL->getSubprogram()->getLine()});
+    diff->StackL.push_back(
+            CallInfo{"(generated assembly code)",
+                     ParentL->getSubprogram()->getFilename().str(),
+                     ParentL->getSubprogram()->getLine()});
     diff->StackR = CallStack();
-    diff->StackR.push_back(CallInfo{"(generated assembly code)",
-                                    ParentR->getSubprogram()->getFilename(),
-                                    ParentR->getSubprogram()->getLine()});
-    diff->function = ParentL->getName();
+    diff->StackR.push_back(
+            CallInfo{"(generated assembly code)",
+                     ParentR->getSubprogram()->getFilename().str(),
+                     ParentR->getSubprogram()->getLine()});
+    diff->function = ParentL->getName().str();
     diff->name = "assembly code "
                  + std::to_string(++ModComparator->asmDifferenceCounter);
 
@@ -934,12 +936,12 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
         auto NameR = R->getName();
 
         // Remove number suffixes
-        if (hasSuffix(NameL))
+        if (hasSuffix(NameL.str()))
             NameL = NameL.substr(0, NameL.find_last_of("."));
-        if (hasSuffix(NameR))
+        if (hasSuffix(NameR.str()))
             NameR = NameR.substr(0, NameR.find_last_of("."));
         if (NameL == NameR
-            || (isPrintFunction(NameL) && isPrintFunction(NameR))) {
+            || (isPrintFunction(NameL.str()) && isPrintFunction(NameR.str()))) {
             if (isa<Function>(L) && isa<Function>(R)) {
                 // Functions compared as being the same have to be also compared
                 // by ModuleComparator.
@@ -948,8 +950,8 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
 
                 // Do not compare SimpLL abstractions.
                 if (!isSimpllAbstraction(FunL) && !isSimpllAbstraction(FunR)
-                    && (!isPrintFunction(L->getName())
-                        && !isPrintFunction(R->getName()))) {
+                    && (!isPrintFunction(L->getName().str())
+                        && !isPrintFunction(R->getName().str()))) {
                     // Store the called functions into the current
                     // functions' callee set.
                     ModComparator->ComparedFuns.at({FnL, FnR})
@@ -1022,11 +1024,11 @@ void DifferentialFunctionComparator::findTypeDifferences(
             continue;
         if (!STyL->hasName() || !STyR->hasName())
             continue;
-        std::string STyLShortName = hasSuffix(STyL->getName())
-                                            ? dropSuffix(STyL->getName())
+        std::string STyLShortName = hasSuffix(STyL->getName().str())
+                                            ? dropSuffix(STyL->getName().str())
                                             : STyL->getName().str();
-        std::string STyRShortName = hasSuffix(STyR->getName())
-                                            ? dropSuffix(STyR->getName())
+        std::string STyRShortName = hasSuffix(STyR->getName().str())
+                                            ? dropSuffix(STyR->getName().str())
                                             : STyR->getName().str();
         if (STyLShortName != STyRShortName)
             continue;
@@ -1043,8 +1045,9 @@ void DifferentialFunctionComparator::findTypeDifference(
     if (cmpTypes(L, R)) {
         std::unique_ptr<TypeDifference> diff =
                 std::make_unique<TypeDifference>();
-        diff->name = L->getName().startswith("struct.") ? L->getName().substr(7)
-                                                        : L->getName();
+        diff->name = L->getName().startswith("struct.")
+                             ? L->getName().substr(7).str()
+                             : L->getName().str();
 
         // Try to get the debug info for the structure type.
         DICompositeType *DCTyL = nullptr, *DCTyR = nullptr;
@@ -1060,7 +1063,7 @@ void DifferentialFunctionComparator::findTypeDifference(
             // Debug info not found.
             return;
 
-        diff->function = FL->getName();
+        diff->function = FL->getName().str();
         diff->FileL = joinPath(DCTyL->getDirectory(), DCTyL->getFilename());
         diff->FileR = joinPath(DCTyR->getDirectory(), DCTyR->getFilename());
         // Note: for some reason the starting line of the struct in the debug
@@ -1068,13 +1071,15 @@ void DifferentialFunctionComparator::findTypeDifference(
         // This is fixed by decrementing the line number.
         diff->LineL = DCTyL->getLine() - 1;
         diff->LineR = DCTyR->getLine() - 1;
-        diff->StackL.push_back(CallInfo{diff->name + " (type)",
-                                        FL->getSubprogram()->getFilename(),
-                                        FL->getSubprogram()->getLine()});
+        diff->StackL.push_back(
+                CallInfo{diff->name + " (type)",
+                         FL->getSubprogram()->getFilename().str(),
+                         FL->getSubprogram()->getLine()});
         diff->StackR = CallStack();
-        diff->StackR.push_back(CallInfo{diff->name + " (type)",
-                                        FR->getSubprogram()->getFilename(),
-                                        FR->getSubprogram()->getLine()});
+        diff->StackR.push_back(
+                CallInfo{diff->name + " (type)",
+                         FR->getSubprogram()->getFilename().str(),
+                         FR->getSubprogram()->getLine()});
         ModComparator->ComparedFuns.at({FnL, FnR})
                 .addDifferingObject(std::move(diff));
     }
@@ -1382,10 +1387,8 @@ int DifferentialFunctionComparator::cmpOperationsWithOperands(
         auto *CallL = dyn_cast<CallInst>(L);
         auto *CallR = dyn_cast<CallInst>(R);
         if (CallL || CallR) {
-            auto *CalledL = CallL ? getCalledFunction(CallL->getCalledValue())
-                                  : nullptr;
-            auto *CalledR = CallR ? getCalledFunction(CallR->getCalledValue())
-                                  : nullptr;
+            auto *CalledL = CallL ? getCalledFunction(CallL) : nullptr;
+            auto *CalledR = CallR ? getCalledFunction(CallR) : nullptr;
             if (!(CalledL && CalledR)) {
                 // If just one of the instructions is a call, it is possible
                 // that some logic has been moved into a function. We'll try to

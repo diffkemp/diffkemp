@@ -94,7 +94,7 @@ PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
     }
 
     for (auto &Fun : Mod) {
-        std::string Name = Fun.getName();
+        std::string Name = Fun.getName().str();
         if (Name.find("__compiletime_assert") != std::string::npos
             && Name != "__compiletime_assert") {
             std::string OrigName = "__compiletime_assert";

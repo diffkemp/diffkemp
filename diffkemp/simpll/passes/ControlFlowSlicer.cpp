@@ -54,7 +54,7 @@ bool hasIndirectCall(const Function &Fun) {
                 // For indirect call, check if the called value is ever used
                 // (apart from debug instructions and the call itself).
                 // If not, do not return true.
-                const Value *called = Call->getCalledValue();
+                const Value *called = getCallee(Call);
                 for (auto &Use : called->uses()) {
                     if (Use.getUser() == Call)
                         continue;

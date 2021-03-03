@@ -11,12 +11,16 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include <Utils.h>
 #include <gtest/gtest.h>
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
+#if LLVM_VERSION_MAJOR >= 11
+#include <llvm/IR/PassManagerImpl.h>
+#endif
 #include <passes/CalledFunctionsAnalysis.h>
 #include <passes/FunctionAbstractionsGenerator.h>
 
@@ -79,7 +83,7 @@ TEST(FunctionAbstractionsGeneratorTest, InlineAsm) {
     for (int i = 0; i < 4; i++) {
         ASSERT_TRUE(isa<CallInst>(FunBody[i]));
         auto Call = dyn_cast<CallInst>(FunBody[i]);
-        ASSERT_TRUE(isa<Function>(Call->getCalledValue()));
+        ASSERT_TRUE(isa<Function>(getCallee(Call)));
         ASSERT_EQ(Call->getNumArgOperands(), 1);
         ASSERT_TRUE(isa<ConstantInt>(Call->getArgOperand(0)));
         ASSERT_EQ(dyn_cast<ConstantInt>(Call->getArgOperand(0))->getZExtValue(),
@@ -159,6 +163,7 @@ TEST(FunctionAbstractionsGeneratorTest, IndirectCall) {
             "test",
             Mod);
     BasicBlock *BB = BasicBlock::Create(Ctx, "", Fun);
+#if LLVM_VERSION_MAJOR <= 7
     CallInst::Create(
             FunPtr1, {ConstantInt::get(Type::getInt8Ty(Ctx), 0)}, "", BB);
     CallInst::Create(
@@ -167,6 +172,28 @@ TEST(FunctionAbstractionsGeneratorTest, IndirectCall) {
             FunPtr2, {ConstantInt::get(Type::getInt8Ty(Ctx), 1)}, "", BB);
     CallInst::Create(
             FunPtr4, {ConstantInt::get(Type::getInt16Ty(Ctx), 1)}, "", BB);
+#else
+    CallInst::Create(FunTy1,
+                     FunPtr1,
+                     {ConstantInt::get(Type::getInt8Ty(Ctx), 0)},
+                     "",
+                     BB);
+    CallInst::Create(FunTy2,
+                     FunPtr3,
+                     {ConstantInt::get(Type::getInt16Ty(Ctx), 0)},
+                     "",
+                     BB);
+    CallInst::Create(FunTy1,
+                     FunPtr2,
+                     {ConstantInt::get(Type::getInt8Ty(Ctx), 1)},
+                     "",
+                     BB);
+    CallInst::Create(FunTy2,
+                     FunPtr4,
+                     {ConstantInt::get(Type::getInt16Ty(Ctx), 1)},
+                     "",
+                     BB);
+#endif
     ReturnInst::Create(Ctx, BB);
 
     // Run the pass and check the result.
@@ -182,7 +209,7 @@ TEST(FunctionAbstractionsGeneratorTest, IndirectCall) {
     for (int i = 0; i < 4; i++) {
         ASSERT_TRUE(isa<CallInst>(FunBody[i]));
         auto Call = dyn_cast<CallInst>(FunBody[i]);
-        ASSERT_TRUE(isa<Function>(Call->getCalledValue()));
+        ASSERT_TRUE(isa<Function>(getCallee(Call)));
         auto CalledFun = Call->getCalledFunction();
         ASSERT_TRUE(isSimpllAbstractionDeclaration(CalledFun));
         Abstractions.push_back(CalledFun);

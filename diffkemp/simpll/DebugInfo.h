@@ -160,6 +160,8 @@ bool isDebugInfo(const Instruction &Instr);
 /// Get name of a struct type as it is specified in the C source.
 std::string getStructTypeName(const StructType *type);
 
+std::string getEnumValue(const DIEnumerator *Enum);
+
 /// Get type of given Value
 /// \param Val Value of variable.
 /// \return Variable type debug info.

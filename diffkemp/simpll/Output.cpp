@@ -114,10 +114,11 @@ namespace llvm {
 namespace yaml {
 template <> struct MappingTraits<GlobalValuePair> {
     static void mapping(IO &io, GlobalValuePair &globvals) {
-        std::string nameFirst = globvals.first ? globvals.first->getName() : "";
+        std::string nameFirst =
+                globvals.first ? globvals.first->getName().str() : "";
         io.mapOptional("first", nameFirst, std::string());
         std::string nameSecond =
-                globvals.second ? globvals.second->getName() : "";
+                globvals.second ? globvals.second->getName().str() : "";
         io.mapOptional("second", nameSecond, std::string());
     }
 };

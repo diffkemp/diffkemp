@@ -29,13 +29,20 @@ typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
 
-/// Extract called function from a called value. Handles situation when the
-/// called value is a bitcast.
-const Function *getCalledFunction(const Value *CalledValue);
+/// Convert a value to a function.
+/// Handles situation then the actual function is inside a bitcast or alias.
+const Function *valueToFunction(const Value *Value);
 
 /// Extract called function from a called value. Handles situation when the
 /// called value is a bitcast.
-Function *getCalledFunction(Value *CalledValue);
+const Function *getCalledFunction(const CallInst *Call);
+
+/// Extract called function from a called value. Handles situation when the
+/// called value is a bitcast.
+Function *getCalledFunction(CallInst *Call);
+
+Value *getCallee(CallInst *Call);
+const Value *getCallee(const CallInst *Call);
 
 /// Extracts value from an arbitrary number of casts.
 const Value *stripAllCasts(const Value *Val);
@@ -89,7 +96,7 @@ std::string valueAsString(const Constant *Val);
 StructType *getStructType(const Value *Value);
 
 /// Removes empty attribute sets from an attribute list.
-AttributeList cleanAttributeList(AttributeList AL);
+AttributeList cleanAttributeList(AttributeList AL, LLVMContext &Context);
 
 /// Get a non-const pointer to a call instruction in a function
 CallInst *findCallInst(const CallInst *Call, Function *Fun);
@@ -156,5 +163,8 @@ void increaseDebugIndentLevel();
 
 /// Decrease the level of debug indentation by one.
 void decreaseDebugIndentLevel();
+
+/// Inline a function call and return true if inlining succeeded.
+bool inlineCall(CallInst *Call);
 
 #endif // DIFFKEMP_SIMPLL_UTILS_H

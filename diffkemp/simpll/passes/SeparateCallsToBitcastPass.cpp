@@ -33,8 +33,7 @@ PreservedAnalyses
             if (auto Call = dyn_cast<CallInst>(&Inst)) {
                 // Find call instructions calling a bitcast
                 // operator that directly corresponds to a function.
-                auto BitCast =
-                        dyn_cast<BitCastOperator>(Call->getCalledValue());
+                auto BitCast = dyn_cast<BitCastOperator>(getCallee(Call));
 
                 if (BitCast && isa<Function>(BitCast->getOperand(0))) {
                     // Get the bitcasted function.

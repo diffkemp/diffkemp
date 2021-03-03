@@ -93,9 +93,12 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     ASSERT_TRUE(isa<ConstantInt>(TestCall1->getOperand(3)));
     ASSERT_EQ(dyn_cast<ConstantInt>(TestCall1->getOperand(3))->getZExtValue(),
               1);
-#else
+#elif LLVM_VERSION_MAJOR < 10
     ASSERT_EQ(TestCall1->getParamAlignment(0), 1);
     ASSERT_EQ(TestCall1->getParamAlignment(1), 1);
+#else
+    ASSERT_EQ(TestCall1->getParamAlign(0), 1);
+    ASSERT_EQ(TestCall1->getParamAlign(1), 1);
 #endif
     ++Iter;
 
@@ -122,9 +125,12 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     ASSERT_TRUE(isa<ConstantInt>(TestCall2->getOperand(3)));
     ASSERT_EQ(dyn_cast<ConstantInt>(TestCall2->getOperand(3))->getZExtValue(),
               2);
-#else
+#elif LLVM_VERSION_MAJOR < 10
     ASSERT_EQ(TestCall2->getParamAlignment(0), 2);
     ASSERT_EQ(TestCall2->getParamAlignment(1), 2);
+#else
+    ASSERT_EQ(TestCall2->getParamAlign(0), 2);
+    ASSERT_EQ(TestCall2->getParamAlign(1), 2);
 #endif
     ++Iter;
 

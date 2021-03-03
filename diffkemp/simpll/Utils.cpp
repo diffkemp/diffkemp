@@ -15,6 +15,7 @@
 #include "Config.h"
 #include <algorithm>
 #include <iostream>
+#include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/IR/PassManager.h>
@@ -50,25 +51,47 @@ static std::vector<Attribute::AttrKind> badVoidAttributes = {
         Attribute::AttrKind::Dereferenceable,
         Attribute::AttrKind::DereferenceableOrNull};
 
-/// Extract called function from a called value Handles situation when the
-/// called value is a bitcast.
-const Function *getCalledFunction(const Value *CalledValue) {
-    const Function *fun = dyn_cast<Function>(CalledValue);
-    if (!fun) {
-        if (auto BitCast = dyn_cast<BitCastOperator>(CalledValue)) {
-            fun = dyn_cast<Function>(BitCast->getOperand(0));
-        } else if (auto Alias = dyn_cast<GlobalAlias>(CalledValue)) {
-            fun = getCalledFunction(Alias->getAliasee());
+/// Convert a value to a function.
+/// Handles situation when the actual function is inside a bitcast or alias.
+const Function *valueToFunction(const Value *Value) {
+    auto *Fun = dyn_cast<Function>(Value);
+    if (!Fun) {
+        if (auto BitCast = dyn_cast<BitCastOperator>(Value)) {
+            Fun = dyn_cast<Function>(BitCast->getOperand(0));
+        } else if (auto Alias = dyn_cast<GlobalAlias>(Value)) {
+            Fun = valueToFunction(Alias->getAliasee());
         }
     }
-    return fun;
+    return Fun;
 }
 
-/// Extract called function from a called value. Handles situation when the
-/// called value is a bitcast.
-Function *getCalledFunction(Value *CalledValue) {
+/// Extract called function from a called value.
+/// Handles situation when the called value is a bitcast.
+const Function *getCalledFunction(const CallInst *Call) {
+#if LLVM_VERSION_MAJOR <= 7
+    return valueToFunction(Call->getCalledValue());
+#else
+    return valueToFunction(Call->getCalledOperand());
+#endif
+}
+
+/// Extract called function from a called value.
+/// Handles situation when the called value is a bitcast.
+Function *getCalledFunction(CallInst *Call) {
     return const_cast<Function *>(
-            getCalledFunction(const_cast<const Value *>(CalledValue)));
+            getCalledFunction(const_cast<const CallInst *>(Call)));
+}
+
+const Value *getCallee(const CallInst *Call) {
+#if LLVM_VERSION_MAJOR <= 7
+    return Call->getCalledValue();
+#else
+    return Call->getCalledOperand();
+#endif
+}
+
+Value *getCallee(CallInst *Call) {
+    return const_cast<Value *>(getCallee(const_cast<const CallInst *>(Call)));
 }
 
 /// Extracts value from an arbitrary number of casts.
@@ -263,7 +286,7 @@ void simplifyFunction(Function *Fun) {
 
 /// Removes empty attribute sets from an attribute list.
 /// This function is used when some attributes are removed to clean up.
-AttributeList cleanAttributeList(AttributeList AL) {
+AttributeList cleanAttributeList(AttributeList AL, LLVMContext &Context) {
     // Copy over all attributes to a new attribute list.
     AttributeList NewAttrList;
 
@@ -278,7 +301,7 @@ AttributeList cleanAttributeList(AttributeList AL) {
             AttrBuilder AB;
             for (const Attribute &A : AttrSet)
                 AB.addAttribute(A);
-            NewAttrList = NewAttrList.addAttributes(AL.getContext(), i, AB);
+            NewAttrList = NewAttrList.addAttributes(Context, i, AB);
         }
     }
 
@@ -646,7 +669,8 @@ void copyCallInstProperties(CallInst *srcCall, CallInst *destCall) {
             destCall->removeAttribute(AttributeList::FunctionIndex, AK);
         }
 
-        destCall->setAttributes(cleanAttributeList(destCall->getAttributes()));
+        destCall->setAttributes(cleanAttributeList(destCall->getAttributes(),
+                                                   destCall->getContext()));
     }
 }
 
@@ -661,7 +685,8 @@ void copyFunctionProperties(Function *srcFun, Function *destFun) {
             destFun->removeAttribute(AttributeList::ReturnIndex, AK);
             destFun->removeAttribute(AttributeList::FunctionIndex, AK);
         }
-        destFun->setAttributes(cleanAttributeList(destFun->getAttributes()));
+        destFun->setAttributes(cleanAttributeList(destFun->getAttributes(),
+                                                  destFun->getContext()));
     }
 
     // Set the names of all arguments of the new function
@@ -706,4 +731,14 @@ void increaseDebugIndentLevel() { debugIndentLevel++; }
 void decreaseDebugIndentLevel() {
     assert(debugIndentLevel > 0);
     debugIndentLevel--;
+}
+
+/// Inline a function call and return true if inlining succeeded.
+bool inlineCall(CallInst *Call) {
+    InlineFunctionInfo ifi;
+#if LLVM_VERSION_MAJOR >= 11
+    return InlineFunction(*Call, ifi, nullptr, false).isSuccess();
+#else
+    return InlineFunction(Call, ifi, nullptr, false);
+#endif
 }

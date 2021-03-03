@@ -16,11 +16,11 @@
 #include "Utils.h"
 
 Result::Result(Function *FirstFun, Function *SecondFun)
-        : First(FirstFun->getName(),
+        : First(FirstFun->getName().str(),
                 getFileForFun(FirstFun),
                 FirstFun->getSubprogram() ? FirstFun->getSubprogram()->getLine()
                                           : 0),
-          Second(SecondFun->getName(),
+          Second(SecondFun->getName().str(),
                  getFileForFun(SecondFun),
                  SecondFun->getSubprogram()
                          ? SecondFun->getSubprogram()->getLine()

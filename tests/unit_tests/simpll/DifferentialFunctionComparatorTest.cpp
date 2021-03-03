@@ -18,6 +18,7 @@
 #include <ModuleComparator.h>
 #include <ResultsCache.h>
 #include <gtest/gtest.h>
+#include <llvm/IR/DIBuilder.h>
 #include <passes/StructureDebugInfoAnalysis.h>
 #include <passes/StructureSizeAnalysis.h>
 
@@ -215,76 +216,20 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
                                DICompositeTypeArray DTyArrR = {},
                                DIMacroNodeArray DMacArrL = {},
                                DIMacroNodeArray DMacArrR = {}) {
-        DIFile *DScoL = DIFile::get(CtxL, "test", "test");
-        DIFile *DScoR = DIFile::get(CtxR, "test", "test");
-        DICompileUnit *DCUL = DICompileUnit::getDistinct(
-                CtxL,
-                0,
-                DScoL,
-                "test",
-                false,
-                "",
-                0,
-                "test",
-                DICompileUnit::DebugEmissionKind::FullDebug,
-                DTyArrL,
-                DIScopeArray{},
-                DIGlobalVariableExpressionArray{},
-                DIImportedEntityArray{},
-                DMacArrL,
-                0,
-                false,
-                false,
-                DICompileUnit::DebugNameTableKind::Default,
-                0);
-        DICompileUnit *DCUR = DICompileUnit::getDistinct(
-                CtxR,
-                0,
-                DScoR,
-                "test",
-                false,
-                "",
-                0,
-                "test",
-                DICompileUnit::DebugEmissionKind::FullDebug,
-                DTyArrR,
-                DIScopeArray{},
-                DIGlobalVariableExpressionArray{},
-                DIImportedEntityArray{},
-                DMacArrR,
-                0,
-                false,
-                false,
-                DICompileUnit::DebugNameTableKind::Default,
-                0);
-        DSubL = DISubprogram::get(CtxL,
-                                  DScoL,
-                                  "test",
-                                  "test",
-                                  DScoL,
-                                  1,
-                                  nullptr,
-                                  1,
-                                  nullptr,
-                                  0,
-                                  0,
-                                  DINode::DIFlags{},
-                                  DISubprogram::DISPFlags{},
-                                  DCUL);
-        DSubR = DISubprogram::get(CtxR,
-                                  DScoR,
-                                  "test",
-                                  "test",
-                                  DScoR,
-                                  1,
-                                  nullptr,
-                                  1,
-                                  nullptr,
-                                  0,
-                                  0,
-                                  DINode::DIFlags{},
-                                  DISubprogram::DISPFlags{},
-                                  DCUR);
+
+        DIBuilder builderL(ModL);
+        DIFile *DScoL = builderL.createFile("test", "test");
+        DICompileUnit *DCUL =
+                builderL.createCompileUnit(0, DScoL, "test", false, "", 0);
+        DSubL = builderL.createFunction(
+                DScoL, "test", "test", DScoL, 1, nullptr, 1);
+
+        DIBuilder builderR(ModR);
+        DIFile *DScoR = builderR.createFile("test", "test");
+        DICompileUnit *DCUR =
+                builderR.createCompileUnit(0, DScoR, "test", false, "", 0);
+        DSubR = builderR.createFunction(
+                DScoR, "test", "test", DScoR, 1, nullptr, 1);
     }
 
     /// Compares two functions using cmpGlobalValues called through

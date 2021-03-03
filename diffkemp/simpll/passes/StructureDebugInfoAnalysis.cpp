@@ -60,7 +60,7 @@ StructureDebugInfoAnalysis::Result StructureDebugInfoAnalysis::run(
                 if (DCTy->getTag() == dwarf::DW_TAG_structure_type
                     && DCTy->getName() != "") {
                     // The type is a structure type, add entry to map.
-                    Res[DCTy->getName()] = DCTy;
+                    Res[DCTy->getName().str()] = DCTy;
                 }
                 // Go through all types inside the composite type.
                 DINodeArray Elems = DCTy->getElements();

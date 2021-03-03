@@ -60,7 +60,7 @@ PreservedAnalyses
                     // For inline asm containing __bug_table:
                     //  - replace the first argument byt null (is a file name)
                     //  - replace the second argument by 0 (is a line number)
-                    auto CalledVal = CallInstr->getCalledValue();
+                    auto CalledVal = getCallee(CallInstr);
                     if (auto Asm = dyn_cast<InlineAsm>(CalledVal)) {
                         if (Asm->getAsmString().find("__bug_table")
                             != std::string::npos) {
@@ -88,7 +88,7 @@ PreservedAnalyses
                     copyCallInstProperties(CallInstr, newCall);
                     CallInstr->replaceAllUsesWith(newCall);
                     toRemove.push_back(&Instr);
-                } else if (isPrintFunction(CalledFun->getName())) {
+                } else if (isPrintFunction(CalledFun->getName().str())) {
                     // Functions with 2 mandatory arguments
                     auto Op0Type = dyn_cast<PointerType>(
                             CallInstr->getOperand(0)->getType());
