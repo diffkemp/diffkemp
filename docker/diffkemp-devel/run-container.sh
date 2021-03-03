@@ -10,7 +10,7 @@ fi
 # Prerequisity is an existing docker image called 'diffkemp-devel' built from
 # the provided Dockerfile
 "$COMMAND" run \
-    -ti --security-opt seccomp=unconfined \
+    -ti --security-opt seccomp=unconfined --security-opt label=disable \
     -m 8g \
     --cpus 3 \
     -v $PWD:/diffkemp:Z \
