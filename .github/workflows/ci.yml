@@ -1,0 +1,131 @@
+name: CI
+
+on: [push, pull_request]
+
+env:
+  KERNELS: >
+    3.10.0-514.el7
+    3.10.0-693.el7
+    3.10.0-862.el7
+    3.10.0-957.el7
+    3.10
+    4.11
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-16.04
+    strategy:
+      matrix:
+        llvm: ["5.0", "6.0", 7, 8, 9, 10]
+        env:
+          - CC: gcc-9
+            CXX: g++-9
+
+        include:
+          - llvm: 10
+            env:
+              CC: clang
+              CXX: clang++
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          sudo apt-get install bc cscope libelf-dev ninja-build
+          pip install -r requirements.txt
+
+      - name: Install LLVM
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-${{ matrix.llvm }} main"
+          sudo apt-get update
+          sudo apt-get install llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
+          sudo ln -s /usr/lib/llvm-${{ matrix.llvm }} /usr/local/lib/llvm
+          echo "/usr/lib/llvm-${{ matrix.llvm }}/bin" >> $GITHUB_PATH
+
+      - name: Set GCC Version for Kernel Builds
+        run: |
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100
+
+      - name: Cache Linux Kernels
+        id: kernel-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ github.workspace }}/kernel
+          key: kernels-${{ env.KERNELS }}
+
+      - name: Obtain Linux Kernels
+        if: steps.kernel-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p ${{ github.workspace }}/kernel
+          git clone https://github.com/viktormalik/rhel-kernel-get.git
+          pip3 install -r rhel-kernel-get/requirements.txt
+          for k in $KERNELS; do
+            rhel-kernel-get/rhel-kernel-get.py $k --output-dir kernel
+          done
+      
+      - name: Clean Linux Kernels
+        if: steps.kernel-cache.outputs.cache-hit == 'true'
+        working-directory: ${{ github.workspace }}/kernel
+        run: find -name *.ll -delete
+
+      - name: Prepare Build Environment
+        run: |
+          mkdir -p ${{ github.workspace }}/build
+
+      - name: CMake
+        env: ${{ matrix.env }}
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake $GITHUB_WORKSPACE -GNinja
+
+      - name: Build
+        env: ${{ matrix.env }}
+        working-directory: ${{ github.workspace }}/build
+        run: ninja
+
+      - name: Install
+        env: ${{ matrix.env }}
+        working-directory: ${{ github.workspace }}
+        run: pip3 install -e .
+
+      - name: Run Tests
+        working-directory: ${{ github.workspace }}
+        run: |
+          tests/unit_tests/simpll/runTests
+          pytest tests
+
+  code-style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          sudo apt-get install clang-format
+          pip install flake8
+
+      - name: Check Coding Style
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
+          flake8 tests
+          tools/check-clang-format.sh -d
+
