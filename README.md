@@ -1,3 +1,5 @@
+![Build](https://github.com/viktormalik/diffkemp/actions/workflows/ci.yml/badge.svg?branch=master)
+
 # DiffKemp
 
 Tool for semantic **Diff**erence of **Ke**rnel functions, **m**odules, and
