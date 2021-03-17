@@ -19,13 +19,19 @@ file(GLOB passes passes/*.cpp)
 file(GLOB library library/*.cpp)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fpic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fpic -fvisibility=hidden")
 
 exec_program(llvm-config ARGS --libs irreader passes support OUTPUT_VARIABLE llvm_libs)
+exec_program(llvm-config ARGS --system-libs OUTPUT_VARIABLE system_libs)
+string(STRIP ${system_libs} system_libs)
+
 add_library(simpll-lib ${srcs} ${passes} ${library})
 add_executable(simpll SimpLL.cpp)
 set_target_properties(simpll PROPERTIES PREFIX "diffkemp-")
 target_link_libraries(simpll simpll-lib ${llvm_libs})
+if (NOT ${system_libs} STREQUAL "")
+    target_link_libraries(simpll ${system_libs})
+endif()
 
 if(SIMPLL_REBUILD_BINDINGS)
 add_custom_target(python-ffi ALL DEPENDS _simpll.c)

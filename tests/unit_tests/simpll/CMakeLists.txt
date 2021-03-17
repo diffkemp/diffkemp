@@ -12,7 +12,7 @@ add_subdirectory("${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
                  EXCLUDE_FROM_ALL)
 
 # Disable RTTI to link with SimpLL correctly.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fvisibility=hidden")
 
 enable_testing()
 
@@ -26,4 +26,10 @@ set_target_properties(runTests
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 exec_program(llvm-config ARGS --libs irreader passes support OUTPUT_VARIABLE llvm_libs)
+exec_program(llvm-config ARGS --system-libs OUTPUT_VARIABLE system_libs)
+string(STRIP ${system_libs} system_libs)
+
 target_link_libraries(runTests gtest simpll-lib ${llvm_libs})
+if (NOT ${system_libs} STREQUAL "")
+	target_link_libraries(runTests gtest ${system_libs})
+endif()

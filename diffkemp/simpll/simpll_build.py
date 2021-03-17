@@ -23,20 +23,25 @@ ffibuilder = FFI()
 
 ffibuilder.cdef(get_c_declarations("diffkemp/simpll/library/FFI.h"))
 
-llvm_libs = ["irreader", "passes", "support"]
+llvm_components = ["irreader", "passes", "support"]
 llvm_cflags = check_output(["llvm-config", "--cflags"])
-llvm_ldflags = check_output(["llvm-config", "--libs"] + llvm_libs)
+llvm_ldflags = check_output(["llvm-config", "--ldflags"])
+llvm_libs = check_output(["llvm-config", "--libs"] + llvm_components +
+                         ["--system-libs"])
 
 llvm_cflags = list(filter(lambda x: x != "",
-                          llvm_cflags.decode("ascii").strip().split(" ")))
+                          llvm_cflags.decode("ascii").strip().split()))
 llvm_ldflags = list(filter(lambda x: x != "",
-                           llvm_ldflags.decode("ascii").strip().split(" ")))
+                           llvm_ldflags.decode("ascii").strip().split()))
+llvm_libs = list(filter(lambda x: x != "",
+                        llvm_libs.decode("ascii").strip().split()))
 
 ffibuilder.set_source(
     "diffkemp.simpll._simpll", '#include <library/FFI.h>',
     libraries=['simpll-lib'],
     extra_compile_args=["-Idiffkemp/simpll"] + llvm_cflags,
-    extra_link_args=["-Lbuild/diffkemp/simpll", "-lstdc++"] + llvm_ldflags)
+    extra_link_args=["-Lbuild/diffkemp/simpll", "-lstdc++"] + llvm_ldflags +
+    llvm_libs)
 
 if __name__ == "__main__":
     ffibuilder.compile()
