@@ -201,7 +201,7 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
         // Note: even though ModuleComparator is not tested here,
         // DifferentialFunctionComparator expects the presence of the key in
         // the map, therefore it is necessary to do this here.
-        ModComp->ComparedFuns.insert({{FL, FR}, Result{}});
+        ModComp->ComparedFuns.emplace(std::make_pair(FL, FR), Result{});
 
         // Generate debug metadata.
         generateDebugMetadata();
