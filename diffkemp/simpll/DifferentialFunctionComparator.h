@@ -39,11 +39,20 @@ class DifferentialFunctionComparator : public FunctionComparator {
             : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
               LayoutL(F1->getParent()->getDataLayout()),
               LayoutR(F2->getParent()->getDataLayout()),
-              PatternComp(PatternComparator(PS, F1, F2)), ModComparator(MC) {}
+              PatternComp(PatternComparator(PS, this, F1, F2)),
+              ModComparator(MC) {}
 
     int compare() override;
+    /// Compares already mapped values, checking their synchronization mapping.
+    /// The comparison is unsuccessful if the given values are not mapped to
+    /// each other.
+    int cmpMappedValues(const Value *L, const Value *R) const;
     /// Check if two instructions were already compared as equal.
     bool equal(const Instruction *L, const Instruction *R);
+    /// Retrieves the value that is mapped to the given value, taken from one of
+    /// the compared modules. When no such mapping exists, returns a null
+    /// pointer.
+    const Value *getMappedValue(const Value *Val, bool ValFromL) const;
     /// Storing pointers to instructions in which functions started to differ.
     mutable std::pair<const Instruction *, const Instruction *>
             DifferingInstructions;
@@ -110,6 +119,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     int cmpPHIs(const PHINode *PhiL, const PHINode *PhiR) const;
 
   private:
+    friend class PatternComparator;
+
     const Config &config;
     const DebugInfo *DI;
 
@@ -119,6 +130,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
     mutable std::vector<std::pair<const PHINode *, const PHINode *>>
             phisToCompare;
+    mutable std::unordered_map<int, std::pair<const Value *, const Value *>>
+            snPairMap;
     mutable std::unordered_map<const Value *, const Value *>
             ignoredInstructions;
 

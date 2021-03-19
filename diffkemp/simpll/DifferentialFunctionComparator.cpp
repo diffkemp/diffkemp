@@ -48,6 +48,20 @@ int DifferentialFunctionComparator::compare() {
     return Res;
 }
 
+/// Compares already mapped values, checking their synchronization mapping.
+/// The comparison is unsuccessful if the given values are not mapped to
+/// each other.
+int DifferentialFunctionComparator::cmpMappedValues(const Value *L,
+                                                    const Value *R) const {
+    // Ensure that no new serial numbers will be assigned.
+    if (sn_mapL.find(L) == sn_mapL.end())
+        return -1;
+    if (sn_mapR.find(R) == sn_mapR.end())
+        return 1;
+
+    return cmpValues(L, R);
+}
+
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
@@ -672,6 +686,8 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
 /// Creates new value mappings according to the current pattern match.
 void DifferentialFunctionComparator::createPatternMapping() const {
     for (auto &&MappedInstPair : PatternComp.InstMappings) {
+        snPairMap[sn_mapL.size()] = {MappedInstPair.first,
+                                     MappedInstPair.second};
         sn_mapL[MappedInstPair.first] = sn_mapL.size();
         sn_mapR[MappedInstPair.second] = sn_mapR.size();
     }
@@ -851,12 +867,14 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             if (maySkipInstruction(&*InstL)) {
                 sn_mapL.erase(&*InstL);
                 sn_mapR.erase(&*InstR);
+                snPairMap.erase(sn_mapL.size());
                 InstL++;
                 continue;
             }
             if (maySkipInstruction(&*InstR)) {
                 sn_mapL.erase(&*InstL);
                 sn_mapR.erase(&*InstR);
+                snPairMap.erase(sn_mapL.size());
                 InstR++;
                 continue;
             }
@@ -867,6 +885,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             if (PatternComp.matchPattern(&*InstL, &*InstR)) {
                 sn_mapL.erase(&*InstL);
                 sn_mapR.erase(&*InstR);
+                snPairMap.erase(sn_mapL.size());
                 createPatternMapping();
                 continue;
             }
@@ -1215,6 +1234,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
         return cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R);
     }
 
+    int oldMapSize = sn_mapL.size();
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
         if (isa<Constant>(L) && isa<Constant>(R)) {
@@ -1240,6 +1260,10 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             }
             return 0;
         }
+    } else if (oldMapSize == (sn_mapL.size() - 1)) {
+        // Remember new pairings since they might be required during pattern
+        // comparison.
+        snPairMap[oldMapSize] = {L, R};
     }
     return result;
 }
@@ -1553,4 +1577,21 @@ bool DifferentialFunctionComparator::equal(const Instruction *InstL,
         return false;
 
     return L->second == R->second;
+}
+
+/// Retrieves the value that is mapped to the given value, taken from one of the
+/// compared modules. When no such mapping exists, returns a null pointer.
+const Value *
+        DifferentialFunctionComparator::getMappedValue(const Value *Val,
+                                                       bool ValFromL) const {
+    auto sn_map = ValFromL ? &sn_mapL : &sn_mapR;
+
+    // Ensure that the given value exists in the selected synchronization map.
+    auto MappedValue = sn_map->find(Val);
+    if (MappedValue == sn_map->end())
+        return nullptr;
+
+    // Find the mapped value based on its serial number.
+    auto MappedPair = snPairMap[MappedValue->second];
+    return ValFromL ? MappedPair.second : MappedPair.first;
 }

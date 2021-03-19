@@ -24,25 +24,35 @@
 
 using namespace llvm;
 
-/// Instruction to instruction mapping.
-typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
+/// Input instructions and arguments.
+typedef SmallPtrSet<const Value *, 16> InputSet;
+
+/// Mapping between input values from different pattern sides.
+typedef DenseMap<const Value *, const Value *> InputMap;
 
 /// Instructions pointer set.
 typedef SmallPtrSet<const Instruction *, 32> InstructionSet;
+
+/// Instruction to instruction mapping.
+typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
 
 // Forward declaration of the DifferentialFunctionComparator.
 class DifferentialFunctionComparator;
 
 /// Representation of difference pattern metadata configuration.
 struct PatternMetadata {
-    /// Limit for the number of following basic blocks.
-    int BasicBlockLimit = -1;
-    /// End of the previous basic block limit.
-    bool BasicBlockLimitEnd = false;
     /// Marker for the first differing instruction pair.
     bool PatternStart = false;
     /// Marker for the last differing instruction pair.
     bool PatternEnd = false;
+    /// Prevents skipping of module instructions when no match is found.
+    bool GroupStart = false;
+    /// End of the previous instruction group.
+    bool GroupEnd = false;
+    /// Disables the default name-based comparison of globals and structures.
+    bool DisableNameComparison = false;
+    /// Does not register the instruction as an input.
+    bool NotAnInput = false;
 };
 
 /// Representation of the whole difference pattern configuration.
@@ -57,28 +67,33 @@ struct PatternConfiguration {
 struct Pattern {
     /// Name of the pattern.
     const std::string Name;
-    /// Function corresponding to the new part of the pattern.
-    const Function *NewPattern;
-    /// Function corresponding to the old part of the pattern.
-    const Function *OldPattern;
+    /// Function corresponding to the left part of the pattern.
+    const Function *PatternL;
+    /// Function corresponding to the right part of the pattern.
+    const Function *PatternR;
     /// Map of all included pattern metadata.
-    mutable std::unordered_map<const Instruction *, PatternMetadata>
-            MetadataMap;
+    mutable std::unordered_map<const Value *, PatternMetadata> MetadataMap;
+    /// Input instructions and arguments for the left part of the pattern.
+    mutable InputSet InputL;
+    /// Input instructions and arguments for the right part of the pattern.
+    mutable InputSet InputR;
+    /// Mapping of input arguments from new to old part of the pattern.
+    mutable InputMap ArgumentMapping;
     /// Final instruction mapping associated with the pattern.
     mutable InstructionMap FinalMapping;
-    /// Comparison start position for the new part of the pattern.
-    const Instruction *NewStartPosition = nullptr;
-    /// Comparison start position for the old part of the pattern.
-    const Instruction *OldStartPosition = nullptr;
+    /// Comparison start position for the left part of the pattern.
+    const Instruction *StartPositionL = nullptr;
+    /// Comparison start position for the right part of the pattern.
+    const Instruction *StartPositionR = nullptr;
 
     Pattern(const std::string &Name,
-            const Function *NewPattern,
-            const Function *OldPattern)
-            : Name(Name), NewPattern(NewPattern), OldPattern(OldPattern) {}
+            const Function *PatternL,
+            const Function *PatternR)
+            : Name(Name), PatternL(PatternL), PatternR(PatternR) {}
 
     bool operator==(const Pattern &Rhs) const {
-        return (Name == Rhs.Name && NewPattern == Rhs.NewPattern
-                && OldPattern == Rhs.OldPattern);
+        return (Name == Rhs.Name && PatternL == Rhs.PatternL
+                && PatternR == Rhs.PatternR);
     }
 };
 
@@ -95,14 +110,20 @@ template <> struct hash<Pattern> {
 /// of prior semantic differences.
 class PatternSet {
   public:
+    /// Default DiffKemp prefix for all pattern information.
+    static const std::string DefaultPrefix;
+    /// Prefix for the left (old) side of difference patterns.
+    static const std::string PrefixL;
+    /// Prefix for the right (new) side of difference patterns.
+    static const std::string PrefixR;
+    /// Complete prefix for the left side of difference patterns.
+    static const std::string FullPrefixL;
+    /// Complete prefix for the right side of difference patterns.
+    static const std::string FullPrefixR;
     /// Name for the function defining final instuction mapping.
     static const std::string MappingFunctionName;
     /// Name for pattern metadata nodes.
     static const std::string MetadataName;
-    /// Prefix for the new side of difference patterns.
-    static const std::string NewPrefix;
-    /// Prefix for the old side of difference patterns.
-    static const std::string OldPrefix;
 
     PatternSet(std::string ConfigPath);
 
@@ -174,7 +195,7 @@ class PatternSet {
     /// positions, and retrevies instruction mapping information.
     void initializePatternSide(Pattern &Pat,
                                MappingInfo &MapInfo,
-                               bool IsNewSide);
+                               bool IsLeftSide);
 
     /// Parses a single pattern metadata operand, including all dependent
     /// operands.

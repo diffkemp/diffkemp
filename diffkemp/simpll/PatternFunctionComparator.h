@@ -25,18 +25,25 @@ using namespace llvm;
 
 /// Extension of LLVM FunctionComparator which compares a difference pattern
 /// against its corresponding module function. Compared functions are expected
-/// to lie in different modules.
+/// to lie in different modules. The module function is expected on the left
+/// side while the pattern function is expected on the right side.
 class PatternFunctionComparator : protected FunctionComparator {
   public:
     /// Pattern instructions matched to their respective module replacement
     /// instructions. Pattern instructions are used as keys.
     mutable InstructionMap InstMatchMap;
+    /// Pattern input instructions and arguments matched to module input
+    /// instructions and arguments. Pattern input is used for keys.
+    mutable InputMap InputMatchMap;
+    /// Module input instructions and arguments matched to pattern input
+    /// instructions and arguments. Module input is used for keys.
+    mutable InputMap ReverseInputMatchMap;
 
     PatternFunctionComparator(const Function *ModFun,
                               const Function *PatFun,
                               const Pattern *ParentPattern)
             : FunctionComparator(ModFun, PatFun, nullptr),
-              IsNewSide(ParentPattern->NewPattern == PatFun),
+              IsLeftSide(PatFun == ParentPattern->PatternL),
               ParentPattern(ParentPattern){};
 
     /// Compare the module function and the difference pattern from the starting
@@ -46,9 +53,13 @@ class PatternFunctionComparator : protected FunctionComparator {
     /// Set the starting module instruction.
     void setStartInstruction(const Instruction *StartModInst);
 
+    /// Compare a module input value with a pattern input value.
+    int cmpInputValues(const Value *L, const Value *R);
+
   protected:
-    /// Clear all result structures to prepare for a new comparison.
-    void beginCompare();
+    /// Compare a module GEP operation with a pattern GEP operation.
+    int cmpGEPs(const GEPOperator *GEPL,
+                const GEPOperator *GEPR) const override;
 
     /// Compare a module function instruction with a pattern instruction along
     /// with their operands.
@@ -63,13 +74,46 @@ class PatternFunctionComparator : protected FunctionComparator {
     /// expected to be the same.
     int cmpGlobalValues(GlobalValue *L, GlobalValue *R) const override;
 
+    /// Tests whether two names of types or globals match. Names match if they
+    /// are the same or if the DiffKemp specific name prefixes are used on the
+    /// pattern side.
+    int cmpNames(const StringRef &L, const StringRef &R) const;
+
+    /// Compare a module value with a pattern value using serial numbers.
+    int cmpValues(const Value *L, const Value *R) const override;
+
   private:
-    /// Whether the comparator has been created for the new side of the pattern.
-    const bool IsNewSide;
+    /// Set of mapped and synchronized values.
+    using MappingSet = SmallPtrSet<const Value *, 16>;
+
+    /// Whether the comparator has been created for the left pattern side.
+    const bool IsLeftSide;
     /// The pattern which should be used during comparison.
     const Pattern *ParentPattern;
     /// The staring instruction of the compared module function.
     mutable const Instruction *StartInst;
+    /// Values placed into synchronisation maps during the comparison of the
+    /// current instruction pair.
+    mutable MappingSet NewlyMappedValuesL, NewlyMappedValuesR;
+    /// Input instructions that have been mapped during the comparison of the
+    /// current instruction pair.
+    mutable MappingSet NewlyMappedInputL, NewlyMappedInputR;
+
+    /// Uses function comparison to try and match the given pattern to the
+    /// corresponding module.
+    int matchPattern() const;
+
+    /// Erases newly mapped instructions from synchronization maps and input
+    /// maps.
+    void eraseNewlyMapped() const;
+
+    /// Checks whether all currently mapped input instructions or arguments have
+    /// an associated module counterpart.
+    int checkInputMapping() const;
+
+    /// Tries to map a module value (including possible predecessors) to a
+    /// pattern input value.
+    int mapInputValues(const Value *L, const Value *R) const;
 
     /// Position the basic block instruction iterator forward to the given
     /// starting instruction.
