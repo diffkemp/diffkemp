@@ -1,4 +1,4 @@
-//===-- PatternFunctionComparator.cpp - Code pattern instruction matcher --===//
+//===---- InstPatternComparator.cpp - Code pattern instruction matcher ----===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -9,17 +9,17 @@
 /// \file
 /// This file contains the implementation of the LLVM code pattern matcher. The
 /// pattern matcher is a comparator extension of the LLVM FunctionComparator
-/// tailored to difference pattern comparison.
+/// tailored to comparison of general instruction-based patterns.
 ///
 //===----------------------------------------------------------------------===//
 
-#include "PatternFunctionComparator.h"
+#include "InstPatternComparator.h"
 #include "Config.h"
 #include "Utils.h"
 
 /// Compare the module function and the difference pattern from the starting
 /// module instruction. This includes checks for correct input mappings.
-int PatternFunctionComparator::compare() {
+int InstPatternComparator::compare() {
     // Clear all previous results.
     beginCompare();
     InstMatchMap.clear();
@@ -42,14 +42,14 @@ int PatternFunctionComparator::compare() {
 }
 
 /// Set the starting module instruction.
-void PatternFunctionComparator::setStartInstruction(
+void InstPatternComparator::setStartInstruction(
         const Instruction *StartModInst) {
     StartInst = StartModInst;
 }
 
 /// Compare a module input value with a pattern input value. Used for comparing
 /// input values that could not be mapped during the first one-side comparison.
-int PatternFunctionComparator::cmpInputValues(const Value *L, const Value *R) {
+int InstPatternComparator::cmpInputValues(const Value *L, const Value *R) {
     // Check pointer validity.
     if (!L)
         return -1;
@@ -164,8 +164,8 @@ int PatternFunctionComparator::cmpInputValues(const Value *L, const Value *R) {
 /// Note: Parts of this function have been adapted from FunctionComparator.
 /// Therefore, LLVM licensing also applies here. See the LICENSE information in
 /// the appropriate llvm-lib subdirectory for more details.
-int PatternFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
-                                       const GEPOperator *GEPR) const {
+int InstPatternComparator::cmpGEPs(const GEPOperator *GEPL,
+                                   const GEPOperator *GEPR) const {
     // When using the GEP operations on pointers, vectors or arrays, perform the
     // default comparison. Also use the default comparison if the name-based
     // structure comparison is disabled.
@@ -189,7 +189,7 @@ int PatternFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
     // Try to perform the base comparison. Validate the result by comparing the
     // structure names.
     if (int Res = cmpTypes(TyL, TyR)) {
-        if (cmpNames(TyL->getStructName(), TyR->getStructName()))
+        if (!namesMatch(TyL->getStructName(), TyR->getStructName(), IsLeftSide))
             return Res;
     }
 
@@ -209,7 +209,7 @@ int PatternFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
 /// Note: Parts of this function have been adapted from FunctionComparator.
 /// Therefore, LLVM licensing also applies here. See the LICENSE information
 /// in the appropriate llvm-lib subdirectory for more details.
-int PatternFunctionComparator::cmpOperationsWithOperands(
+int InstPatternComparator::cmpOperationsWithOperands(
         const Instruction *L, const Instruction *R) const {
     bool needToCmpOperands = true;
 
@@ -240,8 +240,8 @@ int PatternFunctionComparator::cmpOperationsWithOperands(
 }
 
 /// Compare a module function basic block with a pattern basic block.
-int PatternFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
-                                              const BasicBlock *BBR) const {
+int InstPatternComparator::cmpBasicBlocks(const BasicBlock *BBL,
+                                          const BasicBlock *BBR) const {
     BasicBlock::const_iterator InstL = BBL->begin(), InstLE = BBL->end();
     BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
 
@@ -296,60 +296,27 @@ int PatternFunctionComparator::cmpBasicBlocks(const BasicBlock *BBL,
 
 /// Compare global values by their names, because their indexes are not
 /// expected to be the same.
-int PatternFunctionComparator::cmpGlobalValues(GlobalValue *L,
-                                               GlobalValue *R) const {
+int InstPatternComparator::cmpGlobalValues(GlobalValue *L,
+                                           GlobalValue *R) const {
     if (L->hasName() && R->hasName()) {
         // Both values are named, compare them by names
         auto NameL = L->getName();
         auto NameR = R->getName();
 
-        if (cmpNames(NameL, NameR))
-            return 1;
+        if (namesMatch(NameL, NameR, IsLeftSide))
+            return 0;
 
-        return 0;
+        return 1;
     }
 
     return L != R;
-}
-
-/// Tests whether two names of types or globals match. Names match if they
-/// are the same or if the DiffKemp specific name prefixes are used on the
-/// pattern side.
-int PatternFunctionComparator::cmpNames(const StringRef &L,
-                                        const StringRef &R) const {
-    auto NameL = L;
-    auto NameR = R;
-
-    // Remove number suffixes
-    if (hasSuffix(NameL))
-        NameL = NameL.substr(0, NameL.find_last_of("."));
-    if (hasSuffix(NameR))
-        NameR = NameR.substr(0, NameR.find_last_of("."));
-
-    // Compare the names themselves.
-    if (NameL == NameR)
-        return 0;
-
-    // If no prefix is present, the names are not equal.
-    if (!NameR.startswith_lower(PatternSet::DefaultPrefix))
-        return 1;
-
-    // Remove all prefixes.
-    auto PrefixR = IsLeftSide ? PatternSet::PrefixL : PatternSet::PrefixR;
-    StringRef RealNameR = NameR.substr(PatternSet::DefaultPrefix.size());
-
-    if (RealNameR.startswith_lower(PrefixR))
-        RealNameR = RealNameR.substr(PrefixR.size());
-
-    // Compare the names without prefixes.
-    return NameL != RealNameR;
 }
 
 /// Compare a module value with a pattern value using serial numbers.
 /// Note: Parts of this function have been adapted from FunctionComparator.
 /// Therefore, LLVM licensing also applies here. See the LICENSE information
 /// in the appropriate llvm-lib subdirectory for more details.
-int PatternFunctionComparator::cmpValues(const Value *L, const Value *R) const {
+int InstPatternComparator::cmpValues(const Value *L, const Value *R) const {
     // Catch self-reference case.
     if (L == FnL) {
         if (R == FnR)
@@ -417,7 +384,7 @@ int PatternFunctionComparator::cmpValues(const Value *L, const Value *R) const {
 /// FunctionComparator. Therefore, LLVM licensing also applies here. See the
 /// LICENSE information in the appropriate llvm-lib subdirectory for more
 /// details.
-int PatternFunctionComparator::matchPattern() const {
+int InstPatternComparator::matchPattern() const {
     // We do a CFG-ordered walk since the actual ordering of the blocks in the
     // linked list is immaterial. Our walk starts at the containing blocks of
     // the starting instructions, then takes each block from each terminator in
@@ -447,13 +414,9 @@ int PatternFunctionComparator::matchPattern() const {
         if (int Res = cmpBasicBlocks(BBL, BBR))
             return Res;
 
-#if LLVM_VERSION_MAJOR < 8
-        const TerminatorInst *TermL = BBL->getTerminator();
-        const TerminatorInst *TermR = BBR->getTerminator();
-#else
-        const Instruction *TermL = BBL->getTerminator();
-        const Instruction *TermR = BBR->getTerminator();
-#endif
+        auto *TermL = BBL->getTerminator();
+        auto *TermR = BBR->getTerminator();
+
         // Do not descend to successors if the pattern terminating instruction
         // is not a direct part of the pattern.
         if (ParentPattern->MetadataMap[TermR].PatternEnd)
@@ -475,7 +438,7 @@ int PatternFunctionComparator::matchPattern() const {
 }
 
 /// Erases newly mapped instructions from synchronization maps and input maps.
-void PatternFunctionComparator::eraseNewlyMapped() const {
+void InstPatternComparator::eraseNewlyMapped() const {
     for (auto &&MappedValueL : NewlyMappedValuesL) {
         sn_mapL.erase(MappedValueL);
     }
@@ -492,7 +455,7 @@ void PatternFunctionComparator::eraseNewlyMapped() const {
 
 /// Checks whether all currently mapped input instructions or arguments have
 /// an associated module counterpart.
-int PatternFunctionComparator::checkInputMapping() const {
+int InstPatternComparator::checkInputMapping() const {
     // Compare mapped input arguments.
     for (auto &&ArgR : FnR->args()) {
         auto MappedValues = InputMatchMap.find(&ArgR);
@@ -536,8 +499,8 @@ int PatternFunctionComparator::checkInputMapping() const {
 /// Tries to map a module value (including possible predecessors) to a
 /// pattern input value. If no input value is present, the mapping is
 /// always successful.
-int PatternFunctionComparator::mapInputValues(const Value *L,
-                                              const Value *R) const {
+int InstPatternComparator::mapInputValues(const Value *L,
+                                          const Value *R) const {
     // The pattern input may have been already mapped. If so, it must be mapped
     // to the given module value.
     if (InputMatchMap.find(R) != InputMatchMap.end()) {
@@ -600,7 +563,7 @@ int PatternFunctionComparator::mapInputValues(const Value *L,
 
 /// Position the basic block instruction iterator forward to the given
 /// starting instruction.
-void PatternFunctionComparator::jumpToStartInst(
+void InstPatternComparator::jumpToStartInst(
         BasicBlock::const_iterator &BBIterator,
         const Instruction *Start) const {
     while (&*BBIterator != Start) {

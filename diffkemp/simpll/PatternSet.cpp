@@ -9,7 +9,11 @@
 /// \file
 /// This file contains the implementation of the unordered LLVM code pattern
 /// set. Pattern sets are generated from the given pattern configuration file
-/// and hold all valid patterns that have been referenced there.
+/// and hold all valid patterns that have been referenced there. Patterns may
+/// be instruction-based, or value-based. Instruction-based patterns are
+/// represented by multiple LLVM IR instructions, while value-based patterns
+/// contain only a single return instruction, which describes a difference in
+/// a single value.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -144,8 +148,9 @@ void PatternSet::addPattern(std::string &Path) {
     }
 
     for (auto &Function : PatternModule->getFunctionList()) {
-        // Select only functions starting with the left prefix.
-        if (Function.getName().startswith_lower(FullPrefixL)) {
+        // Select only defined functions that start with the left prefix.
+        if (!Function.isDeclaration()
+            && Function.getName().startswith_lower(FullPrefixL)) {
             StringRef Name = Function.getName().substr(FullPrefixL.size());
             std::string NameR = FullPrefixR;
             NameR += Name;
@@ -153,31 +158,70 @@ void PatternSet::addPattern(std::string &Path) {
             // Find the corresponding pattern function with the right prefix.
             auto FunctionR = PatternModule->getFunction(NameR);
             if (FunctionR) {
-                Pattern NewPattern(Name.str(), &Function, FunctionR);
-                if (initializePattern(NewPattern)) {
-                    Patterns.emplace(NewPattern);
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << getDebugIndent()
+                                       << "Loading a new difference pattern "
+                                       << Name.str() << " from module " << Path
+                                       << ".\n");
 
+                switch (getPatternType(&Function, FunctionR)) {
+                case PatternType::INST: {
+                    InstPattern NewInstPattern(
+                            Name.str(), &Function, FunctionR);
+                    if (initializeInstPattern(NewInstPattern)) {
+                        InstPatterns.emplace(NewInstPattern);
+                    }
+                    break;
+                }
+
+                case PatternType::VALUE: {
+                    ValuePattern NewValuePattern(
+                            Name.str(), &Function, FunctionR);
+                    if (initializeValuePattern(NewValuePattern)) {
+                        ValuePatterns.emplace(NewValuePattern);
+                    }
+                    break;
+                }
+
+                default:
                     DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                     dbgs() << getDebugIndent()
-                                           << "Loaded difference pattern "
-                                           << Name.str() << " from module "
-                                           << Path << ".\n");
+                                           << "An unknown pattern type has "
+                                              "been used.\n");
+                    break;
                 }
             }
         }
     }
 }
 
-/// Initializes a pattern, loading all metadata, start positions, and the final
-/// instruction mapping. Unless the start position is chosen by metadata, it is
-/// set to the first differing pair of pattern instructions. Patterns with
-/// conflicting differences in concurrent branches are skipped, returning false.
-bool PatternSet::initializePattern(Pattern &Pat) {
+/// Finds the pattern type associated with the given pattern functions.
+PatternType PatternSet::getPatternType(const Function *FnL,
+                                       const Function *FnR) {
+    // Value patterns should only contain a single return instruction.
+    auto EntryBBL = &FnL->getEntryBlock(), EntryBBR = &FnR->getEntryBlock();
+    auto TermL = EntryBBL->getTerminator(), TermR = EntryBBR->getTerminator();
+    if (TermL->getNumSuccessors() == 0 && TermR->getNumSuccessors() == 0) {
+        auto InstLB = EntryBBL->begin(), InstRB = EntryBBR->begin();
+        if (TermL == &*InstLB && TermR == &*InstRB) {
+            return PatternType::VALUE;
+        }
+    }
+
+    return PatternType::INST;
+}
+
+/// Initializes an instruction pattern, loading all metadata, start positions,
+/// and the final instruction mapping. Unless the start position is chosen by
+/// metadata, it is set to the first differing pair of pattern instructions.
+/// Patterns with conflicting differences in concurrent branches are skipped,
+/// returning false.
+bool PatternSet::initializeInstPattern(InstPattern &Pat) {
     MappingInfo MappingInfoL, MappingInfoR;
 
     // Initialize both pattern sides.
-    initializePatternSide(Pat, MappingInfoL, true);
-    initializePatternSide(Pat, MappingInfoR, false);
+    initializeInstPatternSide(Pat, MappingInfoL, true);
+    initializeInstPatternSide(Pat, MappingInfoR, false);
 
     // Map input arguments from the left side to the right side.
     if (Pat.PatternL->arg_size() != Pat.PatternR->arg_size()) {
@@ -229,9 +273,9 @@ bool PatternSet::initializePattern(Pattern &Pat) {
 
 /// Initializes a single side of a pattern, loading all metadata, start
 /// positions, and retrevies instruction mapping information.
-void PatternSet::initializePatternSide(Pattern &Pat,
-                                       MappingInfo &MapInfo,
-                                       bool IsLeftSide) {
+void PatternSet::initializeInstPatternSide(InstPattern &Pat,
+                                           MappingInfo &MapInfo,
+                                           bool IsLeftSide) {
     PatternMetadata Metadata;
     InputSet *PatternInput;
     const Function *PatternSide;
@@ -295,6 +339,31 @@ void PatternSet::initializePatternSide(Pattern &Pat,
     }
     // Generate mapping information.
     MapInfo = {MappingInstruction, MappedOperandsCount};
+}
+
+/// Initializes a value pattern loading value differences from both sides of
+/// the pattern.
+bool PatternSet::initializeValuePattern(ValuePattern &Pat) {
+    // Find the compared return instruction on both sides.
+    auto EntryBBL = &Pat.PatternL->getEntryBlock(),
+         EntryBBR = &Pat.PatternR->getEntryBlock();
+    auto TermL = EntryBBL->getTerminator(), TermR = EntryBBR->getTerminator();
+
+    // Read the compared values.
+    Pat.ValueL = TermL->getOperand(0);
+    Pat.ValueR = TermR->getOperand(0);
+
+    // Pointers in value patterns should reference global variables.
+    if (Pat.ValueL->getType()->isPointerTy()
+        && !isa<GlobalVariable>(Pat.ValueL)) {
+        return false;
+    }
+    if (Pat.ValueR->getType()->isPointerTy()
+        && !isa<GlobalVariable>(Pat.ValueR)) {
+        return false;
+    }
+
+    return true;
 }
 
 /// Parses a single pattern metadata operand, including all dependent operands.

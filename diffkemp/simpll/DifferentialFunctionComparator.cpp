@@ -1260,6 +1260,10 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             }
             return 0;
         }
+        if (PatternComp.matchValues(L, R)) {
+            // If the values correspond to a value pattern, consider them equal.
+            return 0;
+        }
     } else if (oldMapSize == (sn_mapL.size() - 1)) {
         // Remember new pairings since they might be required during pattern
         // comparison.

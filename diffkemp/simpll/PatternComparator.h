@@ -8,15 +8,17 @@
 ///
 /// \file
 /// This file contains the declaration of the LLVM code pattern finder and
-/// comparison manager.
+/// comparison manager. The comparator supports both instruction-based and
+/// value-based difference patterns.
 ///
 //===----------------------------------------------------------------------===//
 
 #ifndef DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H
 #define DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H
 
-#include "PatternFunctionComparator.h"
+#include "InstPatternComparator.h"
 #include "PatternSet.h"
+#include "ValuePatternComparator.h"
 #include <unordered_map>
 #include <vector>
 
@@ -31,21 +33,32 @@ class PatternComparator {
                       const Function *FnL,
                       const Function *FnR)
             : DiffFunctionComp(DiffFunctionComp) {
-        // Populate the pattern function comparator map.
-        for (auto &Pattern : *Patterns) {
-            auto PatternFunCompL = std::make_unique<PatternFunctionComparator>(
-                    FnL, Pattern.PatternL, &Pattern);
-            auto PatternFunCompR = std::make_unique<PatternFunctionComparator>(
-                    FnR, Pattern.PatternR, &Pattern);
+        // Populate both pattern function comparator maps.
+        for (auto &InstPattern : Patterns->InstPatterns) {
+            auto PatternFunCompL = std::make_unique<InstPatternComparator>(
+                    FnL, InstPattern.PatternL, &InstPattern);
+            auto PatternFunCompR = std::make_unique<InstPatternComparator>(
+                    FnR, InstPattern.PatternR, &InstPattern);
 
-            PatternFunComps.try_emplace(
-                    &Pattern,
+            InstPatternComps.try_emplace(
+                    &InstPattern,
+                    std::make_pair(std::move(PatternFunCompL),
+                                   std::move(PatternFunCompR)));
+        }
+        for (auto &ValuePattern : Patterns->ValuePatterns) {
+            auto PatternFunCompL = std::make_unique<ValuePatternComparator>(
+                    FnL, ValuePattern.PatternL, &ValuePattern);
+            auto PatternFunCompR = std::make_unique<ValuePatternComparator>(
+                    FnR, ValuePattern.PatternR, &ValuePattern);
+
+            ValuePatternComps.try_emplace(
+                    &ValuePattern,
                     std::make_pair(std::move(PatternFunCompL),
                                    std::move(PatternFunCompR)));
         }
     };
 
-    /// Individual matched instructions, combined for both all matched patterns.
+    /// Individual matched instructions, combined for all matched patterns.
     InstructionSet AllInstMatches;
     /// Matched pairs of mapped pattern instructions. Instructions from the left
     /// module side are used as keys.
@@ -54,33 +67,50 @@ class PatternComparator {
     /// left module side is used for keys.
     mutable InstructionMap InputMappings;
 
-    /// Tries to match a difference pattern starting with instructions that may
-    /// be matched to the given instruction pair. Returns true if a valid match
-    /// is found.
+    /// Tries to match a difference pattern starting with the given instruction
+    /// instruction pair. Returns true if a valid match is found.
     bool matchPattern(const Instruction *InstL, const Instruction *InstR);
 
+    /// Tries to match a pair of values to a value pattern. Returns true if a
+    /// valid match is found.
+    bool matchValues(const Value *L, const Value *R);
+
   private:
-    /// Pair of corresponding pattern function comparators.
-    using PatternFunctionComparatorPair =
-            std::pair<std::unique_ptr<PatternFunctionComparator>,
-                      std::unique_ptr<PatternFunctionComparator>>;
+    /// Pair of corresponding instruction pattern function comparators.
+    using InstPatternComparatorPair =
+            std::pair<std::unique_ptr<InstPatternComparator>,
+                      std::unique_ptr<InstPatternComparator>>;
+    /// Pair of corresponding value pattern function comparators.
+    using ValuePatternComparatorPair =
+            std::pair<std::unique_ptr<ValuePatternComparator>,
+                      std::unique_ptr<ValuePatternComparator>>;
 
     /// Parent DifferentialFunctionComparator the compares the module functions.
     const DifferentialFunctionComparator *DiffFunctionComp;
-    /// Pattern function comparators associated with the current set of patterns
-    /// and the currently compared functions.
-    DenseMap<const Pattern *, PatternFunctionComparatorPair> PatternFunComps;
+    /// Instruction pattern function comparators associated with the current set
+    /// of patterns and the currently compared functions.
+    DenseMap<const InstPattern *, InstPatternComparatorPair> InstPatternComps;
+    /// Value pattern function comparators associated with the current set of
+    /// patterns and the currently compared functions.
+    DenseMap<const ValuePattern *, ValuePatternComparatorPair>
+            ValuePatternComps;
+
+    /// Tries to match a load instruction to the start of the given value
+    /// pattern.
+    bool matchLoadInst(const LoadInst *Load,
+                       const ValuePattern *Pat,
+                       bool IsLeftSide);
 
     /// Check whether the input mapping generated by the given pattern function
     /// comparator pair is valid even when both compared modules are analysed at
     /// once.
-    bool inputMappingValid(const Pattern *Pat,
-                           const PatternFunctionComparatorPair *PatternComps);
+    bool inputMappingValid(const InstPattern *Pat,
+                           const InstPatternComparatorPair *PatternComps);
 
     /// Create the resulting instruction mapping and add all matched
     /// instructions into the combined instruction set.
-    void processPatternMatch(const Pattern *Pat,
-                             const PatternFunctionComparatorPair *PatternComps);
+    void processPatternMatch(const InstPattern *Pat,
+                             const InstPatternComparatorPair *PatternComps);
 };
 
 #endif // DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H

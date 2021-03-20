@@ -1,4 +1,4 @@
-//===--- PatternFunctionComparator.h - Code pattern instruction matcher ---===//
+//===----- InstPatternComparator.h - Code pattern instruction matcher -----===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -9,12 +9,12 @@
 /// \file
 /// This file contains the declaration of the LLVM code pattern matcher. The
 /// pattern matcher is a comparator extension of the LLVM FunctionComparator
-/// tailored to difference pattern comparison.
+/// tailored to comparison of general instruction-based patterns.
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef DIFFKEMP_SIMPLL_PATTERNFUNCTIONCOMPARATOR_H
-#define DIFFKEMP_SIMPLL_PATTERNFUNCTIONCOMPARATOR_H
+#ifndef DIFFKEMP_SIMPLL_INSTPATTERNCOMPARATOR_H
+#define DIFFKEMP_SIMPLL_INSTPATTERNCOMPARATOR_H
 
 #include "FunctionComparator.h"
 #include "PatternSet.h"
@@ -27,7 +27,7 @@ using namespace llvm;
 /// against its corresponding module function. Compared functions are expected
 /// to lie in different modules. The module function is expected on the left
 /// side while the pattern function is expected on the right side.
-class PatternFunctionComparator : protected FunctionComparator {
+class InstPatternComparator : protected FunctionComparator {
   public:
     /// Pattern instructions matched to their respective module replacement
     /// instructions. Pattern instructions are used as keys.
@@ -39,9 +39,9 @@ class PatternFunctionComparator : protected FunctionComparator {
     /// instructions and arguments. Module input is used for keys.
     mutable InputMap ReverseInputMatchMap;
 
-    PatternFunctionComparator(const Function *ModFun,
-                              const Function *PatFun,
-                              const Pattern *ParentPattern)
+    InstPatternComparator(const Function *ModFun,
+                          const Function *PatFun,
+                          const InstPattern *ParentPattern)
             : FunctionComparator(ModFun, PatFun, nullptr),
               IsLeftSide(PatFun == ParentPattern->PatternL),
               ParentPattern(ParentPattern){};
@@ -74,11 +74,6 @@ class PatternFunctionComparator : protected FunctionComparator {
     /// expected to be the same.
     int cmpGlobalValues(GlobalValue *L, GlobalValue *R) const override;
 
-    /// Tests whether two names of types or globals match. Names match if they
-    /// are the same or if the DiffKemp specific name prefixes are used on the
-    /// pattern side.
-    int cmpNames(const StringRef &L, const StringRef &R) const;
-
     /// Compare a module value with a pattern value using serial numbers.
     int cmpValues(const Value *L, const Value *R) const override;
 
@@ -89,7 +84,7 @@ class PatternFunctionComparator : protected FunctionComparator {
     /// Whether the comparator has been created for the left pattern side.
     const bool IsLeftSide;
     /// The pattern which should be used during comparison.
-    const Pattern *ParentPattern;
+    const InstPattern *ParentPattern;
     /// The staring instruction of the compared module function.
     mutable const Instruction *StartInst;
     /// Values placed into synchronisation maps during the comparison of the
@@ -121,4 +116,4 @@ class PatternFunctionComparator : protected FunctionComparator {
                          const Instruction *Start) const;
 };
 
-#endif // DIFFKEMP_SIMPLL_PATTERNFUNCTIONCOMPARATOR_H
+#endif // DIFFKEMP_SIMPLL_INSTPATTERNCOMPARATOR_H

@@ -39,6 +39,9 @@ typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
 // Forward declaration of the DifferentialFunctionComparator.
 class DifferentialFunctionComparator;
 
+/// Available types of difference patterns.
+enum class PatternType { INST, VALUE };
+
 /// Representation of difference pattern metadata configuration.
 struct PatternMetadata {
     /// Marker for the first differing instruction pair.
@@ -63,7 +66,7 @@ struct PatternConfiguration {
     std::vector<std::string> PatternFiles;
 };
 
-/// Representation of a difference pattern pair.
+/// Base pattern representation.
 struct Pattern {
     /// Name of the pattern.
     const std::string Name;
@@ -71,6 +74,20 @@ struct Pattern {
     const Function *PatternL;
     /// Function corresponding to the right part of the pattern.
     const Function *PatternR;
+
+    Pattern(const std::string &Name,
+            const Function *PatternL,
+            const Function *PatternR)
+            : Name(Name), PatternL(PatternL), PatternR(PatternR) {}
+
+    bool operator==(const Pattern &Rhs) const {
+        return (Name == Rhs.Name && PatternL == Rhs.PatternL
+                && PatternR == Rhs.PatternR);
+    }
+};
+
+/// Representation of a difference pattern pair based on instruction matching.
+struct InstPattern : public Pattern {
     /// Map of all included pattern metadata.
     mutable std::unordered_map<const Value *, PatternMetadata> MetadataMap;
     /// Input instructions and arguments for the left part of the pattern.
@@ -86,22 +103,49 @@ struct Pattern {
     /// Comparison start position for the right part of the pattern.
     const Instruction *StartPositionR = nullptr;
 
-    Pattern(const std::string &Name,
-            const Function *PatternL,
-            const Function *PatternR)
-            : Name(Name), PatternL(PatternL), PatternR(PatternR) {}
-
-    bool operator==(const Pattern &Rhs) const {
-        return (Name == Rhs.Name && PatternL == Rhs.PatternL
-                && PatternR == Rhs.PatternR);
-    }
+    InstPattern(const std::string &Name,
+                const Function *PatternL,
+                const Function *PatternR)
+            : Pattern(Name, PatternL, PatternR) {}
 };
 
-// Define a hash function for difference patterns.
+/// Representation of a pattern describing a difference in a single pair of
+/// values.
+struct ValuePattern : public Pattern {
+    /// Compared value for the left part of the pattern.
+    const Value *ValueL = nullptr;
+    /// Compared value for the right part of the pattern.
+    const Value *ValueR = nullptr;
+
+    ValuePattern(const std::string &Name,
+                 const Function *PatternL,
+                 const Function *PatternR)
+            : Pattern(Name, PatternL, PatternR) {}
+};
+
+// Define a hash function for general difference patterns.
 namespace std {
 template <> struct hash<Pattern> {
     std::size_t operator()(const Pattern &Pat) const noexcept {
         return std::hash<std::string>()(Pat.Name);
+    }
+};
+} // namespace std
+
+// Define a hash function for instruction difference patterns.
+namespace std {
+template <> struct hash<InstPattern> {
+    std::size_t operator()(const InstPattern &Pat) const noexcept {
+        return std::hash<Pattern>()(Pat);
+    }
+};
+} // namespace std
+
+// Define a hash function for value difference patterns.
+namespace std {
+template <> struct hash<ValuePattern> {
+    std::size_t operator()(const ValuePattern &Pat) const noexcept {
+        return std::hash<Pattern>()(Pat);
     }
 };
 } // namespace std
@@ -124,6 +168,10 @@ class PatternSet {
     static const std::string MappingFunctionName;
     /// Name for pattern metadata nodes.
     static const std::string MetadataName;
+    /// Set of loaded instruction difference patterns.
+    std::unordered_set<InstPattern> InstPatterns;
+    /// Set of loaded value difference patterns.
+    std::unordered_set<ValuePattern> ValuePatterns;
 
     PatternSet(std::string ConfigPath);
 
@@ -133,39 +181,6 @@ class PatternSet {
     /// true for valid pattern metadata nodes.
     bool getPatternMetadata(PatternMetadata &Metadata,
                             const Instruction &Inst) const;
-
-    /// Checks whether the difference pattern set is empty.
-    bool empty() const noexcept { return Patterns.empty(); }
-
-    /// Returns a constant iterator pointing to the first difference pattern.
-    std::unordered_set<Pattern>::iterator begin() noexcept {
-        return Patterns.begin();
-    }
-
-    /// Returns a constant iterator pointing beyond the last difference pattern.
-    std::unordered_set<Pattern>::iterator end() noexcept {
-        return Patterns.end();
-    }
-
-    /// Returns a constant iterator pointing to the first difference pattern.
-    std::unordered_set<Pattern>::const_iterator begin() const noexcept {
-        return Patterns.begin();
-    }
-
-    /// Returns a constant iterator pointing beyond the last difference pattern.
-    std::unordered_set<Pattern>::const_iterator end() const noexcept {
-        return Patterns.end();
-    }
-
-    /// Returns a constant iterator pointing to the first difference pattern.
-    std::unordered_set<Pattern>::const_iterator cbegin() const noexcept {
-        return Patterns.cbegin();
-    }
-
-    /// Returns a constant iterator pointing beyond the last difference pattern.
-    std::unordered_set<Pattern>::const_iterator cend() const noexcept {
-        return Patterns.cend();
-    }
 
   private:
     /// Basic information about the final instruction mapping present on one
@@ -178,8 +193,6 @@ class PatternSet {
     std::unordered_map<Module *, std::unique_ptr<Module>> PatternModules;
     /// Map of loaded pattern module contexts.
     std::unordered_map<Module *, std::unique_ptr<LLVMContext>> PatternContexts;
-    /// Set of loaded difference patterns.
-    std::unordered_set<Pattern> Patterns;
 
     /// Load the given configuration file.
     void loadConfig(std::string &ConfigPath);
@@ -187,15 +200,22 @@ class PatternSet {
     /// Add a new difference pattern.
     void addPattern(std::string &Path);
 
+    /// Finds the pattern type associated with the given pattern functions.
+    PatternType getPatternType(const Function *FnL, const Function *FnR);
+
     /// Initializes a pattern, loading all metadata, start positions, and the
     /// final instruction mapping.
-    bool initializePattern(Pattern &Pat);
+    bool initializeInstPattern(InstPattern &Pat);
 
     /// Initializes a single side of a pattern, loading all metadata, start
     /// positions, and retrevies instruction mapping information.
-    void initializePatternSide(Pattern &Pat,
-                               MappingInfo &MapInfo,
-                               bool IsLeftSide);
+    void initializeInstPatternSide(InstPattern &Pat,
+                                   MappingInfo &MapInfo,
+                                   bool IsLeftSide);
+
+    /// Initializes a value pattern loading value differences from both sides of
+    /// the pattern.
+    bool initializeValuePattern(ValuePattern &Pat);
 
     /// Parses a single pattern metadata operand, including all dependent
     /// operands.
