@@ -87,12 +87,18 @@ class InstPatternComparator : protected FunctionComparator {
     const InstPattern *ParentPattern;
     /// The staring instruction of the compared module function.
     mutable const Instruction *StartInst;
+    /// Current position in the the compared module function.
+    mutable const Instruction *PositionL;
+    /// Current position in the the compared pattern function.
+    mutable const Instruction *PositionR;
     /// Values placed into synchronisation maps during the comparison of the
     /// current instruction pair.
     mutable MappingSet NewlyMappedValuesL, NewlyMappedValuesR;
     /// Input instructions that have been mapped during the comparison of the
     /// current instruction pair.
     mutable MappingSet NewlyMappedInputL, NewlyMappedInputR;
+    /// Current instruction group depth.
+    mutable int GroupDepth = 0;
 
     /// Uses function comparison to try and match the given pattern to the
     /// corresponding module.
@@ -111,9 +117,9 @@ class InstPatternComparator : protected FunctionComparator {
     int mapInputValues(const Value *L, const Value *R) const;
 
     /// Position the basic block instruction iterator forward to the given
-    /// starting instruction.
-    void jumpToStartInst(BasicBlock::const_iterator &BBIterator,
-                         const Instruction *Start) const;
+    /// instruction.
+    void jumpToInst(BasicBlock::const_iterator &BBIterator,
+                    const Instruction *Start) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_INSTPATTERNCOMPARATOR_H

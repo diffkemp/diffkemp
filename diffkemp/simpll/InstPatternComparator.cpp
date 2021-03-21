@@ -242,34 +242,49 @@ int InstPatternComparator::cmpOperationsWithOperands(
 /// Compare a module function basic block with a pattern basic block.
 int InstPatternComparator::cmpBasicBlocks(const BasicBlock *BBL,
                                           const BasicBlock *BBR) const {
-    BasicBlock::const_iterator InstL = BBL->begin(), InstLE = BBL->end();
-    BasicBlock::const_iterator InstR = BBR->begin(), InstRE = BBR->end();
+    auto InstL = BBL->begin(), InstLE = BBL->end();
+    auto InstR = BBR->begin(), InstRE = BBR->end();
+    auto TermL = BBL->getTerminator(), TermR = BBR->getTerminator();
 
-    // When comparing the first pair, jump to start instructions.
-    if (InstMatchMap.empty()) {
-        jumpToStartInst(InstL, StartInst);
-        jumpToStartInst(InstR,
-                        IsLeftSide ? ParentPattern->StartPositionL
-                                   : ParentPattern->StartPositionR);
-    }
+    // Jump to the currently compared instruction pair.
+    jumpToInst(InstL, PositionL);
+    jumpToInst(InstR, PositionR);
 
-    int GroupDepth = 0;
     while (InstL != InstLE && InstR != InstRE) {
-        auto InstMetadata = ParentPattern->MetadataMap[&*InstR];
+        PositionL = &*InstL;
+        PositionR = &*InstR;
 
         // Check whether the compared pattern ends at this instruction.
+        auto InstMetadata = ParentPattern->MetadataMap[&*InstR];
         if (InstMetadata.PatternEnd)
             return 0;
 
+        // If at the end of only one basic block, leave the rest to
+        // unconditionally connected basic blocks (if there are any).
+        if (&*InstL == TermL && &*InstR != TermR
+            && TermL->getNumSuccessors() == 1) {
+            return 1;
+        }
+        if (&*InstL != TermL && &*InstR == TermR) {
+            if (TermR->getNumSuccessors() == 1)
+                return 0;
+
+            // If no unconditional successor exists, skip to the terminator
+            // instruction.
+            InstL = InstLE;
+            --InstL;
+            continue;
+        }
+
         // Compare current instructions with operands.
         if (int Res = cmpOperationsWithOperands(&*InstL, &*InstR)) {
+            // Remove newly added value and input mappings.
+            eraseNewlyMapped();
+
             // When in an instruction group, do not allow module instruction
             // skipping.
             if (GroupDepth > 0)
                 return Res;
-
-            // Remove newly added value and input mappings.
-            eraseNewlyMapped();
 
             // Skip the module instruction.
             ++InstL;
@@ -378,28 +393,32 @@ int InstPatternComparator::cmpValues(const Value *L, const Value *R) const {
 /// Uses function comparison to try and match the given pattern to the
 /// corresponding module. Uses the implementation of the compare method from
 /// LLVM FunctionComparator, extended to support comparisons starting from
-/// specific instructions. Because of that, code reffering to the comparison of
-/// whole functions has also been removed.
-/// Note: Parts of this function have been adapted from the compare method of
-/// FunctionComparator. Therefore, LLVM licensing also applies here. See the
-/// LICENSE information in the appropriate llvm-lib subdirectory for more
-/// details.
+/// specific instructions. Because of that, code reffering to the comparison
+/// of whole functions has also been removed. Note: Parts of this function
+/// have been adapted from the compare method of FunctionComparator.
+/// Therefore, LLVM licensing also applies here. See the LICENSE information
+/// in the appropriate llvm-lib subdirectory for more details.
 int InstPatternComparator::matchPattern() const {
-    // We do a CFG-ordered walk since the actual ordering of the blocks in the
-    // linked list is immaterial. Our walk starts at the containing blocks of
-    // the starting instructions, then takes each block from each terminator in
-    // order. Instructions from the first pair of blocks that are before the
-    // starting instructions will get ignored. As an artifact, this also means
-    // that unreachable blocks are ignored.
+    // We do a CFG-ordered walk since the actual ordering of the blocks in
+    // the linked list is immaterial. Our walk starts at the containing
+    // blocks of the starting instructions, then takes each block from each
+    // terminator in order. Instructions from the first pair of blocks that
+    // are before the starting instructions will get ignored. As an
+    // artifact, this also means that unreachable blocks are ignored. Basic
+    // blocks that are connected by unconditional branches get trested as a
+    // single basic block.
     SmallVector<const BasicBlock *, 8> FnLBBs, FnRBBs;
     SmallPtrSet<const BasicBlock *, 32> VisitedL;
 
-    // Get the starting basic blocks.
+    // Set starting basic blocks and positions.
     FnLBBs.push_back(StartInst->getParent());
+    PositionL = StartInst;
     if (IsLeftSide) {
         FnRBBs.push_back(ParentPattern->StartPositionL->getParent());
+        PositionR = ParentPattern->StartPositionL;
     } else {
         FnRBBs.push_back(ParentPattern->StartPositionR->getParent());
+        PositionR = ParentPattern->StartPositionR;
     }
 
     // Run the pattern comparison.
@@ -408,17 +427,53 @@ int InstPatternComparator::matchPattern() const {
         const BasicBlock *BBL = FnLBBs.pop_back_val();
         const BasicBlock *BBR = FnRBBs.pop_back_val();
 
+        // Compare the first basic blocks in an unconditionally connected
+        // group as values.
         if (int Res = cmpValues(BBL, BBR))
             return Res;
 
-        if (int Res = cmpBasicBlocks(BBL, BBR))
-            return Res;
+        // Compare unconditionally connected basic blocks at the same time.
+        GroupDepth = 0;
+        bool ResultFound = false;
+        while (!ResultFound) {
+            int ResultBB = cmpBasicBlocks(BBL, BBR);
+            auto SuccL = BBL->getSingleSuccessor();
+            auto SuccR = BBR->getSingleSuccessor();
+
+            if (ResultBB) {
+                if (!SuccL || !VisitedL.insert(SuccL).second)
+                    return ResultBB;
+
+                // If an unvisited single successor exists, compare againts
+                // it instead.
+                BBL = SuccL;
+                PositionL = &*BBL->begin();
+            } else {
+                // If an unvisited single successor exists, descend into it.
+                // Otherwise finalize the comparison of the current block.
+                auto *TermR = BBR->getTerminator();
+                if (SuccR && VisitedL.insert(SuccR).second
+                    && !ParentPattern->MetadataMap[TermR].PatternEnd) {
+                    BBR = SuccR;
+                    PositionR = &*BBR->begin();
+                } else {
+                    ResultFound = true;
+                }
+            }
+        }
+
+        // Jump to the last module basic block in the current
+        // unconditionally connected group.
+        while (BBL->getSingleSuccessor()) {
+            BBL = BBL->getSingleSuccessor();
+            VisitedL.insert(BBL);
+        }
 
         auto *TermL = BBL->getTerminator();
         auto *TermR = BBR->getTerminator();
 
-        // Do not descend to successors if the pattern terminating instruction
-        // is not a direct part of the pattern.
+        // Do not descend to successors if the pattern terminating
+        // instruction is not a direct part of the pattern.
         if (ParentPattern->MetadataMap[TermR].PatternEnd)
             continue;
 
@@ -437,7 +492,8 @@ int InstPatternComparator::matchPattern() const {
     return 0;
 }
 
-/// Erases newly mapped instructions from synchronization maps and input maps.
+/// Erases newly mapped instructions from synchronization maps and input
+/// maps.
 void InstPatternComparator::eraseNewlyMapped() const {
     for (auto &&MappedValueL : NewlyMappedValuesL) {
         sn_mapL.erase(MappedValueL);
@@ -466,9 +522,9 @@ int InstPatternComparator::checkInputMapping() const {
     }
 
     // Compare mapped input instructions. Corresponding instructions or
-    // arguments should be present on the module side. Comparison starts from
-    // the entry block since input instructions should be placed before the
-    // starting instruction.
+    // arguments should be present on the module side. Comparison starts
+    // from the entry block since input instructions should be placed before
+    // the starting instruction.
     for (auto &&BB : *FnR) {
         for (auto &&InstR : BB) {
             // End after all input instructions have been processed.
@@ -501,8 +557,8 @@ int InstPatternComparator::checkInputMapping() const {
 /// always successful.
 int InstPatternComparator::mapInputValues(const Value *L,
                                           const Value *R) const {
-    // The pattern input may have been already mapped. If so, it must be mapped
-    // to the given module value.
+    // The pattern input may have been already mapped. If so, it must be
+    // mapped to the given module value.
     if (InputMatchMap.find(R) != InputMatchMap.end()) {
         if (InputMatchMap[R] != L)
             return 1;
@@ -562,11 +618,10 @@ int InstPatternComparator::mapInputValues(const Value *L,
 }
 
 /// Position the basic block instruction iterator forward to the given
-/// starting instruction.
-void InstPatternComparator::jumpToStartInst(
-        BasicBlock::const_iterator &BBIterator,
-        const Instruction *Start) const {
-    while (&*BBIterator != Start) {
+/// instruction.
+void InstPatternComparator::jumpToInst(BasicBlock::const_iterator &BBIterator,
+                                       const Instruction *Inst) const {
+    while (&*BBIterator != Inst) {
         ++BBIterator;
     }
 }

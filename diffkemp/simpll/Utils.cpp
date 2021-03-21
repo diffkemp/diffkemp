@@ -708,9 +708,9 @@ bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
     auto NameR = R;
 
     // Remove number suffixes
-    if (hasSuffix(NameL))
+    if (hasSuffix(NameL.str()))
         NameL = NameL.substr(0, NameL.find_last_of("."));
-    if (hasSuffix(NameR))
+    if (hasSuffix(NameR.str()))
         NameR = NameR.substr(0, NameR.find_last_of("."));
 
     // Compare the names themselves.

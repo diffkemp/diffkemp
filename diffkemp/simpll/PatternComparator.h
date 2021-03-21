@@ -19,6 +19,7 @@
 #include "InstPatternComparator.h"
 #include "PatternSet.h"
 #include "ValuePatternComparator.h"
+#include <llvm/IR/Instructions.h>
 #include <unordered_map>
 #include <vector>
 
