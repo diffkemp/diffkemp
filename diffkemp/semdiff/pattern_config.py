@@ -16,12 +16,13 @@ class PatternConfig:
     Difference patterns can be used during module comparison to prevent
     the reporting of known and desired semantic differences.
     """
-    def __init__(self, path=None):
+    def __init__(self, path=None, patterns_path=None):
         """
         Create a new difference pattern configuration.
         :param path: Path to the configuration source.
         """
         self.path = path
+        self.patterns_path = patterns_path
         self.pattern_files = set()
 
         self.settings = {
@@ -31,14 +32,14 @@ class PatternConfig:
         self.llvm_only = True
 
     @classmethod
-    def create_from_file(cls, path):
+    def create_from_file(cls, path, patterns_path=None):
         """
         Creates a new difference pattern configuration from a single pattern
         file or a configuration YAML.
         :param path: Path to the file to load.
         """
         PatternConfig.raise_for_invalid_file(path)
-        config = cls(path)
+        config = cls(path, patterns_path)
 
         # Process the configuration file based on its extension.
         if PatternConfig.get_extension(path) not in ("ll"):
@@ -72,17 +73,22 @@ class PatternConfig:
         Tries to add a new pattern file, converting it to LLVM IR if necessary.
         :param path: Path to the pattern file to add.
         """
-        PatternConfig.raise_for_invalid_file(path)
-        filetype = PatternConfig.get_extension(path)
+        if self.patterns_path:
+            full_path = os.path.join(self.patterns_path, path)
+        else:
+            full_path = path
+
+        PatternConfig.raise_for_invalid_file(full_path)
+        filetype = PatternConfig.get_extension(full_path)
 
         # Convert all supported pattern types to LLVM IR.
         # Currently, only LLVM IR patterns are supported.
         if filetype == "ll":
-            self._add_llvm_pattern(path)
+            self._add_llvm_pattern(full_path)
         else:
             # Inform about unexpected file extensions.
-            self._on_parse_failure(f"{path}: {filetype} pattern files are "
-                                   f"not supported")
+            self._on_parse_failure(f"{full_path}: {filetype} pattern files "
+                                   f"are not supported")
 
     def _load_yaml(self):
         """Load the pattern configuration from its YAML representation."""
