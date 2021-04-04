@@ -263,11 +263,6 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
         }
     }
 
-    // TODO: Search for the first difference if not given in metadata.
-    if (!Pat.StartPositionL || !Pat.StartPositionR) {
-        return false;
-    }
-
     return true;
 }
 
@@ -278,6 +273,7 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
                                            bool IsLeftSide) {
     PatternMetadata Metadata;
     InputSet *PatternInput;
+    bool PatternEndFound = false;
     const Function *PatternSide;
     const Instruction **StartPosition;
     const Instruction *MappingInstruction = nullptr;
@@ -306,6 +302,9 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
                 if (!*StartPosition && Metadata.PatternStart) {
                     *StartPosition = &Inst;
                 }
+                if (!Metadata.PatternEnd && Metadata.PatternEnd) {
+                    PatternEndFound = true;
+                }
             }
             // Load input from instructions placed before the first difference
             // metadata. Do not include terminator intructions as these should
@@ -327,9 +326,26 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
         }
     }
 
-    // Get the number of possible instruction mapping operands.
+    // When no start metadata is present, use the first instruction.
+    if (!*StartPosition) {
+        *StartPosition = &*PatternSide->getEntryBlock().begin();
+    }
+
     int MappedOperandsCount = 0;
     if (MappingInstruction) {
+        // When end metadata is missing, add it to the mapping instruction.
+        if (!PatternEndFound) {
+            auto OriginalMetadata = Pat.MetadataMap.find(MappingInstruction);
+            if (OriginalMetadata == Pat.MetadataMap.end()) {
+                Metadata = {};
+                Metadata.PatternEnd = true;
+                Pat.MetadataMap[MappingInstruction] = Metadata;
+            } else {
+                Pat.MetadataMap[MappingInstruction].PatternEnd = true;
+            }
+        }
+
+        // Get the number of possible instruction mapping operands.
         MappedOperandsCount = MappingInstruction->getNumOperands();
         // Ignore the last operand of calls since it references the called
         // function.
