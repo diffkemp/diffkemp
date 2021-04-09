@@ -6,10 +6,13 @@ import shutil
 from diffkemp.config import Config
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
+from diffkemp.semdiff.pattern_config import PatternConfig
 from diffkemp.semdiff.result import Result
 from diffkemp.snapshot import Snapshot
 
 
+base_path = os.path.abspath(".")
+patterns_path = os.path.abspath("tests/regression/patterns")
 specs_path = os.path.abspath("tests/regression/test_specs")
 tasks_path = os.path.abspath("tests/regression/kernel_modules")
 
@@ -35,11 +38,18 @@ class TaskSpec:
     Task specification representing testing scenario.
     Contains a list of functions to be compared with DiffKemp during the test.
     """
-    def __init__(self, spec, task_name, tasks_path, kernel_path):
+    def __init__(self, spec, task_name, kernel_path):
         self.old_kernel_dir = os.path.join(kernel_path, spec["old_kernel"])
         self.new_kernel_dir = os.path.join(kernel_path, spec["new_kernel"])
         self.name = task_name
         self.task_dir = os.path.join(tasks_path, task_name)
+        if "pattern_config" in spec:
+            self.pattern_config = PatternConfig.create_from_file(
+                path=os.path.join(patterns_path, spec["pattern_config"]),
+                patterns_path=base_path
+            )
+        else:
+            self.pattern_config = None
         if "control_flow_only" in spec:
             self.control_flow_only = spec["control_flow_only"]
         else:
@@ -53,8 +63,8 @@ class TaskSpec:
         self.old_snapshot = Snapshot(self.old_kernel, self.old_kernel)
         self.new_snapshot = Snapshot(self.new_kernel, self.new_kernel)
         self.config = Config(self.old_snapshot, self.new_snapshot, False,
-                             False, None, self.control_flow_only, False,
-                             False, False, None)
+                             False, self.pattern_config,
+                             self.control_flow_only, False, False, False, None)
 
         self.functions = dict()
 
@@ -135,8 +145,8 @@ class SysctlTaskSpec(TaskSpec):
     Task specification for test of sysctl comparison.
     Extends TaskSpec by data variable and proc handler function.
     """
-    def __init__(self, spec, task_name, tasks_path, kernel_path, data_var):
-        TaskSpec.__init__(self, spec, task_name, tasks_path, kernel_path)
+    def __init__(self, spec, task_name, kernel_path, data_var):
+        TaskSpec.__init__(self, spec, task_name, kernel_path)
         self.data_var = data_var
         self.proc_handler = None
         self.old_sysctl_module = None
@@ -166,9 +176,8 @@ class ModuleParamSpec(TaskSpec):
     Task specification for test of kernel module parameter comparison.
     Extends TaskSpec by module and parameter specification.
     """
-    def __init__(self, spec, dir, mod, param, tasks_path, kernel_path):
-        TaskSpec.__init__(self, spec, "{}-{}".format(mod, param), tasks_path,
-                          kernel_path)
+    def __init__(self, spec, dir, mod, param, kernel_path):
+        TaskSpec.__init__(self, spec, "{}-{}".format(mod, param), kernel_path)
         self.dir = dir
         self.mod = mod
         self.param = param
@@ -202,9 +211,14 @@ class SyntaxDiffSpec(TaskSpec):
     Extends TaskSpec by concrete syntax differences that should be found by
     DiffKemp. These are currently intended to be macros or inline assemblies.
     """
-    def __init__(self, spec, task_name, tasks_path, kernel_path):
-        TaskSpec.__init__(self, spec, task_name, tasks_path, kernel_path)
+    def __init__(self, spec, task_name, kernel_path):
+        TaskSpec.__init__(self, spec, task_name, kernel_path)
+        self.equal_symbols = set()
         self.syntax_diffs = dict()
+
+    def add_equal_symbol(self, symbol):
+        """Add a symbol that should not be present in the result"""
+        self.equal_symbols.add(symbol)
 
     def add_syntax_diff_spec(self, symbol, def_old, def_new):
         """Add an expected syntax difference"""

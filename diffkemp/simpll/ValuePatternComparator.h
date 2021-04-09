@@ -29,6 +29,9 @@ using namespace llvm;
 /// left side while the pattern function is expected on the right side.
 class ValuePatternComparator : protected FunctionComparator {
   public:
+    /// The module value that should be compared against the pattern value.
+    mutable const Value *ComparedValue;
+
     ValuePatternComparator(const Function *ModFun,
                            const Function *PatFun,
                            const ValuePattern *ParentPattern)
@@ -39,21 +42,16 @@ class ValuePatternComparator : protected FunctionComparator {
     /// Compare the given module value with the pattern value.
     int compare() override;
 
-    /// Set the module value that should be compared.
-    void setComparedValue(const Value *ModVal);
-
   protected:
     /// Compare a module value with a pattern value without using serial
     /// numbers.
-    int cmpValues(const Value *L, const Value *R) const override;
+    int cmpValues(const Value *ModVal, const Value *PatVal) const override;
 
   private:
     /// Whether the comparator has been created for the left pattern side.
     const bool IsLeftSide;
     /// The pattern which should be used during comparison.
     const ValuePattern *ParentPattern;
-    /// The module value that should be compared against the pattern value.
-    mutable const Value *ComparedValue;
 };
 
 #endif // DIFFKEMP_SIMPLL_VALUEPATTERNCOMPARATOR_H

@@ -27,6 +27,14 @@ using namespace llvm;
 
 /// Compares difference patterns against functions, possibly eliminating reports
 /// of prior semantic differences.
+/// Supported difference patterns:
+///   - Instruction patterns - Patterns consisting of standard LLVM IR code,
+///     i.e., typically containing multiple instructions and basic blocks.
+///     Instructions may be annotated using diffkemp.pattern metadata.
+///   - Value patterns - Patterns describing a change of a single value. The
+///     original and the modified value are described strictly through return
+///     instructions.
+/// Concrete examples of difference patterns can be seen in regression tests.
 class PatternComparator {
   public:
     PatternComparator(const PatternSet *Patterns,
@@ -60,16 +68,15 @@ class PatternComparator {
     };
 
     /// Individual matched instructions, combined for all matched patterns.
+    /// Combines results of all active pattern matches.
     InstructionSet AllInstMatches;
-    /// Matched pairs of mapped pattern instructions. Instructions from the left
-    /// module side are used as keys.
+    /// Mapping for matched module instructions. Instructions from the left
+    /// module are used as keys, while instructions from the right module
+    /// are used as values. Contains the result of a single pattern match.
     mutable InstructionMap InstMappings;
-    /// Matched pairs of mapped input instructions and operands. Input from the
-    /// left module side is used for keys.
-    mutable InstructionMap InputMappings;
 
     /// Tries to match a difference pattern starting with the given instruction
-    /// instruction pair. Returns true if a valid match is found.
+    /// pair. Returns true if a valid match is found.
     bool matchPattern(const Instruction *InstL, const Instruction *InstR);
 
     /// Tries to match a pair of values to a value pattern. Returns true if a
@@ -95,6 +102,14 @@ class PatternComparator {
     /// patterns and the currently compared functions.
     DenseMap<const ValuePattern *, ValuePatternComparatorPair>
             ValuePatternComps;
+
+    /// Tries to match one of the loaded instruction patterns. Returns true
+    /// if a valid match is found.
+    bool matchInstPattern(const Instruction *InstL, const Instruction *InstR);
+
+    /// Tries to match one of the loaded value patterns. Returns true if
+    /// a valid match is found.
+    bool matchValuePattern(const Instruction *InstL, const Instruction *InstR);
 
     /// Tries to match a load instruction to the start of the given value
     /// pattern.

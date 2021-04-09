@@ -20,8 +20,6 @@
 #include "PatternSet.h"
 #include "Config.h"
 #include "ModuleAnalysis.h"
-#include "Utils.h"
-#include "library/ModuleLoader.h"
 #include <algorithm>
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/Path.h>
@@ -42,6 +40,15 @@ template <> struct MappingTraits<PatternConfiguration> {
 } // namespace yaml
 } // namespace llvm
 
+/// Metadata operand offsets for different kinds of pattern metadata.
+const StringMap<int> PatternMetadata::MetadataOffsets = {
+        {"pattern-start", 1},
+        {"pattern-end", 1},
+        {"group-start", 1},
+        {"group-end", 1},
+        {"disable-name-comparison", 1},
+        {"not-an-input", 1}};
+
 /// Default DiffKemp prefix for all pattern information.
 const std::string PatternSet::DefaultPrefix = "diffkemp.";
 /// Prefix for the left (old) side of difference patterns.
@@ -54,8 +61,8 @@ const std::string PatternSet::FullPrefixL =
 /// Complete prefix for the right side of difference patterns.
 const std::string PatternSet::FullPrefixR =
         PatternSet::DefaultPrefix + PatternSet::PrefixR;
-/// Name for the function defining final instuction mapping.
-const std::string PatternSet::MappingFunctionName =
+/// Name for the function defining output instuction mapping.
+const std::string PatternSet::OutputMappingFunName =
         PatternSet::DefaultPrefix + "mapping";
 /// Name for pattern metadata nodes.
 const std::string PatternSet::MetadataName =
@@ -75,35 +82,55 @@ PatternSet::PatternSet(std::string ConfigPath) {
     }
 }
 
-/// Destroy the pattern set, clearing all modules and contexts.
-PatternSet::~PatternSet() {
-    PatternModules.clear();
-    PatternContexts.clear();
-}
-
-/// Retrives pattern metadata attached to the given instruction, returning
-/// true for valid pattern metadata nodes.
-bool PatternSet::getPatternMetadata(PatternMetadata &Metadata,
-                                    const Instruction &Inst) const {
+/// Retrives pattern metadata attached to the given instruction.
+Optional<PatternMetadata>
+        PatternSet::getPatternMetadata(const Instruction &Inst) const {
     auto InstMetadata = Inst.getMetadata(MetadataName);
     if (!InstMetadata) {
-        return false;
+        return Optional<PatternMetadata>{};
     }
 
     int OperandIndex = 0;
+    PatternMetadata Metadata;
     while (OperandIndex < InstMetadata->getNumOperands()) {
-        int IndexOffset =
-                parseMetadataOperand(Metadata, InstMetadata, OperandIndex);
-
-        // Continue only when the metadata operand gets parsed successfully.
-        if (IndexOffset < 0) {
-            return false;
+        /// Parse the current pattern metadata operand as well as the operands
+        /// that depend on it.
+        if (auto Type = dyn_cast<MDString>(
+                    InstMetadata->getOperand(OperandIndex).get())) {
+            auto TypeName = Type->getString();
+            if (TypeName == "pattern-start") {
+                // pattern-start metadata: string type.
+                Metadata.PatternStart = true;
+            } else if (TypeName == "pattern-end") {
+                // pattern-end metadata: string type.
+                Metadata.PatternEnd = true;
+            } else if (TypeName == "group-start") {
+                // group-start metadata: string type.
+                Metadata.GroupStart = true;
+            } else if (TypeName == "group-end") {
+                // group-end metadata: string type.
+                Metadata.GroupEnd = true;
+            } else if (TypeName == "disable-name-comparison") {
+                // disable-name-comparison metadata: string type.
+                Metadata.DisableNameComparison = true;
+            } else if (TypeName == "not-an-input") {
+                // not-an-input metadata: string type.
+                Metadata.NotAnInput = true;
+            } else {
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << getDebugIndent()
+                                       << "Invalid metadata type " << TypeName
+                                       << " in node " << *InstMetadata
+                                       << ".\n");
+                return Optional<PatternMetadata>{};
+            }
+            // Shift the operand offset accordingly.
+            OperandIndex += PatternMetadata::MetadataOffsets.lookup(TypeName);
+        } else {
+            return Optional<PatternMetadata>{};
         }
-
-        OperandIndex += IndexOffset;
     }
-
-    return true;
+    return {Metadata};
 }
 
 /// Load the given LLVM IR based difference pattern YAML configuration.
@@ -138,7 +165,9 @@ void PatternSet::loadConfig(std::string &ConfigPath) {
 
 /// Add a new LLVM IR difference pattern file.
 void PatternSet::addPattern(std::string &Path) {
-    Module *PatternModule = loadModule(Path, PatternModules, PatternContexts);
+    // Try to load the pattern module.
+    SMDiagnostic err;
+    auto PatternModule = parseIRFile(Path, err, PatternContext);
     if (!PatternModule) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << getDebugIndent()
@@ -193,6 +222,9 @@ void PatternSet::addPattern(std::string &Path) {
             }
         }
     }
+
+    // Keep the module pointer.
+    PatternModules.push_back(std::move(PatternModule));
 }
 
 /// Finds the pattern type associated with the given pattern functions.
@@ -212,16 +244,16 @@ PatternType PatternSet::getPatternType(const Function *FnL,
 }
 
 /// Initializes an instruction pattern, loading all metadata, start positions,
-/// and the final instruction mapping. Unless the start position is chosen by
+/// and the output instruction mapping. Unless the start position is chosen by
 /// metadata, it is set to the first differing pair of pattern instructions.
 /// Patterns with conflicting differences in concurrent branches are skipped,
 /// returning false.
 bool PatternSet::initializeInstPattern(InstPattern &Pat) {
-    MappingInfo MappingInfoL, MappingInfoR;
+    OutputMappingInfo OutputMappingInfoL, OutputMappingInfoR;
 
     // Initialize both pattern sides.
-    initializeInstPatternSide(Pat, MappingInfoL, true);
-    initializeInstPatternSide(Pat, MappingInfoR, false);
+    initializeInstPatternSide(Pat, OutputMappingInfoL, true);
+    initializeInstPatternSide(Pat, OutputMappingInfoR, false);
 
     // Map input arguments from the left side to the right side.
     if (Pat.PatternL->arg_size() != Pat.PatternR->arg_size()) {
@@ -237,29 +269,30 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
         Pat.ArgumentMapping[&*L] = &*R;
     }
 
-    // Create references for the expected final instruction mapping.
-    if (MappingInfoL.second != MappingInfoR.second) {
+    // Create references for the expected output instruction mapping.
+    if (OutputMappingInfoL.second != OutputMappingInfoR.second) {
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << getDebugIndent()
-                               << "The number of mapped instructions does "
+                               << "The number of output instructions does "
                                << "not match in pattern " << Pat.Name << ".\n");
         return false;
     }
-    if (MappingInfoL.first && MappingInfoR.first) {
-        for (int i = 0; i < MappingInfoL.second; ++i) {
-            auto MappedInstL =
-                    dyn_cast<Instruction>(MappingInfoL.first->getOperand(i));
-            auto MappedInstR =
-                    dyn_cast<Instruction>(MappingInfoR.first->getOperand(i));
+    if (OutputMappingInfoL.first && OutputMappingInfoR.first) {
+        for (int i = 0; i < OutputMappingInfoL.second; ++i) {
+            auto MappedInstL = dyn_cast<Instruction>(
+                    OutputMappingInfoL.first->getOperand(i));
+            auto MappedInstR = dyn_cast<Instruction>(
+                    OutputMappingInfoR.first->getOperand(i));
             if (!MappedInstL || !MappedInstR) {
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent()
-                                       << "Instruction mapping in pattern "
-                                       << Pat.Name << " contains values that "
-                                       << "do not reference instructions.\n");
+                                       << "Output instruction mapping in "
+                                       << "pattern " << Pat.Name << " contains "
+                                       << "values that do not reference "
+                                       << "instructions.\n");
                 return false;
             }
-            Pat.FinalMapping[MappedInstL] = MappedInstR;
+            Pat.OutputMapping[MappedInstL] = MappedInstR;
         }
     }
 
@@ -269,14 +302,13 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
 /// Initializes a single side of a pattern, loading all metadata, start
 /// positions, and retrevies instruction mapping information.
 void PatternSet::initializeInstPatternSide(InstPattern &Pat,
-                                           MappingInfo &MapInfo,
+                                           OutputMappingInfo &OutputMapInfo,
                                            bool IsLeftSide) {
-    PatternMetadata Metadata;
-    InputSet *PatternInput;
+    Pattern::InputSet *PatternInput;
     bool PatternEndFound = false;
     const Function *PatternSide;
     const Instruction **StartPosition;
-    const Instruction *MappingInstruction = nullptr;
+    const Instruction *OutputMappingInstruction = nullptr;
     if (IsLeftSide) {
         PatternInput = &Pat.InputL;
         PatternSide = Pat.PatternL;
@@ -295,14 +327,14 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
     for (auto &&BB : PatternSide->getBasicBlockList()) {
         for (auto &Inst : BB) {
             // Load instruction metadata.
-            Metadata = {};
-            if (getPatternMetadata(Metadata, Inst)) {
-                Pat.MetadataMap[&Inst] = Metadata;
+            auto PatMetadata = getPatternMetadata(Inst);
+            if (PatMetadata) {
+                Pat.MetadataMap[&Inst] = *PatMetadata;
                 // If present, register start position metadata.
-                if (!*StartPosition && Metadata.PatternStart) {
+                if (!*StartPosition && PatMetadata->PatternStart) {
                     *StartPosition = &Inst;
                 }
-                if (!Metadata.PatternEnd && Metadata.PatternEnd) {
+                if (!PatMetadata->PatternEnd && PatMetadata->PatternEnd) {
                     PatternEndFound = true;
                 }
             }
@@ -310,18 +342,18 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
             // metadata. Do not include terminator intructions as these should
             // only be used as separators.
             if (!*StartPosition && !Inst.isTerminator()
-                && !Metadata.NotAnInput) {
+                && (!PatMetadata || !PatMetadata->NotAnInput)) {
                 PatternInput->insert(&Inst);
             }
-            // Load instruction mapping information from the first mapping call
+            // Load output mapping information from the first mapping call
             // or pattern function return.
             auto Call = dyn_cast<CallInst>(&Inst);
-            if (!MappingInstruction
+            if (!OutputMappingInstruction
                 && (isa<ReturnInst>(Inst)
                     || (Call && Call->getCalledFunction()
                         && Call->getCalledFunction()->getName()
-                                   == MappingFunctionName))) {
-                MappingInstruction = &Inst;
+                                   == OutputMappingFunName))) {
+                OutputMappingInstruction = &Inst;
             }
         }
     }
@@ -332,29 +364,31 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
     }
 
     int MappedOperandsCount = 0;
-    if (MappingInstruction) {
-        // When end metadata is missing, add it to the mapping instruction.
+    if (OutputMappingInstruction) {
+        // When end metadata is missing, add it to the output mapping
+        // instruction.
         if (!PatternEndFound) {
-            auto OriginalMetadata = Pat.MetadataMap.find(MappingInstruction);
+            auto OriginalMetadata =
+                    Pat.MetadataMap.find(OutputMappingInstruction);
             if (OriginalMetadata == Pat.MetadataMap.end()) {
-                Metadata = {};
-                Metadata.PatternEnd = true;
-                Pat.MetadataMap[MappingInstruction] = Metadata;
+                PatternMetadata PatMetadata;
+                PatMetadata.PatternEnd = true;
+                Pat.MetadataMap[OutputMappingInstruction] = PatMetadata;
             } else {
-                Pat.MetadataMap[MappingInstruction].PatternEnd = true;
+                Pat.MetadataMap[OutputMappingInstruction].PatternEnd = true;
             }
         }
 
         // Get the number of possible instruction mapping operands.
-        MappedOperandsCount = MappingInstruction->getNumOperands();
+        MappedOperandsCount = OutputMappingInstruction->getNumOperands();
         // Ignore the last operand of calls since it references the called
         // function.
-        if (isa<CallInst>(MappingInstruction)) {
+        if (isa<CallInst>(OutputMappingInstruction)) {
             --MappedOperandsCount;
         }
     }
     // Generate mapping information.
-    MapInfo = {MappingInstruction, MappedOperandsCount};
+    OutputMapInfo = {OutputMappingInstruction, MappedOperandsCount};
 }
 
 /// Initializes a value pattern loading value differences from both sides of
@@ -370,64 +404,17 @@ bool PatternSet::initializeValuePattern(ValuePattern &Pat) {
     Pat.ValueR = TermR->getOperand(0);
 
     // Pointers in value patterns should reference global variables.
-    if (Pat.ValueL->getType()->isPointerTy()
-        && !isa<GlobalVariable>(Pat.ValueL)) {
-        return false;
-    }
-    if (Pat.ValueR->getType()->isPointerTy()
-        && !isa<GlobalVariable>(Pat.ValueR)) {
+    bool IsValidPtrL = (!Pat.ValueL->getType()->isPointerTy()
+                        || isa<GlobalVariable>(Pat.ValueL));
+    bool IsValidPtrR = (!Pat.ValueR->getType()->isPointerTy()
+                        || isa<GlobalVariable>(Pat.ValueR));
+    if (!IsValidPtrL || !IsValidPtrR) {
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "Failed to load value pattern " << Pat.Name
+                               << " since it uses pointers to parameters.\n");
         return false;
     }
 
     return true;
-}
-
-/// Parses a single pattern metadata operand, including all dependent operands.
-/// The total metadata operand offset is returned unless the parsing fails.
-int PatternSet::parseMetadataOperand(PatternMetadata &PatternMetadata,
-                                     const MDNode *InstMetadata,
-                                     const int Index) const {
-    // Metadata offsets
-    const int PatternStartOffset = 1;
-    const int PatternEndOffset = 1;
-    const int GroupStartOffset = 1;
-    const int GroupEndOffset = 1;
-    const int DisableNameComparisonOffset = 1;
-    const int NotAnInputOffset = 1;
-
-    if (auto Type = dyn_cast<MDString>(InstMetadata->getOperand(Index).get())) {
-        auto TypeName = Type->getString();
-        if (TypeName == "pattern-start") {
-            // pattern-start metadata: string type.
-            PatternMetadata.PatternStart = true;
-            return PatternStartOffset;
-        } else if (TypeName == "pattern-end") {
-            // pattern-end metadata: string type.
-            PatternMetadata.PatternEnd = true;
-            return PatternEndOffset;
-        } else if (TypeName == "group-start") {
-            // group-start metadata: string type.
-            PatternMetadata.GroupStart = true;
-            return GroupStartOffset;
-        } else if (TypeName == "group-end") {
-            // group-end metadata: string type.
-            PatternMetadata.GroupEnd = true;
-            return GroupEndOffset;
-        } else if (TypeName == "disable-name-comparison") {
-            // disable-name-comparison metadata: string type.
-            PatternMetadata.DisableNameComparison = true;
-            return DisableNameComparisonOffset;
-        } else if (TypeName == "not-an-input") {
-            // not-an-input metadata: string type.
-            PatternMetadata.NotAnInput = true;
-            return NotAnInputOffset;
-        }
-    }
-
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << getDebugIndent()
-                           << "Failed to parse pattern metadata "
-                           << "from node " << *InstMetadata << ".\n");
-
-    return -1;
 }

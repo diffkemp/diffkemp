@@ -113,8 +113,9 @@ tests/regression/kernel_modules
 kernel/
 *snapshots*/
 
-# Difference patterns directory
+# Difference patterns directories
 patterns/
+!tests/regression/patterns**
 
 # LLReve tool
 llreve/

@@ -1,0 +1,11 @@
+old_kernel: kernel/linux-4.18.0-193.el8
+new_kernel: kernel/linux-4.18.0-240.el8
+
+pattern_config: rhel-82-83-config.yaml
+
+functions:
+  __put_page: equal
+  bio_endio: equal
+  blk_execute_rq: equal
+  kthread_create_on_node: equal
+  sigprocmask: equal

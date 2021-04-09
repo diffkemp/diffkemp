@@ -53,13 +53,13 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         output = ffi.new("char [1000000]")
         cache_dir = ffi.new("char []", cache_dir.encode("ascii") if cache_dir
                             else b"")
-        pattern_file = ffi.new("char []", pattern_config.path.encode("ascii")
-                               if pattern_config else b"")
+        patterns = ffi.new("char []", pattern_config.path.encode("ascii")
+                           if pattern_config else b"")
         variable = ffi.new("char []", var.encode("ascii") if var else b"")
 
         conf_struct = ffi.new("struct config *")
         conf_struct.CacheDir = cache_dir
-        conf_struct.PatternsFile = pattern_file
+        conf_struct.Patterns = patterns
         conf_struct.ControlFlowOnly = control_flow_only
         conf_struct.OutputLlvmIR = output_llvm_ir
         conf_struct.PrintAsmDiffs = print_asm_diffs

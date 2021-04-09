@@ -1,9 +1,0 @@
-on_parse_failure: ERROR
-patterns:
- - patterns/zone_allows_reclaim-example.ll
- # - patterns/check_new_page_bad.ll
- # - patterns/__free_one_page.ll
- # - patterns/__purge_vmap_area_lazy.ll
- # - patterns/__blkdev_direct_IO_simple.ll
- # - patterns/__down_write.ll
- # - patterns/slob_alloc.ll

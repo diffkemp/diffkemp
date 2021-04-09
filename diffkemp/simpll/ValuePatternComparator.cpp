@@ -15,7 +15,6 @@
 
 #include "ValuePatternComparator.h"
 #include "Config.h"
-#include "Utils.h"
 
 /// Compare the given module value with the pattern value.
 int ValuePatternComparator::compare() {
@@ -34,49 +33,45 @@ int ValuePatternComparator::compare() {
     return cmpValues(ComparedValue, PatternValue);
 }
 
-/// Set the module value that should be compared.
-void ValuePatternComparator::setComparedValue(const Value *ModVal) {
-    ComparedValue = ModVal;
-}
-
 /// Compare a module value with a pattern value without using serial numbers.
 /// Note: Parts of this function have been adapted from FunctionComparator.
 /// Therefore, LLVM licensing also applies here. See the LICENSE information
 /// in the appropriate llvm-lib subdirectory for more details.
-int ValuePatternComparator::cmpValues(const Value *L, const Value *R) const {
-    // Catch self-reference case.
-    if (L == FnL) {
-        if (R == FnR)
+int ValuePatternComparator::cmpValues(const Value *ModVal,
+                                      const Value *PatVal) const {
+    // Catch self-reference case. Right side is the pattern side.
+    if (ModVal == FnL) {
+        if (PatVal == FnR)
             return 0;
         return -1;
     }
-    if (R == FnR) {
-        if (L == FnL)
+    if (PatVal == FnR) {
+        if (ModVal == FnL)
             return 0;
         return 1;
     }
 
-    const Constant *ConstL = dyn_cast<Constant>(L);
-    const Constant *ConstR = dyn_cast<Constant>(R);
-    if (ConstL && ConstR) {
-        if (L == R)
+    const Constant *ModConst = dyn_cast<Constant>(ModVal);
+    const Constant *PatConst = dyn_cast<Constant>(PatVal);
+    if (ModConst && PatConst) {
+        if (ModVal == PatVal)
             return 0;
-        return cmpConstants(ConstL, ConstR);
+        return cmpConstants(ModConst, PatConst);
     }
 
-    if (ConstL)
+    if (ModConst)
         return 1;
-    if (ConstR)
+    if (PatConst)
         return -1;
 
-    const InlineAsm *InlineAsmL = dyn_cast<InlineAsm>(L);
-    const InlineAsm *InlineAsmR = dyn_cast<InlineAsm>(R);
+    const InlineAsm *ModInlineAsm = dyn_cast<InlineAsm>(ModVal);
+    const InlineAsm *PatInlineAsm = dyn_cast<InlineAsm>(PatVal);
 
-    if (InlineAsmL && InlineAsmR)
-        return cmpInlineAsm(InlineAsmL, InlineAsmR);
-    if (InlineAsmL)
+    if (ModInlineAsm && PatInlineAsm)
+        return cmpInlineAsm(ModInlineAsm, PatInlineAsm);
+    if (ModInlineAsm)
         return 1;
-    if (InlineAsmR)
+    if (PatInlineAsm)
         return -1;
 
     // Because only a single pair of values gets compared, general values cannot

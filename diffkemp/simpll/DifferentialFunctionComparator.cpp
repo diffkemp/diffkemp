@@ -59,7 +59,7 @@ int DifferentialFunctionComparator::cmpMappedValues(const Value *L,
     if (sn_mapR.find(R) == sn_mapR.end())
         return 1;
 
-    return cmpValues(L, R);
+    return sn_mapL[L] != sn_mapR[R];
 }
 
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
@@ -686,10 +686,15 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
 /// Creates new value mappings according to the current pattern match.
 void DifferentialFunctionComparator::createPatternMapping() const {
     for (auto &&MappedInstPair : PatternComp.InstMappings) {
-        snPairMap[sn_mapL.size()] = {MappedInstPair.first,
-                                     MappedInstPair.second};
-        sn_mapL[MappedInstPair.first] = sn_mapL.size();
-        sn_mapR[MappedInstPair.second] = sn_mapR.size();
+        // If the instructions are already mapped, do not map them again.
+        if (sn_mapL.find(MappedInstPair.first) == sn_mapL.end()
+            || sn_mapR.find(MappedInstPair.second) == sn_mapR.end())
+            continue;
+
+        mappedValuesBySn[sn_mapL.size()] = {MappedInstPair.first,
+                                            MappedInstPair.second};
+        sn_mapL.try_emplace(MappedInstPair.first, sn_mapL.size());
+        sn_mapR.try_emplace(MappedInstPair.second, sn_mapR.size());
     }
 }
 
@@ -697,11 +702,8 @@ void DifferentialFunctionComparator::createPatternMapping() const {
 /// therefore, does not need to be analyzed nor mapped again.
 bool DifferentialFunctionComparator::isPartOfPattern(
         const Instruction *Inst) const {
-    if (PatternComp.AllInstMatches.find(Inst)
-        == PatternComp.AllInstMatches.end()) {
-        return false;
-    }
-    return true;
+    return PatternComp.AllInstMatches.find(Inst)
+           != PatternComp.AllInstMatches.end();
 }
 
 /// Does additional comparisons based on the C source to determine whether two
@@ -832,12 +834,11 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
         // Skip instructions matched to a pattern because such instructions have
         // been analyzed by the pattern function comparator and have already
         // been mapped according to the pattern.
-        if (isPartOfPattern(&*InstL)) {
-            InstL++;
-            continue;
-        }
-        if (isPartOfPattern(&*InstR)) {
-            InstR++;
+        if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR)) {
+            while (InstL != InstLE && isPartOfPattern(&*InstL))
+                InstL++;
+            while (InstR != InstRE && isPartOfPattern(&*InstR))
+                InstR++;
             continue;
         }
 
@@ -864,18 +865,16 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // useful in combination with function inlining). If such an
             // operation is detected, reset serial counters, skip the ignored
             // operation, and repeat the comparison.
-            if (maySkipInstruction(&*InstL)) {
+            bool MaySkipL = maySkipInstruction(&*InstL);
+            bool MaySkipR = maySkipInstruction(&*InstR);
+            if (MaySkipL || MaySkipR) {
                 sn_mapL.erase(&*InstL);
                 sn_mapR.erase(&*InstR);
-                snPairMap.erase(sn_mapL.size());
-                InstL++;
-                continue;
-            }
-            if (maySkipInstruction(&*InstR)) {
-                sn_mapL.erase(&*InstL);
-                sn_mapR.erase(&*InstR);
-                snPairMap.erase(sn_mapL.size());
-                InstR++;
+                mappedValuesBySn.erase(sn_mapL.size());
+                if (MaySkipL)
+                    InstL++;
+                if (MaySkipR)
+                    InstR++;
                 continue;
             }
 
@@ -885,9 +884,10 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             if (PatternComp.matchPattern(&*InstL, &*InstR)) {
                 sn_mapL.erase(&*InstL);
                 sn_mapR.erase(&*InstR);
-                snPairMap.erase(sn_mapL.size());
+                mappedValuesBySn.erase(sn_mapL.size());
                 createPatternMapping();
-                continue;
+                if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR))
+                    continue;
             }
 
             if (Res) {
@@ -1234,7 +1234,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
         return cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R);
     }
 
-    int oldMapSize = sn_mapL.size();
+    int oldSnMapSize = sn_mapL.size();
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
         if (isa<Constant>(L) && isa<Constant>(R)) {
@@ -1264,10 +1264,9 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             // If the values correspond to a value pattern, consider them equal.
             return 0;
         }
-    } else if (oldMapSize == (sn_mapL.size() - 1)) {
-        // Remember new pairings since they might be required during pattern
-        // comparison.
-        snPairMap[oldMapSize] = {L, R};
+    } else if (oldSnMapSize == (sn_mapL.size() - 1)) {
+        // When the values are equal, remember their mapping.
+        mappedValuesBySn[oldSnMapSize] = {L, R};
     }
     return result;
 }
@@ -1596,6 +1595,6 @@ const Value *
         return nullptr;
 
     // Find the mapped value based on its serial number.
-    auto MappedPair = snPairMap[MappedValue->second];
+    auto MappedPair = mappedValuesBySn[MappedValue->second];
     return ValFromL ? MappedPair.second : MappedPair.first;
 }

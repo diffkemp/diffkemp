@@ -14,6 +14,7 @@
 #ifndef DIFFKEMP_SIMPLL_PATTERNSET_H
 #define DIFFKEMP_SIMPLL_PATTERNSET_H
 
+#include "Utils.h"
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/SmallPtrSet.h>
 #include <llvm/ADT/StringMap.h>
@@ -24,18 +25,6 @@
 
 using namespace llvm;
 
-/// Input instructions and arguments.
-typedef SmallPtrSet<const Value *, 16> InputSet;
-
-/// Mapping between input values from different pattern sides.
-typedef DenseMap<const Value *, const Value *> InputMap;
-
-/// Instructions pointer set.
-typedef SmallPtrSet<const Instruction *, 32> InstructionSet;
-
-/// Instruction to instruction mapping.
-typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
-
 // Forward declaration of the DifferentialFunctionComparator.
 class DifferentialFunctionComparator;
 
@@ -44,6 +33,8 @@ enum class PatternType { INST, VALUE };
 
 /// Representation of difference pattern metadata configuration.
 struct PatternMetadata {
+    /// Default DiffKemp prefix for all pattern information.
+    static const StringMap<int> MetadataOffsets;
     /// Marker for the first differing instruction pair.
     bool PatternStart = false;
     /// Marker for the last differing instruction pair.
@@ -68,6 +59,12 @@ struct PatternConfiguration {
 
 /// Base pattern representation.
 struct Pattern {
+    /// Input instructions and arguments.
+    using InputSet = SmallPtrSet<const Value *, 16>;
+
+    /// Mapping between input values from different pattern sides.
+    using InputMap = DenseMap<const Value *, const Value *>;
+
     /// Name of the pattern.
     const std::string Name;
     /// Function corresponding to the left part of the pattern.
@@ -96,8 +93,8 @@ struct InstPattern : public Pattern {
     mutable InputSet InputR;
     /// Mapping of input arguments from new to old part of the pattern.
     mutable InputMap ArgumentMapping;
-    /// Final instruction mapping associated with the pattern.
-    mutable InstructionMap FinalMapping;
+    /// Output mapping of instructions from the pattern.
+    mutable InstructionMap OutputMapping;
     /// Comparison start position for the left part of the pattern.
     const Instruction *StartPositionL = nullptr;
     /// Comparison start position for the right part of the pattern.
@@ -164,8 +161,8 @@ class PatternSet {
     static const std::string FullPrefixL;
     /// Complete prefix for the right side of difference patterns.
     static const std::string FullPrefixR;
-    /// Name for the function defining final instuction mapping.
-    static const std::string MappingFunctionName;
+    /// Name for the function defining output instuction mapping.
+    static const std::string OutputMappingFunName;
     /// Name for pattern metadata nodes.
     static const std::string MetadataName;
     /// Set of loaded instruction difference patterns.
@@ -175,24 +172,22 @@ class PatternSet {
 
     PatternSet(std::string ConfigPath);
 
-    ~PatternSet();
-
-    /// Retrives pattern metadata attached to the given instruction, returning
-    /// true for valid pattern metadata nodes.
-    bool getPatternMetadata(PatternMetadata &Metadata,
-                            const Instruction &Inst) const;
+    /// Retrives pattern metadata attached to the given instruction.
+    Optional<PatternMetadata> getPatternMetadata(const Instruction &Inst) const;
 
   private:
-    /// Basic information about the final instruction mapping present on one
-    /// side of a pattern.
-    using MappingInfo = std::pair<const Instruction *, int>;
+    /// Basic information about the output instruction mapping present on one
+    /// side of a pattern. For each output instruction, its operand index is
+    /// kept. Output instructions with the same operand index on both sides of a
+    /// pattern will be mapped together.
+    using OutputMappingInfo = std::pair<const Instruction *, int>;
 
     /// Settings applied to all pattern files.
     StringMap<std::string> GlobalSettings;
-    /// Map of loaded pattern modules.
-    std::unordered_map<Module *, std::unique_ptr<Module>> PatternModules;
-    /// Map of loaded pattern module contexts.
-    std::unordered_map<Module *, std::unique_ptr<LLVMContext>> PatternContexts;
+    /// LLVM context reserved used by all loaded pattern modules.
+    LLVMContext PatternContext;
+    /// Vector of loaded pattern modules.
+    std::vector<std::unique_ptr<Module>> PatternModules;
 
     /// Load the given configuration file.
     void loadConfig(std::string &ConfigPath);
@@ -204,24 +199,18 @@ class PatternSet {
     PatternType getPatternType(const Function *FnL, const Function *FnR);
 
     /// Initializes a pattern, loading all metadata, start positions, and the
-    /// final instruction mapping.
+    /// output mapping of instructions.
     bool initializeInstPattern(InstPattern &Pat);
 
     /// Initializes a single side of a pattern, loading all metadata, start
     /// positions, and retrevies instruction mapping information.
     void initializeInstPatternSide(InstPattern &Pat,
-                                   MappingInfo &MapInfo,
+                                   OutputMappingInfo &MapInfo,
                                    bool IsLeftSide);
 
     /// Initializes a value pattern loading value differences from both sides of
     /// the pattern.
     bool initializeValuePattern(ValuePattern &Pat);
-
-    /// Parses a single pattern metadata operand, including all dependent
-    /// operands.
-    int parseMetadataOperand(PatternMetadata &PatternMetadata,
-                             const MDNode *InstMetadata,
-                             const int Index) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_PATTERNSET_H

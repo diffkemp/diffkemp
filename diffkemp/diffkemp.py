@@ -76,7 +76,7 @@ def __make_argument_parser():
                             help="specify root dirs for the compared projects")
     compare_ap.add_argument("--function", "-f",
                             help="compare only selected function")
-    compare_ap.add_argument("--pattern-file", "-p",
+    compare_ap.add_argument("--patterns", "-p",
                             help="difference pattern file or configuration")
     compare_ap.add_argument("--output-llvm-ir",
                             help="output each simplified module to a file",
@@ -287,8 +287,8 @@ def compare(args):
         new_snapshot.filter([args.function])
 
     # Transform difference pattern files into an LLVM IR based configuration.
-    if args.pattern_file:
-        pattern_config = PatternConfig.create_from_file(args.pattern_file)
+    if args.patterns:
+        pattern_config = PatternConfig.create_from_file(args.patterns)
     else:
         pattern_config = None
 

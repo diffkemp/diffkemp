@@ -29,6 +29,12 @@ typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
 
+/// Instructions pointer set.
+typedef SmallPtrSet<const Instruction *, 32> InstructionSet;
+
+/// Instruction to instruction mapping.
+typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
+
 /// Convert a value to a function.
 /// Handles situation then the actual function is inside a bitcast or alias.
 const Function *valueToFunction(const Value *Value);

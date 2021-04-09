@@ -130,10 +130,12 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
     mutable std::vector<std::pair<const PHINode *, const PHINode *>>
             phisToCompare;
-    mutable std::unordered_map<int, std::pair<const Value *, const Value *>>
-            snPairMap;
     mutable std::unordered_map<const Value *, const Value *>
             ignoredInstructions;
+    /// Contains pairs of values mapped by synchronisation maps. Enables
+    /// retrieval of mapped values based on assigned numbers.
+    mutable std::unordered_map<int, std::pair<const Value *, const Value *>>
+            mappedValuesBySn;
 
     mutable PatternComparator PatternComp;
     ModuleComparator *ModComparator;

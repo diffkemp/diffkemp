@@ -37,7 +37,6 @@ def collect_task_specs():
                                 dir=module["dir"],
                                 mod=module["mod"],
                                 param=param["name"],
-                                tasks_path=tasks_path,
                                 kernel_path=cwd
                             )
 

@@ -20,70 +20,12 @@
 #include "Utils.h"
 
 /// Tries to match a difference pattern starting with the given instruction
-/// instruction pair. Returns true if a valid match is found.
+/// instruction pair. Returns true if a valid match is found. Instruction
+/// patterns are prioritized over value patterns. Only a single pattern
+/// match is expected to be possible at once.
 bool PatternComparator::matchPattern(const Instruction *InstL,
                                      const Instruction *InstR) {
-    // Try to match the difference to an instruction-based pattern.
-    for (auto &&InstPatternCompPair : InstPatternComps) {
-        auto PatternComps = &InstPatternCompPair.second;
-        PatternComps->first->setStartInstruction(InstL);
-        PatternComps->second->setStartInstruction(InstR);
-
-        // Compare the modules with patterns based on the given module
-        // instruction pair.
-        if (PatternComps->first->compare() == 0
-            && PatternComps->second->compare() == 0) {
-            if (!inputMappingValid(InstPatternCompPair.first, PatternComps)) {
-                continue;
-            }
-
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << getDebugIndent()
-                                   << "Found a match for instruction pattern "
-                                   << InstPatternCompPair.first->Name << "\n");
-
-            // Create a new instruction mapping since the match is valid.
-            InstMappings.clear();
-            processPatternMatch(InstPatternCompPair.first, PatternComps);
-            return true;
-        }
-    }
-
-    // Try to match the difference to load instructions associated with a
-    // value-based pattern.
-    auto LoadL = dyn_cast<LoadInst>(InstL);
-    auto LoadR = dyn_cast<LoadInst>(InstR);
-    if (!LoadL && !LoadR) {
-        return false;
-    }
-
-    for (auto &&ValuePatternCompPair : ValuePatternComps) {
-        bool LeftMatched =
-                matchLoadInst(LoadL, ValuePatternCompPair.first, true);
-        bool RightMatched =
-                matchLoadInst(LoadR, ValuePatternCompPair.first, false);
-
-        // Register matched instructions.
-        if (LeftMatched) {
-            AllInstMatches.insert(InstL);
-        }
-        if (RightMatched) {
-            AllInstMatches.insert(InstR);
-        }
-
-        // If both load instructions correspond to the current pattern, create a
-        // mapping between them as well.
-        if (LeftMatched && RightMatched) {
-            InstMappings.clear();
-            InstMappings[InstL] = InstR;
-        }
-
-        if (LeftMatched || RightMatched) {
-            return true;
-        }
-    }
-
-    return false;
+    return matchInstPattern(InstL, InstR) || matchValuePattern(InstL, InstR);
 }
 
 /// Tries to match a pair of values to a value pattern. Returns true if a
@@ -92,8 +34,8 @@ bool PatternComparator::matchValues(const Value *L, const Value *R) {
     // Try to match the difference to a value-based pattern.
     for (auto &&ValuePatternCompPair : ValuePatternComps) {
         auto PatternComps = &ValuePatternCompPair.second;
-        PatternComps->first->setComparedValue(L);
-        PatternComps->second->setComparedValue(R);
+        PatternComps->first->ComparedValue = L;
+        PatternComps->second->ComparedValue = R;
 
         // Compare the module values with values from patterns.
         if (PatternComps->first->compare() == 0
@@ -113,6 +55,84 @@ bool PatternComparator::matchValues(const Value *L, const Value *R) {
         }
     }
 
+    return false;
+}
+
+/// Tries to match one of the loaded instruction patterns. Returns true
+/// if a valid match is found.
+bool PatternComparator::matchInstPattern(const Instruction *InstL,
+                                         const Instruction *InstR) {
+    // Try to find an instruction-based pattern matching the starting
+    // instruction pair.
+    for (auto &&InstPatternCompPair : InstPatternComps) {
+        auto PatternComps = &InstPatternCompPair.second;
+        PatternComps->first->StartInst = InstL;
+        PatternComps->second->StartInst = InstR;
+
+        // Compare the modules with patterns based on the given module
+        // instruction pair.
+        if (PatternComps->first->compare() == 0
+            && PatternComps->second->compare() == 0) {
+            // Even if instructions match, the input synchronisation mapping
+            // needs to be checked.
+            if (!inputMappingValid(InstPatternCompPair.first, PatternComps)) {
+                continue;
+            }
+
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                            dbgs() << getDebugIndent()
+                                   << "Found a match for instruction pattern "
+                                   << InstPatternCompPair.first->Name << "\n");
+
+            // Create a new instruction mapping since the match is valid.
+            InstMappings.clear();
+            processPatternMatch(InstPatternCompPair.first, PatternComps);
+            return true;
+        }
+    }
+    return false;
+}
+
+/// Tries to match one of the loaded value patterns. Returns true if
+/// a valid match is found.
+bool PatternComparator::matchValuePattern(const Instruction *InstL,
+                                          const Instruction *InstR) {
+    // Ensure that a load instruction has been given. Value differences
+    // in other kinds of instructions are handled separately during
+    // standard value comparison.
+    auto LoadL = dyn_cast<LoadInst>(InstL);
+    auto LoadR = dyn_cast<LoadInst>(InstR);
+    if (!LoadL && !LoadR) {
+        return false;
+    }
+
+    // Try to find a value-based pattern describing the difference in
+    // the given load instructions.
+    for (auto &&ValuePatternCompPair : ValuePatternComps) {
+        bool LeftMatched =
+                matchLoadInst(LoadL, ValuePatternCompPair.first, true);
+        bool RightMatched =
+                matchLoadInst(LoadR, ValuePatternCompPair.first, false);
+
+        // Register matched instructions.
+        if (LeftMatched) {
+            AllInstMatches.insert(InstL);
+        }
+        if (RightMatched) {
+            AllInstMatches.insert(InstR);
+        }
+
+        // If both load instructions from the compared modules match, create
+        // a mapping between them as well.
+        if (LeftMatched && RightMatched) {
+            InstMappings.clear();
+            InstMappings[InstL] = InstR;
+        }
+
+        if (LeftMatched || RightMatched) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -149,12 +169,11 @@ bool PatternComparator::inputMappingValid(
         // pattern comparison will be found using module synchronization maps.
         // Input validity will be checked again for values obtained in this
         // manner.
-        auto InputPairL =
-                PatternComps->first->InputMatchMap.find(ArgPair.first);
+        auto InputPairL = PatternComps->first->PatMatchMap.find(ArgPair.first);
         auto InputPairR =
-                PatternComps->second->InputMatchMap.find(ArgPair.second);
-        auto MapLE = PatternComps->first->InputMatchMap.end();
-        auto MapRE = PatternComps->second->InputMatchMap.end();
+                PatternComps->second->PatMatchMap.find(ArgPair.second);
+        auto MapLE = PatternComps->first->PatMatchMap.end();
+        auto MapRE = PatternComps->second->PatMatchMap.end();
 
         if (InputPairL != MapLE && InputPairR != MapRE) {
             if (DiffFunctionComp->cmpMappedValues(InputPairL->second,
@@ -187,9 +206,11 @@ void PatternComparator::processPatternMatch(
         // Add the matched instruction into the set of matched instructions.
         AllInstMatches.insert(InstPair.second);
 
-        // If the instruction is mapped, create the mapping as well.
-        if (Pat->FinalMapping.find(InstPair.first) != Pat->FinalMapping.end()) {
-            auto MappedInstR = Pat->FinalMapping[InstPair.first];
+        // If the matched instruction is mapped, prepare a mapping between
+        // the respective module instructions as well.
+        if (Pat->OutputMapping.find(InstPair.first)
+            != Pat->OutputMapping.end()) {
+            auto MappedInstR = Pat->OutputMapping[InstPair.first];
             auto MappedInstL = PatternComps->second->InstMatchMap[MappedInstR];
             InstMappings[MappedInstL] = InstPair.second;
         }

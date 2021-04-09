@@ -29,15 +29,18 @@ using namespace llvm;
 /// side while the pattern function is expected on the right side.
 class InstPatternComparator : protected FunctionComparator {
   public:
+    /// The staring instruction of the compared module function.
+    mutable const Instruction *StartInst;
     /// Pattern instructions matched to their respective module replacement
     /// instructions. Pattern instructions are used as keys.
     mutable InstructionMap InstMatchMap;
-    /// Pattern input instructions and arguments matched to module input
-    /// instructions and arguments. Pattern input is used for keys.
-    mutable InputMap InputMatchMap;
-    /// Module input instructions and arguments matched to pattern input
-    /// instructions and arguments. Module input is used for keys.
-    mutable InputMap ReverseInputMatchMap;
+    /// Pattern input arguments matched to module input arguments. Pattern input
+    /// is used for keys.
+    mutable Pattern::InputMap PatMatchMap;
+    /// Module input arguments matched to pattern input arguments. A reverse of
+    /// PatMatchMap necessary for computational purposes. Hence, module input is
+    /// used for keys.
+    mutable Pattern::InputMap ModMatchMap;
 
     InstPatternComparator(const Function *ModFun,
                           const Function *PatFun,
@@ -54,28 +57,29 @@ class InstPatternComparator : protected FunctionComparator {
     void setStartInstruction(const Instruction *StartModInst);
 
     /// Compare a module input value with a pattern input value.
-    int cmpInputValues(const Value *L, const Value *R);
+    int cmpInputValues(const Value *ModVal, const Value *PatVal);
 
   protected:
     /// Compare a module GEP operation with a pattern GEP operation.
-    int cmpGEPs(const GEPOperator *GEPL,
-                const GEPOperator *GEPR) const override;
+    int cmpGEPs(const GEPOperator *ModGEP,
+                const GEPOperator *PatGEP) const override;
 
     /// Compare a module function instruction with a pattern instruction along
     /// with their operands.
-    int cmpOperationsWithOperands(const Instruction *L,
-                                  const Instruction *R) const;
+    int cmpOperationsWithOperands(const Instruction *ModInst,
+                                  const Instruction *PatInst) const;
 
     /// Compare a module function basic block with a pattern basic block.
-    int cmpBasicBlocks(const BasicBlock *BBL,
-                       const BasicBlock *BBR) const override;
+    int cmpBasicBlocks(const BasicBlock *ModBB,
+                       const BasicBlock *PatBB) const override;
 
     /// Compare global values by their names, because their indexes are not
     /// expected to be the same.
-    int cmpGlobalValues(GlobalValue *L, GlobalValue *R) const override;
+    int cmpGlobalValues(GlobalValue *ModVal,
+                        GlobalValue *PatVal) const override;
 
     /// Compare a module value with a pattern value using serial numbers.
-    int cmpValues(const Value *L, const Value *R) const override;
+    int cmpValues(const Value *ModVal, const Value *PatVal) const override;
 
   private:
     /// Set of mapped and synchronized values.
@@ -85,18 +89,16 @@ class InstPatternComparator : protected FunctionComparator {
     const bool IsLeftSide;
     /// The pattern which should be used during comparison.
     const InstPattern *ParentPattern;
-    /// The staring instruction of the compared module function.
-    mutable const Instruction *StartInst;
     /// Current position in the the compared module function.
-    mutable const Instruction *PositionL;
+    mutable const Instruction *ModPosition;
     /// Current position in the the compared pattern function.
-    mutable const Instruction *PositionR;
+    mutable const Instruction *PatPosition;
     /// Values placed into synchronisation maps during the comparison of the
     /// current instruction pair.
-    mutable MappingSet NewlyMappedValuesL, NewlyMappedValuesR;
+    mutable MappingSet NewlyMappedModValues, NewlyMappedPatValues;
     /// Input instructions that have been mapped during the comparison of the
     /// current instruction pair.
-    mutable MappingSet NewlyMappedInputL, NewlyMappedInputR;
+    mutable MappingSet NewlyMappedModInput, NewlyMappedPatInput;
     /// Current instruction group depth.
     mutable int GroupDepth = 0;
 
@@ -114,7 +116,15 @@ class InstPatternComparator : protected FunctionComparator {
 
     /// Tries to map a module value (including possible predecessors) to a
     /// pattern input value.
-    int mapInputValues(const Value *L, const Value *R) const;
+    int mapInputValues(const Value *ModVal, const Value *PatVal) const;
+
+    /// Checks whether the given instruction contains metadata marking the end
+    /// of a pattern.
+    bool hasPatternEnd(const Instruction *Inst) const;
+
+    /// Updates the global instruction group depth in accordance to the metadata
+    /// of the given instruction.
+    void updateGroupDepth(const Instruction *Inst) const;
 
     /// Position the basic block instruction iterator forward to the given
     /// instruction.

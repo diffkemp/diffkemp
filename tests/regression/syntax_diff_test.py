@@ -30,21 +30,30 @@ def collect_task_specs():
                 # Parse only the "syntax_diffs" key. Each syntax_diffs entry
                 # gets a single TaskSpec object.
                 if "syntax_diffs" in spec_yaml:
-                    for syntax_diff in spec_yaml["syntax_diffs"]:
+                    for symbol in spec_yaml["syntax_diffs"]:
+                        if "equal_symbol" in symbol:
+                            symbol_type = "equal_symbol"
+                        else:
+                            symbol_type = "diff_symbol"
+
                         spec = SyntaxDiffSpec(
                             spec=spec_yaml,
-                            task_name=syntax_diff["diff_symbol"],
-                            tasks_path=tasks_path,
+                            task_name=symbol[symbol_type],
                             kernel_path=cwd)
 
-                        spec.add_function_spec(syntax_diff["function"],
-                                               "not_equal")
-                        spec.add_syntax_diff_spec(syntax_diff["diff_symbol"],
-                                                  syntax_diff["def_old"],
-                                                  syntax_diff["def_new"])
+                        spec.add_function_spec(symbol["function"], "not_equal")
+
+                        if symbol_type == "equal_symbol":
+                            spec.add_equal_symbol(symbol[symbol_type])
+                        else:
+                            spec.add_syntax_diff_spec(
+                                symbol[symbol_type],
+                                symbol["def_old"],
+                                symbol["def_new"]
+                            )
 
                         spec_id = "{}_{}".format(spec_file_name,
-                                                 syntax_diff["diff_symbol"])
+                                                 symbol[symbol_type])
                         result.append((spec_id, spec))
 
             except yaml.YAMLError:
@@ -88,6 +97,10 @@ def test_syntax_diff(task_spec):
             fun_first=fun_spec.name, fun_second=fun_spec.name,
             glob_var=None, config=task_spec.config)
         assert result.kind == fun_spec.result
+
+        # Ensure that equal symbols are not present
+        for equal_symbol in task_spec.equal_symbols:
+            assert equal_symbol not in result.inner.keys()
 
         for symbol, symbol_result in result.inner.items():
             if symbol in task_spec.syntax_diffs:

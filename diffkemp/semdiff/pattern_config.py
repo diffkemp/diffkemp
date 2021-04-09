@@ -16,6 +16,8 @@ class PatternConfig:
     Difference patterns can be used during module comparison to prevent
     the reporting of known and desired semantic differences.
     """
+    on_parse_failure_options = {"ERROR", "WARN"}
+
     def __init__(self, path=None, patterns_path=None):
         """
         Create a new difference pattern configuration.
@@ -100,7 +102,10 @@ class PatternConfig:
 
         # Process global pattern settings.
         if "on_parse_failure" in yaml_dict:
-            self.settings["on_parse_failure"] = yaml_dict["on_parse_failure"]
+            on_parse_failure = yaml_dict["on_parse_failure"]
+            if on_parse_failure not in self.on_parse_failure_options:
+                raise ValueError("Invalid on-failure action type")
+            self.settings["on_parse_failure"] = on_parse_failure
 
         for pattern in yaml_dict["patterns"]:
             self.add_pattern(pattern)

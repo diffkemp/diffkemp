@@ -15,7 +15,6 @@
 
 #include "InstPatternComparator.h"
 #include "Config.h"
-#include "Utils.h"
 
 /// Compare the module function and the difference pattern from the starting
 /// module instruction. This includes checks for correct input mappings.
@@ -23,10 +22,10 @@ int InstPatternComparator::compare() {
     // Clear all previous results.
     beginCompare();
     InstMatchMap.clear();
-    InputMatchMap.clear();
-    ReverseInputMatchMap.clear();
+    PatMatchMap.clear();
+    ModMatchMap.clear();
 
-    // Run the main matchin algorithm.
+    // Run the main matching algorithm.
     if (int Res = matchPattern())
         return Res;
 
@@ -41,25 +40,20 @@ int InstPatternComparator::compare() {
     return 0;
 }
 
-/// Set the starting module instruction.
-void InstPatternComparator::setStartInstruction(
-        const Instruction *StartModInst) {
-    StartInst = StartModInst;
-}
-
 /// Compare a module input value with a pattern input value. Used for comparing
 /// input values that could not be mapped during the first one-side comparison.
-int InstPatternComparator::cmpInputValues(const Value *L, const Value *R) {
+int InstPatternComparator::cmpInputValues(const Value *ModVal,
+                                          const Value *PatVal) {
     // Check pointer validity.
-    if (!L)
+    if (!ModVal)
         return -1;
-    if (!R)
+    if (!PatVal)
         return 1;
 
     // The pattern value may have been already mapped. If so, it must be mapped
     // to the given module value.
-    if (InputMatchMap.find(R) != InputMatchMap.end()) {
-        if (InputMatchMap[R] != L)
+    if (PatMatchMap.find(PatVal) != PatMatchMap.end()) {
+        if (PatMatchMap[PatVal] != ModVal)
             return 1;
         return 0;
     }
@@ -67,91 +61,96 @@ int InstPatternComparator::cmpInputValues(const Value *L, const Value *R) {
     // Reset the comparison state without clearing pattern matches.
     beginCompare();
 
-    auto Input = IsLeftSide ? &ParentPattern->InputL : &ParentPattern->InputR;
-
-    SmallVector<const Value *, 8> InputL, InputR;
-    SmallPtrSet<const Value *, 32> VisitedL;
+    SmallVector<const Value *, 8> ModInput, PatInput;
+    SmallPtrSet<const Value *, 32> ModVisited;
 
     // Initialize the input comparison with the given values.
-    InputL.push_back(L);
-    InputR.push_back(R);
+    ModInput.push_back(ModVal);
+    PatInput.push_back(PatVal);
 
     // Try to find a matching module counterpart for all instructions that use
     // the compared pattern value (either directly or indirectly).
-    while (!InputL.empty()) {
-        auto ValueL = InputL.pop_back_val();
-        auto ValueR = InputR.pop_back_val();
+    while (!ModInput.empty()) {
+        auto CurrModVal = ModInput.pop_back_val();
+        auto CurrPatVal = PatInput.pop_back_val();
 
         // Map the values to each other.
-        InputMatchMap[R] = L;
-        ReverseInputMatchMap[L] = R;
-        VisitedL.insert(L);
+        PatMatchMap[PatVal] = ModVal;
+        ModMatchMap[ModVal] = PatVal;
+        ModVisited.insert(ModVal);
 
-        auto UserL = ValueL->user_begin(), UserR = ValueR->user_begin();
-        auto UserLB = UserL;
-        auto UserLE = ValueL->user_end(), UserRE = ValueR->user_end();
+        auto ModUser = CurrModVal->user_begin(),
+             PatUser = CurrPatVal->user_begin();
+        auto ModUserB = ModUser;
+        auto ModUserE = CurrModVal->user_end(),
+             PatUserE = CurrPatVal->user_end();
 
-        while (UserL != UserLE && UserR != UserRE) {
-            // Skip pattern users that do not reperesent input values.
-            if (ParentPattern->MetadataMap[*UserR].NotAnInput) {
-                ++UserR;
+        while (ModUser != ModUserE && PatUser != PatUserE) {
+            // Skip pattern users that do not represent input values.
+            auto PatUserMetadata = ParentPattern->MetadataMap.find(*PatUser);
+            if (PatUserMetadata != ParentPattern->MetadataMap.end()
+                && PatUserMetadata->second.NotAnInput) {
+                ++PatUser;
                 continue;
             }
 
-            auto InstL = dyn_cast<Instruction>(*UserL);
-            auto InstR = dyn_cast<Instruction>(*UserR);
+            auto ModInst = dyn_cast<Instruction>(*ModUser);
+            auto PatInst = dyn_cast<Instruction>(*PatUser);
 
             // Users are expected to be instructions.
-            if (!InstL) {
-                ++UserL;
+            if (!ModInst) {
+                ++ModUser;
                 continue;
             }
-            if (!InstR)
+            if (!PatInst)
                 return 1;
 
-            if (ReverseInputMatchMap.find(InstL)
-                != ReverseInputMatchMap.end()) {
+            if (ModMatchMap.find(ModInst) != ModMatchMap.end()) {
                 // Skip already mapped module instructions.
-                if (ReverseInputMatchMap[InstL] != InstR) {
-                    ++UserL;
+                if (ModMatchMap[ModInst] != PatInst) {
+                    ++ModUser;
                     continue;
                 }
-            } else if (InputMatchMap.find(InstR) != InputMatchMap.end()) {
+            } else if (PatMatchMap.find(PatInst) != PatMatchMap.end()) {
                 // Skip pattern instructions that have already been mapped to
-                // one of the analysed module instructions. When mapped to an
-                // unrelated instruction, fail the comparison.
-                if (std::find(UserLB, UserLE, InputMatchMap[InstR]) != UserLE) {
-                    ++UserR;
+                // one of the analysed module instructions.
+                if (std::find(ModUserB, ModUserE, PatMatchMap[PatInst])
+                    != ModUserE) {
+                    ++PatUser;
                     continue;
                 }
+                // When mapped to an unrelated instruction, fail the comparison.
                 break;
-            } else if (int Res = cmpOperationsWithOperands(InstL, InstR)) {
+            } else if (cmpOperationsWithOperands(ModInst, PatInst)) {
                 // Compare the instructions. If they match, continue the
                 // comparison on both sides. Otherwise, try to find a different,
                 // more suitable module instruction.
                 eraseNewlyMapped();
-                ++UserL;
+                ++ModUser;
                 continue;
             }
 
-            ++UserL;
-            ++UserR;
+            // A match between both users has been found. Increment both
+            // iterators.
+            ++ModUser;
+            ++PatUser;
 
-            if (!VisitedL.insert(InstL).second)
+            if (!ModVisited.insert(ModInst).second)
                 continue;
 
             // Schedule newly mapped instructions for comparison.
-            InputL.push_back(InstL);
-            InputR.push_back(InstR);
+            ModInput.push_back(ModInst);
+            PatInput.push_back(PatInst);
         }
 
         // If any users remain on the pattern side, ensure that they are mapped
         // to skipped users from the module.
-        while (UserR != UserRE) {
-            if (std::find(UserLB, UserLE, InputMatchMap[*UserR]) == UserLE)
+        while (PatUser != PatUserE) {
+            if (std::find(ModUserB, ModUserE, PatMatchMap[*PatUser])
+                == ModUserE)
                 return -1;
 
-            ++UserR;
+            ++PatUser;
         }
     }
 
@@ -164,40 +163,44 @@ int InstPatternComparator::cmpInputValues(const Value *L, const Value *R) {
 /// Note: Parts of this function have been adapted from FunctionComparator.
 /// Therefore, LLVM licensing also applies here. See the LICENSE information in
 /// the appropriate llvm-lib subdirectory for more details.
-int InstPatternComparator::cmpGEPs(const GEPOperator *GEPL,
-                                   const GEPOperator *GEPR) const {
+int InstPatternComparator::cmpGEPs(const GEPOperator *ModGEP,
+                                   const GEPOperator *PatGEP) const {
     // When using the GEP operations on pointers, vectors or arrays, perform the
     // default comparison. Also use the default comparison if the name-based
     // structure comparison is disabled.
-    if (!GEPL->getSourceElementType()->isStructTy()
-        || !GEPR->getSourceElementType()->isStructTy()
-        || ParentPattern->MetadataMap[GEPR].DisableNameComparison) {
-        return FunctionComparator::cmpGEPs(GEPL, GEPR);
+    auto PatGEPMetadata = ParentPattern->MetadataMap.find(PatGEP);
+    if (!ModGEP->getSourceElementType()->isStructTy()
+        || !PatGEP->getSourceElementType()->isStructTy()
+        || (PatGEPMetadata != ParentPattern->MetadataMap.end()
+            && PatGEPMetadata->second.DisableNameComparison)) {
+        return FunctionComparator::cmpGEPs(ModGEP, PatGEP);
     }
 
     // Compare structures without calculating offsets since both structures
     // should be the same.
-    unsigned int ASL = GEPL->getPointerAddressSpace();
-    unsigned int ASR = GEPR->getPointerAddressSpace();
+    unsigned int ModAS = ModGEP->getPointerAddressSpace();
+    unsigned int PatAS = PatGEP->getPointerAddressSpace();
 
-    Type *TyL = GEPL->getSourceElementType();
-    Type *TyR = GEPR->getSourceElementType();
+    Type *ModTy = ModGEP->getSourceElementType();
+    Type *PatTy = PatGEP->getSourceElementType();
 
-    if (int Res = cmpNumbers(ASL, ASR))
+    if (int Res = cmpNumbers(ModAS, PatAS))
         return Res;
 
     // Try to perform the base comparison. Validate the result by comparing the
     // structure names.
-    if (int Res = cmpTypes(TyL, TyR)) {
-        if (!namesMatch(TyL->getStructName(), TyR->getStructName(), IsLeftSide))
+    if (int Res = cmpTypes(ModTy, PatTy)) {
+        if (!namesMatch(
+                    ModTy->getStructName(), PatTy->getStructName(), IsLeftSide))
             return Res;
     }
 
-    if (int Res = cmpNumbers(GEPL->getNumOperands(), GEPR->getNumOperands()))
+    if (int Res =
+                cmpNumbers(ModGEP->getNumOperands(), PatGEP->getNumOperands()))
         return Res;
 
-    for (unsigned i = 0, e = GEPL->getNumOperands(); i != e; ++i) {
-        if (int Res = cmpValues(GEPL->getOperand(i), GEPR->getOperand(i)))
+    for (unsigned i = 0, e = ModGEP->getNumOperands(); i != e; ++i) {
+        if (int Res = cmpValues(ModGEP->getOperand(i), PatGEP->getOperand(i)))
             return Res;
     }
 
@@ -210,74 +213,73 @@ int InstPatternComparator::cmpGEPs(const GEPOperator *GEPL,
 /// Therefore, LLVM licensing also applies here. See the LICENSE information
 /// in the appropriate llvm-lib subdirectory for more details.
 int InstPatternComparator::cmpOperationsWithOperands(
-        const Instruction *L, const Instruction *R) const {
-    bool needToCmpOperands = true;
+        const Instruction *ModInst, const Instruction *PatInst) const {
+    bool NeedToCmpOperands = true;
 
     // Clear newly mapped holders.
-    NewlyMappedValuesL.clear();
-    NewlyMappedValuesR.clear();
-    NewlyMappedInputL.clear();
-    NewlyMappedInputR.clear();
+    NewlyMappedModValues.clear();
+    NewlyMappedPatValues.clear();
+    NewlyMappedModInput.clear();
+    NewlyMappedPatInput.clear();
 
     // Compare the instruction and its operands.
-    if (int Res = cmpOperations(&*L, &*R, needToCmpOperands))
+    if (int Res = cmpOperations(&*ModInst, &*PatInst, NeedToCmpOperands))
         return Res;
-    if (needToCmpOperands) {
-        assert(L->getNumOperands() == R->getNumOperands());
+    if (NeedToCmpOperands) {
+        assert(ModInst->getNumOperands() == PatInst->getNumOperands());
 
-        for (unsigned i = 0, e = L->getNumOperands(); i != e; ++i) {
-            Value *OpL = L->getOperand(i);
-            Value *OpR = R->getOperand(i);
+        for (unsigned i = 0, e = ModInst->getNumOperands(); i != e; ++i) {
+            Value *ModOp = ModInst->getOperand(i);
+            Value *PatOp = PatInst->getOperand(i);
 
-            if (int Res = cmpValues(OpL, OpR))
+            if (int Res = cmpValues(ModOp, PatOp))
                 return Res;
-            assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);
+            assert(cmpTypes(ModOp->getType(), PatOp->getType()) == 0);
         }
     }
     // Map the instructions to each other.
-    InstMatchMap[R] = L;
+    InstMatchMap[PatInst] = ModInst;
     return 0;
 }
 
 /// Compare a module function basic block with a pattern basic block.
-int InstPatternComparator::cmpBasicBlocks(const BasicBlock *BBL,
-                                          const BasicBlock *BBR) const {
-    auto InstL = BBL->begin(), InstLE = BBL->end();
-    auto InstR = BBR->begin(), InstRE = BBR->end();
-    auto TermL = BBL->getTerminator(), TermR = BBR->getTerminator();
+int InstPatternComparator::cmpBasicBlocks(const BasicBlock *ModBB,
+                                          const BasicBlock *PatBB) const {
+    auto ModInst = ModBB->begin(), ModInstE = ModBB->end();
+    auto PatInst = PatBB->begin(), PatInstE = PatBB->end();
+    auto ModTerm = ModBB->getTerminator(), PatTerm = PatBB->getTerminator();
 
     // Jump to the currently compared instruction pair.
-    jumpToInst(InstL, PositionL);
-    jumpToInst(InstR, PositionR);
+    jumpToInst(ModInst, ModPosition);
+    jumpToInst(PatInst, PatPosition);
 
-    while (InstL != InstLE && InstR != InstRE) {
-        PositionL = &*InstL;
-        PositionR = &*InstR;
+    while (ModInst != ModInstE && PatInst != PatInstE) {
+        ModPosition = &*ModInst;
+        PatPosition = &*PatInst;
 
         // Check whether the compared pattern ends at this instruction.
-        auto InstMetadata = ParentPattern->MetadataMap[&*InstR];
-        if (InstMetadata.PatternEnd)
+        if (hasPatternEnd(&*PatInst))
             return 0;
 
         // If at the end of only one basic block, leave the rest to
         // unconditionally connected basic blocks (if there are any).
-        if (&*InstL == TermL && &*InstR != TermR
-            && TermL->getNumSuccessors() == 1) {
+        if (&*ModInst == ModTerm && &*PatInst != PatTerm
+            && ModTerm->getNumSuccessors() == 1) {
             return 1;
         }
-        if (&*InstL != TermL && &*InstR == TermR) {
-            if (TermR->getNumSuccessors() == 1)
+        if (&*ModInst != ModTerm && &*PatInst == PatTerm) {
+            if (PatTerm->getNumSuccessors() == 1)
                 return 0;
 
             // If no unconditional successor exists, skip to the terminator
             // instruction.
-            InstL = InstLE;
-            --InstL;
+            ModInst = ModInstE;
+            --ModInst;
             continue;
         }
 
         // Compare current instructions with operands.
-        if (int Res = cmpOperationsWithOperands(&*InstL, &*InstR)) {
+        if (int Res = cmpOperationsWithOperands(&*ModInst, &*PatInst)) {
             // Remove newly added value and input mappings.
             eraseNewlyMapped();
 
@@ -287,23 +289,20 @@ int InstPatternComparator::cmpBasicBlocks(const BasicBlock *BBL,
                 return Res;
 
             // Skip the module instruction.
-            ++InstL;
+            ++ModInst;
             continue;
         }
 
-        // Register pattern instruction groups.
-        if (InstMetadata.GroupStart)
-            ++GroupDepth;
-        if (InstMetadata.GroupEnd)
-            --GroupDepth;
+        // Update the depth of pattern instruction groups.
+        updateGroupDepth(&*PatInst);
 
-        ++InstL;
-        ++InstR;
+        ++ModInst;
+        ++PatInst;
     }
 
-    if (InstL != InstLE && InstR == InstRE)
+    if (ModInst != ModInstE && PatInst == PatInstE)
         return 1;
-    if (InstL == InstLE && InstR != InstRE)
+    if (ModInst == ModInstE && PatInst != PatInstE)
         return -1;
 
     return 0;
@@ -311,80 +310,81 @@ int InstPatternComparator::cmpBasicBlocks(const BasicBlock *BBL,
 
 /// Compare global values by their names, because their indexes are not
 /// expected to be the same.
-int InstPatternComparator::cmpGlobalValues(GlobalValue *L,
-                                           GlobalValue *R) const {
-    if (L->hasName() && R->hasName()) {
+int InstPatternComparator::cmpGlobalValues(GlobalValue *ModVal,
+                                           GlobalValue *PatVal) const {
+    if (ModVal->hasName() && PatVal->hasName()) {
         // Both values are named, compare them by names
-        auto NameL = L->getName();
-        auto NameR = R->getName();
+        auto ModName = ModVal->getName();
+        auto PatName = PatVal->getName();
 
-        if (namesMatch(NameL, NameR, IsLeftSide))
+        if (namesMatch(ModName, PatName, IsLeftSide))
             return 0;
 
         return 1;
     }
 
-    return L != R;
+    return ModVal != PatVal;
 }
 
 /// Compare a module value with a pattern value using serial numbers.
 /// Note: Parts of this function have been adapted from FunctionComparator.
 /// Therefore, LLVM licensing also applies here. See the LICENSE information
 /// in the appropriate llvm-lib subdirectory for more details.
-int InstPatternComparator::cmpValues(const Value *L, const Value *R) const {
-    // Catch self-reference case.
-    if (L == FnL) {
-        if (R == FnR)
+int InstPatternComparator::cmpValues(const Value *ModVal,
+                                     const Value *PatVal) const {
+    // Catch self-reference case. Right side is the pattern side.
+    if (ModVal == FnL) {
+        if (PatVal == FnR)
             return 0;
         return -1;
     }
-    if (R == FnR) {
-        if (L == FnL)
+    if (PatVal == FnR) {
+        if (ModVal == FnL)
             return 0;
         return 1;
     }
 
     // Try to compare the values as constants.
-    const Constant *ConstL = dyn_cast<Constant>(L);
-    const Constant *ConstR = dyn_cast<Constant>(R);
-    if (ConstL && ConstR) {
-        if (L == R)
+    const Constant *ModConst = dyn_cast<Constant>(ModVal);
+    const Constant *PatConst = dyn_cast<Constant>(PatVal);
+    if (ModConst && PatConst) {
+        if (ModVal == PatVal)
             return 0;
-        return cmpConstants(ConstL, ConstR);
+        return cmpConstants(ModConst, PatConst);
     }
 
-    if (ConstL)
+    if (ModConst)
         return 1;
-    if (ConstR)
+    if (PatConst)
         return -1;
 
     // Try to compare the values as inline assemblies.
-    const InlineAsm *InlineAsmL = dyn_cast<InlineAsm>(L);
-    const InlineAsm *InlineAsmR = dyn_cast<InlineAsm>(R);
+    const InlineAsm *ModInlineAsm = dyn_cast<InlineAsm>(ModVal);
+    const InlineAsm *PatInlineAsm = dyn_cast<InlineAsm>(PatVal);
 
-    if (InlineAsmL && InlineAsmR)
-        return cmpInlineAsm(InlineAsmL, InlineAsmR);
-    if (InlineAsmL)
+    if (ModInlineAsm && PatInlineAsm)
+        return cmpInlineAsm(ModInlineAsm, PatInlineAsm);
+    if (ModInlineAsm)
         return 1;
-    if (InlineAsmR)
+    if (PatInlineAsm)
         return -1;
 
     // Try to insert serial numbers for both values.
-    auto LeftSN = sn_mapL.insert(std::make_pair(L, sn_mapL.size())),
-         RightSN = sn_mapR.insert(std::make_pair(R, sn_mapR.size()));
+    auto ModSN = sn_mapL.insert(std::make_pair(ModVal, sn_mapL.size())),
+         PatSN = sn_mapR.insert(std::make_pair(PatVal, sn_mapR.size()));
 
     // Register newly inserted values.
-    if (LeftSN.second)
-        NewlyMappedValuesL.insert(L);
-    if (RightSN.second)
-        NewlyMappedValuesR.insert(R);
+    if (ModSN.second)
+        NewlyMappedModValues.insert(ModVal);
+    if (PatSN.second)
+        NewlyMappedPatValues.insert(PatVal);
 
     // Compare assigned serial numbers.
-    if (int Res = cmpNumbers(LeftSN.first->second, RightSN.first->second))
+    if (int Res = cmpNumbers(ModSN.first->second, PatSN.first->second))
         return Res;
 
     // Since the values are equal, try to match them as inputs.
-    if (int Res = mapInputValues(L, R))
+    if (int Res = mapInputValues(ModVal, PatVal))
         return Res;
 
     return 0;
@@ -405,57 +405,64 @@ int InstPatternComparator::matchPattern() const {
     // terminator in order. Instructions from the first pair of blocks that
     // are before the starting instructions will get ignored. As an
     // artifact, this also means that unreachable blocks are ignored. Basic
-    // blocks that are connected by unconditional branches get trested as a
+    // blocks that are connected by unconditional branches get treated as a
     // single basic block.
-    SmallVector<const BasicBlock *, 8> FnLBBs, FnRBBs;
-    SmallPtrSet<const BasicBlock *, 32> VisitedL;
+    SmallVector<const BasicBlock *, 8> ModFnBBs, PatFnBBs;
+    SmallPtrSet<const BasicBlock *, 32> ModVisited, PatVisited;
 
     // Set starting basic blocks and positions.
-    FnLBBs.push_back(StartInst->getParent());
-    PositionL = StartInst;
+    ModFnBBs.push_back(StartInst->getParent());
+    ModPosition = StartInst;
     if (IsLeftSide) {
-        FnRBBs.push_back(ParentPattern->StartPositionL->getParent());
-        PositionR = ParentPattern->StartPositionL;
+        PatFnBBs.push_back(ParentPattern->StartPositionL->getParent());
+        PatPosition = ParentPattern->StartPositionL;
     } else {
-        FnRBBs.push_back(ParentPattern->StartPositionR->getParent());
-        PositionR = ParentPattern->StartPositionR;
+        PatFnBBs.push_back(ParentPattern->StartPositionR->getParent());
+        PatPosition = ParentPattern->StartPositionR;
     }
 
     // Run the pattern comparison.
-    VisitedL.insert(FnLBBs[0]);
-    while (!FnLBBs.empty()) {
-        const BasicBlock *BBL = FnLBBs.pop_back_val();
-        const BasicBlock *BBR = FnRBBs.pop_back_val();
+    ModVisited.insert(ModFnBBs[0]);
+    PatVisited.insert(PatFnBBs[0]);
+    while (!ModFnBBs.empty()) {
+        const BasicBlock *ModBB = ModFnBBs.pop_back_val();
+        const BasicBlock *PatBB = PatFnBBs.pop_back_val();
 
         // Compare the first basic blocks in an unconditionally connected
         // group as values.
-        if (int Res = cmpValues(BBL, BBR))
+        if (int Res = cmpValues(ModBB, PatBB))
             return Res;
 
         // Compare unconditionally connected basic blocks at the same time.
         GroupDepth = 0;
         bool ResultFound = false;
         while (!ResultFound) {
-            int ResultBB = cmpBasicBlocks(BBL, BBR);
-            auto SuccL = BBL->getSingleSuccessor();
-            auto SuccR = BBR->getSingleSuccessor();
+            // Ensure position compatibility.
+            if (ModPosition->getParent() != ModBB)
+                ModPosition = &*ModBB->begin();
+            if (PatPosition->getParent() != PatBB)
+                PatPosition = &*PatBB->begin();
 
-            if (ResultBB) {
-                if (!SuccL || !VisitedL.insert(SuccL).second)
-                    return ResultBB;
+            int BBCmpRes = cmpBasicBlocks(ModBB, PatBB);
+            auto ModSucc = ModBB->getSingleSuccessor();
+            auto PatSucc = PatBB->getSingleSuccessor();
 
-                // If an unvisited single successor exists, compare againts
+            if (BBCmpRes) {
+                if (!ModSucc || !ModVisited.insert(ModSucc).second)
+                    return BBCmpRes;
+
+                // If an unvisited single successor exists, compare against
                 // it instead.
-                BBL = SuccL;
-                PositionL = &*BBL->begin();
+                ModBB = ModSucc;
+                ModPosition = &*ModBB->begin();
             } else {
                 // If an unvisited single successor exists, descend into it.
                 // Otherwise finalize the comparison of the current block.
-                auto *TermR = BBR->getTerminator();
-                if (SuccR && VisitedL.insert(SuccR).second
-                    && !ParentPattern->MetadataMap[TermR].PatternEnd) {
-                    BBR = SuccR;
-                    PositionR = &*BBR->begin();
+                auto *PatTerm = PatBB->getTerminator();
+                if (PatSucc && PatVisited.insert(PatSucc).second
+                    && !hasPatternEnd(PatTerm)) {
+                    PatBB = PatSucc;
+                    PatPosition = &*PatBB->begin();
                 } else {
                     ResultFound = true;
                 }
@@ -464,28 +471,29 @@ int InstPatternComparator::matchPattern() const {
 
         // Jump to the last module basic block in the current
         // unconditionally connected group.
-        while (BBL->getSingleSuccessor()) {
-            BBL = BBL->getSingleSuccessor();
-            VisitedL.insert(BBL);
+        while (ModBB->getSingleSuccessor()) {
+            ModBB = ModBB->getSingleSuccessor();
+            ModVisited.insert(ModBB);
         }
 
-        auto *TermL = BBL->getTerminator();
-        auto *TermR = BBR->getTerminator();
+        auto *ModTerm = ModBB->getTerminator();
+        auto *PatTerm = PatBB->getTerminator();
 
-        // Do not descend to successors if the pattern terminating
-        // instruction is not a direct part of the pattern.
-        if (ParentPattern->MetadataMap[TermR].PatternEnd)
+        // Do not descend to successors if the pattern terminates
+        // in this basic block.
+        if (hasPatternEnd(PatTerm) || PatTerm->getNumSuccessors() == 0)
             continue;
 
         // Queue all successor basic blocks.
-        assert(TermL->getNumSuccessors() == TermR->getNumSuccessors());
-        for (unsigned i = 0, e = TermL->getNumSuccessors(); i != e; ++i) {
-
-            if (!VisitedL.insert(TermL->getSuccessor(i)).second)
+        unsigned SuccLimit = std::min(ModTerm->getNumSuccessors(),
+                                      PatTerm->getNumSuccessors());
+        for (unsigned i = 0; i != SuccLimit; ++i) {
+            if (!ModVisited.insert(ModTerm->getSuccessor(i)).second
+                || !PatVisited.insert(PatTerm->getSuccessor(i)).second)
                 continue;
 
-            FnLBBs.push_back(TermL->getSuccessor(i));
-            FnRBBs.push_back(TermR->getSuccessor(i));
+            ModFnBBs.push_back(ModTerm->getSuccessor(i));
+            PatFnBBs.push_back(PatTerm->getSuccessor(i));
         }
     }
 
@@ -495,28 +503,28 @@ int InstPatternComparator::matchPattern() const {
 /// Erases newly mapped instructions from synchronization maps and input
 /// maps.
 void InstPatternComparator::eraseNewlyMapped() const {
-    for (auto &&MappedValueL : NewlyMappedValuesL) {
-        sn_mapL.erase(MappedValueL);
+    for (auto &&MappedModValue : NewlyMappedModValues) {
+        sn_mapL.erase(MappedModValue);
     }
-    for (auto &&MappedValueR : NewlyMappedValuesR) {
-        sn_mapR.erase(MappedValueR);
+    for (auto &&MappedPatValue : NewlyMappedPatValues) {
+        sn_mapR.erase(MappedPatValue);
     }
-    for (auto &&MappedInputR : NewlyMappedInputR) {
-        InputMatchMap.erase(MappedInputR);
+    for (auto &&MappedModInput : NewlyMappedPatInput) {
+        PatMatchMap.erase(MappedModInput);
     }
-    for (auto &&MappedInputL : NewlyMappedInputL) {
-        ReverseInputMatchMap.erase(MappedInputL);
+    for (auto &&MappedPatInput : NewlyMappedModInput) {
+        ModMatchMap.erase(MappedPatInput);
     }
 }
 
 /// Checks whether all currently mapped input instructions or arguments have
 /// an associated module counterpart.
 int InstPatternComparator::checkInputMapping() const {
-    // Compare mapped input arguments.
-    for (auto &&ArgR : FnR->args()) {
-        auto MappedValues = InputMatchMap.find(&ArgR);
-        if (MappedValues != InputMatchMap.end()) {
-            if (int Res = cmpValues(MappedValues->second, &ArgR))
+    // Compare mapped input arguments. Right side is the pattern side.
+    for (auto &&PatArg : FnR->args()) {
+        auto MappedValues = PatMatchMap.find(&PatArg);
+        if (MappedValues != PatMatchMap.end()) {
+            if (int Res = cmpValues(MappedValues->second, &PatArg))
                 return Res;
         }
     }
@@ -525,24 +533,29 @@ int InstPatternComparator::checkInputMapping() const {
     // arguments should be present on the module side. Comparison starts
     // from the entry block since input instructions should be placed before
     // the starting instruction.
-    for (auto &&BB : *FnR) {
-        for (auto &&InstR : BB) {
-            // End after all input instructions have been processed.
-            if (ParentPattern->MetadataMap[&InstR].PatternStart)
-                return 0;
+    for (auto &&PatBB : *FnR) {
+        for (auto &&PatInst : PatBB) {
+            auto PatInstMetadata = ParentPattern->MetadataMap.find(&PatInst);
+            if (PatInstMetadata != ParentPattern->MetadataMap.end()) {
+                // End after all input instructions have been processed.
+                if (PatInstMetadata->second.PatternStart)
+                    return 0;
 
-            // Only analyse input instructions.
-            if (ParentPattern->MetadataMap[&InstR].NotAnInput)
-                continue;
+                // Only analyse input instructions.
+                if (PatInstMetadata->second.NotAnInput)
+                    continue;
+            }
 
-            auto MappedValues = InputMatchMap.find(&InstR);
-            if (MappedValues != InputMatchMap.end()) {
+            auto MappedValues = PatMatchMap.find(&PatInst);
+            if (MappedValues != PatMatchMap.end()) {
                 // Use instruction comparison when mapped to an instruction.
                 // Otherwise, only compare values.
-                if (auto InstL = dyn_cast<Instruction>(MappedValues->second)) {
-                    if (int Res = cmpOperationsWithOperands(InstL, &InstR))
+                if (auto ModInst =
+                            dyn_cast<Instruction>(MappedValues->second)) {
+                    if (int Res = cmpOperationsWithOperands(ModInst, &PatInst))
                         return Res;
-                } else if (int Res = cmpValues(MappedValues->second, &InstR)) {
+                } else if (int Res =
+                                   cmpValues(MappedValues->second, &PatInst)) {
                     return Res;
                 }
             }
@@ -555,66 +568,86 @@ int InstPatternComparator::checkInputMapping() const {
 /// Tries to map a module value (including possible predecessors) to a
 /// pattern input value. If no input value is present, the mapping is
 /// always successful.
-int InstPatternComparator::mapInputValues(const Value *L,
-                                          const Value *R) const {
+int InstPatternComparator::mapInputValues(const Value *ModVal,
+                                          const Value *PatVal) const {
     // The pattern input may have been already mapped. If so, it must be
     // mapped to the given module value.
-    if (InputMatchMap.find(R) != InputMatchMap.end()) {
-        if (InputMatchMap[R] != L)
+    if (PatMatchMap.find(PatVal) != PatMatchMap.end()) {
+        if (PatMatchMap[PatVal] != ModVal)
             return 1;
         return 0;
     }
 
     auto Input = IsLeftSide ? &ParentPattern->InputL : &ParentPattern->InputR;
 
-    SmallVector<const Value *, 16> InputL, InputR;
-    SmallPtrSet<const Value *, 32> VisitedL;
+    SmallVector<const Value *, 16> ModInput, PatInput;
+    SmallPtrSet<const Value *, 32> ModVisited;
 
     // Initialize the input search with the given values.
-    InputL.push_back(L);
-    InputR.push_back(R);
-    VisitedL.insert(L);
+    ModInput.push_back(ModVal);
+    PatInput.push_back(PatVal);
+    ModVisited.insert(ModVal);
 
     // If input values are given, map them to their module counterparts
     // (including predecessors).
-    while (!InputL.empty()) {
-        auto ValueL = InputL.pop_back_val();
-        auto ValueR = InputR.pop_back_val();
+    while (!ModInput.empty()) {
+        auto CurrModVal = ModInput.pop_back_val();
+        auto CurrPatVal = PatInput.pop_back_val();
 
-        if (Input->find(ValueR) != Input->end()) {
+        if (Input->find(CurrPatVal) != Input->end()) {
             // Map the values together.
-            InputMatchMap[ValueR] = ValueL;
-            ReverseInputMatchMap[ValueL] = ValueR;
-            NewlyMappedInputL.insert(ValueL);
-            NewlyMappedInputR.insert(ValueR);
+            PatMatchMap[CurrPatVal] = CurrModVal;
+            ModMatchMap[CurrModVal] = CurrPatVal;
+            NewlyMappedModInput.insert(CurrModVal);
+            NewlyMappedPatInput.insert(CurrPatVal);
 
             // Descend only if both values are instructions.
-            auto InstL = dyn_cast<Instruction>(ValueL);
-            auto InstR = dyn_cast<Instruction>(ValueR);
-            if (InstL && InstR) {
+            auto ModInst = dyn_cast<Instruction>(CurrModVal);
+            auto PatInst = dyn_cast<Instruction>(CurrPatVal);
+            if (ModInst && PatInst) {
                 // Mapped input instructions should have the same number of
                 // operands.
-                if (int Res = cmpNumbers(InstL->getNumOperands(),
-                                         InstR->getNumOperands()))
+                if (int Res = cmpNumbers(ModInst->getNumOperands(),
+                                         PatInst->getNumOperands()))
                     return Res;
 
                 // Descend into unvisited operands.
-                for (int i = 0, e = InstL->getNumOperands(); i != e; ++i) {
-                    Value *OpL = InstL->getOperand(i);
-                    Value *OpR = InstR->getOperand(i);
+                for (int i = 0, e = ModInst->getNumOperands(); i != e; ++i) {
+                    Value *ModOp = ModInst->getOperand(i);
+                    Value *PatOp = PatInst->getOperand(i);
 
-                    if (InputMatchMap.find(OpR) != InputMatchMap.end()
-                        || !VisitedL.insert(OpL).second)
+                    if (PatMatchMap.find(PatOp) != PatMatchMap.end()
+                        || !ModVisited.insert(ModOp).second)
                         continue;
 
-                    InputL.push_back(OpL);
-                    InputR.push_back(OpR);
+                    ModInput.push_back(ModOp);
+                    PatInput.push_back(PatOp);
                 }
             }
         }
     }
 
     return 0;
+}
+
+/// Checks whether the given instruction contains metadata marking the end
+/// of a pattern.
+bool InstPatternComparator::hasPatternEnd(const Instruction *Inst) const {
+    auto InstMetadata = ParentPattern->MetadataMap.find(Inst);
+    return (InstMetadata != ParentPattern->MetadataMap.end()
+            && InstMetadata->second.PatternEnd);
+}
+
+/// Updates the global instruction group depth in accordance to the metadata
+/// of the given instruction.
+void InstPatternComparator::updateGroupDepth(const Instruction *Inst) const {
+    auto InstMetadata = ParentPattern->MetadataMap.find(Inst);
+    if (InstMetadata != ParentPattern->MetadataMap.end()) {
+        if (InstMetadata->second.GroupStart)
+            ++GroupDepth;
+        if (InstMetadata->second.GroupEnd)
+            --GroupDepth;
+    }
 }
 
 /// Position the basic block instruction iterator forward to the given

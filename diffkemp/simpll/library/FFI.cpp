@@ -17,7 +17,6 @@
 #include "ModuleAnalysis.h"
 #include "Output.h"
 #include "library/DiffKempUtils.h"
-#include "library/ModuleLoader.h"
 #include "library/SysctlTable.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include <cstring>
@@ -63,9 +62,13 @@ template <class T> struct ptr_array stringContainerToPtrArray(T Container) {
 
 extern "C" {
 void *loadModule(const char *Path) {
-    std::string PathString(Path);
-    Module *LoadedModule = loadModule(PathString, ModuleMap, ContextMap);
-    return (void *)LoadedModule;
+    SMDiagnostic err;
+    std::unique_ptr<LLVMContext> Ctx = std::make_unique<LLVMContext>();
+    std::unique_ptr<Module> Mod = parseIRFile(Path, err, *Ctx.get());
+    Module *ModPtr = Mod.get();
+    ModuleMap[ModPtr] = std::move(Mod);
+    ContextMap[ModPtr] = std::move(Ctx);
+    return (void *)ModPtr;
 }
 
 void freeModule(void *ModRaw) {
