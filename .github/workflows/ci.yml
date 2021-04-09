@@ -39,7 +39,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          sudo apt-get install bc cscope libelf-dev ninja-build
+          sudo apt-get install bc cscope gcc-7 libelf-dev ninja-build
           pip install -r requirements.txt
 
       - name: Install LLVM
