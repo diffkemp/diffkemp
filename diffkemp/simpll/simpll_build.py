@@ -38,6 +38,7 @@ llvm_libs = list(filter(lambda x: x != "",
 
 ffibuilder.set_source(
     "diffkemp.simpll._simpll", '#include <library/FFI.h>',
+    language="c++",
     libraries=['simpll-lib'],
     extra_compile_args=["-Idiffkemp/simpll"] + llvm_cflags,
     extra_link_args=["-Lbuild/diffkemp/simpll", "-lstdc++"] + llvm_ldflags +
