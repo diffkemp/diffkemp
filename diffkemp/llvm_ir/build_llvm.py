@@ -244,7 +244,10 @@ class LlvmKernelBuilder:
         with open(os.devnull, "w") as stderr:
             try:
                 output = check_output(
-                    ["make", "V=1", object_file,
+                    ["make", "V=1",
+                     "CFLAGS=-Wno-error=restrict -Wno-error=attributes",
+                     "EXTRA_CFLAGS=-Wno-error=restrict -Wno-error=attributes",
+                     object_file,
                      "--just-print"], stderr=stderr).decode("utf-8")
             except CalledProcessError:
                 raise BuildException("Error compiling {}".format(object_file))
