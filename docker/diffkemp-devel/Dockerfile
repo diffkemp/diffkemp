@@ -67,6 +67,8 @@ RUN apt-get update && \
       vim \
       xz-utils \
       z3
+# Remove conflicting automatically installed GCC versions
+RUN apt-get remove -y cpp cpp-5 gcc gcc-5 g++ g++-5
 # Install alternatives for all LLVM versions and for GCC 7
 RUN update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bin/llvm-config-5.0 10 && \
     update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-5.0 10 && \
@@ -96,7 +98,9 @@ RUN update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bi
     update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-11 60 && \
     update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-11 60 && \
     update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-11 60 && \
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 --slave /usr/bin/g++ g++ /usr/bin/g++-7 && \
+    update-alternatives --install /usr/bin/x86_64-linux-gnu-gcc x86_64-linux-gnu-gcc /usr/bin/x86_64-linux-gnu-gcc-7 100 \
+                        --slave   /usr/bin/x86_64-linux-gnu-g++ x86_64-linux-gnu-g++ /usr/bin/x86_64-linux-gnu-g++-7
 # Configure links for the clang-format checker script
 RUN update-alternatives --install /usr/local/bin/clang-format clang-format /usr/bin/clang-format-8 40 && \
     ln -s /diffkemp/tools/check-clang-format.sh /usr/local/bin/check-clang-format
