@@ -51,7 +51,7 @@ class TaskSpec:
         self.new_snapshot = Snapshot(self.new_kernel, self.new_kernel)
         self.config = Config(self.old_snapshot, self.new_snapshot, False,
                              False, self.control_flow_only, False, False,
-                             False, None)
+                             False, None, False)
 
         self.functions = dict()
 
