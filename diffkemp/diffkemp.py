@@ -8,6 +8,7 @@ from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from diffkemp.simpll.library import SimpLLModule
 from tempfile import mkdtemp
+from timeit import default_timer
 import errno
 import os
 import re
@@ -272,7 +273,7 @@ def compare(args):
                     args.print_asm_diffs, args.verbose, args.enable_simpll_ffi,
                     args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
-                    args.snapshot_dir_old)
+                    args.snapshot_dir_old, start_time=default_timer())
 
     for group_name, group in sorted(old_snapshot.fun_groups.items()):
         group_printed = False
@@ -382,6 +383,7 @@ def compare(args):
         print("")
         print("Statistics")
         print("----------")
+        result.stop_time = default_timer()
         result.report_stat(args.show_errors)
     return 0
 

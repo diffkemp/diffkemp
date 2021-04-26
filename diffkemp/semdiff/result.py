@@ -55,7 +55,8 @@ class Result:
             self.diff_kind = diff_kind
             self.covered = covered
 
-    def __init__(self, kind, first_name, second_name):
+    def __init__(self, kind, first_name, second_name, start_time=None,
+                 stop_time=None):
         self.kind = kind
         self.first = Result.Entity(first_name)
         self.second = Result.Entity(second_name)
@@ -63,6 +64,8 @@ class Result:
         self.macro_diff = None
         self.graph = None
         self.inner = dict()
+        self.start_time = start_time
+        self.stop_time = stop_time
 
     def __str__(self):
         return str(self.kind)
@@ -168,6 +171,9 @@ class Result:
         empty = len([r for r in unique_diffs if r.res.diff == ""])
 
         # Print statistics
+        if self.start_time and self.stop_time:
+            print("Elapsed time:            {:.2f} s".format(
+                self.stop_time - self.start_time))
         print("Functions compared:      {}".format(compared))
         print("Total differences:       {}".format(total))
         if total == 0:
