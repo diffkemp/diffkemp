@@ -197,9 +197,9 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
             // Functions are equal iff all functions that were compared by
             // module comparator (i.e. those that are recursively called by the
             // main functions) are equal.
-            DEBUG_WITH_TYPE(
-                    DEBUG_SIMPLL,
-                    dbgs() << "All functions are syntactically equal\n");
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                            dbgs() << Color::makeGreen(
+                                    "All functions are syntactically equal\n"));
             config.FirstFun->deleteBody();
             config.SecondFun->deleteBody();
             deleteAliasToFun(*config.First, config.FirstFun);

@@ -167,4 +167,10 @@ void decreaseDebugIndentLevel();
 /// Inline a function call and return true if inlining succeeded.
 bool inlineCall(CallInst *Call);
 
+namespace Color {
+std::string makeRed(std::string text);
+std::string makeGreen(std::string text);
+std::string makeYellow(std::string text);
+} // namespace Color
+
 #endif // DIFFKEMP_SIMPLL_UTILS_H
