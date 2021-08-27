@@ -742,3 +742,14 @@ bool inlineCall(CallInst *Call) {
     return InlineFunction(Call, ifi, nullptr, false);
 #endif
 }
+
+namespace Color {
+const std::string RED = "\e[1;31m";
+const std::string GREEN = "\e[1;32m";
+const std::string YELLOW = "\e[0;93m";
+const std::string WHITE = "\e[0m";
+
+std::string makeRed(std::string text) { return RED + text + WHITE; }
+std::string makeGreen(std::string text) { return GREEN + text + WHITE; }
+std::string makeYellow(std::string text) { return YELLOW + text + WHITE; }
+} // namespace Color
