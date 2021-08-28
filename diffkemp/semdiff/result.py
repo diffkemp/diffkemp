@@ -15,19 +15,17 @@ class Result:
         Sorted by priority for result aggregation.
         """
         NONE = 0
-        EQUAL_SYNTAX = 1
+        EQUAL = 1
         ASSUMED_EQUAL = 2
-        EQUAL = 3
-        NOT_EQUAL = 4
-        UNKNOWN = 5
-        TIMEOUT = 6
-        ERROR = 7
+        NOT_EQUAL = 3
+        UNKNOWN = 4
+        TIMEOUT = 5
+        ERROR = 6
 
         @staticmethod
         def from_string(string):
             dictionary = {
                 "none": Result.Kind.NONE,
-                "equal-syntax": Result.Kind.EQUAL_SYNTAX,
                 "equal": Result.Kind.EQUAL,
                 "assumed-equal": Result.Kind.ASSUMED_EQUAL,
                 "not-equal": Result.Kind.NOT_EQUAL,
@@ -92,7 +90,7 @@ class Result:
         """
         total = len(self.inner)
         eq = len([r for r in iter(self.inner.values())
-                  if r.kind in [Result.Kind.EQUAL, Result.Kind.EQUAL_SYNTAX]])
+                  if r.kind == Result.Kind.EQUAL])
         neq = len([r for r in iter(self.inner.values())
                    if r.kind == Result.Kind.NOT_EQUAL])
         unkwn = len([r for r in iter(self.inner.values())

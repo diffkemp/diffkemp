@@ -331,7 +331,7 @@ def compare(args):
                         if pattern.search(called_res.diff):
                             break
                     else:
-                        fun_result.kind = Result.Kind.EQUAL_SYNTAX
+                        fun_result.kind = Result.Kind.EQUAL
 
                 result.add_inner(fun_result)
 
