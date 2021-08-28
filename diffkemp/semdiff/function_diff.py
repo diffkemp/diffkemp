@@ -258,7 +258,7 @@ def functions_diff(mod_first, mod_second,
         mod_second.restore_unlinked_llvm()
 
         if not objects_to_compare:
-            result.kind = Result.Kind.EQUAL_SYNTAX
+            result.kind = Result.Kind.EQUAL
         else:
             # If the functions are not syntactically equal, objects_to_compare
             # contains a list of functions and macros that are different.
