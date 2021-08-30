@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     strategy:
       matrix:
         llvm: ["5.0", "6.0", 7, 8, 9, 10, 11]
@@ -45,7 +45,7 @@ jobs:
       - name: Install LLVM
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-${{ matrix.llvm }} main"
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.llvm }} main"
           sudo apt-get update
           sudo apt-get install llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
           sudo ln -s /usr/lib/llvm-${{ matrix.llvm }} /usr/local/lib/llvm
