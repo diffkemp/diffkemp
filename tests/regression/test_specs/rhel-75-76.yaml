@@ -2,25 +2,25 @@ old_kernel: kernel/linux-3.10.0-862.el7
 new_kernel: kernel/linux-3.10.0-957.el7
 
 functions:
-  ipmi_set_gets_events: equal_syntax
-  __wake_up: equal_syntax
-  check_addr: equal_syntax
-  __alloc_workqueue_key: equal_syntax
-  blk_execute_rq_nowait: equal_syntax
-  param_set_int: equal_syntax
-  param_set_long: equal_syntax
-  __read_seqcount_begin: equal_syntax
-  __alloc_percpu: equal_syntax
+  ipmi_set_gets_events: equal
+  __wake_up: equal
+  check_addr: equal
+  __alloc_workqueue_key: equal
+  blk_execute_rq_nowait: equal
+  param_set_int: equal
+  param_set_long: equal
+  __read_seqcount_begin: equal
+  __alloc_percpu: equal
 
 sysctls:
   - sysctl: net.core.netdev_rss_key
     proc_handler:
-      proc_do_rss_key: equal_syntax
+      proc_do_rss_key: equal
     data_variable:
       name: netdev_rss_key
       functions:
-        netdev_rss_key_fill: equal_syntax
-        proc_do_rss_key: equal_syntax
+        netdev_rss_key_fill: equal
+        proc_do_rss_key: equal
 
 syntax_diffs:
   - function: __free_slab

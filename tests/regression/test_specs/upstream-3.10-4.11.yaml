@@ -7,25 +7,25 @@ modules:
     params:
       - name: workarounds
         functions:
-          sbp2_init_workarounds: equal_syntax
+          sbp2_init_workarounds: equal
 
   - dir: drivers/input/joystick
     mod: gamecon
     params:
       - name: psx_delay
         functions:
-          gc_psx_read_packet: equal_syntax
-          gc_psx_command: equal_syntax
+          gc_psx_read_packet: equal
+          gc_psx_command: equal
 
   - dir: drivers/media/pci/ivtv
     mod: ivtv
     params:
       - name: pal
         functions:
-          ivtv_parse_std: equal_syntax
+          ivtv_parse_std: equal
       - name: secam
         functions:
-          ivtv_parse_std: equal_syntax
+          ivtv_parse_std: equal
 
   - dir: drivers/tty
     mod: mxser
@@ -33,19 +33,19 @@ modules:
       - name: ttymajor
         functions:
           mxser_ioctl_special: none
-          mxser_module_init: equal_syntax
+          mxser_module_init: equal
 
   - dir: sound/core
     mod: snd
     params:
       - name: cards_limit
         functions:
-          alsa_sound_init: equal_syntax
-          snd_request_card: equal_syntax
+          alsa_sound_init: equal
+          snd_request_card: equal
 
   - dir: drivers/media/usb/uvc
     mod: uvcvideo
     params:
       - name: quirks
         functions:
-          uvc_probe: equal_syntax
+          uvc_probe: equal

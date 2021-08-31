@@ -4,6 +4,6 @@ new_kernel: kernel/linux-3.10.0-862.el7
 control_flow_only: true
 
 functions:
-  skb_queue_head: equal_syntax
-  single_open: equal_syntax
+  skb_queue_head: equal
+  single_open: equal
 
