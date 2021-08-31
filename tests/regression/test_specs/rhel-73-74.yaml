@@ -2,8 +2,8 @@ old_kernel: kernel/linux-3.10.0-514.el7
 new_kernel: kernel/linux-3.10.0-693.el7
 
 functions:
-  debugfs_create_u32: equal_syntax
-  up_read: equal_syntax
+  debugfs_create_u32: equal
+  up_read: equal
 
 syntax_diffs:
   - function: numa_node_id
