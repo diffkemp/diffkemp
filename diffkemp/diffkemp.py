@@ -21,7 +21,7 @@ def __make_argument_parser():
                                     "kernel functions.")
     ap.add_argument("-v", "--verbose",
                     help="increase output verbosity",
-                    action="store_true")
+                    action="count", default=0)
     sub_ap = ap.add_subparsers(dest="command", metavar="command")
     sub_ap.required = True
 

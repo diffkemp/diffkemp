@@ -21,7 +21,7 @@ def add_suffix(file, suffix):
 
 def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
                cache_dir=None, control_flow_only=False, output_llvm_ir=False,
-               print_asm_diffs=False, verbose=False, use_ffi=False,
+               print_asm_diffs=False, verbosity=0, use_ffi=False,
                module_cache=None):
     """
     Simplify modules to ease their semantic difference. Uses the SimpLL tool.
@@ -30,7 +30,7 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
             a list of missing function definitions.
     """
     stderr = None
-    if not verbose:
+    if verbosity == 0:
         stderr = open(os.devnull, "w")
 
     first_out_name = add_suffix(first, suffix) if suffix else first
@@ -53,7 +53,7 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         conf_struct.PrintAsmDiffs = print_asm_diffs
         conf_struct.PrintCallStacks = True
         conf_struct.Variable = variable
-        conf_struct.Verbose = verbose
+        conf_struct.Verbosity = verbosity
         conf_struct.VerboseMacros = False
 
         if use_cached_modules:
@@ -116,8 +116,8 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
             if print_asm_diffs:
                 simpll_command.append("--print-asm-diffs")
 
-            if verbose:
-                simpll_command.append("--verbose")
+            if verbosity > 0:
+                simpll_command.extend(["--verbosity", str(verbosity)])
                 print(" ".join(simpll_command))
 
             simpll_out = check_output(simpll_command)

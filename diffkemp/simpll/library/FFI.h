@@ -27,7 +27,7 @@ struct config {
     int ControlFlowOnly;
     int PrintAsmDiffs;
     int PrintCallStacks;
-    int Verbose;
+    int Verbosity;
     int VerboseMacros;
 };
 

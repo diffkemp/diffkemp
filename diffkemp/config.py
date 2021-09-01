@@ -16,7 +16,7 @@ class Config:
         :param snapshot_second: Second snapshot representation.
         :param show_diff: Only perform the syntax diff.
         :param control_flow_only: Check only for control-flow differences.
-        :param verbosity: Verbosity level (currently boolean).
+        :param verbosity: Verbosity level.
         :param semdiff_tool: Tool to use for semantic diff
         """
         self.snapshot_first = snapshot_first

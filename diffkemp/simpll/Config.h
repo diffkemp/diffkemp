@@ -33,7 +33,7 @@ extern cl::opt<std::string> VariableOpt;
 extern cl::opt<std::string> SuffixOpt;
 extern cl::opt<bool> ControlFlowOpt;
 extern cl::opt<bool> PrintCallstacksOpt;
-extern cl::opt<bool> VerboseOpt;
+extern cl::opt<int> VerbosityOpt;
 extern cl::opt<bool> VerboseMacrosOpt;
 
 /// Tool configuration parsed from CLI options.
@@ -86,7 +86,7 @@ class Config {
            bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
-           bool Verbose = false,
+           int Verbosity = 0,
            bool VerboseMacros = false);
     // Constructor without module loading (for tests).
     Config(std::string FirstFunName,

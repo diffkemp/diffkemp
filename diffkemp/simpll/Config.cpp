@@ -46,9 +46,9 @@ cl::opt<bool> ControlFlowOpt(
 cl::opt<bool> PrintCallstacksOpt(
         "print-callstacks",
         cl::desc("Print call stacks for non-equal functions."));
-cl::opt<bool>
-        VerboseOpt("verbose",
-                   cl::desc("Show verbose output (debugging information)."));
+cl::opt<int> VerbosityOpt(
+        "verbosity",
+        cl::desc("Level of verbose output (debugging information)."));
 cl::opt<bool> VerboseMacrosOpt("verbose-macros",
                                cl::desc("Show debugging information for "
                                         "discovering macro differences"));
@@ -107,9 +107,14 @@ Config::Config()
     }
 
     std::vector<std::string> debugTypes;
-    if (VerboseOpt) {
-        // Enable debugging output in passes
-        debugTypes.emplace_back(DEBUG_SIMPLL);
+    if (VerbosityOpt > 0) {
+        // Enable debugging output in passes. Intended fallthrough
+        switch (VerbosityOpt) {
+        default:
+        case 1:
+            debugTypes.emplace_back(DEBUG_SIMPLL);
+            break;
+        }
     }
     if (VerboseMacrosOpt) {
         // Enable debugging output when finding macro differences
@@ -145,7 +150,7 @@ Config::Config(std::string FirstFunName,
                bool ControlFlowOnly,
                bool PrintAsmDiffs,
                bool PrintCallStacks,
-               bool Verbose,
+               int Verbosity,
                bool VerboseMacros)
         : First(std::move(FirstModule)), Second(std::move(SecondModule)),
           FirstFunName(FirstFunName), SecondFunName(SecondFunName),
@@ -161,9 +166,14 @@ Config::Config(std::string FirstFunName,
     }
 
     std::vector<std::string> debugTypes;
-    if (Verbose) {
-        // Enable debugging output in passes
-        debugTypes.emplace_back(DEBUG_SIMPLL);
+    if (Verbosity > 0) {
+        // Enable debugging output in passes. Intended fallthrough
+        switch (Verbosity) {
+        default:
+        case 1:
+            debugTypes.emplace_back(DEBUG_SIMPLL);
+            break;
+        }
     }
     if (VerboseMacros) {
         // Enable debugging output when finding macro differences
