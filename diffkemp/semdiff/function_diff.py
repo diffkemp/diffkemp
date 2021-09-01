@@ -48,7 +48,7 @@ def _link_symbol_def(snapshot, module, symbol):
 
 
 def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
-                   verbose):
+                   verbosity):
     """
     Run the comparison of semantics of two functions using the llreve tool and
     the Z3 SMT solver. The llreve tool takes compared functions in LLVM IR and
@@ -66,11 +66,11 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
                     correspond to each other in both modules). These are needed
                     for functions not having definintions.
     :param timeout: Timeout for the analysis in seconds
-    :param verbose: Verbosity option
+    :param verbosity: Verbosity level
     """
 
     stderr = None
-    if not verbose:
+    if verbosity == 0:
         stderr = open('/dev/null', 'w')
 
     # Commands for running llreve and Z3 (output of llreve is piped into Z3)
@@ -82,7 +82,7 @@ def _run_llreve_z3(first, second, funFirst, funSecond, coupled, timeout,
     for c in coupled:
         command.append("--couple-functions={},{}".format(c[0], c[1]))
 
-    if verbose:
+    if verbosity > 0:
         sys.stderr.write(" ".join(command) + "\n")
 
     llreve_process = Popen(command, stdout=PIPE, stderr=stderr)
@@ -185,7 +185,7 @@ def functions_diff(mod_first, mod_second,
     result = Result(Result.Kind.NONE, fun_first, fun_second)
     curr_result_graph = None
     try:
-        if config.verbosity:
+        if config.verbosity > 0:
             if fun_first == fun_second:
                 fun_str = fun_first
             else:
@@ -215,7 +215,7 @@ def functions_diff(mod_first, mod_second,
                                control_flow_only=config.control_flow_only,
                                output_llvm_ir=config.output_llvm_ir,
                                print_asm_diffs=config.print_asm_diffs,
-                               verbose=config.verbosity,
+                               verbosity=config.verbosity,
                                use_ffi=config.use_ffi,
                                module_cache=module_cache)
                 if missing_defs:
@@ -297,12 +297,12 @@ def functions_diff(mod_first, mod_second,
                                 fun_result.first.diff_kind))
                         fun_result.diff = "unknown\n"
                 result.add_inner(fun_result)
-        if config.verbosity:
+        if config.verbosity > 0:
             print("  {}".format(result))
     except ValueError:
         result.kind = Result.Kind.ERROR
     except SimpLLException as e:
-        if config.verbosity:
+        if config.verbosity > 0:
             print(e)
         result.kind = Result.Kind.ERROR
     result.graph = (curr_result_graph if curr_result_graph
