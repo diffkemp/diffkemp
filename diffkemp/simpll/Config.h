@@ -21,6 +21,7 @@
 #include <llvm/Support/SourceMgr.h>
 
 #define DEBUG_SIMPLL "debug-simpll"
+#define DEBUG_SIMPLL_VERBOSE "debug-simpll-verbose"
 #define DEBUG_SIMPLL_MACROS "debug-simpll-macros"
 
 using namespace llvm;

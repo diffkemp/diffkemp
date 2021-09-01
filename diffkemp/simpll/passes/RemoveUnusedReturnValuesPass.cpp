@@ -70,7 +70,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             // Nothing to replace.
             continue;
 
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
                         dbgs() << getDebugIndent(' ')
                                << "Creating void-returning variant of "
                                << Fun->getName() << "\n");
@@ -162,12 +162,12 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 CallInst *CI_New = CallInst::Create(Fun_New, Args_AR, "", CI);
                 copyCallInstProperties(CI, CI_New);
 
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel();
-                                dbgs() << getDebugIndent()
-                                       << "Replacing :" << *CI << "\n"
-                                       << getDebugIndent()
-                                       << "     with :" << *CI_New << "\n";
-                                decreaseDebugIndentLevel());
+                DEBUG_WITH_TYPE(
+                        DEBUG_SIMPLL_VERBOSE, increaseDebugIndentLevel();
+                        dbgs()
+                        << getDebugIndent() << "Replacing :" << *CI << "\n"
+                        << getDebugIndent() << "     with :" << *CI_New << "\n";
+                        decreaseDebugIndentLevel());
                 // Erase the old instruction
                 CI->eraseFromParent();
             }
