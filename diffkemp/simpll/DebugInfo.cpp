@@ -162,7 +162,7 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                                                IndexConstant->getBitWidth(),
                                                ModFirst.getContext());
                         DEBUG_WITH_TYPE(
-                                DEBUG_SIMPLL,
+                                DEBUG_SIMPLL_VERBOSE,
                                 dbgs() << "Index alignment in:" << *GEP << "\n"
                                        << "                     " << indexFirst
                                        << " -> " << indexSecond << "\n");

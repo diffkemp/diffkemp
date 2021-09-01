@@ -138,7 +138,7 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
     }
 
     if (!ToRemove.empty()) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
                         dbgs() << "Removed instructions from " << Fun.getName()
                                << ": \n");
     }

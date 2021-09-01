@@ -111,6 +111,9 @@ Config::Config()
         // Enable debugging output in passes. Intended fallthrough
         switch (VerbosityOpt) {
         default:
+        case 2:
+            debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE);
+            [[fallthrough]];
         case 1:
             debugTypes.emplace_back(DEBUG_SIMPLL);
             break;
@@ -170,6 +173,9 @@ Config::Config(std::string FirstFunName,
         // Enable debugging output in passes. Intended fallthrough
         switch (Verbosity) {
         default:
+        case 2:
+            debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE);
+            [[fallthrough]];
         case 1:
             debugTypes.emplace_back(DEBUG_SIMPLL);
             break;

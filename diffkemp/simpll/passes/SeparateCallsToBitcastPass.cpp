@@ -109,7 +109,7 @@ PreservedAnalyses
 
                     // Replace the old call instruction with the last generated
                     // instruction.
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
                                     dbgs() << "Replacing :" << *Call
                                            << "\n   with :" << *replacementValue
                                            << "\n");
