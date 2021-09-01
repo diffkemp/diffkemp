@@ -54,7 +54,6 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         conf_struct.PrintCallStacks = True
         conf_struct.Variable = variable
         conf_struct.Verbosity = verbosity
-        conf_struct.VerboseMacros = False
 
         if use_cached_modules:
             module_left = module_cache[first].pointer

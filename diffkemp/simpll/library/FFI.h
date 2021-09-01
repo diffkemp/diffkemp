@@ -28,7 +28,6 @@ struct config {
     int PrintAsmDiffs;
     int PrintCallStacks;
     int Verbosity;
-    int VerboseMacros;
 };
 
 struct ptr_array {

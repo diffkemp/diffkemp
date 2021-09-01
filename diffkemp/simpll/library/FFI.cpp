@@ -51,8 +51,7 @@ void runSimpLL(std::unique_ptr<Module> ModL,
                   Conf.ControlFlowOnly,
                   Conf.PrintAsmDiffs,
                   Conf.PrintCallStacks,
-                  Conf.Verbosity,
-                  Conf.VerboseMacros);
+                  Conf.Verbosity);
 
     OverallResult Result;
     processAndCompare(config, Result);
