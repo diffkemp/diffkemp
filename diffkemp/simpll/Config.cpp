@@ -49,9 +49,6 @@ cl::opt<bool> PrintCallstacksOpt(
 cl::opt<int> VerbosityOpt(
         "verbosity",
         cl::desc("Level of verbose output (debugging information)."));
-cl::opt<bool> VerboseMacrosOpt("verbose-macros",
-                               cl::desc("Show debugging information for "
-                                        "discovering macro differences"));
 cl::opt<bool> PrintAsmDiffsOpt(
         "print-asm-diffs",
         cl::desc("Print raw differences in inline assembly code "
@@ -111,6 +108,9 @@ Config::Config()
         // Enable debugging output in passes. Intended fallthrough
         switch (VerbosityOpt) {
         default:
+        case 3:
+            debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE_EXTRA);
+            [[fallthrough]];
         case 2:
             debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE);
             [[fallthrough]];
@@ -118,10 +118,6 @@ Config::Config()
             debugTypes.emplace_back(DEBUG_SIMPLL);
             break;
         }
-    }
-    if (VerboseMacrosOpt) {
-        // Enable debugging output when finding macro differences
-        debugTypes.emplace_back(DEBUG_SIMPLL_MACROS);
     }
     setDebugTypes(debugTypes);
 }
@@ -153,8 +149,7 @@ Config::Config(std::string FirstFunName,
                bool ControlFlowOnly,
                bool PrintAsmDiffs,
                bool PrintCallStacks,
-               int Verbosity,
-               bool VerboseMacros)
+               int Verbosity)
         : First(std::move(FirstModule)), Second(std::move(SecondModule)),
           FirstFunName(FirstFunName), SecondFunName(SecondFunName),
           FirstOutFile(FirstOutFile), SecondOutFile(SecondOutFile),
@@ -173,6 +168,9 @@ Config::Config(std::string FirstFunName,
         // Enable debugging output in passes. Intended fallthrough
         switch (Verbosity) {
         default:
+        case 3:
+            debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE_EXTRA);
+            [[fallthrough]];
         case 2:
             debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE);
             [[fallthrough]];
@@ -180,10 +178,6 @@ Config::Config(std::string FirstFunName,
             debugTypes.emplace_back(DEBUG_SIMPLL);
             break;
         }
-    }
-    if (VerboseMacros) {
-        // Enable debugging output when finding macro differences
-        debugTypes.emplace_back(DEBUG_SIMPLL_MACROS);
     }
     setDebugTypes(debugTypes);
 }

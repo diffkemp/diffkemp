@@ -22,7 +22,7 @@
 
 #define DEBUG_SIMPLL "debug-simpll"
 #define DEBUG_SIMPLL_VERBOSE "debug-simpll-verbose"
-#define DEBUG_SIMPLL_MACROS "debug-simpll-macros"
+#define DEBUG_SIMPLL_VERBOSE_EXTRA "debug-simpll-verbose-extra"
 
 using namespace llvm;
 
@@ -35,7 +35,6 @@ extern cl::opt<std::string> SuffixOpt;
 extern cl::opt<bool> ControlFlowOpt;
 extern cl::opt<bool> PrintCallstacksOpt;
 extern cl::opt<int> VerbosityOpt;
-extern cl::opt<bool> VerboseMacrosOpt;
 
 /// Tool configuration parsed from CLI options.
 class Config {
@@ -87,8 +86,7 @@ class Config {
            bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
-           int Verbosity = 0,
-           bool VerboseMacros = false);
+           int Verbosity = 0);
     // Constructor without module loading (for tests).
     Config(std::string FirstFunName,
            std::string SecondFunName,
