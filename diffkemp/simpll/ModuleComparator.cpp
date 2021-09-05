@@ -88,17 +88,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
                 decreaseDebugIndentLevel();
                 switch (ComparedFuns.at({FirstFun, SecondFun}).kind) {
-                    case Result::EQUAL:
-                        dbgs() << "declaration, names are "
-                               << Color::makeGreen("equal") << " }\n";
-                        break;
                     case Result::NOT_EQUAL:
                         dbgs() << "declaration, names are "
                                << Color::makeRed("not equal") << " }\n";
                         break;
                     case Result::ASSUMED_EQUAL:
                         dbgs() << "declaration, "
-                               << Color::makeYellow("assumed equal") << " }\n";
+                               << Color::makeGreen("assumed equal") << " }\n";
                 });
 
         return;
