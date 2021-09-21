@@ -115,6 +115,11 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                         dbgs() << getDebugIndent() << "} "
                                << Color::makeRed("not equal\n")
+                               << Color::makeRed("========== ")
+                               << "Found difference between \""
+                               << FirstFun->getName() << "\" and \""
+                               << SecondFun->getName() << "\""
+                               << Color::makeRed(" ==========\n"););
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
 
         while (tryInline.first || tryInline.second) {
