@@ -53,6 +53,9 @@ cl::opt<bool> PrintAsmDiffsOpt(
         "print-asm-diffs",
         cl::desc("Print raw differences in inline assembly code "
                  "(does not apply to macros)."));
+cl::opt<bool> EquivalenceSlicerOpt(
+        "equivalence-slicer",
+        cl::desc("Remove equivalent parts of compared functions."));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -69,7 +72,8 @@ Config::Config()
           Second(parseIRFile(SecondFileOpt, err, context_second)),
           FirstOutFile(FirstFileOpt), SecondOutFile(SecondFileOpt),
           OutputLlvmIR(OutputLlvmIROpt), ControlFlowOnly(ControlFlowOpt),
-          PrintAsmDiffs(PrintAsmDiffsOpt), PrintCallStacks(PrintCallstacksOpt) {
+          PrintAsmDiffs(PrintAsmDiffsOpt), PrintCallStacks(PrintCallstacksOpt),
+          EquivalenceSlicer(EquivalenceSlicerOpt) {
     if (!FunctionOpt.empty()) {
         // Parse --fun option - find functions with given names.
         // The option can be either single function name (same for both modules)
@@ -149,13 +153,15 @@ Config::Config(std::string FirstFunName,
                bool ControlFlowOnly,
                bool PrintAsmDiffs,
                bool PrintCallStacks,
+               bool EquivalenceSlicer,
                int Verbosity)
         : First(std::move(FirstModule)), Second(std::move(SecondModule)),
           FirstFunName(FirstFunName), SecondFunName(SecondFunName),
           FirstOutFile(FirstOutFile), SecondOutFile(SecondOutFile),
           CacheDir(CacheDir), OutputLlvmIR(OutputLlvmIR),
           ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
-          PrintCallStacks(PrintCallStacks) {
+          PrintCallStacks(PrintCallStacks),
+          EquivalenceSlicer(EquivalenceSlicer) {
     refreshFunctions();
 
     if (!Variable.empty()) {
