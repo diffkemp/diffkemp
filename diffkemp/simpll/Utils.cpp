@@ -749,7 +749,13 @@ const std::string GREEN = "\e[1;32m";
 const std::string YELLOW = "\e[0;93m";
 const std::string WHITE = "\e[0m";
 
-std::string makeRed(std::string text) { return RED + text + WHITE; }
-std::string makeGreen(std::string text) { return GREEN + text + WHITE; }
-std::string makeYellow(std::string text) { return YELLOW + text + WHITE; }
+std::string makeRed(std::string text) {
+    return dbgs().has_colors() ? (RED + text + WHITE) : text;
+}
+std::string makeGreen(std::string text) {
+    return dbgs().has_colors() ? (GREEN + text + WHITE) : text;
+}
+std::string makeYellow(std::string text) {
+    return dbgs().has_colors() ? (YELLOW + text + WHITE) : text;
+}
 } // namespace Color
