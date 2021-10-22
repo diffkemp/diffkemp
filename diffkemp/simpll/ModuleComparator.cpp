@@ -8,7 +8,7 @@
 ///
 /// \file
 /// This file contains definitions of methods of the ModuleComparator class that
-/// can be used for syntactical comparison of two LLVM modules.
+/// can be used for semantic comparison of two LLVM modules.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -20,7 +20,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
-/// Syntactical comparison of functions.
+/// Semantic comparison of functions.
 /// Function declarations are equal if they have the same name.
 /// Functions with body are compared using custom FunctionComparator that
 /// is designed for comparing functions between different modules.

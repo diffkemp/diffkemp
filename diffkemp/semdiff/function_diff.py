@@ -190,8 +190,8 @@ def functions_diff(mod_first, mod_second,
                 fun_str = fun_first
             else:
                 fun_str = "{} and {}".format(fun_first, fun_second)
-            print("Syntactic diff of {} (in {})".format(fun_str,
-                                                        mod_first.llvm))
+            print("Semantic diff of {} (in {})".format(fun_str,
+                                                       mod_first.llvm))
 
         simplify = True
         while simplify:
