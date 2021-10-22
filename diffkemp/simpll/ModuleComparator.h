@@ -70,7 +70,7 @@ class ModuleComparator {
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
               StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR) {}
 
-    /// Syntactically compare two functions.
+    /// Semantically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.
     void compareFunctions(Function *FirstFun, Function *SecondFun);
 

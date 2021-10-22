@@ -178,7 +178,7 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
 
         DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << "Syntactic comparison results:\n");
+                        dbgs() << "Semantic comparison results:\n");
         bool allEqual = true;
         for (auto &funPairResult : modComp.ComparedFuns) {
             if (!funPairResult.first.first->isIntrinsic()
@@ -190,7 +190,7 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                 allEqual = false;
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << funPairResult.first.first->getName()
-                                       << " are syntactically different\n");
+                                       << " are semantically different\n");
             }
         }
         if (allEqual) {
@@ -199,7 +199,7 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
             // main functions) are equal.
             DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                             dbgs() << Color::makeGreen(
-                                    "All functions are syntactically equal\n"));
+                                    "All functions are semantically equal\n"));
             config.FirstFun->deleteBody();
             config.SecondFun->deleteBody();
             deleteAliasToFun(*config.First, config.FirstFun);
