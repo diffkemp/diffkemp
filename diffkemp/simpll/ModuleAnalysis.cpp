@@ -188,9 +188,11 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
             }
             if (funPairResult.second.kind == Result::Kind::NOT_EQUAL) {
                 allEqual = false;
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << funPairResult.first.first->getName()
-                                       << " are semantically different\n");
+                DEBUG_WITH_TYPE(
+                        DEBUG_SIMPLL,
+                        dbgs() << funPairResult.first.first->getName()
+                               << " are "
+                               << Color::makeRed("semantically different\n"));
             }
         }
         if (allEqual) {
