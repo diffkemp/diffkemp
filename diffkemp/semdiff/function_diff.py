@@ -297,8 +297,6 @@ def functions_diff(mod_first, mod_second,
                                 fun_result.first.diff_kind))
                         fun_result.diff = "unknown\n"
                 result.add_inner(fun_result)
-        if config.verbosity > 0:
-            print("  {}".format(result))
     except ValueError:
         result.kind = Result.Kind.ERROR
     except SimpLLException as e:
