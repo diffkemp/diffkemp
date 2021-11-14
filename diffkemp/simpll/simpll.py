@@ -41,8 +41,6 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
                               second in module_cache)
 
         output = ffi.new("char [1000000]")
-        conf_struct = ffi.new("struct config *")
-
         cache_dir = ffi.new("char []", cache_dir.encode("ascii") if cache_dir
                             else b"")
         variable = ffi.new("char []", var.encode("ascii") if var else b"")
