@@ -45,7 +45,7 @@ kernels are installed.
 
 First, generate snapshots for each kernel version that you need to compare:
 
-    bin/diffkemp generate KERNEL_DIR SNAPSHOT_DIR FUNCTION_LIST
+    bin/diffkemp generate KERNEL_DIR SNAPSHOT_DIR FUNCTION_LIST --kernel-with-builder
 
 The command creates a DiffKemp snapshot for semantic diff of functions from
 `FUNCTION_LIST` for the kernel located in `KERNEL_DIR`. The snapshot is stored
@@ -113,7 +113,7 @@ The analysis is composed of multiple steps:
       different, result of the standard `diff` command is shown.
 
 ## Components
-* LLVM source builder: finding and building kernel source files into LLVM IR.
+* Kernel source builder: finding and building kernel source files into LLVM IR.
   * Sources with function definitions are found using CScope. 
   * C sources are built into LLVM IR by checking the commands that are run by
     KBuild for building that file and by replacing GCC by Clang in the command.
