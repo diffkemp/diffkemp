@@ -84,7 +84,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         cwd = os.getcwd()
         os.chdir(self.source_dir)
         try:
-            cscope_out = self._cscope_run(symbol, False)
+            cscope_out = self._cscope_run(symbol, definition=False)
             if len(cscope_out) == 0:
                 raise SourceNotFoundException
             files = set()
@@ -191,10 +191,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
                         cscope_file.write("{}\n".format(path))
 
         # Build cscope database
-        cwd = os.getcwd()
-        os.chdir(self.source_dir)
-        check_call(["cscope", "-b", "-q", "-k"])
-        os.chdir(cwd)
+        check_call(["cscope", "-b", "-q", "-k"], cwd=self.source_dir)
 
     def _cscope_run(self, symbol, definition):
         """
@@ -204,17 +201,14 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
                            usage.
         :return: List of found cscope entries.
         """
-        if (symbol, definition) in self.cscope_cache:
-            return self.cscope_cache[(symbol, definition)]
+        cached = self.cscope_cache.get((symbol, definition))
+        if cached is not None:
+            return cached
 
         self._build_cscope_database()
         try:
-            command = ["cscope", "-d", "-L"]
-            if definition:
-                command.append("-1")
-            else:
-                command.append("-0")
-            command.append(symbol)
+            command = ["cscope", "-d", "-L", "-1" if definition else "-0",
+                       symbol]
             with open(os.devnull, "w") as devnull:
                 cscope_output = check_output(command, stderr=devnull).decode(
                     'utf-8')
@@ -233,8 +227,8 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         """
         macro_argument = symbol[len("__tracepoint_"):]
         candidates = self._cscope_run("EXPORT_TRACEPOINT_SYMBOL", False)
-        return list(filter(lambda c: c.endswith("(" + macro_argument + ");"),
-                           candidates))
+        return [c for c in candidates if
+                c.endswith("(" + macro_argument + ");")]
 
     def _find_srcs_with_symbol_def(self, symbol):
         """
