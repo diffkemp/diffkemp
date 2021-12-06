@@ -1,6 +1,6 @@
 """
-Kernel modules in LLVM IR.
-Functions for working with parameters of modules.
+LLVM IR modules.
+Functions for working with modules and parameters in them.
 """
 
 from diffkemp.simpll.library import SimpLLModule
@@ -18,7 +18,7 @@ supported_prefixes = {"llvm.lifetime", "kmalloc", "kzalloc", "malloc",
                       "calloc", "__kmalloc", "devm_kzalloc"}
 
 
-def supported_kernel_fun(llvm_fun):
+def supported_fun(llvm_fun):
     """Check whether the function is supported."""
     name = llvm_fun.get_name().decode("utf-8")
     if name:
@@ -26,15 +26,12 @@ def supported_kernel_fun(llvm_fun):
                 any([name.startswith(p) for p in supported_prefixes]))
 
 
-class KernelModuleException(Exception):
-    pass
-
-
-class KernelParam:
+class LlvmParam:
     """
-    Kernel parameter.
-    Contains name and optionally a list of indices in case the parameter is
-    a member of a composite data type.
+    A parameter represented by a (global) variable and an optional list of
+    field indices in case the parameter is a member of a composite data type.
+    The indices correspond to the indices used in LLVM GEP instruction to get
+    the address of the particular element within the given variable.
     """
     def __init__(self, name, indices=None):
         self.name = name
@@ -44,9 +41,9 @@ class KernelParam:
         return self.name
 
 
-class LlvmKernelModule:
+class LlvmModule:
     """
-    Kernel module in LLVM IR
+    Representation of a module in LLVM IR
     """
     def __init__(self, llvm_file, source_file=None):
         self.llvm = llvm_file
@@ -112,7 +109,7 @@ class LlvmKernelModule:
         """
         self.parse_module()
         name = self.llvm_module.find_param_var(param)
-        return KernelParam(name, []) if name is not None else None
+        return LlvmParam(name, []) if name is not None else None
 
     def has_function(self, fun):
         """Check if module contains a function definition."""
@@ -150,9 +147,9 @@ class LlvmKernelModule:
 
     def move_to_other_root_dir(self, old_root, new_root):
         """
-        Move this LLVM module into a different kernel root directory.
-        :param old_root: Kernel root directory to move from.
-        :param new_root: Kernel root directory to move to.
+        Move this LLVM module into a different project root directory.
+        :param old_root: Project root directory to move from.
+        :param new_root: Project root directory to move to.
         :return:
         """
         if self.llvm.startswith(old_root):

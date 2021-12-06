@@ -1,8 +1,10 @@
 from argparse import ArgumentParser, SUPPRESS
 from diffkemp.config import Config
 from diffkemp.snapshot import Snapshot
-from diffkemp.llvm_ir.kernel_module import KernelParam, LlvmKernelModule
-from diffkemp.llvm_ir.kernel_source import SourceNotFoundException
+from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
+from diffkemp.llvm_ir.source_tree import SourceNotFoundException
+from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
+from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
@@ -18,7 +20,7 @@ import sys
 def __make_argument_parser():
     """Parsing CLI arguments."""
     ap = ArgumentParser(description="Checking equivalence of semantics of "
-                                    "kernel functions.")
+                                    "functions in large C projects.")
     ap.add_argument("-v", "--verbose",
                     help="increase output verbosity",
                     action="count", default=0)
@@ -27,14 +29,23 @@ def __make_argument_parser():
 
     # "generate" sub-command
     generate_ap = sub_ap.add_parser("generate",
-                                    help="generate snapshot of kernel "
+                                    help="generate snapshot of compared "
                                          "functions")
-    generate_ap.add_argument("kernel_dir",
-                             help="kernel root directory")
+    generate_ap.add_argument("source_dir",
+                             help="project's root directory")
     generate_ap.add_argument("output_dir",
                              help="output directory of the snapshot")
     generate_ap.add_argument("functions_list",
                              help="list of functions to compare")
+
+    source_kind = generate_ap.add_mutually_exclusive_group(required=True)
+    source_kind.add_argument(
+        "--kernel-with-builder", action="store_true",
+        help="source is the Linux kernel not pre-built into LLVM IR")
+    source_kind.add_argument(
+        "--single-llvm-file", metavar="FILE",
+        help="source project is built into a single LLVM IR file")
+
     generate_ap.add_argument("--sysctl", action="store_true",
                              help="function list is a list of function "
                                   "parameters")
@@ -60,9 +71,9 @@ def __make_argument_parser():
     compare_ap.add_argument("--report-stat",
                             help="report statistics of the analysis",
                             action="store_true")
-    compare_ap.add_argument("--kernel-dirs",
+    compare_ap.add_argument("--source-dirs",
                             nargs=2,
-                            help="specify root dirs for the compared kernels")
+                            help="specify root dirs for the compared projects")
     compare_ap.add_argument("--function", "-f",
                             help="compare only selected function")
     compare_ap.add_argument("--output-llvm-ir",
@@ -103,17 +114,29 @@ def run_from_cli():
 
 def generate(args):
     """
-    Generate snapshot of sources of kernel functions.
+    Generate snapshot of sources of the compared functions.
     This involves:
-      - find source code with functions definitions
-      - compile the source codes into LLVM IR
-      - copy LLVM and C source files into snapshot directory
-      - create YAML with list mapping functions to their LLVM sources
+      - get LLVM files with function definitions
+      - copy LLVM and C source files into the snapshot directory
+      - create YAML with a list mapping functions to their LLVM sources
     """
+    # Choose the right LlvmSourceFinder and set the corresponding path to
+    # the file/folder that the finder needs.
+    if args.kernel_with_builder:
+        # Linux kernel to LLVM builder
+        source_finder_cls = KernelLlvmSourceBuilder
+        source_finder_path = None
+    elif args.single_llvm_file:
+        # Project pre-built into a single LLVM IR file
+        source_finder_cls = SingleLlvmFinder
+        source_finder_path = args.single_llvm_file
+
     # Create a new snapshot from the source directory.
-    snapshot = Snapshot.create_from_source(args.kernel_dir, args.output_dir,
-                                           "sysctl" if args.sysctl else None)
-    source = snapshot.kernel_source
+    snapshot = Snapshot.create_from_source(
+        args.source_dir, args.output_dir,
+        source_finder_cls, source_finder_path,
+        "sysctl" if args.sysctl else None)
+    source = snapshot.source_tree
 
     # Build sources for symbols from the list into LLVM IR
     with open(args.functions_list, "r") as fun_list_file:
@@ -160,7 +183,7 @@ def generate(args):
                             print("  {}: {} (proc handler)".format(
                                 proc_fun,
                                 os.path.relpath(proc_fun_mod.llvm,
-                                                args.kernel_dir)))
+                                                args.source_dir)))
                         except SourceNotFoundException:
                             print("  could not build proc handler")
 
@@ -168,10 +191,7 @@ def generate(args):
                     data = sysctl_mod.get_data(sysctl)
                     if not data:
                         continue
-                    for data_src in source.find_srcs_using_symbol(data.name):
-                        data_mod = source.get_module_from_source(data_src)
-                        if not data_mod:
-                            continue
+                    for data_mod in source.get_modules_using_symbol(data.name):
                         for data_fun in \
                                 data_mod.get_functions_using_param(data):
                             if data_fun == proc_fun:
@@ -187,7 +207,7 @@ def generate(args):
                                 "  {}: {} (using data variable \"{}\")".format(
                                     data_fun,
                                     os.path.relpath(data_mod.llvm,
-                                                    args.kernel_dir),
+                                                    args.source_dir),
                                     data.name))
             else:
                 try:
@@ -198,7 +218,7 @@ def generate(args):
                     if not llvm_mod.has_function(symbol):
                         print("unsupported")
                         continue
-                    print(os.path.relpath(llvm_mod.llvm, args.kernel_dir))
+                    print(os.path.relpath(llvm_mod.llvm, args.source_dir))
                     snapshot.add_fun(symbol, llvm_mod)
                 except SourceNotFoundException:
                     print("source not found")
@@ -244,7 +264,7 @@ def _generate_module_cache(functions, group_name, other_snapshot,
 
 def compare(args):
     """
-    Compare snapshots of linux kernels. Runs the semantic comparison and shows
+    Compare the generated snapshots. Runs the semantic comparison and shows
     information about the compared functions that are semantically different.
     """
     # Parse both the new and the old snapshot.
@@ -311,7 +331,7 @@ def compare(args):
                 continue
 
             # If function has a global variable, set it
-            glob_var = KernelParam(old_fun_desc.glob_var) \
+            glob_var = LlvmParam(old_fun_desc.glob_var) \
                 if old_fun_desc.glob_var else None
 
             # Run the semantic diff
@@ -371,7 +391,7 @@ def compare(args):
             # Clean LLVM modules (allow GC to collect the occupied memory)
             old_fun_desc.mod.clean_module()
             new_fun_desc.mod.clean_module()
-            LlvmKernelModule.clean_all()
+            LlvmModule.clean_all()
 
     old_snapshot.finalize()
     new_snapshot.finalize()
