@@ -173,4 +173,7 @@ std::string makeGreen(std::string text);
 std::string makeYellow(std::string text);
 } // namespace Color
 
+/// Return LLVM struct type of the given name
+StructType *getTypeByName(const Module &Mod, StringRef Name);
+
 #endif // DIFFKEMP_SIMPLL_UTILS_H
