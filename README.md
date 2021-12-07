@@ -2,8 +2,8 @@
 
 # DiffKemp
 
-Tool for semantic **Diff**erence of **Ke**rnel functions, **m**odules, and
-**p**arameters.
+DiffKemp is a tool for automatic static analysis of semantic differences between
+different versions of the Linux kernel.
 
 ## Installation
 
@@ -13,7 +13,7 @@ prepared RPM package for Fedora.
 ### Install from source
 
 Currently, DiffKemp runs on Linux and needs the following software installed:
-* Clang and LLVM (supported versions are 5, 6, 7, 8, and 9)
+* Clang and LLVM (supported versions are 5, 6, 7, 8, 9, 10, 11, and 12)
 * Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 * Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
 * CScope
@@ -100,17 +100,11 @@ The analysis is composed of multiple steps:
       snapshot directory and by creating a YAML file with the list of functions
       to be compared.
 * Compare: 
-    * The **SimpLL** component is used to compare the programs for syntax and
-      simple semantic equality. The list of functions that are compared as not
-      equal are returned.
-    * Optionally, external tools can be used for futher comparison of semantics.
-      Currently, we support the **LLReve** tool. It can be used to generate a
-      first order logic formula expressing the fact that the remaining programs
-      are semantically equal which is then solved using an automatic SMT solver
-      *Z3* and the result determines whether the programs are semantically equal
-      or not.
-    * Finally, for all functions and macros that are found to be semantically
-      different, result of the standard `diff` command is shown.
+    * The **SimpLL** component is used to compare the programs for semantic
+      equality. The list of functions that are compared as not equal are
+      returned.
+    * For all functions and macros that are found to be semantically different,
+      result of the standard `diff` command is shown.
 
 ## Components
 * Kernel source builder: finding and building kernel source files into LLVM IR.
@@ -126,9 +120,8 @@ The analysis is composed of multiple steps:
       * Dead code elimination.
       * Removal of code dependent on line numbers, file names, etc.
       * ... and many others.
-  * Comparing programs for syntactic and simple semantic equality. Programs are
-    compared instruction-by-instruction.
-  * Removing bodies of functions that are proved to be equal. 
+  * Comparing programs for semantic equality. Programs are mostly compared
+    instruction-by-instruction.
 
 ## Development
 
@@ -166,3 +159,23 @@ The required configuration of each kernel can be done by running:
 
     make prepare
     make modules_prepare
+
+## Contributors
+
+The list of code and non-code contributors to this project, in pseudo-random
+order:
+- Viktor Malík
+- Tomáš Glozar
+- Tomáš Vojnar
+- Petr Šilling
+- Tatiana Malecová
+- Jakub Rozek
+
+## Publications and talks
+
+There is a number of publications and talks related to DiffKemp:
+- ICST'21 [paper](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9438578)
+  and [talk](https://zenodo.org/record/4658966):
+  Malík, V., Vojnar, T.: Automatically Checking Semantic Equivalence between
+  Versions of Large-Scale C Projects + the related
+- [DevConf.CZ'19 talk](https://www.youtube.com/watch?v=PUZSaLf9exg)
