@@ -760,3 +760,12 @@ std::string makeYellow(std::string text) {
     return dbgs().has_colors() ? (YELLOW + text + WHITE) : text;
 }
 } // namespace Color
+
+/// Return LLVM struct type of the given name
+StructType *getTypeByName(const Module &Mod, StringRef Name) {
+#if LLVM_VERSION_MAJOR >= 12
+    return StructType::getTypeByName(Mod.getContext(), Name);
+#else
+    return Mod.getTypeByName(Name);
+#endif
+}

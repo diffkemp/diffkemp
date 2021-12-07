@@ -93,9 +93,15 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
         addAllOpsToIncluded(Inst);
     }
 
+#if LLVM_VERSION_MAJOR >= 12
+    UnifyFunctionExitNodesPass unifyExitPass;
+    unifyExitPass.run(Fun, fam);
+    RetBB = findReturnBlock(Fun);
+#else
     UnifyFunctionExitNodes unifyExitPass;
     unifyExitPass.runOnFunction(Fun);
     RetBB = unifyExitPass.getReturnBlock();
+#endif
 
     for (auto &BB : Fun) {
         auto Term = dyn_cast<BranchInst>(BB.getTerminator());
@@ -747,4 +753,12 @@ void VarDependencySlicer::changeToVoid(Function &Fun) {
     auto Name = Fun.getName();
     Fun.setName(Name + ".old");
     NewFun->setName(Name);
+}
+
+BasicBlock *VarDependencySlicer::findReturnBlock(Function &Fun) {
+    for (auto &BB : Fun) {
+        if (isa<ReturnInst>(BB.getTerminator()))
+            return &BB;
+    }
+    return nullptr;
 }

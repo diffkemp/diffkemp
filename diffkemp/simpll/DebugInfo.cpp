@@ -179,8 +179,8 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                                  elementName});
                     else
                         StructFieldNames.insert(
-                                {{ModSecond.getTypeByName(
-                                          indexedType->getStructName()),
+                                {{getTypeByName(ModSecond,
+                                                indexedType->getStructName()),
                                   indexSecond},
                                  elementName});
                 }

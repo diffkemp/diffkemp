@@ -96,6 +96,9 @@ class VarDependencySlicer : public PassInfoMixin<VarDependencySlicer> {
 
     /// Change return type of the function to void if possible.
     void changeToVoid(Function &Fun);
+
+    /// Find the single basic block containing a 'ret' instruction
+    BasicBlock *findReturnBlock(Function &Fun);
 };
 
 #endif // PROJECT_VARDEPENDENCYSLICER_H
