@@ -119,7 +119,7 @@ RUN chmod +x /switch-llvm.sh
 RUN /switch-llvm.sh 11
 # Setup Python 3.8 and install pip packages
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 100
-RUN python3 -m easy_install pip
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3.8
 RUN python3 -m pip install \
       --upgrade pip \
       llvmcpy \
