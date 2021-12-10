@@ -1,5 +1,5 @@
 Name:           diffkemp
-Version:        0.2.2
+Version:        0.3.0
 Release:        1%{?dist}
 Summary:        A tool for analyzing differences in kernel functions
 
@@ -64,12 +64,20 @@ tests/unit_tests/simpll/runTests
 %{_bindir}/%{name}
 %{_bindir}/%{name}-simpll
 %{_libdir}/libsimpll-lib.so
-# llvmcpy Python package
-%{python3_sitelib}/llvmcpy-%{llvmcpy_version}-*.egg-info/
-%{python3_sitelib}/llvmcpy
 
 
 %changelog
+* Mon Feb 28 2022 Viktor Malik <vmalik@redhat.com> - 0.3.0-1
+- Improved CLI interface
+- Support analysis of projects built into a single LLVM IR file
+- Support for LLVM 11, 12, and 13
+- Handling analysis of "swapped if branches" refactoring
+- Building SimpLL as a shared library
+- Analysis result caching
+- Improved verbosity output
+- Improved field access comparison
+- Drop llvmcpy dependency
+
 * Tue Apr 07 2020 Viktor Malik <vmalik@redhat.com> - 0.2.2-1
 - Support kernel 5.x versions
 - Support for LLVM 10
