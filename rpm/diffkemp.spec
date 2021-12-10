@@ -1,5 +1,3 @@
-%define llvmcpy_version 0.1.5
-
 Name:           diffkemp
 Version:        0.2.2
 Release:        1%{?dist}
@@ -8,7 +6,6 @@ Summary:        A tool for analyzing differences in kernel functions
 License:        ASL 2.0
 URL:            https://github.com/viktormalik/diffkemp
 Source0:        https://github.com/viktormalik/diffkemp/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
-Source1:        %pypi_source llvmcpy %{llvmcpy_version}
 
 BuildRequires:  gcc gcc-c++ cmake ninja-build
 BuildRequires:  llvm-devel
@@ -30,9 +27,7 @@ representation.
 
 
 %prep
-%setup -q -n %{name}-%{version}
-%setup -q -a 1 -T -D -n %{name}-%{version}
-cd llvmcpy-%{llvmcpy_version}
+%setup -q
 
 
 %build
@@ -42,10 +37,6 @@ mkdir build
 %ninja_build -C build
 # Python part
 %py3_build
-# llvmcpy Python package
-cd llvmcpy-%{llvmcpy_version}
-%py3_build
-cd ..
 
 
 %install
@@ -55,10 +46,6 @@ mkdir -p %{buildroot}/%{_bindir}
 install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
 # Python part
 %py3_install
-# llvmcpy Python package
-cd llvmcpy-%{llvmcpy_version}
-%py3_install
-cd ..
 
 
 %check
