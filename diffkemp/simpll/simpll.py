@@ -67,14 +67,32 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
 
         try:
             if use_cached_modules:
-                runSimpLL = lib.cloneAndRunSimpLL
+                r, w = os.pipe()
+                pid = os.fork()
+                if pid == 0:
+                    # Child process - run SimpLL and send result through pipe
+                    os.close(r)
+                    lib.runSimpLL(module_left, module_right, module_left_out,
+                                  module_right_out, fun_left, fun_right,
+                                  conf_struct[0], output)
+                    os.write(w, ffi.string(output))
+                    os.close(w)
+                    os._exit(0)
+                else:
+                    # Parent process - collect result from pipe
+                    os.close(w)
+                    r = os.fdopen(r)
+                    simpll_out = r.read()
+                    _, status = os.waitpid(pid, 0)
+                    if status != 0:
+                        raise SimpLLException("Simplifying files failed")
             else:
-                runSimpLL = lib.parseAndRunSimpLL
-            runSimpLL(module_left, module_right, module_left_out,
-                      module_right_out, fun_left, fun_right, conf_struct[0],
-                      output)
-            simpll_out = ffi.string(output)
-            lib.shutdownSimpLL()
+                lib.parseAndRunSimpLL(module_left, module_right,
+                                      module_left_out, module_right_out,
+                                      fun_left, fun_right, conf_struct[0],
+                                      output)
+                simpll_out = ffi.string(output)
+                lib.shutdownSimpLL()
         except ffi.error:
             raise SimpLLException("Simplifying files failed")
     else:

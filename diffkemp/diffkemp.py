@@ -311,7 +311,7 @@ def compare(args):
             module_cache = _generate_module_cache(group.functions.items(),
                                                   group_name,
                                                   new_snapshot,
-                                                  3)
+                                                  2)
         else:
             module_cache = None
 
