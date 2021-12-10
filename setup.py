@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name="diffkemp",
-      version="0.2.2",
+      version="0.3.0",
       description="A tool for semantic difference analysis of kernel functions",
       author="Viktor Malik",
       author_email="vmalik@redhat.com",
