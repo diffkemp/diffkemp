@@ -29,36 +29,6 @@ std::unordered_map<Module *, std::unique_ptr<LLVMContext>> ContextMap;
 /// Map that manages unique pointers to modules.
 std::unordered_map<Module *, std::unique_ptr<Module>> ModuleMap;
 
-/// Simplifies modules and compares the specified functions.
-void runSimpLL(Module *ModL,
-               Module *ModR,
-               const char *ModLOut,
-               const char *ModROut,
-               const char *FunL,
-               const char *FunR,
-               struct config Conf,
-               char *Output) {
-    Config config(FunL,
-                  FunR,
-                  ModL,
-                  ModR,
-                  ModLOut,
-                  ModROut,
-                  Conf.CacheDir,
-                  Conf.Variable,
-                  Conf.OutputLlvmIR,
-                  Conf.ControlFlowOnly,
-                  Conf.PrintAsmDiffs,
-                  Conf.PrintCallStacks,
-                  Conf.Verbosity);
-
-    OverallResult Result;
-    processAndCompare(config, Result);
-
-    std::string outputString = reportOutputToString(Result);
-    strcpy(Output, outputString.c_str());
-}
-
 /// Utility function used to convert an iterable container of StringRefs into
 /// a ptr_array.
 /// This is for cases when the strings are owned by the LLVM context.
@@ -246,6 +216,36 @@ struct kernel_param getData(const char *Sysctl, void *SysctlTableRaw) {
     return kernel_param{Result.Var ? Result.Var->getName().data() : nullptr,
                         indices,
                         Result.indices.size()};
+}
+
+/// Simplifies modules and compares the specified functions.
+void runSimpLL(void *ModL,
+               void *ModR,
+               const char *ModLOut,
+               const char *ModROut,
+               const char *FunL,
+               const char *FunR,
+               struct config Conf,
+               char *Output) {
+    Config config(FunL,
+                  FunR,
+                  (Module *)ModL,
+                  (Module *)ModR,
+                  ModLOut,
+                  ModROut,
+                  Conf.CacheDir,
+                  Conf.Variable,
+                  Conf.OutputLlvmIR,
+                  Conf.ControlFlowOnly,
+                  Conf.PrintAsmDiffs,
+                  Conf.PrintCallStacks,
+                  Conf.Verbosity);
+
+    OverallResult Result;
+    processAndCompare(config, Result);
+
+    std::string outputString = reportOutputToString(Result);
+    strcpy(Output, outputString.c_str());
 }
 
 /// Clones modules to get separate copies of them and runs the simplification
