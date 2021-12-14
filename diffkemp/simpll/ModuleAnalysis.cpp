@@ -153,8 +153,8 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
                 Module *>
             mpm;
     mpm.addPass(RemoveUnusedReturnValuesPass{});
-    mpm.run(*config.First, mam, config.FirstFun, config.Second.get());
-    mpm.run(*config.Second, mam, config.SecondFun, config.First.get());
+    mpm.run(*config.First, mam, config.FirstFun, config.Second);
+    mpm.run(*config.Second, mam, config.SecondFun, config.First);
 
     // Refreshing main functions is necessary because they can be replaced with
     // a new version by a pass
