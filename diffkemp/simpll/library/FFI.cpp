@@ -56,7 +56,7 @@ void runSimpLL(std::unique_ptr<Module> ModL,
     OverallResult Result;
     processAndCompare(config, Result);
 
-    std::string outputString = reportOutputToString(config, Result);
+    std::string outputString = reportOutputToString(Result);
     strcpy(Output, outputString.c_str());
 }
 
@@ -111,7 +111,7 @@ void freeModule(void *ModRaw) {
 void freePointerArray(struct ptr_array PtrArr) { delete[] PtrArr.arr; }
 
 void freeStringArray(struct ptr_array PtrArr) {
-    for (int i = 0; i < PtrArr.len; i++)
+    for (unsigned long i = 0; i < PtrArr.len; i++)
         delete[](char *) PtrArr.arr[i];
 
     freePointerArray(PtrArr);

@@ -18,7 +18,7 @@
 /// only)
 PreservedAnalyses
         ReduceFunctionMetadataPass::run(Function &Fun,
-                                        FunctionAnalysisManager &fam) {
+                                        FunctionAnalysisManager & /*fam*/) {
     // If the function has a custom section, remove it.
     if (Fun.hasSection())
         Fun.setSection("");

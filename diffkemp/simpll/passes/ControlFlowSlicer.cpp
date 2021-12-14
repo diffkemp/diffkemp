@@ -84,7 +84,7 @@ bool isResultOnlyStored(const Instruction *Inst) {
 /// Keep only function calls, branches, instructions having functions as
 /// parameters, and all instructions depending on these.
 PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
-                                         FunctionAnalysisManager &fam) {
+                                         FunctionAnalysisManager & /*fam*/) {
     std::set<const Instruction *> Dependent;
     for (const auto &BB : Fun) {
         for (const auto &Instr : BB) {

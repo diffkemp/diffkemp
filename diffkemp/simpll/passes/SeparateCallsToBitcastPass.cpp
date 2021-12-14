@@ -25,7 +25,7 @@
 /// inlinable.
 PreservedAnalyses
         SeparateCallsToBitcastPass::run(Function &Fun,
-                                        FunctionAnalysisManager &fam) {
+                                        FunctionAnalysisManager & /*fam*/) {
     std::vector<Instruction *> toRemove;
 
     for (auto &BB : Fun) {

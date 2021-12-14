@@ -33,8 +33,9 @@ bool canMergeGlobalWithName(const std::string Name) {
            || Name.find(".descriptor") != std::string::npos;
 }
 
-PreservedAnalyses SimplifyKernelGlobalsPass::run(Module &Mod,
-                                                 ModuleAnalysisManager &mam) {
+PreservedAnalyses
+        SimplifyKernelGlobalsPass::run(Module &Mod,
+                                       ModuleAnalysisManager & /*mam*/) {
     std::vector<GlobalVariable *> kSymstoDelete;
 
     for (auto &Glob : Mod.globals()) {

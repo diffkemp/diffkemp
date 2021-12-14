@@ -66,7 +66,7 @@ bool checkGEPIndicesCorrespond(const GEPOperator *GEP,
             auto Op = GEP->getOperand(i);
             if (isa<ConstantInt>(Op)
                 && (dyn_cast<ConstantInt>(Op)->getZExtValue()
-                    != indices[i - 1])) {
+                    != (unsigned)indices[i - 1])) {
                 return false;
             }
         }

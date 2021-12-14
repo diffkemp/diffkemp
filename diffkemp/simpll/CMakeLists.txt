@@ -19,7 +19,7 @@ file(GLOB passes passes/*.cpp)
 file(GLOB library library/*.cpp)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fpic -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fpic -fvisibility=hidden -Wall -Wextra")
 
 exec_program(llvm-config ARGS --libs irreader passes support OUTPUT_VARIABLE llvm_libs)
 exec_program(llvm-config ARGS --system-libs OUTPUT_VARIABLE system_libs)

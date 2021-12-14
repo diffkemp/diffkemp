@@ -17,7 +17,7 @@
 #include <llvm/IR/Instructions.h>
 
 PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
-                                       FunctionAnalysisManager &fam) {
+                                       FunctionAnalysisManager & /*fam*/) {
     std::vector<Instruction *> toRemove;
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {

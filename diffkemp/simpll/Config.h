@@ -94,8 +94,8 @@ class Config {
            bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true)
-            : First(nullptr), Second(nullptr), FirstFunName(FirstFunName),
-              SecondFunName(SecondFunName), FirstOutFile("/dev/null"),
+            : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
+              First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
               ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
               PrintCallStacks(PrintCallStacks) {}

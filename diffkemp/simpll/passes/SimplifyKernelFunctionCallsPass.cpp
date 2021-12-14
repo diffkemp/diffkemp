@@ -47,9 +47,8 @@ void replaceArgByNull(CallInst *Call, unsigned index) {
     }
 }
 
-PreservedAnalyses
-        SimplifyKernelFunctionCallsPass::run(Function &Fun,
-                                             FunctionAnalysisManager &fam) {
+PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
+        Function &Fun, FunctionAnalysisManager & /*fam*/) {
     std::vector<Instruction *> toRemove;
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
