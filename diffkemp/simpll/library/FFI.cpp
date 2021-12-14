@@ -30,9 +30,8 @@ std::unordered_map<Module *, std::unique_ptr<LLVMContext>> ContextMap;
 std::unordered_map<Module *, std::unique_ptr<Module>> ModuleMap;
 
 /// Simplifies modules and compares the specified functions.
-/// Note: this variant takes ownership of the Module objects.
-void runSimpLL(std::unique_ptr<Module> ModL,
-               std::unique_ptr<Module> ModR,
+void runSimpLL(Module *ModL,
+               Module *ModR,
                const char *ModLOut,
                const char *ModROut,
                const char *FunL,
@@ -41,8 +40,8 @@ void runSimpLL(std::unique_ptr<Module> ModL,
                char *Output) {
     Config config(FunL,
                   FunR,
-                  std::move(ModL),
-                  std::move(ModR),
+                  ModL,
+                  ModR,
                   ModLOut,
                   ModROut,
                   Conf.CacheDir,
@@ -260,12 +259,14 @@ void cloneAndRunSimpLL(void *ModL,
                        struct config Conf,
                        char *Output) {
 #if LLVM_VERSION_MAJOR < 7
-    runSimpLL(CloneModule((Module *)ModL),
-              CloneModule((Module *)ModR),
+    std::unique_ptr<Module> UqModL(CloneModule((Module *)ModL));
+    std::unique_ptr<Module> UqModR(CloneModule((Module *)ModR));
 #else
-    runSimpLL(CloneModule(*((Module *)ModL)),
-              CloneModule(*((Module *)ModR)),
+    std::unique_ptr<Module> UqModL(CloneModule(*((Module *)ModL)));
+    std::unique_ptr<Module> UqModR(CloneModule(*((Module *)ModR)));
 #endif
+    runSimpLL(UqModL.get(),
+              UqModR.get(),
               ModLOut,
               ModROut,
               FunL,
@@ -287,8 +288,10 @@ void parseAndRunSimpLL(const char *ModL,
     LLVMContext CtxL, CtxR;
     SMDiagnostic err;
 
-    runSimpLL(parseIRFile(ModL, err, CtxL),
-              parseIRFile(ModR, err, CtxR),
+    std::unique_ptr<Module> UqModL(parseIRFile(ModL, err, CtxL));
+    std::unique_ptr<Module> UqModR(parseIRFile(ModR, err, CtxR));
+    runSimpLL(UqModL.get(),
+              UqModR.get(),
               ModLOut,
               ModROut,
               FunL,

@@ -48,8 +48,8 @@ class Config {
 
   public:
     // Parsed LLVM modules
-    std::unique_ptr<Module> First;
-    std::unique_ptr<Module> Second;
+    Module *First;
+    Module *Second;
     // Compared functions
     Function *FirstFun = nullptr;
     Function *SecondFun = nullptr;
@@ -71,13 +71,10 @@ class Config {
     // Show call stacks for non-equal functions
     bool PrintCallStacks;
 
-    // Constructor for command-line use.
-    Config();
-    // Constructor for other use than from the command line.
     Config(std::string FirstFunName,
            std::string SecondFunName,
-           std::unique_ptr<Module> FirstModule,
-           std::unique_ptr<Module> SecondModule,
+           Module *FirstModule,
+           Module *SecondModule,
            std::string FirstOutFile,
            std::string SecondOutFile,
            std::string CacheDir,
