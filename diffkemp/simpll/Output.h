@@ -21,11 +21,10 @@
 #include "Utils.h"
 
 /// Report the overall result in YAML format to stdout.
-/// \param config Configuration.
 /// \param Result The overall result of the comparison
-void reportOutput(Config &config, OverallResult &Result);
+void reportOutput(OverallResult &Result);
 
 /// Report the overall result in YAML format to a string.
-std::string reportOutputToString(Config &config, OverallResult &result);
+std::string reportOutputToString(OverallResult &result);
 
 #endif // DIFFKEMP_SIMPLL_OUTPUT_H

@@ -358,7 +358,7 @@ void findAndReplace(std::string &input, std::string find, std::string replace) {
     if (find == "")
         return;
 
-    int position = 0;
+    unsigned long position = 0;
     while ((position = input.find(find, position)) != std::string::npos) {
         input.replace(position, find.length(), replace);
         position += replace.length();
@@ -557,7 +557,7 @@ std::string getIdentifierForValue(
     } else if (Parent) {
         // Check if the value is a function argument - in case it is, extract
         // the argument name.
-        int idx = 0;
+        size_t idx = 0;
 
         // Extract register number
         std::string ValDump;
@@ -565,7 +565,7 @@ std::string getIdentifierForValue(
         Val->print(ValDumStrm);
         std::string RegName = ValDump.substr(ValDump.find_last_of('%') + 1,
                                              std::string::npos);
-        int RegNum;
+        size_t RegNum;
         std::istringstream Iss(RegName);
         Iss >> RegNum;
         if (Iss.fail())

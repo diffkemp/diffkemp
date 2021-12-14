@@ -67,7 +67,7 @@ void MacroDiffAnalysis::collectMacroUsesAtLocation(
         // Go through the macro body to find all strings that could possibly
         // be macro identifiers. This is basically a FSM matching all valid C
         // identifiers.
-        for (int i = 0; i < macroBody.size(); i++) {
+        for (unsigned long i = 0; i < macroBody.size(); i++) {
             if (potentialMacroName.empty()) {
                 // We are looking for the beginning of an identifier.
                 if (isValidCharForIdentifierStart(macroBody[i]))
@@ -146,7 +146,7 @@ void expandCompositeMacroNames(std::vector<std::string> params,
                                std::vector<std::string> args,
                                std::string &body) {
     for (auto arg : zip(params, args)) {
-        int position = 0;
+        unsigned long position = 0;
         while ((position = body.find(std::get<0>(arg) + "##", position))
                != std::string::npos) {
             if (position != 0 && isValidCharForIdentifier(body[position - 1]))
@@ -535,7 +535,7 @@ std::vector<std::string>
     // character to the inline asm from LLVM IR and discards a candidate when
     // its character at the current position does not correspond. This is
     // repeated until one or no candidate is left.
-    int position = 0;
+    unsigned long position = 0;
     while (candidates.size() > 1) {
         auto it = std::remove_if(candidates.begin(),
                                  candidates.end(),
@@ -562,7 +562,7 @@ std::vector<std::string>
     std::vector<std::string> result;
     position = -1;
 
-    while (position < int(rawArguments.size())) {
+    while (position < rawArguments.size()) {
         position = rawArguments.find('(', position + 1);
         if (position == std::string::npos)
             // There is no additional bracket.
@@ -585,7 +585,8 @@ std::vector<std::string> splitArgumentsList(std::string argumentString) {
     std::vector<std::string> unstrippedArguments;
     std::string currentArgument;
 
-    int bracketCounter = 0, position = 1;
+    unsigned long position = 1;
+    int bracketCounter = 0;
     while (position < argumentString.size()) {
         if (argumentString[position] == '(')
             ++bracketCounter;
@@ -642,7 +643,7 @@ std::vector<std::string>
     // Extract the function calls from them
     for (auto input : inputs) {
         std::string identifier, result;
-        int i = input.find(functionName);
+        unsigned long i = input.find(functionName);
 
         if (i == std::string::npos)
             continue;

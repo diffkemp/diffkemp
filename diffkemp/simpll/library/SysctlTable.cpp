@@ -75,7 +75,7 @@ std::vector<std::string>
     // Get global variable initializer. If SysctlPattern contains indices,
     // follow them to get the actual table.
     auto SysctlList = TableRoot->getInitializer();
-    for (int i = 1; i < CtlTableParsed.size(); i++) {
+    for (unsigned i = 1; i < CtlTableParsed.size(); i++) {
         SysctlList = dyn_cast<Constant>(
                 SysctlList->getOperand(std::stoi(CtlTableParsed[i])));
     }
@@ -83,7 +83,7 @@ std::vector<std::string>
         return Result;
 
     /// Iterate all entries in the table.
-    for (int i = 0; i < SysctlList->getNumOperands(); i++) {
+    for (unsigned i = 0; i < SysctlList->getNumOperands(); i++) {
         auto Sysctl = dyn_cast<ConstantStruct>(SysctlList->getOperand(i));
         if (!Sysctl || Sysctl->getNumOperands() == 0)
             continue;
@@ -144,7 +144,7 @@ SysctlParam SysctlTable::getGlobalVariableAtIndex(const std::string &SysctlName,
 
     if (auto GEP = dyn_cast<GEPOperator>(Data)) {
         // Address is a GEP, we have to extract the actual variable.
-        for (int i = 1; i < Data->getNumOperands(); i++) {
+        for (unsigned i = 1; i < Data->getNumOperands(); i++) {
             if (auto Const = dyn_cast<ConstantInt>(Data->getOperand(i))) {
                 Result.indices.push_back(Const->getZExtValue());
             } else {

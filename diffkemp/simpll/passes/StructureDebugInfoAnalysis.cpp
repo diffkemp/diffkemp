@@ -17,7 +17,9 @@
 AnalysisKey StructureDebugInfoAnalysis::Key;
 
 StructureDebugInfoAnalysis::Result StructureDebugInfoAnalysis::run(
-        Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
+        Module &Mod,
+        AnalysisManager<Module, Function *> & /*mam*/,
+        Function * /*Main*/) {
     Result Res;
     for (DICompileUnit *CU : Mod.debug_compile_units()) {
         // Use a DFS algorithm to get to all DI nodes for structure types.

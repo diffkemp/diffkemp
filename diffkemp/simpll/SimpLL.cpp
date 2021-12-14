@@ -29,7 +29,7 @@ int main(int argc, const char **argv) {
     processAndCompare(config, Result);
 
     // Report the result to standard output.
-    reportOutput(config, Result);
+    reportOutput(Result);
 
     llvm_shutdown();
     return 0;

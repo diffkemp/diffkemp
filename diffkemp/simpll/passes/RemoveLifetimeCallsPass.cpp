@@ -14,8 +14,9 @@
 #include "RemoveLifetimeCallsPass.h"
 #include <llvm/IR/Instructions.h>
 
-PreservedAnalyses RemoveLifetimeCallsPass::run(Module &Mod,
-                                               ModuleAnalysisManager &mam) {
+PreservedAnalyses
+        RemoveLifetimeCallsPass::run(Module &Mod,
+                                     ModuleAnalysisManager & /*mam*/) {
     std::vector<Instruction *> toRemove;
     for (auto &Fun : Mod) {
         for (auto &BB : Fun) {

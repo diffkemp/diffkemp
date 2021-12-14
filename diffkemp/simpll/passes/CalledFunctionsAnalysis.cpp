@@ -21,7 +21,9 @@
 AnalysisKey CalledFunctionsAnalysis::Key;
 
 CalledFunctionsAnalysis::Result CalledFunctionsAnalysis::run(
-        Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
+        Module & /*Mod*/,
+        AnalysisManager<Module, Function *> & /*mam*/,
+        Function *Main) {
     Result result;
     collectCalled(Main, result);
     return result;

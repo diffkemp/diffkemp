@@ -20,7 +20,7 @@
 
 PreservedAnalyses
         MergeNumberedFunctionsPass::run(Module &Mod,
-                                        AnalysisManager<Module> &mam) {
+                                        AnalysisManager<Module> & /*mam*/) {
     // All functions with the same number are grouped together into a vector,
     // its index is the name of the functions without the suffix.
     std::unordered_map<std::string, std::vector<Function *>> GroupingMap;

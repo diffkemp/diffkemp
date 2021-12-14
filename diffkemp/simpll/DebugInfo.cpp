@@ -19,7 +19,7 @@
 using namespace llvm;
 
 PreservedAnalyses RemoveDebugInfoPass::run(Function &Fun,
-                                           FunctionAnalysisManager &fam) {
+                                           FunctionAnalysisManager & /*fam*/) {
     std::vector<Instruction *> toRemove;
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
@@ -148,8 +148,8 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                 if (!TypeDISecond)
                     continue;
 
-                int indexSecond =
-                        getTypeMemberIndex(*TypeDISecond, elementName);
+                auto indexSecond = (uint64_t)getTypeMemberIndex(*TypeDISecond,
+                                                                elementName);
 
                 if (indexSecond > 0) {
                     if (indexFirst != indexSecond) {

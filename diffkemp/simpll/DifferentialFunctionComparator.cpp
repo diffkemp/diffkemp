@@ -186,8 +186,8 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
 }
 
 /// Ignore differences in attributes.
-int DifferentialFunctionComparator::cmpAttrs(const AttributeList L,
-                                             const AttributeList R) const {
+int DifferentialFunctionComparator::cmpAttrs(const AttributeList /*L*/,
+                                             const AttributeList /*R*/) const {
     return 0;
 }
 
@@ -600,7 +600,7 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
                     searchPredecessors = false;
                     break;
                 }
-            } else if (auto Store = dyn_cast<StoreInst>(&*it)) {
+            } else if (isa<StoreInst>(&*it)) {
                 // Check whether a possibly conflicting store instruction
                 // is present. If found, end the search with a failure.
                 PreviousLoad = nullptr;
@@ -880,7 +880,7 @@ std::vector<std::unique_ptr<SyntaxDifference>>
         const CallInst *I = std::get<0>(T);
         std::string *argumentNames = std::get<1>(T);
 
-        for (int i = 0; i < I->getNumArgOperands(); i++) {
+        for (unsigned i = 0; i < I->getNumArgOperands(); i++) {
             const Value *Op = I->getArgOperand(i);
             std::string OpName = getIdentifierForValue(
                     Op, DI->StructFieldNames, I->getFunction());
@@ -1017,7 +1017,8 @@ void DifferentialFunctionComparator::findTypeDifferences(
         const Function *R) const {
     std::vector<Type *> SrcTypesL = getFieldAccessSourceTypes(FAL);
     std::vector<Type *> SrcTypesR = getFieldAccessSourceTypes(FAR);
-    for (int i = 0; i < std::min(SrcTypesL.size(), SrcTypesR.size()); i++) {
+    for (unsigned long i = 0; i < std::min(SrcTypesL.size(), SrcTypesR.size());
+         i++) {
         StructType *STyL = dyn_cast<StructType>(SrcTypesL[i]);
         StructType *STyR = dyn_cast<StructType>(SrcTypesR[i]);
         if (!STyL || !STyR)
@@ -1183,9 +1184,9 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             // We also need to remove a BB that was newly inserted in cmpValues
             // since the serial maps would not be synchronized otherwise.
             if (sn_mapL.size() != sn_mapR.size()) {
-                if (sn_mapL[L] == (sn_mapL.size() - 1))
+                if ((unsigned long)sn_mapL[L] == (sn_mapL.size() - 1))
                     sn_mapL.erase(L);
-                if (sn_mapR[R] == (sn_mapR.size() - 1))
+                if ((unsigned long)sn_mapR[R] == (sn_mapR.size() - 1))
                     sn_mapR.erase(R);
             }
             return 0;

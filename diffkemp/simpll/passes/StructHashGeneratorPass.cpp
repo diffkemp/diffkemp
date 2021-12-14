@@ -17,7 +17,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 PreservedAnalyses StructHashGeneratorPass::run(
-        Module &Mod, llvm::AnalysisManager<llvm::Module> &Main) {
+        Module &Mod, llvm::AnalysisManager<llvm::Module> & /*Main*/) {
     TypeFinder Types;
     Types.run(Mod, true);
 
@@ -33,7 +33,7 @@ PreservedAnalyses StructHashGeneratorPass::run(
             TypeDump = DumpStrm.str();
 
             // Extract the type declaration without type name
-            int pos = TypeDump.find("{");
+            unsigned long pos = TypeDump.find("{");
             if (pos == std::string::npos)
                 continue;
             std::string TypeDecl = TypeDump.substr(pos);

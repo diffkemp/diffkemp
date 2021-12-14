@@ -162,7 +162,6 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
     // Fourth phase - remove unneeded instructions and keep the control flow
     std::vector<Instruction *> toRemove;
-    int b = 0;
     for (auto &BB : Fun) {
         // Collect and clear all instruction that can be removed
         for (auto &Inst : BB) {

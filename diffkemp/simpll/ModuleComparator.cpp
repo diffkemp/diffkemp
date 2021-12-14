@@ -95,6 +95,9 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     case Result::ASSUMED_EQUAL:
                         dbgs() << "declaration, "
                                << Color::makeGreen("assumed equal") << " }\n";
+                        break;
+                    default:
+                        break;
                 });
 
         return;

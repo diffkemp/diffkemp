@@ -65,10 +65,10 @@ class ModuleComparator {
                      StructureSizeAnalysis::Result &StructSizeMapR,
                      StructureDebugInfoAnalysis::Result &StructDIMapL,
                      StructureDebugInfoAnalysis::Result &StructDIMapR)
-            : First(First), Second(Second), config(config), DI(DI),
-              ResCache(config.CacheDir), MacroDiffs(),
+            : First(First), Second(Second), config(config),
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
-              StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR) {}
+              StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR), DI(DI),
+              ResCache(config.CacheDir), MacroDiffs() {}
 
     /// Semantically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.
