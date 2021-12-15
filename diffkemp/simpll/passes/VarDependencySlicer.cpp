@@ -26,6 +26,10 @@
 PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                                            FunctionAnalysisManager &fam,
                                            GlobalVariable *Var) {
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Slicing " << Fun.getName() << " w.r.t. value of "
+                           << Var->getName() << "...\n";
+                    increaseDebugIndentLevel());
     if (Fun.isDeclaration())
         return PreservedAnalyses::all();
 
@@ -226,6 +230,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
         dbgs() << "Function " << Fun.getName().str() << " after cleanup:\n";
         Fun.print(dbgs());
         dbgs() << "\n";
+        decreaseDebugIndentLevel();
     });
     return PreservedAnalyses::none();
 }
