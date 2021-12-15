@@ -25,6 +25,10 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         AnalysisManager<Module, Function *> &mam,
         Function *Main,
         Module *ModOther) {
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Removing unused return values in "
+                           << Mod.getName() << "...\n";
+                    increaseDebugIndentLevel());
 
     auto &CalledFuns = mam.getResult<CalledFunctionsAnalysis>(Mod, Main);
 
@@ -180,5 +184,6 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Fun->eraseFromParent();
     }
 
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
     return PreservedAnalyses();
 }

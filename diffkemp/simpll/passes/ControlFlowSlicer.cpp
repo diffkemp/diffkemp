@@ -85,6 +85,9 @@ bool isResultOnlyStored(const Instruction *Inst) {
 /// parameters, and all instructions depending on these.
 PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                                          FunctionAnalysisManager & /*fam*/) {
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Slicing control-flow-only statements...\n";
+                    increaseDebugIndentLevel());
     std::set<const Instruction *> Dependent;
     for (const auto &BB : Fun) {
         for (const auto &Instr : BB) {
@@ -147,5 +150,6 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
         DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << *Instr << "\n";);
         Instr->eraseFromParent();
     }
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
     return PreservedAnalyses::none();
 }

@@ -12,7 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "DebugInfo.h"
-#include "Config.h"
 #include <llvm/IR/Constants.h>
 #include <llvm/Passes/PassBuilder.h>
 

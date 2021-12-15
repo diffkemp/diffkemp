@@ -60,6 +60,9 @@ void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
                       bool ControlFlowOnly) {
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Preprocessing " << Mod.getName() << "...\n";
+                    increaseDebugIndentLevel());
     if (Var) {
         // Slicing of the program w.r.t. the value of a global variable
         PassManager<Function, FunctionAnalysisManager, GlobalVariable *> fpm;
@@ -100,6 +103,8 @@ void preprocessModule(Module &Mod,
     mpm.addPass(StructHashGeneratorPass{});
 
     mpm.run(Mod, mam);
+
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
 }
 
 /// Simplification of modules to ease the semantic diff.

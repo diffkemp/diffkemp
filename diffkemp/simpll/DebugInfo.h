@@ -15,6 +15,7 @@
 #ifndef DIFFKEMP_SIMPLL_DEBUGINFO_H
 #define DIFFKEMP_SIMPLL_DEBUGINFO_H
 
+#include "Config.h"
 #include "Utils.h"
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Instructions.h>
@@ -46,6 +47,9 @@ class DebugInfo {
             : FunFirst(funFirst), FunSecond(funSecond), ModFirst(modFirst),
               ModSecond(modSecond), CalledFirst(CalledFirst),
               CalledSecond(CalledSecond) {
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << "Analysing debugging information...\n";
+                        increaseDebugIndentLevel());
         DebugInfoFirst.processModule(ModFirst);
         DebugInfoSecond.processModule(ModSecond);
         // Use debug info to gather useful information
@@ -53,6 +57,7 @@ class DebugInfo {
         calculateMacroAlignments();
         collectLocalVariables(CalledFirst, LocalVariableMapL);
         collectLocalVariables(CalledSecond, LocalVariableMapR);
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
     };
 
     /// Maps structure type and index to struct member names

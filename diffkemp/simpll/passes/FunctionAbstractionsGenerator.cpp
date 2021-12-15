@@ -26,6 +26,10 @@ AnalysisKey FunctionAbstractionsGenerator::Key;
 /// and for each pair of assembly code and constraint.
 FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
         Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << "Generating function abstractions in "
+                           << Mod.getName() << "...\n";
+                    increaseDebugIndentLevel());
     FunMap funAbstractions;
     int i = 0;
     std::vector<Instruction *> toErase;
@@ -115,6 +119,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
             toErase.clear();
         }
     }
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
     return FunctionAbstractionsGenerator::Result{funAbstractions};
 }
 
