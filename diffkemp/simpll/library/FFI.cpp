@@ -300,5 +300,12 @@ void parseAndRunSimpLL(const char *ModL,
               Output);
 }
 
+/// Runs preprocess passes on module and marks it as being preprocessed so they
+/// won't be run again when the module is compared.
+void preprocessModuleC(void *Mod, int ControlFlowOnly) {
+    Module *LLVMMod = (Module *)Mod;
+    preprocessModule(*LLVMMod, nullptr, nullptr, ControlFlowOnly);
+}
+
 void shutdownSimpLL() { llvm_shutdown(); }
 } // extern "C"

@@ -80,6 +80,9 @@ class SimpLLModule:
         return {ffi.string(ffi.cast("char *", cstr)).decode("ascii")
                 for cstr in _ptrarray_to_list(carray)}
 
+    def preprocess(self, control_flow_only):
+        lib.preprocessModuleC(self.pointer, control_flow_only)
+
 
 class SimpLLFunction:
     """Represents a Function class in LLVM."""
