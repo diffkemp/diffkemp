@@ -123,6 +123,10 @@ void parseAndRunSimpLL(const char *ModL,
                        struct config Conf,
                        char *Output);
 
+/// Runs preprocess passes on module and marks it as being preprocessed so they
+/// won't be run again when the module is compared.
+void preprocessModuleC(void *Mod, int ControlFlowOnly);
+
 void shutdownSimpLL();
 
 // CFFI_DECLARATIONS_END

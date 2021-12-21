@@ -74,6 +74,11 @@ void preprocessModule(Module &Mod,
         fpm.run(*Main, fam, Var);
     }
 
+    if (Mod.getNamedMetadata("preprocessed")) {
+        // Module was already preprocessed
+        return;
+    }
+
     // Function passes
     FunctionPassManager fpm(false);
     FunctionAnalysisManager fam(false);
@@ -105,6 +110,9 @@ void preprocessModule(Module &Mod,
     mpm.run(Mod, mam);
 
     DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+
+    // Mark module as pre-processed
+    Mod.getOrInsertNamedMetadata("preprocessed");
 }
 
 /// Simplification of modules to ease the semantic diff.

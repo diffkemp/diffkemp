@@ -45,6 +45,7 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         for module in [first, second]:
             if module not in module_cache and module in modules_to_cache:
                 module_cache[module] = SimpLLModule(module)
+                module_cache[module].preprocess(control_flow_only)
 
         use_cached_modules = (module_cache and first in module_cache and
                               second in module_cache)
