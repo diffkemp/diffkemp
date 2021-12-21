@@ -162,7 +162,8 @@ def functions_diff(mod_first, mod_second,
                    glob_var, config,
                    prev_result_graph=None,
                    function_cache=None,
-                   module_cache=None):
+                   module_cache=None,
+                   modules_to_cache=None):
     """
     Compare two functions for equality.
 
@@ -180,7 +181,10 @@ def functions_diff(mod_first, mod_second,
     to pass already known results to be used in this comparison).
     :param function_cache: Cache for SimpLL containing all functions
     present in the current graph (passed to this function to be updated with
-    the results of the comparison).
+    the results of the comparison)
+    :param module_cache: Cache containing modules that have been already parsed
+    and loaded
+    :param modules_to_cache: List of modules that should be pre-loaded
     """
     result = Result(Result.Kind.NONE, fun_first, fun_second)
     curr_result_graph = None
@@ -217,7 +221,8 @@ def functions_diff(mod_first, mod_second,
                                print_asm_diffs=config.print_asm_diffs,
                                verbosity=config.verbosity,
                                use_ffi=config.use_ffi,
-                               module_cache=module_cache)
+                               module_cache=module_cache,
+                               modules_to_cache=modules_to_cache)
                 if missing_defs:
                     # If there are missing function definitions, try to find
                     # their implementation, link them to the current modules,

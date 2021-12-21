@@ -8,7 +8,6 @@ from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
-from diffkemp.simpll.library import SimpLLModule
 from tempfile import mkdtemp
 from timeit import default_timer
 import errno
@@ -98,8 +97,8 @@ def __make_argument_parser():
                             action="store_true")
     compare_ap.add_argument("--enable-module-cache",
                             help="loads frequently used modules to memory and \
-                            uses them in SimpLL (experimental, currently \
-                            slower in most cases)",
+                            uses them in SimpLL (requires SimpLL FFI to be \
+                            enabled)",
                             action="store_true")
     compare_ap.set_defaults(func=compare)
     return ap
@@ -228,11 +227,11 @@ def generate(args):
     snapshot.finalize()
 
 
-def _generate_module_cache(functions, group_name, other_snapshot,
-                           min_frequency):
+def _get_modules_to_cache(functions, group_name, other_snapshot,
+                          min_frequency):
     """
-    Preloads frequently used modules and stores them in a name-module
-    dictionary (in the form on a SimpLLModule object).
+    Generates a list of frequently used modules. These will be loaded into
+    cache if DiffKemp is running with module caching enable.
     :param functions: List of pairs of functions to be compared along
     with their description objects
     :param group_name: Name of the group the functions are in
@@ -240,8 +239,7 @@ def _generate_module_cache(functions, group_name, other_snapshot,
     in the other snapshot
     :param min_frequency: Minimal frequency for a module to be included into
     the cache
-    :return: Dictionary where the keys are module filenames and the values
-    are SimpLLModule objects
+    :return: Set of modules that should be loaded into module cache
     """
     module_frequency_map = dict()
     for fun, old_fun_desc in functions:
@@ -255,11 +253,8 @@ def _generate_module_cache(functions, group_name, other_snapshot,
             if fun_desc.mod.llvm not in module_frequency_map:
                 module_frequency_map[fun_desc.mod.llvm] = 0
             module_frequency_map[fun_desc.mod.llvm] += 1
-    module_cache = dict()
-    for mod, frequency in module_frequency_map.items():
-        if frequency >= min_frequency:
-            module_cache[mod] = SimpLLModule(mod)
-    return module_cache
+    return {mod for mod, frequency in module_frequency_map.items()
+            if frequency >= min_frequency}
 
 
 def compare(args):
@@ -306,14 +301,15 @@ def compare(args):
 
         result_graph = None
         cache = SimpLLCache(mkdtemp())
+        module_cache = {}
 
         if args.enable_module_cache:
-            module_cache = _generate_module_cache(group.functions.items(),
-                                                  group_name,
-                                                  new_snapshot,
-                                                  2)
+            modules_to_cache = _get_modules_to_cache(group.functions.items(),
+                                                     group_name,
+                                                     new_snapshot,
+                                                     2)
         else:
-            module_cache = None
+            modules_to_cache = set()
 
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
@@ -340,7 +336,7 @@ def compare(args):
                 fun_first=fun, fun_second=fun,
                 glob_var=glob_var, config=config,
                 prev_result_graph=result_graph, function_cache=cache,
-                module_cache=module_cache)
+                module_cache=module_cache, modules_to_cache=modules_to_cache)
             result_graph = fun_result.graph
 
             if fun_result is not None:
