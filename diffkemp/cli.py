@@ -12,6 +12,38 @@ def make_argument_parser():
     sub_ap = ap.add_subparsers(dest="command", metavar="command")
     sub_ap.required = True
 
+    # "build" sub-command
+    build_ap = sub_ap.add_parser("build",
+                                 help="build snapshot from Makefile project")
+    build_ap.add_argument("source_dir",
+                          help="project's root directory")
+    build_ap.add_argument("output_dir",
+                          help="output directory of the snapshot")
+    build_ap.add_argument("symbol_list", nargs='?',
+                          help="list of symbols to compare")
+    build_ap.add_argument("--build-program", help="make tool used to be used\
+                          for build", default="make")
+    build_ap.add_argument("--build-file", help="filename of Makefile to be\
+                          used for build")
+    build_ap.add_argument("--clang", help="clang compiler to be used for\
+                          building", default="clang")
+    build_ap.add_argument("--clang-append", help="option to append to clang",
+                          action='append')
+    build_ap.add_argument("--clang-drop", help="option to drop from clang",
+                          action='append')
+    build_ap.add_argument("--llvm-link", help="llvm-link to be used for ll\
+                          file linking", default="llvm-link")
+    build_ap.add_argument("--llvm-dis", help="llvm-dis to be used for bc file\
+                          disassembly", default="llvm-dis")
+    build_ap.add_argument("--target", help="Makefile target to build",
+                          action='append')
+    build_ap.add_argument("--reconfigure", help="reconfigure autotools-based\
+                          project with CC=<wrapper>", action="store_true")
+    build_ap.add_argument("--no-native-cc-wrapper",
+                          help="do not use a native compiler wrapper even if\
+                          present", action="store_true")
+    build_ap.set_defaults(func=diffkemp.diffkemp.build)
+
     # "build-kernel" sub-command
     build_kernel_ap = sub_ap.add_parser(
         "build-kernel",
