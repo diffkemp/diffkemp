@@ -102,6 +102,9 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     unifyExitPass.run(Fun, fam);
     RetBB = findReturnBlock(Fun);
 #else
+    // TODO: once we use C++17, mark `fam` as [[maybe_unused]] in parameter
+    // definition
+    (void)fam;
     UnifyFunctionExitNodes unifyExitPass;
     unifyExitPass.runOnFunction(Fun);
     RetBB = unifyExitPass.getReturnBlock();
