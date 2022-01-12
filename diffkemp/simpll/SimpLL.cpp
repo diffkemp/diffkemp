@@ -65,18 +65,16 @@ std::string addSuffix(std::string File, std::string Suffix) {
     return File.substr(0, dotPos) + "-" + Suffix + File.substr(dotPos);
 }
 
-int main(int argc, const char **argv) {
-    // Parse CLI options
-    cl::ParseCommandLineOptions(argc, argv);
+/// Parse --fun option - find functions with given names.
+/// The option can be either single function name (same for both modules)
+/// or two function names separated by a comma.
+/// \return Name of function in first and second module.
+std::pair<std::string, std::string> parseFunOption() {
+    std::string first_name;
+    std::string second_name;
 
-    // Parse --fun option - find functions with given names.
-    // The option can be either single function name (same for both modules)
-    // or two function names separated by a comma.
-    std::string FirstFunName, SecondFunName;
     if (!FunctionOpt.empty()) {
         auto commaPos = FunctionOpt.find(',');
-        std::string first_name;
-        std::string second_name;
         if (commaPos == std::string::npos) {
             first_name = FunctionOpt;
             second_name = FunctionOpt;
@@ -84,9 +82,17 @@ int main(int argc, const char **argv) {
             first_name = FunctionOpt.substr(0, commaPos);
             second_name = FunctionOpt.substr(commaPos + 1);
         }
-        FirstFunName = first_name;
-        SecondFunName = second_name;
     }
+
+    return {first_name, second_name};
+}
+
+int main(int argc, const char **argv) {
+    // Parse CLI options
+    cl::ParseCommandLineOptions(argc, argv);
+
+    // Parse --fun option
+    auto FunName = parseFunOption();
 
     // Load modules and create Config based on given CLI options
     LLVMContext context_first, context_second;
@@ -95,8 +101,8 @@ int main(int argc, const char **argv) {
             parseIRFile(FirstFileOpt, err, context_first));
     std::unique_ptr<Module> SecondModule(
             parseIRFile(SecondFileOpt, err, context_second));
-    Config config(FirstFunName,
-                  SecondFunName,
+    Config config(FunName.first,
+                  FunName.second,
                   FirstModule.get(),
                   SecondModule.get(),
                   !SuffixOpt.empty() ? addSuffix(FirstFileOpt, SuffixOpt) : "",
