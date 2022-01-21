@@ -9,7 +9,7 @@ Source0:        https://github.com/viktormalik/diffkemp/archive/v%{version}.tar.
 
 BuildRequires:  gcc gcc-c++ cmake ninja-build
 BuildRequires:  llvm-devel
-BuildRequires:  python3-devel
+BuildRequires:  python3-devel python3-pip
 BuildRequires:  git
 Requires:       cscope
 Requires:       clang llvm-devel
