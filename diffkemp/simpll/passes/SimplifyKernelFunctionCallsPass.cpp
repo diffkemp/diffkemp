@@ -52,68 +52,75 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
     std::vector<Instruction *> toRemove;
     for (auto &BB : Fun) {
         for (auto &Instr : BB) {
-            if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
-                auto CalledFun = CallInstr->getCalledFunction();
+            auto CallInstr = dyn_cast<CallInst>(&Instr);
+            if (!CallInstr)
+                continue;
+            auto CalledFun = CallInstr->getCalledFunction();
 
-                if (!CalledFun) {
+            if (!CalledFun) {
+                if (auto Asm = dyn_cast<InlineAsm>(getCallee(CallInstr))) {
+                    std::string asm_str = Asm->getAsmString();
                     // For inline asm containing __bug_table:
                     //  - replace the first argument byt null (is a file name)
                     //  - replace the second argument by 0 (is a line number)
-                    auto CalledVal = getCallee(CallInstr);
-                    if (auto Asm = dyn_cast<InlineAsm>(CalledVal)) {
-                        if (Asm->getAsmString().find("__bug_table")
-                            != std::string::npos) {
-                            replaceArgByNull(CallInstr, 0);
-                            replaceArgByZero(CallInstr, 1);
-                        }
+                    if (asm_str.find("__bug_table") != std::string::npos) {
+                        replaceArgByNull(CallInstr, 0);
+                        replaceArgByZero(CallInstr, 1);
                     }
-                    continue;
+                    // For inline asm containing .discard.(un)reachable:
+                    //  - replace the first argument by 0 (it is a counter)
+                    if (asm_str.find(".discard.reachable") != std::string::npos
+                        || asm_str.find(".discard.unreachable")
+                                   != std::string::npos) {
+                        replaceArgByZero(CallInstr, 0);
+                    }
                 }
+                continue;
+            }
 
-                // Remove arguments of printing functions
-                if (CalledFun->getName() == "printk") {
-                    // Functions with 1 mandatory argument
-                    auto OpType = dyn_cast<PointerType>(
-                            CallInstr->getOperand(0)->getType());
-                    // An additional void pointer is added to the operand list
-                    // so the instruction can be compared as equal even when the
-                    // other one is one of the functions listed in the other if
-                    auto newCall =
-                            CallInst::Create(CalledFun,
-                                             {ConstantPointerNull::get(OpType),
-                                              ConstantPointerNull::get(OpType)},
-                                             "",
-                                             &Instr);
-                    copyCallInstProperties(CallInstr, newCall);
-                    CallInstr->replaceAllUsesWith(newCall);
-                    toRemove.push_back(&Instr);
-                } else if (isPrintFunction(CalledFun->getName().str())) {
-                    // Functions with 2 mandatory arguments
-                    auto Op0Type = dyn_cast<PointerType>(
-                            CallInstr->getOperand(0)->getType());
-                    auto Op1Type = dyn_cast<PointerType>(
-                            CallInstr->getOperand(1)->getType());
-                    auto newCall = CallInst::Create(
-                            CalledFun,
-                            {ConstantPointerNull::get(Op0Type),
-                             ConstantPointerNull::get(Op1Type)},
-                            "",
-                            &Instr);
-                    copyCallInstProperties(CallInstr, newCall);
-                    CallInstr->replaceAllUsesWith(newCall);
-                    toRemove.push_back(&Instr);
-                }
+            // Remove arguments of printing functions
+            if (CalledFun->getName() == "printk") {
+                // Functions with 1 mandatory argument
+                auto OpType = dyn_cast<PointerType>(
+                        CallInstr->getOperand(0)->getType());
+                // An additional void pointer is added to the operand list
+                // so the instruction can be compared as equal even when the
+                // other one is one of the functions listed in the other if
+                auto newCall =
+                        CallInst::Create(CalledFun,
+                                         {ConstantPointerNull::get(OpType),
+                                          ConstantPointerNull::get(OpType)},
+                                         "",
+                                         &Instr);
+                copyCallInstProperties(CallInstr, newCall);
+                CallInstr->replaceAllUsesWith(newCall);
+                toRemove.push_back(&Instr);
+            } else if (isPrintFunction(CalledFun->getName().str())) {
+                // Functions with 2 mandatory arguments
+                auto Op0Type = dyn_cast<PointerType>(
+                        CallInstr->getOperand(0)->getType());
+                auto Op1Type = dyn_cast<PointerType>(
+                        CallInstr->getOperand(1)->getType());
+                auto newCall =
+                        CallInst::Create(CalledFun,
+                                         {ConstantPointerNull::get(Op0Type),
+                                          ConstantPointerNull::get(Op1Type)},
+                                         "",
+                                         &Instr);
+                copyCallInstProperties(CallInstr, newCall);
+                CallInstr->replaceAllUsesWith(newCall);
+                toRemove.push_back(&Instr);
+            }
 
-                // Replace the second argument of a call to warn_slowpath_null
-                // by 0 (it is a line number).
-                if (CalledFun->getName() == "warn_slowpath_null"
-                    || CalledFun->getName() == "warn_slowpath_fmt"
-                    || CalledFun->getName() == "__might_sleep"
-                    || CalledFun->getName() == "__might_fault"
-                    || CalledFun->getName() == "acpi_ut_predefined_warning") {
-                    replaceArgByNull(CallInstr, 0);
-                    replaceArgByZero(CallInstr, 1);
-                }
+            // Replace the second argument of a call to warn_slowpath_null
+            // by 0 (it is a line number).
+            if (CalledFun->getName() == "warn_slowpath_null"
+                || CalledFun->getName() == "warn_slowpath_fmt"
+                || CalledFun->getName() == "__might_sleep"
+                || CalledFun->getName() == "__might_fault"
+                || CalledFun->getName() == "acpi_ut_predefined_warning") {
+                replaceArgByNull(CallInstr, 0);
+                replaceArgByZero(CallInstr, 1);
             }
         }
     }
