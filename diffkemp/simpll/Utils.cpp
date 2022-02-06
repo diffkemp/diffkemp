@@ -704,32 +704,28 @@ void copyFunctionProperties(Function *srcFun, Function *destFun) {
 /// Tests whether two names of types or globals match. Names match if they
 /// are the same or if the DiffKemp pattern name prefixes are used.
 bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
-    auto NameL = L;
-    auto NameR = R;
-
     // Remove number suffixes
-    if (hasSuffix(NameL.str()))
-        NameL = NameL.substr(0, NameL.find_last_of("."));
-    if (hasSuffix(NameR.str()))
-        NameR = NameR.substr(0, NameR.find_last_of("."));
+    std::string NameL = hasSuffix(L.str()) ? dropSuffix(L.str()) : L.str();
+    std::string NameR = hasSuffix(R.str()) ? dropSuffix(R.str()) : R.str();
 
     // Compare the names themselves.
     if (NameL == NameR)
         return true;
 
     // If no prefix is present, the names are not equal.
-    if (!NameR.startswith_lower(PatternSet::DefaultPrefix))
+    StringRef NameRRef = NameR;
+    if (!NameRRef.startswith_lower(PatternSet::DefaultPrefix))
         return false;
 
     // Remove all prefixes.
     auto PrefixR = IsLeftSide ? PatternSet::PrefixL : PatternSet::PrefixR;
-    StringRef RealNameR = NameR.substr(PatternSet::DefaultPrefix.size());
+    StringRef RealNameRRef = NameRRef.substr(PatternSet::DefaultPrefix.size());
 
-    if (RealNameR.startswith_lower(PrefixR))
-        RealNameR = RealNameR.substr(PrefixR.size());
+    if (RealNameRRef.startswith_lower(PrefixR))
+        RealNameRRef = RealNameRRef.substr(PrefixR.size());
 
     // Compare the names without prefixes.
-    return NameL == RealNameR;
+    return NameL == RealNameRRef;
 }
 
 /// Converts value to its string representation.

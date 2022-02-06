@@ -43,7 +43,7 @@ bool PatternComparator::matchValues(const Value *L, const Value *R) {
             // If both compared values are load instructions, ensure that they
             // are mapped to each other as well.
             if (isa<LoadInst>(L) && isa<LoadInst>(R)
-                && DiffFunctionComp->cmpMappedValues(L, R)) {
+                && DiffFunctionComp->cmpValuesByMapping(L, R)) {
                 continue;
             }
 
@@ -169,15 +169,33 @@ bool PatternComparator::inputMappingValid(
         // pattern comparison will be found using module synchronization maps.
         // Input validity will be checked again for values obtained in this
         // manner.
-        auto InputPairL = PatternComps->first->PatMatchMap.find(ArgPair.first);
+        //
+        // This has to be done to ensure that all input values refer to the
+        // same values in the matching module code. For example, here we need
+        // to ensure that "%struct.x* %0" and "i32 %1" refer to the same values
+        // in both modules. Otherwise, the pattern match is not valid.
+        //
+        // define i1 @diffkemp.old(%struct.x*, i32) {
+        //     %3 = icmp ne i32 %1, 0
+        //     ret i1 %3
+        // }
+        //
+        // define i1 @diffkemp.new(%struct.x*, i32) {
+        //     call void @fun(%struct.x* %0)
+        //     %3 = icmp ne i32 %1, 0
+        //     ret i1 %3
+        // }
+
+        auto InputPairL =
+                PatternComps->first->PatInputMatchMap.find(ArgPair.first);
         auto InputPairR =
-                PatternComps->second->PatMatchMap.find(ArgPair.second);
-        auto MapLE = PatternComps->first->PatMatchMap.end();
-        auto MapRE = PatternComps->second->PatMatchMap.end();
+                PatternComps->second->PatInputMatchMap.find(ArgPair.second);
+        auto MapLE = PatternComps->first->PatInputMatchMap.end();
+        auto MapRE = PatternComps->second->PatInputMatchMap.end();
 
         if (InputPairL != MapLE && InputPairR != MapRE) {
-            if (DiffFunctionComp->cmpMappedValues(InputPairL->second,
-                                                  InputPairR->second)) {
+            if (DiffFunctionComp->cmpValuesByMapping(InputPairL->second,
+                                                     InputPairR->second)) {
                 return false;
             }
         } else if (InputPairL != MapLE) {

@@ -25,8 +25,10 @@ using namespace llvm;
 
 /// Extension of LLVM FunctionComparator which compares a difference pattern
 /// against its corresponding module function. Compared functions are expected
-/// to lie in different modules. The module function is expected on the left
-/// side while the pattern function is expected on the right side.
+/// to lie in different modules. Only one side of an instruction pattern can
+/// be compared at once. Therefore, it is expected that the instances of
+/// InstPatternComparator will be used in pairs (one for each side of the
+/// compared pattern).
 class InstPatternComparator : protected FunctionComparator {
   public:
     /// The staring instruction of the compared module function.
@@ -36,11 +38,11 @@ class InstPatternComparator : protected FunctionComparator {
     mutable InstructionMap InstMatchMap;
     /// Pattern input arguments matched to module input arguments. Pattern input
     /// is used for keys.
-    mutable Pattern::InputMap PatMatchMap;
+    mutable Pattern::InputMap PatInputMatchMap;
     /// Module input arguments matched to pattern input arguments. A reverse of
-    /// PatMatchMap necessary for computational purposes. Hence, module input is
-    /// used for keys.
-    mutable Pattern::InputMap ModMatchMap;
+    /// PatInputMatchMap necessary for computational purposes. Hence, module
+    /// input is used for keys.
+    mutable Pattern::InputMap ModInputMatchMap;
 
     InstPatternComparator(const Function *ModFun,
                           const Function *PatFun,

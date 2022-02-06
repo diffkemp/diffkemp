@@ -46,7 +46,7 @@
 %struct.callback_head = type {}
 
 ; Functions
-declare void @diffkemp.mapping(...)
+declare void @diffkemp.output_mapping(...)
 declare void @diffkemp.old.rcu_read_lock_sched()
 declare void @diffkemp.old.rcu_read_unlock_sched()
 declare void @diffkemp.new.rcu_read_lock()

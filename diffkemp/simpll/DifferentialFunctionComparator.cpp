@@ -48,11 +48,10 @@ int DifferentialFunctionComparator::compare() {
     return Res;
 }
 
-/// Compares already mapped values, checking their synchronization mapping.
-/// The comparison is unsuccessful if the given values are not mapped to
-/// each other.
-int DifferentialFunctionComparator::cmpMappedValues(const Value *L,
-                                                    const Value *R) const {
+/// Compares values by their synchronisation. The comparison is unsuccessful
+/// if the given values are not mapped to each other.
+int DifferentialFunctionComparator::cmpValuesByMapping(const Value *L,
+                                                       const Value *R) const {
     // Ensure that no new serial numbers will be assigned.
     if (sn_mapL.find(L) == sn_mapL.end())
         return -1;
@@ -687,8 +686,8 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
 void DifferentialFunctionComparator::createPatternMapping() const {
     for (auto &&MappedInstPair : PatternComp.InstMappings) {
         // If the instructions are already mapped, do not map them again.
-        if (sn_mapL.find(MappedInstPair.first) == sn_mapL.end()
-            || sn_mapR.find(MappedInstPair.second) == sn_mapR.end())
+        if (sn_mapL.find(MappedInstPair.first) != sn_mapL.end()
+            || sn_mapR.find(MappedInstPair.second) != sn_mapR.end())
             continue;
 
         mappedValuesBySn[sn_mapL.size()] = {MappedInstPair.first,
@@ -704,6 +703,16 @@ bool DifferentialFunctionComparator::isPartOfPattern(
         const Instruction *Inst) const {
     return PatternComp.AllInstMatches.find(Inst)
            != PatternComp.AllInstMatches.end();
+}
+
+/// Undo the changes made to synchronisation maps during the last
+/// instruction pair comparison.
+void DifferentialFunctionComparator::undoLastInstCompare(
+        BasicBlock::const_iterator &InstL,
+        BasicBlock::const_iterator &InstR) const {
+    sn_mapL.erase(&*InstL);
+    sn_mapR.erase(&*InstR);
+    mappedValuesBySn.erase(sn_mapL.size());
 }
 
 /// Does additional comparisons based on the C source to determine whether two
@@ -868,9 +877,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             bool MaySkipL = maySkipInstruction(&*InstL);
             bool MaySkipR = maySkipInstruction(&*InstR);
             if (MaySkipL || MaySkipR) {
-                sn_mapL.erase(&*InstL);
-                sn_mapR.erase(&*InstR);
-                mappedValuesBySn.erase(sn_mapL.size());
+                undoLastInstCompare(InstL, InstR);
                 if (MaySkipL)
                     InstL++;
                 if (MaySkipR)
@@ -882,9 +889,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // loaded difference patterns. Continue the comparison if a suitable
             // starting pattern match gets found.
             if (PatternComp.matchPattern(&*InstL, &*InstR)) {
-                sn_mapL.erase(&*InstL);
-                sn_mapR.erase(&*InstR);
-                mappedValuesBySn.erase(sn_mapL.size());
+                undoLastInstCompare(InstL, InstR);
                 createPatternMapping();
                 if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR))
                     continue;

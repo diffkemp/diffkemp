@@ -40,14 +40,15 @@ template <> struct MappingTraits<PatternConfiguration> {
 } // namespace yaml
 } // namespace llvm
 
-/// Metadata operand offsets for different kinds of pattern metadata.
-const StringMap<int> PatternMetadata::MetadataOffsets = {
-        {"pattern-start", 1},
-        {"pattern-end", 1},
-        {"group-start", 1},
-        {"group-end", 1},
-        {"disable-name-comparison", 1},
-        {"not-an-input", 1}};
+/// Metadata operand counts for different kinds of pattern metadata.
+const StringMap<int> PatternMetadata::MetadataOperandCounts = {
+        {"pattern-start", 0},
+        {"pattern-end", 0},
+        {"group-start", 0},
+        {"group-end", 0},
+        {"disable-name-comparison", 0},
+        {"not-an-input", 0},
+        {"no-value-pattern-detection", 0}};
 
 /// Default DiffKemp prefix for all pattern information.
 const std::string PatternSet::DefaultPrefix = "diffkemp.";
@@ -63,7 +64,7 @@ const std::string PatternSet::FullPrefixR =
         PatternSet::DefaultPrefix + PatternSet::PrefixR;
 /// Name for the function defining output instuction mapping.
 const std::string PatternSet::OutputMappingFunName =
-        PatternSet::DefaultPrefix + "mapping";
+        PatternSet::DefaultPrefix + "output_mapping";
 /// Name for pattern metadata nodes.
 const std::string PatternSet::MetadataName =
         PatternSet::DefaultPrefix + "pattern";
@@ -87,7 +88,7 @@ Optional<PatternMetadata>
         PatternSet::getPatternMetadata(const Instruction &Inst) const {
     auto InstMetadata = Inst.getMetadata(MetadataName);
     if (!InstMetadata) {
-        return Optional<PatternMetadata>{};
+        return None;
     }
 
     int OperandIndex = 0;
@@ -116,18 +117,22 @@ Optional<PatternMetadata>
             } else if (TypeName == "not-an-input") {
                 // not-an-input metadata: string type.
                 Metadata.NotAnInput = true;
+            } else if (TypeName == "no-value-pattern-detection") {
+                // no-value-pattern-detection metadata: string type.
+                Metadata.NoValuePatternDetection = true;
             } else {
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent()
                                        << "Invalid metadata type " << TypeName
                                        << " in node " << *InstMetadata
                                        << ".\n");
-                return Optional<PatternMetadata>{};
+                return None;
             }
             // Shift the operand offset accordingly.
-            OperandIndex += PatternMetadata::MetadataOffsets.lookup(TypeName);
+            OperandIndex +=
+                    PatternMetadata::MetadataOperandCounts.lookup(TypeName) + 1;
         } else {
-            return Optional<PatternMetadata>{};
+            return None;
         }
     }
     return {Metadata};
@@ -178,48 +183,45 @@ void PatternSet::addPattern(std::string &Path) {
 
     for (auto &Function : PatternModule->getFunctionList()) {
         // Select only defined functions that start with the left prefix.
-        if (!Function.isDeclaration()
-            && Function.getName().startswith_lower(FullPrefixL)) {
-            StringRef Name = Function.getName().substr(FullPrefixL.size());
-            std::string NameR = FullPrefixR;
-            NameR += Name;
+        if (Function.isDeclaration()
+            || !Function.getName().startswith_lower(FullPrefixL))
+            continue;
 
-            // Find the corresponding pattern function with the right prefix.
-            auto FunctionR = PatternModule->getFunction(NameR);
-            if (FunctionR) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent()
-                                       << "Loading a new difference pattern "
-                                       << Name.str() << " from module " << Path
-                                       << ".\n");
+        std::string Name = Function.getName().substr(FullPrefixL.size()).str();
+        std::string NameR = FullPrefixR + Name;
 
-                switch (getPatternType(&Function, FunctionR)) {
-                case PatternType::INST: {
-                    InstPattern NewInstPattern(
-                            Name.str(), &Function, FunctionR);
-                    if (initializeInstPattern(NewInstPattern)) {
-                        InstPatterns.emplace(NewInstPattern);
-                    }
-                    break;
-                }
+        // Find the corresponding pattern function with the right prefix.
+        auto FunctionR = PatternModule->getFunction(NameR);
+        if (!FunctionR)
+            continue;
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "Loading a new difference pattern " << Name
+                               << " from module " << Path << ".\n");
 
-                case PatternType::VALUE: {
-                    ValuePattern NewValuePattern(
-                            Name.str(), &Function, FunctionR);
-                    if (initializeValuePattern(NewValuePattern)) {
-                        ValuePatterns.emplace(NewValuePattern);
-                    }
-                    break;
-                }
-
-                default:
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << getDebugIndent()
-                                           << "An unknown pattern type has "
-                                              "been used.\n");
-                    break;
-                }
+        switch (getPatternType(&Function, FunctionR)) {
+        case PatternType::INST: {
+            InstPattern NewInstPattern(Name, &Function, FunctionR);
+            if (initializeInstPattern(NewInstPattern)) {
+                InstPatterns.emplace(NewInstPattern);
             }
+            break;
+        }
+
+        case PatternType::VALUE: {
+            ValuePattern NewValuePattern(Name, &Function, FunctionR);
+            if (initializeValuePattern(NewValuePattern)) {
+                ValuePatterns.emplace(NewValuePattern);
+            }
+            break;
+        }
+
+        default:
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                            dbgs() << getDebugIndent()
+                                   << "An unknown pattern type has "
+                                      "been used.\n");
+            break;
         }
     }
 
@@ -232,10 +234,12 @@ PatternType PatternSet::getPatternType(const Function *FnL,
                                        const Function *FnR) {
     // Value patterns should only contain a single return instruction.
     auto EntryBBL = &FnL->getEntryBlock(), EntryBBR = &FnR->getEntryBlock();
-    auto TermL = EntryBBL->getTerminator(), TermR = EntryBBR->getTerminator();
-    if (TermL->getNumSuccessors() == 0 && TermR->getNumSuccessors() == 0) {
-        auto InstLB = EntryBBL->begin(), InstRB = EntryBBR->begin();
-        if (TermL == &*InstLB && TermR == &*InstRB) {
+    if (EntryBBL->size() == 1 && EntryBBR->size() == 1) {
+        // The value pattern detection might be disabled for this pattern.
+        auto PatMetadataL = getPatternMetadata(*EntryBBL->begin());
+        auto PatMetadataR = getPatternMetadata(*EntryBBR->begin());
+        if ((!PatMetadataL || !PatMetadataL->NoValuePatternDetection)
+            && (!PatMetadataR || !PatMetadataR->NoValuePatternDetection)) {
             return PatternType::VALUE;
         }
     }
@@ -331,10 +335,19 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
             if (PatMetadata) {
                 Pat.MetadataMap[&Inst] = *PatMetadata;
                 // If present, register start position metadata.
-                if (!*StartPosition && PatMetadata->PatternStart) {
-                    *StartPosition = &Inst;
+                if (PatMetadata->PatternStart) {
+                    if (*StartPosition) {
+                        DEBUG_WITH_TYPE(
+                                DEBUG_SIMPLL,
+                                dbgs() << getDebugIndent()
+                                       << "Duplicit start instruction found "
+                                       << "in pattern " << Pat.Name << ". "
+                                       << "Using the first one.\n");
+                    } else {
+                        *StartPosition = &Inst;
+                    }
                 }
-                if (!PatMetadata->PatternEnd && PatMetadata->PatternEnd) {
+                if (PatMetadata->PatternEnd) {
                     PatternEndFound = true;
                 }
             }

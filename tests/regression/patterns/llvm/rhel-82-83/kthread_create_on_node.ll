@@ -34,7 +34,7 @@
 @diffkemp.old.cpu_all_bits = external constant [128 x i64], align 16
 
 ; Functions
-declare void @diffkemp.mapping(...)
+declare void @diffkemp.output_mapping(...)
 declare %struct.cpumask* @diffkemp.new.housekeeping_cpumask(i32)
 declare i8* @kmalloc(...)
 declare i32 @set_cpus_allowed_ptr(...)
@@ -48,7 +48,7 @@ define void @diffkemp.old.__kthread_create_on_node() {
   br label %aBB, !diffkemp.pattern !1
 
 aBB:
-  call void (...) @diffkemp.mapping(i32 %5)
+  call void (...) @diffkemp.output_mapping(i32 %5)
   ret void
 }
 
@@ -62,6 +62,6 @@ define void @diffkemp.new.__kthread_create_on_node() {
   br label %aBB, !diffkemp.pattern !1
 
 aBB:
-  call void (...) @diffkemp.mapping(i32 %6)
+  call void (...) @diffkemp.output_mapping(i32 %6)
   ret void
 }

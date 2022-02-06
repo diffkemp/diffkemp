@@ -25,8 +25,10 @@ using namespace llvm;
 
 /// Extension of LLVM FunctionComparator which compares a pattern value against
 /// a given module value. Compared values are expected to lie in different
-/// functions from different modules. The module function is expected on the
-/// left side while the pattern function is expected on the right side.
+/// functions from different modules. Only one side of a value pattern can
+/// be compared at once. Therefore, it is expected that the instances of
+/// ValuePatternComparator will be used in pairs (one for each side of the
+/// compared pattern).
 class ValuePatternComparator : protected FunctionComparator {
   public:
     /// The module value that should be compared against the pattern value.

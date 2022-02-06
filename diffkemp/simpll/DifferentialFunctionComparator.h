@@ -43,10 +43,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
               ModComparator(MC) {}
 
     int compare() override;
-    /// Compares already mapped values, checking their synchronization mapping.
-    /// The comparison is unsuccessful if the given values are not mapped to
-    /// each other.
-    int cmpMappedValues(const Value *L, const Value *R) const;
+    /// Compares values by their synchronisation. The comparison is unsuccessful
+    /// if the given values are not mapped to each other.
+    int cmpValuesByMapping(const Value *L, const Value *R) const;
     /// Check if two instructions were already compared as equal.
     bool equal(const Instruction *L, const Instruction *R);
     /// Retrieves the value that is mapped to the given value, taken from one of
@@ -201,6 +200,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Check if the given instruction has been matched to a pattern and,
     /// therefore, does not need to be analyzed nor mapped again.
     bool isPartOfPattern(const Instruction *Inst) const;
+
+    /// Undo the changes made to synchronisation maps during the last
+    /// instruction pair comparison.
+    void undoLastInstCompare(BasicBlock::const_iterator &InstL,
+                             BasicBlock::const_iterator &InstR) const;
 
     /// Does additional operations in cases when a difference between two
     /// CallInsts or their arguments is detected.

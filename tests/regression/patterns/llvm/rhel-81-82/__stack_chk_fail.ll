@@ -38,7 +38,7 @@
 @suppress_printk = external global i32, align 4
 
 ; Functions
-declare void @diffkemp.mapping(...)
+declare void @diffkemp.output_mapping(...)
 declare void @console_flush_on_panic(...)
 declare void @panic_print_sys_info(...)
 declare void @arch_local_irq_enable(...)
@@ -59,7 +59,7 @@ define void @diffkemp.old.panic_second() {
   br label %aBB, !diffkemp.pattern !1
 
 aBB:
-  call void (...) @diffkemp.mapping()
+  call void (...) @diffkemp.output_mapping()
   ret void
 }
 
@@ -69,6 +69,6 @@ define void @diffkemp.new.panic_second() {
   br label %bBB, !diffkemp.pattern !1
 
 bBB:
-  call void (...) @diffkemp.mapping()
+  call void (...) @diffkemp.output_mapping()
   ret void
 }

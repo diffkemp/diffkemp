@@ -33,8 +33,8 @@ enum class PatternType { INST, VALUE };
 
 /// Representation of difference pattern metadata configuration.
 struct PatternMetadata {
-    /// Default DiffKemp prefix for all pattern information.
-    static const StringMap<int> MetadataOffsets;
+    /// Metadata operand counts for different kinds of pattern metadata.
+    static const StringMap<int> MetadataOperandCounts;
     /// Marker for the first differing instruction pair.
     bool PatternStart = false;
     /// Marker for the last differing instruction pair.
@@ -47,6 +47,8 @@ struct PatternMetadata {
     bool DisableNameComparison = false;
     /// Does not register the instruction as an input.
     bool NotAnInput = false;
+    /// Disables detection of value patterns, making them instruction based.
+    bool NoValuePatternDetection = false;
 };
 
 /// Representation of the whole difference pattern configuration.
@@ -172,18 +174,16 @@ class PatternSet {
 
     PatternSet(std::string ConfigPath);
 
-    /// Retrives pattern metadata attached to the given instruction.
+    /// Retrieves pattern metadata attached to the given instruction.
     Optional<PatternMetadata> getPatternMetadata(const Instruction &Inst) const;
 
   private:
     /// Basic information about the output instruction mapping present on one
-    /// side of a pattern. For each output instruction, its operand index is
-    /// kept. Output instructions with the same operand index on both sides of a
-    /// pattern will be mapped together.
+    /// side of a pattern. For each output instruction, the number of output
+    /// operands is kept. Output instructions with the same operand position
+    /// will be mapped together.
     using OutputMappingInfo = std::pair<const Instruction *, int>;
 
-    /// Settings applied to all pattern files.
-    StringMap<std::string> GlobalSettings;
     /// LLVM context reserved used by all loaded pattern modules.
     LLVMContext PatternContext;
     /// Vector of loaded pattern modules.
@@ -203,7 +203,7 @@ class PatternSet {
     bool initializeInstPattern(InstPattern &Pat);
 
     /// Initializes a single side of a pattern, loading all metadata, start
-    /// positions, and retrevies instruction mapping information.
+    /// positions, and retrieves instruction mapping information.
     void initializeInstPatternSide(InstPattern &Pat,
                                    OutputMappingInfo &MapInfo,
                                    bool IsLeftSide);

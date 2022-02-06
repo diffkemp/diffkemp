@@ -535,7 +535,7 @@ std::vector<std::string>
     // character to the inline asm from LLVM IR and discards a candidate when
     // its character at the current position does not correspond. This is
     // repeated until one or no candidate is left.
-    unsigned long position = 0;
+    long position = 0;
     while (candidates.size() > 1) {
         auto it = std::remove_if(candidates.begin(),
                                  candidates.end(),
@@ -562,7 +562,7 @@ std::vector<std::string>
     std::vector<std::string> result;
     position = -1;
 
-    while (position < rawArguments.size()) {
+    while (position < long(rawArguments.size())) {
         position = rawArguments.find('(', position + 1);
         if (position == std::string::npos)
             // There is no additional bracket.
