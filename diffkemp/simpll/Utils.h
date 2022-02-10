@@ -89,6 +89,9 @@ bool isCast(const Value *Val);
 /// Returns true if the given instruction is a GEP with all indices equal to 0
 bool isZeroGEP(const Value *Val);
 
+/// Returns true if the given instruction is a boolean negation operation
+bool isLogicalNot(const Instruction *Inst);
+
 /// Run simplification passes on the function
 ///  - simplify CFG
 ///  - dead code elimination
