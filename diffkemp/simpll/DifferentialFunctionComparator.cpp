@@ -347,28 +347,16 @@ int DifferentialFunctionComparator::cmpOperations(
                 return cmpNumbers(dyn_cast<AllocaInst>(L)->getAlignment(),
                                   dyn_cast<AllocaInst>(R)->getAlignment());
         }
-        // Handle inverse conditions
+        // Record inverse conditions
         if (isa<CmpInst>(L) && isa<CmpInst>(R)) {
             auto CmpL = dyn_cast<CmpInst>(L);
             auto CmpR = dyn_cast<CmpInst>(R);
 
-            // All users of the conditions must be branching instructions
-            if (std::all_of(
-                        CmpL->users().begin(),
-                        CmpL->users().end(),
-                        [](const User *user) { return isa<BranchInst>(*user); })
-                && std::all_of(CmpR->users().begin(),
-                               CmpR->users().end(),
-                               [](const User *user) {
-                                   return isa<BranchInst>(*user);
-                               })) {
-
-                // It is sufficient to compare the predicates here since the
-                // operands are compared in cmpBasicBlocks.
-                if (CmpL->getPredicate() == CmpR->getInversePredicate()) {
-                    inverseConditions.emplace(L, R);
-                    return 0;
-                }
+            // It is sufficient to compare the predicates here since the
+            // operands are compared in cmpBasicBlocks.
+            if (CmpL->getPredicate() == CmpR->getInversePredicate()) {
+                inverseConditions.emplace(L, R);
+                return 0;
             }
         }
     }
@@ -882,6 +870,35 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                     InstL++;
                 if (MaySkipR)
                     InstR++;
+                continue;
+            }
+
+            // If one of the instructions is a logical not, it is possible that
+            // it will be used in an inverse condition. Hence, we skip it here
+            // and mark that it may be inverse-matching the condition that
+            // has been originally mapped to the operand of the not operation.
+            if (isLogicalNot(&*InstL) || isLogicalNot(&*InstR)) {
+                sn_mapL.erase(&*InstL);
+                sn_mapR.erase(&*InstR);
+
+                std::pair<const Value *, const Value *> matchingPair;
+                if (isLogicalNot(&*InstL)) {
+                    matchingPair = {&*InstL,
+                                    getMappedValue(InstL->getOperand(0), true)};
+                    ignoredInstructions.emplace(&*InstL, InstL->getOperand(0));
+                    InstL++;
+                } else {
+                    matchingPair = {getMappedValue(InstR->getOperand(0), false),
+                                    &*InstR};
+                    ignoredInstructions.emplace(&*InstR, InstR->getOperand(0));
+                    InstR++;
+                }
+
+                // If the conditions are already inverse, remove them from the
+                // list. Otherwise, add them.
+                size_t erased = inverseConditions.erase(matchingPair);
+                if (!erased)
+                    inverseConditions.insert(matchingPair);
                 continue;
             }
 

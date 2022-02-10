@@ -238,6 +238,25 @@ bool isZeroGEP(const Value *Val) {
     return false;
 }
 
+/// Returns true if the given instruction is a boolean negation operation.
+/// LLVM implements negation using "xor X true" (the negated value is always
+/// the first operand).
+bool isLogicalNot(const Instruction *Inst) {
+    // Only accept bool (i1) instructions
+    auto intType = dyn_cast<IntegerType>(Inst->getType());
+    if (!(intType && intType->getBitWidth() == 1))
+        return false;
+
+    if (auto *BinOp = dyn_cast<BinaryOperator>(Inst)) {
+        if (BinOp->getOpcode() != llvm::Instruction::Xor)
+            return false;
+
+        if (auto constOp = dyn_cast<Constant>(BinOp->getOperand(1)))
+            return constOp->isAllOnesValue();
+    }
+    return false;
+}
+
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val) {
     if (auto *IntVal = dyn_cast<ConstantInt>(Val)) {
