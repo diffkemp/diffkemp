@@ -643,20 +643,27 @@ bool mayIgnoreMacro(std::string macro) {
 /// Retrive the replacement for the given value from the ignored instructions
 /// map. Try to generate the replacement if a bitcast is given.
 const Value *DifferentialFunctionComparator::getReplacementValue(
-        const Value *Replaced) const {
+        const Value *Replaced, DenseMap<const Value *, int> &sn_map) const {
     // Find the replacement value.
     auto replacementIt = ignoredInstructions.find(Replaced);
     if (replacementIt == ignoredInstructions.end()) {
         // Before failing, check whether the replaced value is an ignorable
-        // bitcast or zero GEP. If so, return the replacement operand.
-        auto BitCast = dyn_cast<BitCastOperator>(Replaced);
-        if (BitCast && maySkipCast(BitCast)) {
-            return BitCast->getOperand(0);
+        // bitcast or zero GEP operator. If so, return its operand. Note that if
+        // the replacing operand is an instruction, it must already have been
+        // synchronized, otherwise an invalid synchronisation could be created
+        // in cmpValues.
+        Value *Result = nullptr;
+        if (auto BitCast = dyn_cast<BitCastOperator>(Replaced)) {
+            if (maySkipCast(BitCast))
+                Result = BitCast->getOperand(0);
         }
-        auto GEP = dyn_cast<GEPOperator>(Replaced);
-        if (GEP && isZeroGEP(GEP)) {
-            return GEP->getOperand(0);
+        if (auto GEP = dyn_cast<GEPOperator>(Replaced)) {
+            if (isZeroGEP(GEP))
+                Result = GEP->getOperand(0);
         }
+        if (Result && !isa<Instruction>(Result)
+            || sn_map.find(Result) != sn_map.end())
+            return Result;
         return nullptr;
     }
     return replacementIt->second;
@@ -1159,8 +1166,8 @@ int DifferentialFunctionComparator::cmpFieldAccess(
 int DifferentialFunctionComparator::cmpValues(const Value *L,
                                               const Value *R) const {
     // Use replacement references for ignored values.
-    auto replaceL = getReplacementValue(L);
-    auto replaceR = getReplacementValue(R);
+    auto replaceL = getReplacementValue(L, sn_mapL);
+    auto replaceR = getReplacementValue(R, sn_mapR);
     if (replaceL || replaceR) {
         // Repeat the comparison with replacements for all ignored values.
         return cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R);

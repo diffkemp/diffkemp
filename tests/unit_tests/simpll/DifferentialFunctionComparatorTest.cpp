@@ -135,6 +135,9 @@ class TestComparator : public DifferentialFunctionComparator {
     void setLeftSerialNumber(const Value *Val, int i) { sn_mapL[Val] = i; }
 
     void setRightSerialNumber(const Value *Val, int i) { sn_mapR[Val] = i; }
+
+    size_t getLeftSnMapSize() { return sn_mapL.size(); }
+    size_t getRightSnMapSize() { return sn_mapR.size(); }
 };
 
 /// Test fixture providing contexts, modules, functions, a Config object,
@@ -1277,5 +1280,28 @@ TEST_F(DifferentialFunctionComparatorTest, CmpFieldAccessBrokenChain) {
     // in the other one).
     ASSERT_EQ(&*InstL, RetL);
     ASSERT_EQ(&*InstR, CastR);
+}
+
+/// Check that skipping a bitcast instruction doesn't break sizes of
+/// synchronisation maps.
+TEST_F(DifferentialFunctionComparatorTest, CmpSkippedBitcast) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    auto AllocaL = new AllocaInst(Type::getInt32Ty(CtxL), 0, "", BBL);
+
+    auto CastL = CastInst::Create(Instruction::CastOps::BitCast,
+                                  AllocaL,
+                                  PointerType::get(Type::getInt8Ty(CtxL), 0),
+                                  "",
+                                  BBL);
+
+    auto RetL = ReturnInst::Create(
+            CtxL, ConstantInt::get(Type::getInt32Ty(CtxL), 0), BBL);
+    auto RetR = ReturnInst::Create(
+            CtxR, ConstantInt::get(Type::getInt32Ty(CtxR), 0), BBR);
+
+    ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 0);
+    ASSERT_EQ(DiffComp->getLeftSnMapSize(), DiffComp->getRightSnMapSize());
 }
 #endif
