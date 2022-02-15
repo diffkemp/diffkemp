@@ -172,7 +172,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     /// Retrive the replacement for the given value from the ignored
     /// instructions map. Try to generate the replacement if a bitcast is given.
-    const Value *getReplacementValue(const Value *Replaced) const;
+    const Value *
+            getReplacementValue(const Value *Replaced,
+                                DenseMap<const Value *, int> &sn_map) const;
 
     /// Does additional operations in cases when a difference between two
     /// CallInsts or their arguments is detected.
