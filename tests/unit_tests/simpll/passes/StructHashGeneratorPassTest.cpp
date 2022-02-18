@@ -59,8 +59,8 @@ TEST(StructHashGeneratorPass, Base) {
 
     // Run the pass and check the results.
     for (auto Mod : {Mod1, Mod2}) {
-        ModulePassManager mpm(false);
-        ModuleAnalysisManager mam(false);
+        ModulePassManager mpm;
+        ModuleAnalysisManager mam;
         PassBuilder pb;
         pb.registerModuleAnalyses(mam);
         mpm.addPass(StructHashGeneratorPass{});

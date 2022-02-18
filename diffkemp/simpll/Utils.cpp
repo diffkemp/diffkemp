@@ -273,8 +273,8 @@ StructType *getStructType(const Value *Value) {
 ///  - dead code elimination
 void simplifyFunction(Function *Fun) {
     PassBuilder pb;
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
+    FunctionPassManager fpm;
+    FunctionAnalysisManager fam;
     pb.registerFunctionAnalyses(fam);
 #if LLVM_VERSION_MAJOR > 5
     fpm.addPass(SimplifyCFGPass{});

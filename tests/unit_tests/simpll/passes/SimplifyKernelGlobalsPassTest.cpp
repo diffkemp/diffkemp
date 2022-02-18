@@ -54,8 +54,8 @@ static void addCall(Function *Src, Function *Dest) {
 }
 
 static void simplifyKernelGlobals(Module *Mod) {
-    ModulePassManager mpm(false);
-    ModuleAnalysisManager mam(false);
+    ModulePassManager mpm;
+    ModuleAnalysisManager mam;
     PassBuilder pb;
     pb.registerModuleAnalyses(mam);
     mpm.addPass(SimplifyKernelGlobalsPass{});

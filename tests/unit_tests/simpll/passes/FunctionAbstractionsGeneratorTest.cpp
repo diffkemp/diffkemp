@@ -25,7 +25,7 @@
 #include <passes/FunctionAbstractionsGenerator.h>
 
 static void runFunctionAbstractionsGenerator(Module *Mod, Function *Fun) {
-    AnalysisManager<Module, Function *> mam(false);
+    AnalysisManager<Module, Function *> mam;
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
 #if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });

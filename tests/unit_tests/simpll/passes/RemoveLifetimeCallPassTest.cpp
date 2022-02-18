@@ -43,8 +43,8 @@ TEST(RemoveLifetimeCallPassTest, Base) {
     Builder.CreateRetVoid();
 
     // Run the pass and check the results,
-    ModulePassManager mpm(false);
-    ModuleAnalysisManager mam(false);
+    ModulePassManager mpm;
+    ModuleAnalysisManager mam;
     PassBuilder pb;
     pb.registerModuleAnalyses(mam);
     mpm.addPass(RemoveLifetimeCallsPass{});

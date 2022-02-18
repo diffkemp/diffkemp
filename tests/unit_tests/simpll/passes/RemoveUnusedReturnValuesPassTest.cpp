@@ -80,7 +80,7 @@ TEST(RemoveUnusedReturnValuesPass, Base) {
                          Mod2);
 
     // Run the pass and check the results.
-    AnalysisManager<Module, Function *> mam(false);
+    AnalysisManager<Module, Function *> mam;
     PassManager<Module,
                 AnalysisManager<Module, Function *>,
                 Function *,
