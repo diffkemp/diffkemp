@@ -23,8 +23,8 @@
 
 /// Helper function that executes the pass on Fun.
 static void simplifyKernelFunctions(Function *Fun) {
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
+    FunctionPassManager fpm;
+    FunctionAnalysisManager fam;
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(SimplifyKernelFunctionCallsPass{});

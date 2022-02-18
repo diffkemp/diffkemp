@@ -50,7 +50,7 @@ TEST(VarDependencySlicerTest, Base) {
             Builder.CreateBinOp(Instruction::BinaryOps::Add,
                                 &*Fun->arg_begin(),
                                 ConstantInt::get(Type::getInt8Ty(Ctx), 5));
-    auto GVarLoad = Builder.CreateLoad(GVar);
+    auto GVarLoad = Builder.CreateLoad(Type::getInt8Ty(Ctx), GVar);
     auto GVarNeg = Builder.CreateNeg(GVarLoad);
     Builder.CreateStore(GVarNeg, GVar);
     Builder.CreateRet(ParamAdd);
@@ -58,7 +58,7 @@ TEST(VarDependencySlicerTest, Base) {
     // Run the pass and check the result (only the instructions operating on the
     // global variable should be left).
     PassManager<Function, FunctionAnalysisManager, GlobalVariable *> fpm;
-    FunctionAnalysisManager fam(false);
+    FunctionAnalysisManager fam;
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(VarDependencySlicer{});

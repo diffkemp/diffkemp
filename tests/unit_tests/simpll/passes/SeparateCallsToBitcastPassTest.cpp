@@ -118,8 +118,8 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     ReturnInst::Create(Ctx, BB);
 
     // Run the pass and check the results.
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
+    FunctionPassManager fpm;
+    FunctionAnalysisManager fam;
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(SeparateCallsToBitcastPass{});

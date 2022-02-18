@@ -746,7 +746,16 @@ void VarDependencySlicer::changeToVoid(Function &Fun) {
 
     // Clone function
     SmallVector<ReturnInst *, 8> Returns;
+
+#if LLVM_VERSION_MAJOR >= 13
+    CloneFunctionInto(NewFun,
+                      &Fun,
+                      ArgMap,
+                      CloneFunctionChangeType::LocalChangesOnly,
+                      Returns);
+#else
     CloneFunctionInto(NewFun, &Fun, ArgMap, true, Returns);
+#endif
 
     // Change return instructions to return void
     for (auto *Ret : Returns) {

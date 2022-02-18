@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DebugInfo.h"
+#include <llvm/ADT/StringExtras.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/Passes/PassBuilder.h>
 
@@ -468,8 +469,8 @@ void DebugInfo::addAlignment(std::string MacroName, std::string MacroValue) {
 void DebugInfo::removeFunctionsDebugInfo(Module &Mod) {
     // Function passes
     PassBuilder pb;
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
+    FunctionPassManager fpm;
+    FunctionAnalysisManager fam;
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(RemoveDebugInfoPass{});
     for (auto &F : Mod)
@@ -516,7 +517,9 @@ DICompositeType *getVariableTypeInfo(Value *Val) {
 }
 
 std::string getEnumValue(const DIEnumerator *Enum) {
-#if LLVM_VERSION_MAJOR >= 11
+#if LLVM_VERSION_MAJOR >= 13
+    return toString(Enum->getValue(), 10, false);
+#elif LLVM_VERSION_MAJOR >= 11
     return Enum->getValue().toString(10, false);
 #else
     return std::to_string(Enum->getValue());

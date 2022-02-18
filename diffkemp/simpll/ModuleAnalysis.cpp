@@ -66,7 +66,7 @@ void preprocessModule(Module &Mod,
     if (Var) {
         // Slicing of the program w.r.t. the value of a global variable
         PassManager<Function, FunctionAnalysisManager, GlobalVariable *> fpm;
-        FunctionAnalysisManager fam(false);
+        FunctionAnalysisManager fam;
         PassBuilder pb;
         pb.registerFunctionAnalyses(fam);
 
@@ -80,8 +80,8 @@ void preprocessModule(Module &Mod,
     }
 
     // Function passes
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
+    FunctionPassManager fpm;
+    FunctionAnalysisManager fam;
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
 
@@ -98,8 +98,8 @@ void preprocessModule(Module &Mod,
         fpm.run(Fun, fam);
 
     // Module passes
-    ModulePassManager mpm(false);
-    ModuleAnalysisManager mam(false);
+    ModulePassManager mpm;
+    ModuleAnalysisManager mam;
     pb.registerModuleAnalyses(mam);
 
     mpm.addPass(MergeNumberedFunctionsPass{});
@@ -129,7 +129,7 @@ void preprocessModule(Module &Mod,
 void simplifyModulesDiff(Config &config, OverallResult &Result) {
     // Generate abstractions of indirect function calls and for inline
     // assemblies.
-    AnalysisManager<Module, Function *> mam(false);
+    AnalysisManager<Module, Function *> mam;
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
     mam.registerPass([] { return StructureSizeAnalysis(); });
@@ -236,7 +236,11 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
 /// \param FileName Path to the file to write to.
 void writeIRToFile(Module &Mod, StringRef FileName) {
     std::error_code errorCode;
+#if LLVM_VERSION_MAJOR >= 7
+    raw_fd_ostream stream(FileName, errorCode, sys::fs::OF_None);
+#else
     raw_fd_ostream stream(FileName, errorCode, sys::fs::F_None);
+#endif
     Mod.print(stream, nullptr);
     stream.close();
 }

@@ -47,8 +47,8 @@ TEST(MergeNumberedFunctionsPassTest, Base) {
     createFunction(Mod, "group2.9", Type::getVoidTy(Ctx));
 
     // Run the pass and check the results,
-    ModulePassManager mpm(false);
-    ModuleAnalysisManager mam(false);
+    ModulePassManager mpm;
+    ModuleAnalysisManager mam;
     PassBuilder pb;
     pb.registerModuleAnalyses(mam);
     mpm.addPass(MergeNumberedFunctionsPass{});

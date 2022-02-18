@@ -54,8 +54,8 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     Builder.CreateRetVoid();
 
     // Run the pass and check the results,
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
+    FunctionPassManager fpm;
+    FunctionAnalysisManager fam;
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(UnifyMemcpyPass{});
@@ -174,8 +174,8 @@ TEST(UnifyMemcpyPassTest, KernelMemcpyToIntrinsic) {
     Builder.CreateRetVoid();
 
     // Run the pass and check the results,
-    FunctionPassManager fpm(false);
-    FunctionAnalysisManager fam(false);
+    FunctionPassManager fpm;
+    FunctionAnalysisManager fam;
     PassBuilder pb;
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(UnifyMemcpyPass{});

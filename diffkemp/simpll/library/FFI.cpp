@@ -110,7 +110,7 @@ struct ptr_array getCalledFunctions(void *FunRaw) {
     Function *Fun = (Function *)FunRaw;
 
     // Run CalledFunctionAnalysis to get the result as a std::set.
-    AnalysisManager<Module, Function *> mam(false);
+    AnalysisManager<Module, Function *> mam;
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
 #if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });

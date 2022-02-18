@@ -42,7 +42,7 @@ TEST(StructureSizeAnalysisTest, Base) {
     }
 
     // Run the analysis and check its result.
-    AnalysisManager<Module, Function *> mam(false);
+    AnalysisManager<Module, Function *> mam;
     mam.registerPass([] { return StructureSizeAnalysis(); });
 #if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
