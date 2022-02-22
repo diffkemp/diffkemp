@@ -86,6 +86,7 @@ PreservedAnalyses
         bool isStruct = isa<ConstantStruct>(Initializer);
 
         // Remove the global variable itself.
+        V->replaceAllUsesWith(Constant::getNullValue(V->getType()));
         V->eraseFromParent();
 
         // Remove its initializer if it was a struct.
