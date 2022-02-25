@@ -661,7 +661,7 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
             if (isZeroGEP(GEP))
                 Result = GEP->getOperand(0);
         }
-        if (Result && !isa<Instruction>(Result)
+        if ((Result && !isa<Instruction>(Result))
             || sn_map.find(Result) != sn_map.end())
             return Result;
         return nullptr;

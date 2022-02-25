@@ -214,6 +214,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
             // is not included is guaranteed to have one successor).
             if (canRemoveBlock(BB)) {
                 bool removed = TryToSimplifyUncondBranchFromEmptyBlock(BB);
+                (void)removed;
                 assert(removed || BB->getSingleSuccessor() == BB);
             }
         }
