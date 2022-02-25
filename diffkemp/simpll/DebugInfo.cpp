@@ -79,7 +79,7 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
         std::vector<Value *> indices;
         std::vector<Value *> indicesOther;
 
-        User::op_iterator idx_other;
+        User::op_iterator idx_other = 0;
         if (OtherGEP)
             // If we have the other GEP, iterate over its indices, too
             idx_other = OtherGEP->idx_begin();
