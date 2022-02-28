@@ -14,7 +14,8 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 file(GLOB srcs *.cpp)
-list(REMOVE_ITEM srcs SimpLL.cpp)
+get_filename_component(simpll_main_path ${CMAKE_CURRENT_SOURCE_DIR}/SimpLL.cpp ABSOLUTE)
+list(REMOVE_ITEM srcs ${simpll_main_path})
 file(GLOB passes passes/*.cpp)
 file(GLOB library library/*.cpp)
 
