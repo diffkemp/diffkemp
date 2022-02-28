@@ -26,16 +26,6 @@
 
 using namespace llvm;
 
-// Declaration of command line options
-extern cl::opt<std::string> FirstFileOpt;
-extern cl::opt<std::string> SecondFileOpt;
-extern cl::opt<std::string> FunctionOpt;
-extern cl::opt<std::string> VariableOpt;
-extern cl::opt<std::string> SuffixOpt;
-extern cl::opt<bool> ControlFlowOpt;
-extern cl::opt<bool> PrintCallstacksOpt;
-extern cl::opt<int> VerbosityOpt;
-
 /// Tool configuration parsed from CLI options.
 class Config {
   private:
