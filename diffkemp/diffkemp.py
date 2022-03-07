@@ -15,6 +15,7 @@ import errno
 import os
 import re
 import sys
+import subprocess
 
 
 def __make_argument_parser():
@@ -268,6 +269,24 @@ def compare(args):
     # Parse both the new and the old snapshot.
     old_snapshot = Snapshot.load_from_dir(args.snapshot_dir_old)
     new_snapshot = Snapshot.load_from_dir(args.snapshot_dir_new)
+
+    # Check if snapshot LLVM versions are compatible with the current version
+    llvm_version = subprocess.check_output(
+        ["llvm-config", "--version"]).decode().rstrip().split(".")[0]
+
+    if llvm_version != old_snapshot.llvm_version:
+        sys.stderr.write(
+            "Error: old snapshot was built with LLVM {}, "
+            "current version is LLVM {}.\n".format(
+                old_snapshot.llvm_version, llvm_version))
+        sys.exit(errno.EINVAL)
+
+    if llvm_version != new_snapshot.llvm_version:
+        sys.stderr.write(
+            "Error: new snapshot was built with LLVM {}, "
+            "current version is LLVM {}.\n".format(
+                new_snapshot.llvm_version, llvm_version))
+        sys.exit(errno.EINVAL)
 
     # Set the output directory
     if not args.stdout:
