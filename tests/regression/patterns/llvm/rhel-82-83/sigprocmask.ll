@@ -1,3 +1,8 @@
+; Description
+; Tests basic value pattern functionality. In the underlying code, the values
+; correspond to the operations present in the included diff.
+;
+; Diff:
 ; Found differences in functions called by sigprocmask
 ;
 ; JOBCTL_PENDING_MASK differs:

@@ -1,3 +1,9 @@
+; Description
+; Tests basic inline assembly support. Note that assembly strings cannot be
+; directly compared at the moment. Therefore, only parameter types and input
+; instructions are checked by this pattern.
+;
+; Diff:
 ; Found differences in functions called by blk_mq_end_request
 ;
 ; arch_atomic_dec differs:

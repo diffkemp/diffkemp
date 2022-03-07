@@ -1,3 +1,7 @@
+; Description
+; Tests correctness of return-based output mapping after pattern matches.
+;
+; Diff:
 ; Found differences in functions called by blk_execute_rq
 ;
 ; blk_execute_rq_nowait differs:

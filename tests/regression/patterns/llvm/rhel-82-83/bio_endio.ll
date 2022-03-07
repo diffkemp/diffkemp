@@ -1,3 +1,12 @@
+; Description
+; Tests more complex conditional statement handling. The pattern uses the same
+; control flow branching as the underlying code and has two parts corresponding
+; to the two main differences in the included diff. These parts (i.e., the
+; differing pairs of function calls) are separated by the instructions in
+; between them. Additionally, the name-only structure comparison is tested
+; as well (%struct.custom is compared type-wise, not by name).
+;
+; Diff:
 ; Found differences in functions called by bio_endio
 ;
 ; percpu_ref_put_many differs:
@@ -54,7 +63,7 @@ declare void @diffkemp.new.rcu_read_unlock()
 declare zeroext i1 @__ref_is_percpu(%struct.custom*, i64**)
 declare i32 @atomic_long_sub_and_test(i64, %struct.atomic64_t*)
 
-define i1 @diffkemp.old.bio_endio(%struct.custom*, i64) {
+define i1 @diffkemp.old.percpu_ref_put_many(%struct.custom*, i64) {
   %3 = alloca i64*, align 8
   call void @diffkemp.old.rcu_read_lock_sched(), !diffkemp.pattern !0
   %4 = call zeroext i1 @__ref_is_percpu(%struct.custom* %0, i64** %3), !diffkemp.pattern !2
@@ -83,7 +92,7 @@ eBB:
   ret i1 %4
 }
 
-define i1 @diffkemp.new.bio_endio(%struct.custom*, i64) {
+define i1 @diffkemp.new.percpu_ref_put_many(%struct.custom*, i64) {
   %3 = alloca i64*, align 8
   call void @diffkemp.new.rcu_read_lock(), !diffkemp.pattern !0
   %4 = call zeroext i1 @__ref_is_percpu(%struct.custom* %0, i64** %3), !diffkemp.pattern !2

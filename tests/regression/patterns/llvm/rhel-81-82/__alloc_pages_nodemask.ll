@@ -1,3 +1,8 @@
+; Description
+; Tests whether global values work as intended in value patterns. In the
+; underlying code, the value of RECLAIM_DISTANCE was equal to 30.
+;
+; Diff:
 ; Found differences in functions called by __alloc_pages_nodemask
 ;
 ; zone_allows_reclaim differs:
@@ -16,7 +21,7 @@
 @diffkemp.new.node_reclaim_distance = external global i32
 
 define i32 @diffkemp.old.zone_allows_reclaim() {
-  ret i32 30  ; RECLAIM_DISTANCE = 30
+  ret i32 30
 }
 
 define i32* @diffkemp.new.zone_allows_reclaim() {

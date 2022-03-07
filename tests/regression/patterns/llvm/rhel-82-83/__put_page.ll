@@ -1,3 +1,8 @@
+; Description
+; Tests function call modification with parameter type changes. This includes
+; checking input instructions before the call.
+;
+; Diff:
 ; Found differences in functions called by __put_page
 ;
 ; __update_lru_size differs:

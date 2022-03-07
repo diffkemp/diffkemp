@@ -1,3 +1,8 @@
+; Description
+; Tests function call modification without parameter changes. This includes
+; checking input instructions before the call.
+;
+; Diff:
 ; Found differences in functions called by ipmi_set_gets_events
 ;
 ; free_user differs:

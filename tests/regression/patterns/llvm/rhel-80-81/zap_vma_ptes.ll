@@ -1,3 +1,9 @@
+; Description
+; Tests that probable value pattern use cases can be correctly represented by
+; instruction patterns. In the underlying code, the values correspond to the
+; operations present in the included diff.
+;
+; Diff:
 ; Found differences in functions called by zap_vma_ptes
 ;
 ; SWP_OFFSET_MASK differs:

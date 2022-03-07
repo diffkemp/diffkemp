@@ -1,3 +1,8 @@
+; Description
+; Tests more complex input handling (including bitcasts). Additionally, tests
+; that output mapping can be defined using the output_mapping function.
+;
+; Diff:
 ; Found differences in functions called by kthread_create_on_node
 ;
 ; __kthread_create_on_node differs:

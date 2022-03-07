@@ -1,3 +1,10 @@
+; Description
+; Tests whether two patterns from a single LLVM IR file get processed correctly.
+; The structure of both patterns reflects this: instead of a single (possibly
+; quite complex) pattern, two very simple patterns are used. Compatibility
+; is also tested by metadata differences.
+;
+; Diff:
 ; Found differences in functions called by set_user_nice
 ;
 ; dequeue_task differs:

@@ -1,3 +1,8 @@
+; Description
+; Tests function call modification with parameter addition. This includes
+; checking input instructions before the call.
+;
+; Diff:
 ; Found differences in functions called by vfree
 ;
 ; __vunmap differs:
@@ -35,12 +40,10 @@ declare void @vm_remove_mappings(...)
 define void @diffkemp.old.__vunmap(i8*, i32) {
   %3 = ptrtoint i8* %0 to i64
   %4 = call %struct.vmap_area* (...) @find_vmap_area(i64 %3)
-  %5 = getelementptr inbounds %struct.vmap_area, %struct.vmap_area* %4, i32 0, i32 6
-  %6 = load %struct.vm_struct*, %struct.vm_struct** %5, align 8
   br label %aBB
 
 aBB:
-  %7 = call %struct.vm_struct* (...) @remove_vm_area(i8* %0), !diffkemp.pattern !0
+  %5 = call %struct.vm_struct* (...) @remove_vm_area(i8* %0), !diffkemp.pattern !0
   br label %bBB, !diffkemp.pattern !1
 
 bBB:

@@ -1,3 +1,10 @@
+; Description
+; Tests that a single difference can be ignored by combining multiple patterns.
+; The pattern consists of two small parts corresponding to the two main
+; differences in the included diff. Additionally, instruction groups (no other
+; instructions are allowed in between) are also tested.
+;
+; Diff:
 ; Found differences in functions called by __stack_chk_fail
 ;
 ; panic differs:

@@ -1,3 +1,8 @@
+; Description
+; Tests more complex conditional statement handling. The pattern uses the same
+; control flow branching as the underlying code.
+;
+; Diff:
 ; Found differences in functions called by down_read
 ;
 ; __down_read differs:

@@ -1,3 +1,8 @@
+; Description
+; Tests basic value pattern functionality. In the underlying code, the values
+; correspond to "1UL << NR_PAGEFLAGS".
+;
+; Diff:
 ; Found differences in functions called by scnprintf
 ;
 ; NR_PAGEFLAGS differs:

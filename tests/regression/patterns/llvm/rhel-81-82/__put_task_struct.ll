@@ -1,3 +1,8 @@
+; Description
+; Tests function call modification with parameter addition. Input instruction
+; checking is not present (only input parameters are checked).
+;
+; Diff:
 ; Found differences in functions called by __put_task_struct
 ;
 ; __put_task_struct differs:
