@@ -714,14 +714,14 @@ bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
 
     // If no prefix is present, the names are not equal.
     StringRef NameRRef = NameR;
-    if (!NameRRef.startswith_lower(PatternSet::DefaultPrefix))
+    if (!NameRRef.startswith(PatternSet::DefaultPrefix))
         return false;
 
     // Remove all prefixes.
     auto PrefixR = IsLeftSide ? PatternSet::PrefixL : PatternSet::PrefixR;
     StringRef RealNameRRef = NameRRef.substr(PatternSet::DefaultPrefix.size());
 
-    if (RealNameRRef.startswith_lower(PrefixR))
+    if (RealNameRRef.startswith(PrefixR))
         RealNameRRef = RealNameRRef.substr(PrefixR.size());
 
     // Compare the names without prefixes.

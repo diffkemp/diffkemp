@@ -564,7 +564,7 @@ std::vector<std::string>
 
     while (position < long(rawArguments.size())) {
         position = rawArguments.find('(', position + 1);
-        if (position == std::string::npos)
+        if (position == long(std::string::npos))
             // There is no additional bracket.
             break;
         std::string argument =

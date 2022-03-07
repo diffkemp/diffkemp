@@ -1239,7 +1239,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
         return cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R);
     }
 
-    int oldSnMapSize = sn_mapL.size();
+    auto oldSnMapSize = sn_mapL.size();
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
         if (isa<Constant>(L) && isa<Constant>(R)) {

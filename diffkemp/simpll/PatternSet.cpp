@@ -91,7 +91,7 @@ Optional<PatternMetadata>
         return None;
     }
 
-    int OperandIndex = 0;
+    unsigned int OperandIndex = 0;
     PatternMetadata Metadata;
     while (OperandIndex < InstMetadata->getNumOperands()) {
         /// Parse the current pattern metadata operand as well as the operands
@@ -184,7 +184,7 @@ void PatternSet::addPattern(std::string &Path) {
     for (auto &Function : PatternModule->getFunctionList()) {
         // Select only defined functions that start with the left prefix.
         if (Function.isDeclaration()
-            || !Function.getName().startswith_lower(FullPrefixL))
+            || !Function.getName().startswith(FullPrefixL))
             continue;
 
         std::string Name = Function.getName().substr(FullPrefixL.size()).str();
