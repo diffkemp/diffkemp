@@ -14,6 +14,7 @@ import pkg_resources
 import shutil
 import sys
 import yaml
+import subprocess
 
 
 class Snapshot:
@@ -51,6 +52,7 @@ class Snapshot:
         self.fun_kind = fun_kind
         self.fun_groups = dict()
         self.created_time = None
+        self.llvm_version = None
 
     @classmethod
     def create_from_source(cls, source_dir, output_dir,
@@ -200,6 +202,8 @@ class Snapshot:
         self.created_time = self.created_time.replace(
             tzinfo=datetime.timezone.utc)
 
+        self.llvm_version = yaml_dict["llvm_version"]
+
         llvm_finder_cls = None
         llvm_finder_path = None
         if yaml_dict["llvm_source_finder"]["kind"] == "kernel_with_builder":
@@ -265,6 +269,8 @@ class Snapshot:
         # Create the top level YAML structure.
         yaml_dict = [{
             "diffkemp_version": pkg_resources.require("diffkemp")[0].version,
+            "llvm_version": subprocess.check_output(
+                ["llvm-config", "--version"]).decode().rstrip().split(".")[0],
             "created_time": datetime.datetime.now(datetime.timezone.utc),
             "kind": "function_list" if self.fun_kind is None else
             "systcl_group_list",
