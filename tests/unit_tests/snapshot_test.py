@@ -64,6 +64,7 @@ def test_load_snapshot_from_dir_functions():
             kind: kernel_with_builder
             path: null
           source_dir: /diffkemp/kernel/linux-3.10.0-957.el7
+          llvm_version: 13
         """)
 
         # Load the temporary snapshot configuration file.
@@ -126,6 +127,7 @@ def test_load_snapshot_from_dir_sysctls():
             kind: kernel_with_builder
             path: null
           source_dir: /diffkemp/kernel/linux-3.10.0-957.el7
+          llvm_version: 13
         """)
 
         # Load the temporary sysctl snapshot configuration file.
@@ -328,7 +330,7 @@ def test_to_yaml_functions():
 
     assert len(yaml_snap) == 1
     yaml_dict = yaml_snap[0]
-    assert len(yaml_dict) == 6
+    assert len(yaml_dict) == 7
     assert isinstance(yaml_dict["created_time"], datetime.datetime)
     assert yaml_dict["llvm_source_finder"]["kind"] == "kernel_with_builder"
     assert len(yaml_dict["list"]) == 2
@@ -374,7 +376,7 @@ def test_to_yaml_sysctls():
     yaml_snap = yaml.safe_load(yaml_str)
     assert len(yaml_snap) == 1
     yaml_dict = yaml_snap[0]
-    assert len(yaml_dict) == 6
+    assert len(yaml_dict) == 7
     assert yaml_dict["llvm_source_finder"]["kind"] == "kernel_with_builder"
     assert isinstance(yaml_dict["created_time"], datetime.datetime)
     assert len(yaml_dict["list"]) == 2
