@@ -19,6 +19,7 @@
 #include "DebugInfo.h"
 #include "FunctionComparator.h"
 #include "ModuleComparator.h"
+#include "PatternComparator.h"
 #include "Utils.h"
 
 using namespace llvm;
@@ -33,14 +34,24 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    const Config &config,
                                    const DebugInfo *DI,
+                                   const PatternSet *PS,
                                    ModuleComparator *MC)
             : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
               LayoutL(F1->getParent()->getDataLayout()),
-              LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
+              LayoutR(F2->getParent()->getDataLayout()),
+              PatternComp(PatternComparator(PS, this, F1, F2)),
+              ModComparator(MC) {}
 
     int compare() override;
+    /// Compares values by their synchronisation. The comparison is unsuccessful
+    /// if the given values are not mapped to each other.
+    int cmpValuesByMapping(const Value *L, const Value *R) const;
     /// Check if two instructions were already compared as equal.
     bool equal(const Instruction *L, const Instruction *R);
+    /// Retrieves the value that is mapped to the given value, taken from one of
+    /// the compared modules. When no such mapping exists, returns a null
+    /// pointer.
+    const Value *getMappedValue(const Value *Val, bool ValFromL) const;
     /// Storing pointers to instructions in which functions started to differ.
     mutable std::pair<const Instruction *, const Instruction *>
             DifferingInstructions;
@@ -107,6 +118,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     int cmpPHIs(const PHINode *PhiL, const PHINode *PhiR) const;
 
   private:
+    friend class PatternComparator;
+
     const Config &config;
     const DebugInfo *DI;
 
@@ -118,7 +131,12 @@ class DifferentialFunctionComparator : public FunctionComparator {
             phisToCompare;
     mutable std::unordered_map<const Value *, const Value *>
             ignoredInstructions;
+    /// Contains pairs of values mapped by synchronisation maps. Enables
+    /// retrieval of mapped values based on assigned numbers.
+    mutable std::unordered_map<int, std::pair<const Value *, const Value *>>
+            mappedValuesBySn;
 
+    mutable PatternComparator PatternComp;
     ModuleComparator *ModComparator;
 
     /// Try to find a syntax difference that could be causing the semantic
@@ -175,6 +193,18 @@ class DifferentialFunctionComparator : public FunctionComparator {
     const Value *
             getReplacementValue(const Value *Replaced,
                                 DenseMap<const Value *, int> &sn_map) const;
+
+    /// Creates new value mappings according to the current pattern match.
+    void createPatternMapping() const;
+
+    /// Check if the given instruction has been matched to a pattern and,
+    /// therefore, does not need to be analyzed nor mapped again.
+    bool isPartOfPattern(const Instruction *Inst) const;
+
+    /// Undo the changes made to synchronisation maps during the last
+    /// instruction pair comparison.
+    void undoLastInstCompare(BasicBlock::const_iterator &InstL,
+                             BasicBlock::const_iterator &InstR) const;
 
     /// Does additional operations in cases when a difference between two
     /// CallInsts or their arguments is detected.

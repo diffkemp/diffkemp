@@ -34,7 +34,6 @@ def collect_task_specs():
                         spec = TaskSpec(
                             spec=spec_yaml,
                             task_name=fun,
-                            tasks_path=tasks_path,
                             kernel_path=cwd)
 
                         spec.add_function_spec(fun, res)

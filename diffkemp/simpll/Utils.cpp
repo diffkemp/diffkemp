@@ -13,6 +13,7 @@
 
 #include "Utils.h"
 #include "Config.h"
+#include "PatternSet.h"
 #include <algorithm>
 #include <iostream>
 #include <llvm/IR/Intrinsics.h>
@@ -698,6 +699,33 @@ void copyFunctionProperties(Function *srcFun, Function *destFun) {
          ++AI, ++NAI) {
         NAI->takeName(AI);
     }
+}
+
+/// Tests whether two names of types or globals match. Names match if they
+/// are the same or if the DiffKemp pattern name prefixes are used.
+bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
+    // Remove number suffixes
+    std::string NameL = hasSuffix(L.str()) ? dropSuffix(L.str()) : L.str();
+    std::string NameR = hasSuffix(R.str()) ? dropSuffix(R.str()) : R.str();
+
+    // Compare the names themselves.
+    if (NameL == NameR)
+        return true;
+
+    // If no prefix is present, the names are not equal.
+    StringRef NameRRef = NameR;
+    if (!NameRRef.startswith(PatternSet::DefaultPrefix))
+        return false;
+
+    // Remove all prefixes.
+    auto PrefixR = IsLeftSide ? PatternSet::PrefixL : PatternSet::PrefixR;
+    StringRef RealNameRRef = NameRRef.substr(PatternSet::DefaultPrefix.size());
+
+    if (RealNameRRef.startswith(PrefixR))
+        RealNameRRef = RealNameRRef.substr(PrefixR.size());
+
+    // Compare the names without prefixes.
+    return NameL == RealNameRRef;
 }
 
 /// Converts value to its string representation.

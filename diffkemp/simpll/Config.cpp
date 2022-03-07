@@ -38,6 +38,7 @@ Config::Config(std::string FirstFunName,
                std::string FirstOutFile,
                std::string SecondOutFile,
                std::string CacheDir,
+               std::string PatternConfigPath,
                std::string Variable,
                bool OutputLlvmIR,
                bool ControlFlowOnly,
@@ -47,8 +48,9 @@ Config::Config(std::string FirstFunName,
         : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
           First(FirstModule), Second(SecondModule), FirstOutFile(FirstOutFile),
           SecondOutFile(SecondOutFile), CacheDir(CacheDir),
-          OutputLlvmIR(OutputLlvmIR), ControlFlowOnly(ControlFlowOnly),
-          PrintAsmDiffs(PrintAsmDiffs), PrintCallStacks(PrintCallStacks) {
+          PatternConfigPath(PatternConfigPath), OutputLlvmIR(OutputLlvmIR),
+          ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
+          PrintCallStacks(PrintCallStacks) {
     refreshFunctions();
 
     if (!Variable.empty()) {

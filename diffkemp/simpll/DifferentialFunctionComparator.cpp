@@ -48,6 +48,19 @@ int DifferentialFunctionComparator::compare() {
     return Res;
 }
 
+/// Compares values by their synchronisation. The comparison is unsuccessful
+/// if the given values are not mapped to each other.
+int DifferentialFunctionComparator::cmpValuesByMapping(const Value *L,
+                                                       const Value *R) const {
+    // Ensure that no new serial numbers will be assigned.
+    if (sn_mapL.find(L) == sn_mapL.end())
+        return -1;
+    if (sn_mapR.find(R) == sn_mapR.end())
+        return 1;
+
+    return sn_mapL[L] != sn_mapR[R];
+}
+
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
 /// was not possible to simply call the original function.
 /// Handles offset between matching GEP indices in the compared modules.
@@ -669,6 +682,39 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
     return replacementIt->second;
 }
 
+/// Creates new value mappings according to the current pattern match.
+void DifferentialFunctionComparator::createPatternMapping() const {
+    for (auto &&MappedInstPair : PatternComp.InstMappings) {
+        // If the instructions are already mapped, do not map them again.
+        if (sn_mapL.find(MappedInstPair.first) != sn_mapL.end()
+            || sn_mapR.find(MappedInstPair.second) != sn_mapR.end())
+            continue;
+
+        mappedValuesBySn[sn_mapL.size()] = {MappedInstPair.first,
+                                            MappedInstPair.second};
+        sn_mapL.try_emplace(MappedInstPair.first, sn_mapL.size());
+        sn_mapR.try_emplace(MappedInstPair.second, sn_mapR.size());
+    }
+}
+
+/// Check if the given instruction has been matched to a pattern and,
+/// therefore, does not need to be analyzed nor mapped again.
+bool DifferentialFunctionComparator::isPartOfPattern(
+        const Instruction *Inst) const {
+    return PatternComp.AllInstMatches.find(Inst)
+           != PatternComp.AllInstMatches.end();
+}
+
+/// Undo the changes made to synchronisation maps during the last
+/// instruction pair comparison.
+void DifferentialFunctionComparator::undoLastInstCompare(
+        BasicBlock::const_iterator &InstL,
+        BasicBlock::const_iterator &InstR) const {
+    sn_mapL.erase(&*InstL);
+    sn_mapR.erase(&*InstR);
+    mappedValuesBySn.erase(sn_mapL.size());
+}
+
 /// Does additional comparisons based on the C source to determine whether two
 /// call function arguments that may be compared as non-equal by LLVM are
 /// actually semantically equal.
@@ -793,6 +839,18 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             InstR++;
             continue;
         }
+
+        // Skip instructions matched to a pattern because such instructions have
+        // been analyzed by the pattern function comparator and have already
+        // been mapped according to the pattern.
+        if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR)) {
+            while (InstL != InstLE && isPartOfPattern(&*InstL))
+                InstL++;
+            while (InstR != InstRE && isPartOfPattern(&*InstR))
+                InstR++;
+            continue;
+        }
+
         if ((&InstL->getDebugLoc())->get())
             CurrentLocL = &InstL->getDebugLoc();
         if ((&InstR->getDebugLoc())->get())
@@ -816,22 +874,30 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // useful in combination with function inlining). If such an
             // operation is detected, reset serial counters, skip the ignored
             // operation, and repeat the comparison.
-            if (maySkipInstruction(&*InstL)) {
-                sn_mapL.erase(&*InstL);
-                sn_mapR.erase(&*InstR);
-                InstL++;
-                continue;
-            }
-            if (maySkipInstruction(&*InstR)) {
-                sn_mapL.erase(&*InstL);
-                sn_mapR.erase(&*InstR);
-                InstR++;
+            bool MaySkipL = maySkipInstruction(&*InstL);
+            bool MaySkipR = maySkipInstruction(&*InstR);
+            if (MaySkipL || MaySkipR) {
+                undoLastInstCompare(InstL, InstR);
+                if (MaySkipL)
+                    InstL++;
+                if (MaySkipR)
+                    InstR++;
                 continue;
             }
 
+            // The difference cannot be skipped. Try to match it to one of the
+            // loaded difference patterns. Continue the comparison if a suitable
+            // starting pattern match gets found.
+            if (PatternComp.matchPattern(&*InstL, &*InstR)) {
+                undoLastInstCompare(InstL, InstR);
+                createPatternMapping();
+                if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR))
+                    continue;
+            }
+
             if (Res) {
-                // The instructions are indeed different, try to find the source
-                // of the difference.
+                // The instructions are indeed different, try to find the
+                // source of the difference.
                 findDifference(&*InstL, &*InstR);
                 return Res;
             }
@@ -1173,6 +1239,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
         return cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R);
     }
 
+    auto oldSnMapSize = sn_mapL.size();
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
         if (isa<Constant>(L) && isa<Constant>(R)) {
@@ -1198,6 +1265,13 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             }
             return 0;
         }
+        if (PatternComp.matchValues(L, R)) {
+            // If the values correspond to a value pattern, consider them equal.
+            return 0;
+        }
+    } else if (oldSnMapSize == (sn_mapL.size() - 1)) {
+        // When the values are equal, remember their mapping.
+        mappedValuesBySn[oldSnMapSize] = {L, R};
     }
     return result;
 }
@@ -1511,4 +1585,21 @@ bool DifferentialFunctionComparator::equal(const Instruction *InstL,
         return false;
 
     return L->second == R->second;
+}
+
+/// Retrieves the value that is mapped to the given value, taken from one of the
+/// compared modules. When no such mapping exists, returns a null pointer.
+const Value *
+        DifferentialFunctionComparator::getMappedValue(const Value *Val,
+                                                       bool ValFromL) const {
+    auto sn_map = ValFromL ? &sn_mapL : &sn_mapR;
+
+    // Ensure that the given value exists in the selected synchronization map.
+    auto MappedValue = sn_map->find(Val);
+    if (MappedValue == sn_map->end())
+        return nullptr;
+
+    // Find the mapped value based on its serial number.
+    auto MappedPair = mappedValuesBySn[MappedValue->second];
+    return ValFromL ? MappedPair.second : MappedPair.first;
 }

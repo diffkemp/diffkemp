@@ -35,7 +35,6 @@ def collect_task_specs():
                         spec = SysctlTaskSpec(
                             spec=spec_yaml,
                             task_name=sysctl["sysctl"],
-                            tasks_path=tasks_path,
                             kernel_path=cwd,
                             data_var=sysctl["data_variable"]["name"])
 

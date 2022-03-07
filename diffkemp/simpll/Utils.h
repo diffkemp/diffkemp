@@ -29,6 +29,12 @@ typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
 
+/// Instructions pointer set.
+typedef SmallPtrSet<const Instruction *, 32> InstructionSet;
+
+/// Instruction to instruction mapping.
+typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
+
 /// Convert a value to a function.
 /// Handles situation then the actual function is inside a bitcast or alias.
 const Function *valueToFunction(const Value *Value);
@@ -144,6 +150,10 @@ void copyCallInstProperties(CallInst *srcCall, CallInst *destCall);
 
 /// Copies properties from one function to another.
 void copyFunctionProperties(Function *srcFun, Function *destFun);
+
+/// Tests whether two names of types or globals match. Names match if they
+/// are the same or if the DiffKemp pattern name prefixes are used.
+bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide);
 
 /// Converts value to its string representation.
 /// Note: Currently the only place that calls this is returns.gdb, which lacks
