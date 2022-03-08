@@ -44,8 +44,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     int compare() override;
     /// Compares values by their synchronisation. The comparison is unsuccessful
-    /// if the given values are not mapped to each other.
+    /// if the given values or their replacements are not mapped to each other.
     int cmpValuesByMapping(const Value *L, const Value *R) const;
+    /// Compares values matched to arbitrary pattern values. Does not retain
+    /// value synchronisation.
+    int cmpArbitraryValueMatch(const Value *L, const Value *R) const;
     /// Check if two instructions were already compared as equal.
     bool equal(const Instruction *L, const Instruction *R);
     /// Retrieves the value that is mapped to the given value, taken from one of
@@ -135,6 +138,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// retrieval of mapped values based on assigned numbers.
     mutable std::unordered_map<int, std::pair<const Value *, const Value *>>
             mappedValuesBySn;
+    /// Values placed into synchronisation maps during the comparison of the
+    /// current instruction pair. This includes newly mapped operands.
+    mutable std::set<const Value *> newlyMappedValuesL, newlyMappedValuesR;
 
     mutable PatternComparator PatternComp;
     ModuleComparator *ModComparator;
@@ -203,8 +209,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
     /// Undo the changes made to synchronisation maps during the last
     /// instruction pair comparison.
-    void undoLastInstCompare(BasicBlock::const_iterator &InstL,
-                             BasicBlock::const_iterator &InstR) const;
+    void undoLastInstCompare() const;
 
     /// Does additional operations in cases when a difference between two
     /// CallInsts or their arguments is detected.

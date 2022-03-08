@@ -46,7 +46,12 @@ const StringMap<int> PatternMetadata::MetadataOperandCounts = {
         {"pattern-end", 0},
         {"group-start", 0},
         {"group-end", 0},
+        {"arbitrary-constant", 1},
+        {"function-name-regex", 2},
+        {"enable-name-comparison", 0},
         {"disable-name-comparison", 0},
+        {"enable-align-comparison", 0},
+        {"disable-align-comparison", 0},
         {"not-an-input", 0},
         {"no-value-pattern-detection", 0}};
 
@@ -65,6 +70,12 @@ const std::string PatternSet::FullPrefixR =
 /// Name for the function defining output instuction mapping.
 const std::string PatternSet::OutputMappingFunName =
         PatternSet::DefaultPrefix + "output_mapping";
+/// Name for constants that represent an arbitrary value.
+const std::string PatternSet::ArbitraryValueConstName =
+        PatternSet::DefaultPrefix + "any";
+/// Structure name representing an arbitrary type.
+const std::string PatternSet::ArbitraryTypeStructName =
+        "struct." + PatternSet::DefaultPrefix + "any";
 /// Name for pattern metadata nodes.
 const std::string PatternSet::MetadataName =
         PatternSet::DefaultPrefix + "pattern";
@@ -99,6 +110,20 @@ Optional<PatternMetadata>
         if (auto Type = dyn_cast<MDString>(
                     InstMetadata->getOperand(OperandIndex).get())) {
             auto TypeName = Type->getString();
+            // Validate operand count.
+            int TotalOperandCount =
+                    PatternMetadata::MetadataOperandCounts.lookup(TypeName) + 1;
+            if ((TotalOperandCount + OperandIndex)
+                > InstMetadata->getNumOperands()) {
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << getDebugIndent()
+                                       << "Missing operands for metadata type "
+                                       << TypeName << " in node "
+                                       << *InstMetadata << ".\n");
+                return None;
+            }
+            // Parse the metadata operand.
+            bool InvalidOperands = false;
             if (TypeName == "pattern-start") {
                 // pattern-start metadata: string type.
                 Metadata.PatternStart = true;
@@ -110,10 +135,62 @@ Optional<PatternMetadata>
                 Metadata.GroupStart = true;
             } else if (TypeName == "group-end") {
                 // group-end metadata: string type.
-                Metadata.GroupEnd = true;
+            } else if (TypeName == "arbitrary-constant") {
+                // arbitrary-constant metadata: string type,
+                //                              string arbitrary-constant.
+                auto ArbitraryConstOp = dyn_cast<MDString>(
+                        InstMetadata->getOperand(OperandIndex + 1).get());
+                if (ArbitraryConstOp) {
+                    auto ParentModule =
+                            Inst.getParent()->getParent()->getParent();
+                    auto ArbitraryGlobalVar = ParentModule->getGlobalVariable(
+                            ArbitraryConstOp->getString());
+                    if (!ArbitraryGlobalVar
+                        || !isa<Constant>(ArbitraryGlobalVar)) {
+                        InvalidOperands = true;
+                    } else {
+                        auto ArbitraryConst =
+                                cast<Constant>(ArbitraryGlobalVar);
+                        Metadata.ArbitraryGEPConst = ArbitraryConst;
+                    }
+                } else {
+                    InvalidOperands = true;
+                }
+            } else if (TypeName == "function-name-regex") {
+                // function-name-regex metadata: string type,
+                //                               string regex-to-match,
+                //                               string constant-to-tie-to.
+                auto RegexOp = dyn_cast<MDString>(
+                        InstMetadata->getOperand(OperandIndex + 1).get());
+                auto TyingConstOp = dyn_cast<MDString>(
+                        InstMetadata->getOperand(OperandIndex + 2).get());
+                if (RegexOp && TyingConstOp) {
+                    auto ParentModule =
+                            Inst.getParent()->getParent()->getParent();
+                    auto TyingGlobalVar = ParentModule->getGlobalVariable(
+                            TyingConstOp->getString());
+                    if (!TyingGlobalVar || !isa<Constant>(TyingGlobalVar)) {
+                        InvalidOperands = true;
+                    } else {
+                        auto TyingConst = cast<Constant>(TyingGlobalVar);
+                        Metadata.FunctionNameRegexes.emplace_back(
+                                RegexOp->getString(), TyingConst);
+                    }
+                } else {
+                    InvalidOperands = true;
+                }
+            } else if (TypeName == "enable-name-comparison") {
+                // enable-name-comparison metadata: string type.
+                Metadata.EnableNameComparison = true;
             } else if (TypeName == "disable-name-comparison") {
                 // disable-name-comparison metadata: string type.
                 Metadata.DisableNameComparison = true;
+            } else if (TypeName == "enable-align-comparison") {
+                // enable-align-comparison metadata: string type.
+                Metadata.EnableAlignComparison = true;
+            } else if (TypeName == "disable-align-comparison") {
+                // disable-align-comparison metadata: string type.
+                Metadata.DisableAlignComparison = true;
             } else if (TypeName == "not-an-input") {
                 // not-an-input metadata: string type.
                 Metadata.NotAnInput = true;
@@ -128,9 +205,16 @@ Optional<PatternMetadata>
                                        << ".\n");
                 return None;
             }
+            if (InvalidOperands) {
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                                dbgs() << getDebugIndent()
+                                       << "Invalid operands for metadata type "
+                                       << TypeName << " in node "
+                                       << *InstMetadata << ".\n");
+                return None;
+            }
             // Shift the operand offset accordingly.
-            OperandIndex +=
-                    PatternMetadata::MetadataOperandCounts.lookup(TypeName) + 1;
+            OperandIndex += TotalOperandCount;
         } else {
             return None;
         }
@@ -308,7 +392,7 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
 void PatternSet::initializeInstPatternSide(InstPattern &Pat,
                                            OutputMappingInfo &OutputMapInfo,
                                            bool IsLeftSide) {
-    Pattern::InputSet *PatternInput;
+    Pattern::ValueSet *PatternInput;
     bool PatternEndFound = false;
     const Function *PatternSide;
     const Instruction **StartPosition;
@@ -331,10 +415,11 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
     for (auto &&BB : PatternSide->getBasicBlockList()) {
         for (auto &Inst : BB) {
             // Load instruction metadata.
+            auto Call = dyn_cast<CallInst>(&Inst);
             auto PatMetadata = getPatternMetadata(Inst);
             if (PatMetadata) {
                 Pat.MetadataMap[&Inst] = *PatMetadata;
-                // If present, register start position metadata.
+                // Register pattern start and end positions.
                 if (PatMetadata->PatternStart) {
                     if (*StartPosition) {
                         DEBUG_WITH_TYPE(
@@ -360,13 +445,29 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
             }
             // Load output mapping information from the first mapping call
             // or pattern function return.
-            auto Call = dyn_cast<CallInst>(&Inst);
             if (!OutputMappingInstruction
                 && (isa<ReturnInst>(Inst)
                     || (Call && Call->getCalledFunction()
                         && Call->getCalledFunction()->getName()
                                    == OutputMappingFunName))) {
                 OutputMappingInstruction = &Inst;
+            }
+            // Register loads from global variables that represent arbitrary
+            // values. Input ignoration metadata is automatically added to such
+            // loads if not already present.
+            if (auto Load = dyn_cast<LoadInst>(&Inst)) {
+                auto LoadPtrConstant =
+                        dyn_cast<Constant>(Load->getPointerOperand());
+                auto StrippedPtrName =
+                        dropSuffixes(Load->getPointerOperand()->getName());
+                if (LoadPtrConstant
+                    && StrippedPtrName == ArbitraryValueConstName) {
+                    Pat.ArbitraryValues[Load] = LoadPtrConstant;
+                    if (!PatMetadata) {
+                        Pat.MetadataMap[&Inst] = PatternMetadata();
+                    }
+                    Pat.MetadataMap[&Inst].NotAnInput = true;
+                }
             }
         }
     }

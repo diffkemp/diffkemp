@@ -4,7 +4,7 @@
 ; to the two main differences in the included diff. These parts (i.e., the
 ; differing pairs of function calls) are separated by the instructions in
 ; between them. Additionally, the name-only structure comparison is tested
-; as well (%struct.custom is compared type-wise, not by name).
+; as well (where possible, %struct.custom is compared type-wise, not by name).
 ;
 ; Diff:
 ; Found differences in functions called by bio_endio
@@ -48,6 +48,7 @@
 !0 = !{ !"pattern-start" }
 !1 = !{ !"pattern-end" }
 !2 = !{ !"disable-name-comparison" }
+!3 = !{ !"enable-name-comparison" }
 
 ; Structures
 %struct.custom = type { %struct.atomic64_t, i64, void (%struct.custom*)*, void (%struct.custom*)*, i8, %struct.callback_head }
@@ -66,7 +67,7 @@ declare i32 @atomic_long_sub_and_test(i64, %struct.atomic64_t*)
 define i1 @diffkemp.old.percpu_ref_put_many(%struct.custom*, i64) {
   %3 = alloca i64*, align 8
   call void @diffkemp.old.rcu_read_lock_sched(), !diffkemp.pattern !0
-  %4 = call zeroext i1 @__ref_is_percpu(%struct.custom* %0, i64** %3), !diffkemp.pattern !2
+  %4 = call zeroext i1 @__ref_is_percpu(%struct.custom* %0, i64** %3)
   br i1 %4, label %aBB, label %bBB
 
 aBB:
@@ -74,7 +75,7 @@ aBB:
 
 bBB:
   %5 = getelementptr inbounds %struct.custom, %struct.custom* %0, i32 0, i32 0, !diffkemp.pattern !2
-  %6 = call i32 @atomic_long_sub_and_test(i64 %1, %struct.atomic64_t* %5)
+  %6 = call i32 @atomic_long_sub_and_test(i64 %1, %struct.atomic64_t* %5), !diffkemp.pattern !3
   %7 = icmp ne i32 %6, 0
   %8 = zext i1 %7 to i32
   %9 = sext i32 %8 to i64
@@ -95,7 +96,7 @@ eBB:
 define i1 @diffkemp.new.percpu_ref_put_many(%struct.custom*, i64) {
   %3 = alloca i64*, align 8
   call void @diffkemp.new.rcu_read_lock(), !diffkemp.pattern !0
-  %4 = call zeroext i1 @__ref_is_percpu(%struct.custom* %0, i64** %3), !diffkemp.pattern !2
+  %4 = call zeroext i1 @__ref_is_percpu(%struct.custom* %0, i64** %3)
   br i1 %4, label %aBB, label %bBB
 
 aBB:
@@ -103,7 +104,7 @@ aBB:
 
 bBB:
   %5 = getelementptr inbounds %struct.custom, %struct.custom* %0, i32 0, i32 0, !diffkemp.pattern !2
-  %6 = call i32 @atomic_long_sub_and_test(i64 %1, %struct.atomic64_t* %5)
+  %6 = call i32 @atomic_long_sub_and_test(i64 %1, %struct.atomic64_t* %5), !diffkemp.pattern !3
   %7 = icmp ne i32 %6, 0
   %8 = zext i1 %7 to i32
   %9 = sext i32 %8 to i64

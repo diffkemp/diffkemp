@@ -15,22 +15,20 @@
 
 #include "InstPatternComparator.h"
 #include "Config.h"
+#include <llvm/Support/Regex.h>
 
 /// Compare the module function and the difference pattern from the starting
 /// module instruction. This includes checks for correct input mappings.
 int InstPatternComparator::compare() {
     // Clear all previous results.
-    beginCompare();
-    InstMatchMap.clear();
-    PatInputMatchMap.clear();
-    ModInputMatchMap.clear();
+    beginCompare(true);
 
     // Run the main matching algorithm.
     if (int Res = matchPattern())
         return Res;
 
     // Reset the comparison state without clearing pattern matches.
-    beginCompare();
+    beginCompare(false);
 
     // Ensure that the created input mapping is correct. All input instructions
     // and arguments have to be mapped correctly.
@@ -38,6 +36,24 @@ int InstPatternComparator::compare() {
         return Res;
 
     return 0;
+}
+
+/// Compare the starting module instruction with the starting pattern
+/// instruction.
+int InstPatternComparator::compareStartInst() {
+    // Clear all previous results.
+    beginCompare(true);
+
+    auto StartInstPat = IsLeftSide ? ParentPattern->StartPositionL
+                                   : ParentPattern->StartPositionR;
+
+    // Process relevant pattern metadata.
+    if (hasPatternEnd(StartInstPat))
+        return 0;
+    updateCompareToggles(StartInstPat);
+
+    // Try to match the starting instructions.
+    return cmpOperationsWithOperands(StartInst, StartInstPat);
 }
 
 /// Compare a module input value with a pattern input value. Used for comparing
@@ -59,7 +75,7 @@ int InstPatternComparator::cmpInputValues(const Value *ModVal,
     }
 
     // Reset the comparison state without clearing pattern matches.
-    beginCompare();
+    beginCompare(false);
 
     SmallVector<const Value *, 8> ModInput, PatInput;
     SmallPtrSet<const Value *, 32> ModVisited;
@@ -167,9 +183,97 @@ int InstPatternComparator::cmpAttrs(const AttributeList /* ModAttrs */,
 }
 #endif
 
-/// Compare a module GEP operation with a pattern GEP operation. The
-/// implementation is extended to support a name-based comparison of structure
-/// types.
+/// Reset the comparison.
+void InstPatternComparator::beginCompare(bool ClearMatchState) {
+    sn_mapL.clear();
+    sn_mapR.clear();
+
+    if (ClearMatchState) {
+        InstMatchMap.clear();
+        PatInputMatchMap.clear();
+        ModInputMatchMap.clear();
+        ArbitraryValueMatchMap.clear();
+        ArbitraryTypeMatchMap.clear();
+    }
+}
+
+/// Compare a module instruction with a pattern instruction while ignoring
+/// alignment of alloca, load, and store instructions if not disabled.
+/// Note: Parts of this function have been adapted from FunctionComparator.
+/// Therefore, LLVM licensing also applies here. See the LICENSE information in
+/// the appropriate llvm-lib subdirectory for more details.
+int InstPatternComparator::cmpOperations(const Instruction *ModInst,
+                                         const Instruction *PatInst,
+                                         bool &needToCmpOperands) const {
+    // Compare alloca, load, and store instructions without alignment if not
+    // disabled.
+    if (!AlignComparisonEnabled) {
+        needToCmpOperands = true;
+        // Compare information shared accross instruction types.
+        if (int Res = cmpValues(ModInst, PatInst))
+            return Res;
+
+        if (int Res = cmpNumbers(ModInst->getOpcode(), PatInst->getOpcode()))
+            return Res;
+
+        if (int Res = cmpTypes(ModInst->getType(), PatInst->getType()))
+            return Res;
+
+        if (int Res = cmpNumbers(ModInst->getNumOperands(),
+                                 PatInst->getNumOperands()))
+            return Res;
+
+        if (int Res = cmpNumbers(ModInst->getRawSubclassOptionalData(),
+                                 PatInst->getRawSubclassOptionalData()))
+            return Res;
+
+        // Compare operand types.
+        for (unsigned i = 0, e = ModInst->getNumOperands(); i != e; ++i) {
+            if (int Res = cmpTypes(ModInst->getOperand(i)->getType(),
+                                   PatInst->getOperand(i)->getType()))
+                return Res;
+        }
+
+        // Compare the instructions based on their type.
+        if (const AllocaInst *AI = dyn_cast<AllocaInst>(ModInst)) {
+            return cmpTypes(AI->getAllocatedType(),
+                            cast<AllocaInst>(PatInst)->getAllocatedType());
+        }
+
+        if (const LoadInst *LI = dyn_cast<LoadInst>(ModInst)) {
+            if (int Res = cmpNumbers(LI->isVolatile(),
+                                     cast<LoadInst>(PatInst)->isVolatile()))
+                return Res;
+            if (int Res = cmpOrderings(LI->getOrdering(),
+                                       cast<LoadInst>(PatInst)->getOrdering()))
+                return Res;
+            if (int Res = cmpNumbers(LI->getSyncScopeID(),
+                                     cast<LoadInst>(PatInst)->getSyncScopeID()))
+                return Res;
+            return cmpRangeMetadata(LI->getMetadata(LLVMContext::MD_range),
+                                    cast<LoadInst>(PatInst)->getMetadata(
+                                            LLVMContext::MD_range));
+        }
+
+        if (const StoreInst *SI = dyn_cast<StoreInst>(ModInst)) {
+            if (int Res = cmpNumbers(SI->isVolatile(),
+                                     cast<StoreInst>(PatInst)->isVolatile()))
+                return Res;
+            if (int Res = cmpOrderings(SI->getOrdering(),
+                                       cast<StoreInst>(PatInst)->getOrdering()))
+                return Res;
+            return cmpNumbers(SI->getSyncScopeID(),
+                              cast<StoreInst>(PatInst)->getSyncScopeID());
+        }
+    }
+
+    return FunctionComparator::cmpOperations(
+            ModInst, PatInst, needToCmpOperands);
+}
+
+/// Compare a module GEP operation with a pattern GEP operation, handling
+/// arbitrary indices. The implementation is extended to support a name-based
+/// comparison of structure types.
 /// Note: Parts of this function have been adapted from FunctionComparator.
 /// Therefore, LLVM licensing also applies here. See the LICENSE information in
 /// the appropriate llvm-lib subdirectory for more details.
@@ -178,11 +282,9 @@ int InstPatternComparator::cmpGEPs(const GEPOperator *ModGEP,
     // When using the GEP operations on pointers, vectors or arrays, perform the
     // default comparison. Also use the default comparison if the name-based
     // structure comparison is disabled.
-    auto PatGEPMetadata = ParentPattern->MetadataMap.find(PatGEP);
     if (!ModGEP->getSourceElementType()->isStructTy()
         || !PatGEP->getSourceElementType()->isStructTy()
-        || (PatGEPMetadata != ParentPattern->MetadataMap.end()
-            && PatGEPMetadata->second.DisableNameComparison)) {
+        || !NameComparisonEnabled) {
         return FunctionComparator::cmpGEPs(ModGEP, PatGEP);
     }
 
@@ -197,24 +299,96 @@ int InstPatternComparator::cmpGEPs(const GEPOperator *ModGEP,
     if (int Res = cmpNumbers(ModAS, PatAS))
         return Res;
 
-    // Try to perform the base comparison. Validate the result by comparing the
-    // structure names.
     if (int Res = cmpTypes(ModTy, PatTy)) {
-        if (!namesMatch(
-                    ModTy->getStructName(), PatTy->getStructName(), IsLeftSide))
-            return Res;
+        return Res;
     }
 
     if (int Res =
                 cmpNumbers(ModGEP->getNumOperands(), PatGEP->getNumOperands()))
         return Res;
 
+    // If the GEP index is arbitrary, match it to the linked global constant.
+    bool ArbitraryIndex = false;
+    auto PatGEPMetadata = ParentPattern->MetadataMap.find(PatGEP);
+    if (PatGEPMetadata != ParentPattern->MetadataMap.end()
+        && PatGEPMetadata->second.ArbitraryGEPConst
+        && PatGEP->getNumOperands() > 2) {
+        ArbitraryIndex = true;
+
+        // Process arbitrary pattern values. These can be constants marked as
+        // arbitrary, or values loaded from such constants,. Drop suffixes to
+        // allow for multiple arbitrary value constants in one pattern.
+        // If this is the first occurrence, only register and synchronise the
+        // corresponding module value. Use the original constant for mapping.
+        auto ModVal = ModGEP->getOperand(2);
+        auto PatVal = PatGEP->getOperand(2);
+        auto PatConst = PatGEPMetadata->second.ArbitraryGEPConst;
+        if (ArbitraryValueMatchMap.insert({PatConst, ModVal}).second) {
+            NewlyMappedArbitraryValues.insert(PatConst);
+        } else {
+            // For subsequent occurrences of the value, ensure that the matching
+            // module value is the same.
+            if (ModVal != ArbitraryValueMatchMap[PatConst]) {
+                return 1;
+            }
+        }
+    }
+
     for (unsigned i = 0, e = ModGEP->getNumOperands(); i != e; ++i) {
+        // Only compare operands that are not arbitrary.
+        if (ArbitraryIndex && i == 2)
+            continue;
         if (int Res = cmpValues(ModGEP->getOperand(i), PatGEP->getOperand(i)))
             return Res;
     }
 
     return 0;
+}
+
+/// Compares a module type with a pattern type using name-only comparison
+/// for structured types, and handling arbitrary types.
+int InstPatternComparator::cmpTypes(Type *ModTy, Type *PatTy) const {
+    // Check for arbitrary types on the pattern side. Note that pointers need to
+    // be analysed as well since pointer type naming is normally ignored.
+    if (PatTy->isStructTy() || (ModTy->isPointerTy() && PatTy->isPointerTy())) {
+        // Synchronously strip pointers.
+        Type *StrippedModTy = ModTy;
+        Type *StrippedPatTy = PatTy;
+        while (StrippedPatTy->isPointerTy()) {
+            if (!StrippedModTy->isPointerTy())
+                return FunctionComparator::cmpTypes(ModTy, PatTy);
+            StrippedPatTy = StrippedPatTy->getPointerElementType();
+            StrippedModTy = StrippedModTy->getPointerElementType();
+        }
+
+        // Match arbitrary types. Drop suffixes to allow for multiple arbitrary
+        // types in one pattern.
+        if (StrippedPatTy->isStructTy()
+            && dropSuffixes(StrippedPatTy->getStructName().str())
+                       == PatternSet::ArbitraryTypeStructName) {
+            // If this is the first occurrence, only register the corresponding
+            // module type.
+            if (ArbitraryTypeMatchMap.insert({StrippedPatTy, StrippedModTy})
+                        .second) {
+                NewlyMappedArbitraryTypes.insert(StrippedPatTy);
+                return 0;
+            }
+
+            // For subsequent occurrences of the type, ensure that the matching
+            // module type is the same.
+            return FunctionComparator::cmpTypes(
+                    StrippedModTy, ArbitraryTypeMatchMap[StrippedPatTy]);
+        }
+    }
+
+    // Try the name-only comparison if not disabled.
+    if (ModTy->isStructTy() && PatTy->isStructTy() && NameComparisonEnabled
+        && namesMatch(
+                ModTy->getStructName(), PatTy->getStructName(), IsLeftSide)) {
+        return 0;
+    }
+
+    return FunctionComparator::cmpTypes(ModTy, PatTy);
 }
 
 /// Compare a module function instruction with a pattern instruction along
@@ -231,6 +405,8 @@ int InstPatternComparator::cmpOperationsWithOperands(
     NewlyMappedPatValues.clear();
     NewlyMappedModInput.clear();
     NewlyMappedPatInput.clear();
+    NewlyMappedArbitraryValues.clear();
+    NewlyMappedArbitraryTypes.clear();
 
     // Compare the instruction and its operands.
     if (int Res = cmpOperations(&*ModInst, &*PatInst, NeedToCmpOperands))
@@ -242,8 +418,38 @@ int InstPatternComparator::cmpOperationsWithOperands(
             Value *ModOp = ModInst->getOperand(i);
             Value *PatOp = PatInst->getOperand(i);
 
-            if (int Res = cmpValues(ModOp, PatOp))
-                return Res;
+            if (int Res = cmpValues(ModOp, PatOp)) {
+                // Try to match function call names according to regular
+                // expressions from metadata.
+                auto PatMetadata = ParentPattern->MetadataMap.find(PatInst);
+                auto ModCall = dyn_cast<CallInst>(ModInst);
+                if (ModCall && isa<CallInst>(PatInst)
+                    && ModOp == ModCall->getCalledOperand()
+                    && PatMetadata != ParentPattern->MetadataMap.end()) {
+                    auto CalledModFunction = ModCall->getCalledFunction();
+                    if (!CalledModFunction)
+                        return Res;
+
+                    for (auto &&RegexPair :
+                         PatMetadata->second.FunctionNameRegexes) {
+                        auto CompiledRegex = Regex(RegexPair.first);
+                        if (CompiledRegex.match(CalledModFunction->getName())) {
+                            // Map the matching call to the corresponding global
+                            // constant.
+                            if (ArbitraryValueMatchMap
+                                        .insert({RegexPair.second, ModInst})
+                                        .second) {
+                                NewlyMappedArbitraryValues.insert(
+                                        RegexPair.second);
+                                Res = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (Res)
+                    return Res;
+            }
             assert(cmpTypes(ModOp->getType(), PatOp->getType()) == 0);
         }
     }
@@ -270,6 +476,9 @@ int InstPatternComparator::cmpBasicBlocks(const BasicBlock *ModBB,
         // Check whether the compared pattern ends at this instruction.
         if (hasPatternEnd(&*PatInst))
             return 0;
+
+        // Update toggleable comparison states.
+        updateCompareToggles(&*PatInst);
 
         // If at the end of only one basic block, leave the rest to
         // unconditionally connected basic blocks (if there are any).
@@ -318,10 +527,14 @@ int InstPatternComparator::cmpBasicBlocks(const BasicBlock *ModBB,
     return 0;
 }
 
-/// Compare global values by their names, because their indexes are not
-/// expected to be the same.
+/// Compare global values by their names if not disabled, because their indexes
+/// are not expected to be the same.
 int InstPatternComparator::cmpGlobalValues(GlobalValue *ModVal,
                                            GlobalValue *PatVal) const {
+    if (!NameComparisonEnabled)
+        return FunctionComparator::cmpGlobalValues(ModVal, PatVal);
+
+    // When enabled, compare global values by name.
     if (ModVal->hasName() && PatVal->hasName()) {
         // Both values are named, compare them by names
         auto ModName = ModVal->getName();
@@ -336,12 +549,53 @@ int InstPatternComparator::cmpGlobalValues(GlobalValue *ModVal,
     return ModVal != PatVal;
 }
 
-/// Compare a module value with a pattern value using serial numbers.
+/// Compare a module value with a pattern value using serial numbers, handling
+/// arbitrary values.
 int InstPatternComparator::cmpValues(const Value *ModVal,
                                      const Value *PatVal) const {
+    // Process arbitrary pattern values. These can be constants marked as
+    // arbitrary, or values loaded from such constants. Drop suffixes to
+    // allow for multiple arbitrary value constants in one pattern.
+    const Constant *PatConst = dyn_cast<Constant>(PatVal);
+    auto StrippedName = dropSuffixes(PatVal->getName());
+    bool IsArbitrary = ParentPattern->ArbitraryValues.find(PatVal)
+                       != ParentPattern->ArbitraryValues.end();
+    if ((PatConst && StrippedName == PatternSet::ArbitraryValueConstName)
+        || IsArbitrary) {
+        // Get the corresponding arbitrary constant for values loaded from them.
+        if (!PatConst) {
+            PatConst = ParentPattern->ArbitraryValues[PatVal];
+        }
+
+        // If this is the first occurrence, only register and synchronise the
+        // corresponding module value. Use the original constant for mapping.
+        if (ArbitraryValueMatchMap.insert({PatConst, ModVal}).second) {
+            NewlyMappedArbitraryValues.insert(PatConst);
+            return 0;
+        }
+        // For subsequent occurrences of the value, ensure that the matching
+        // module value is the same.
+        return ModVal != ArbitraryValueMatchMap[PatConst];
+    }
+
     // Perform the default value comparison.
-    if (int Res = FunctionComparator::cmpValues(ModVal, PatVal))
-        return Res;
+    int Result = FunctionComparator::cmpValues(ModVal, PatVal);
+
+    // Module constants can be mapped to input arguments (but not input
+    // instructions).
+    const Constant *ModConst = dyn_cast<Constant>(ModVal);
+    const Instruction *PatInst = dyn_cast<Instruction>(PatVal);
+    auto PatternInput =
+            IsLeftSide ? ParentPattern->InputL : ParentPattern->InputR;
+    if (ModConst && !PatConst && !PatInst
+        && PatternInput.find(PatVal) != PatternInput.end()) {
+        auto ModSN = sn_mapL.insert(std::make_pair(ModVal, sn_mapL.size())),
+             PatSN = sn_mapR.insert(std::make_pair(PatVal, sn_mapR.size()));
+        Result = cmpNumbers(ModSN.first->second, PatSN.first->second);
+    }
+
+    if (Result)
+        return Result;
 
     // Register newly inserted values.
     if (sn_mapL[ModVal] == int(sn_mapL.size() - 1))
@@ -401,6 +655,8 @@ int InstPatternComparator::matchPattern() const {
 
         // Compare unconditionally connected basic blocks at the same time.
         GroupDepth = 0;
+        NameComparisonEnabled = true;
+        AlignComparisonEnabled = false;
         bool ResultFound = false;
         while (!ResultFound) {
             // Ensure position compatibility.
@@ -486,6 +742,12 @@ void InstPatternComparator::eraseNewlyMapped() const {
     }
     for (auto &&MappedPatInput : NewlyMappedModInput) {
         ModInputMatchMap.erase(MappedPatInput);
+    }
+    for (auto &&MappedArbitraryValue : NewlyMappedArbitraryValues) {
+        NewlyMappedArbitraryValues.erase(MappedArbitraryValue);
+    }
+    for (auto &&MappedArbitraryType : NewlyMappedArbitraryTypes) {
+        NewlyMappedArbitraryTypes.erase(MappedArbitraryType);
     }
 }
 
@@ -643,6 +905,23 @@ void InstPatternComparator::updateGroupDepth(const Instruction *Inst) const {
             ++GroupDepth;
         if (InstMetadata->second.GroupEnd)
             --GroupDepth;
+    }
+}
+
+/// Updates toggleable comparison states in accordance to the metadata of the
+/// given instruction.
+void InstPatternComparator::updateCompareToggles(
+        const Instruction *Inst) const {
+    auto InstMetadata = ParentPattern->MetadataMap.find(Inst);
+    if (InstMetadata != ParentPattern->MetadataMap.end()) {
+        if (InstMetadata->second.EnableNameComparison)
+            NameComparisonEnabled = true;
+        if (InstMetadata->second.DisableNameComparison)
+            NameComparisonEnabled = false;
+        if (InstMetadata->second.EnableAlignComparison)
+            AlignComparisonEnabled = true;
+        if (InstMetadata->second.DisableAlignComparison)
+            AlignComparisonEnabled = false;
     }
 }
 

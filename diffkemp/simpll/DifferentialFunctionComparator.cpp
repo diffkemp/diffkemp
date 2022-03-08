@@ -49,9 +49,17 @@ int DifferentialFunctionComparator::compare() {
 }
 
 /// Compares values by their synchronisation. The comparison is unsuccessful
-/// if the given values are not mapped to each other.
+/// if the given values or their replacements are not mapped to each other.
 int DifferentialFunctionComparator::cmpValuesByMapping(const Value *L,
                                                        const Value *R) const {
+    // Use replacement values when possible.
+    auto ReplaceL = getReplacementValue(L, sn_mapL);
+    auto ReplaceR = getReplacementValue(R, sn_mapR);
+    if (ReplaceL || ReplaceR) {
+        return cmpValuesByMapping(ReplaceL ? ReplaceL : L,
+                                  ReplaceR ? ReplaceR : R);
+    }
+
     // Ensure that no new serial numbers will be assigned.
     if (sn_mapL.find(L) == sn_mapL.end())
         return -1;
@@ -59,6 +67,33 @@ int DifferentialFunctionComparator::cmpValuesByMapping(const Value *L,
         return 1;
 
     return sn_mapL[L] != sn_mapR[R];
+}
+
+/// Compares values matched to arbitrary pattern values. Does not retain value
+/// synchronisation.
+int DifferentialFunctionComparator::cmpArbitraryValueMatch(
+        const Value *L, const Value *R) const {
+    int Res = 0;
+    // The values should both be, or both not be instructions.
+    auto InstL = dyn_cast<Instruction>(L), InstR = dyn_cast<Instruction>(R);
+    if (InstL || InstR) {
+        if (!InstL)
+            return -1;
+        if (!InstR)
+            return 1;
+
+        Res = cmpOperationsWithOperands(InstL, InstR);
+        undoLastInstCompare();
+        return Res;
+    }
+
+    int OldSnMapSize = sn_mapL.size();
+    Res = cmpValues(L, R);
+    if (sn_mapL.size() != OldSnMapSize)
+        sn_mapL.erase(L);
+    if (sn_mapR.size() != OldSnMapSize)
+        sn_mapR.erase(R);
+    return Res;
 }
 
 /// Compare GEPs. This code is copied from FunctionComparator::cmpGEPs since it
@@ -371,6 +406,13 @@ int DifferentialFunctionComparator::cmpOperations(
                 }
             }
         }
+    } else if (isa<AllocaInst>(L) && isa<AllocaInst>(R)) {
+        // Do not synchronise alloca instructions directly when comparing them.
+        // Instead, they should get synchronised when used as operands.
+        sn_mapL.erase(L);
+        sn_mapR.erase(R);
+        mappedValuesBySn.erase(sn_mapL.size());
+        mappedValuesBySn.erase(sn_mapL.size() - 1);
     }
 
     return Result;
@@ -705,14 +747,17 @@ bool DifferentialFunctionComparator::isPartOfPattern(
            != PatternComp.AllInstMatches.end();
 }
 
-/// Undo the changes made to synchronisation maps during the last
-/// instruction pair comparison.
-void DifferentialFunctionComparator::undoLastInstCompare(
-        BasicBlock::const_iterator &InstL,
-        BasicBlock::const_iterator &InstR) const {
-    sn_mapL.erase(&*InstL);
-    sn_mapR.erase(&*InstR);
-    mappedValuesBySn.erase(sn_mapL.size());
+/// Undo the changes made to synchronisation maps during the last instruction
+/// pair comparison.
+void DifferentialFunctionComparator::undoLastInstCompare() const {
+    for (auto &&MappedValueL : newlyMappedValuesL) {
+        // Also reset mapping between synchronisation maps.
+        mappedValuesBySn.erase(sn_mapL[MappedValueL]);
+        sn_mapL.erase(MappedValueL);
+    }
+    for (auto &&MappedValueR : newlyMappedValuesR) {
+        sn_mapR.erase(MappedValueR);
+    }
 }
 
 /// Does additional comparisons based on the C source to determine whether two
@@ -877,7 +922,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             bool MaySkipL = maySkipInstruction(&*InstL);
             bool MaySkipR = maySkipInstruction(&*InstR);
             if (MaySkipL || MaySkipR) {
-                undoLastInstCompare(InstL, InstR);
+                undoLastInstCompare();
                 if (MaySkipL)
                     InstL++;
                 if (MaySkipR)
@@ -889,10 +934,9 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // loaded difference patterns. Continue the comparison if a suitable
             // starting pattern match gets found.
             if (PatternComp.matchPattern(&*InstL, &*InstR)) {
-                undoLastInstCompare(InstL, InstR);
+                undoLastInstCompare();
                 createPatternMapping();
-                if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR))
-                    continue;
+                continue;
             }
 
             if (Res) {
@@ -1004,17 +1048,12 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
         // Constant global variables are compared using their initializers.
         return cmpConstants(GVarL->getInitializer(), GVarR->getInitializer());
     } else if (L->hasName() && R->hasName()) {
-        // Both values are named, compare them by names
-        auto NameL = L->getName();
-        auto NameR = R->getName();
+        // Both values are named, compare them by names (without suffixes)
+        auto NameL = dropSuffixes(L->getName().str());
+        auto NameR = dropSuffixes(R->getName().str());
 
-        // Remove number suffixes
-        if (hasSuffix(NameL.str()))
-            NameL = NameL.substr(0, NameL.find_last_of("."));
-        if (hasSuffix(NameR.str()))
-            NameR = NameR.substr(0, NameR.find_last_of("."));
         if (NameL == NameR
-            || (isPrintFunction(NameL.str()) && isPrintFunction(NameR.str()))) {
+            || (isPrintFunction(NameL) && isPrintFunction(NameR))) {
             if (isa<Function>(L) && isa<Function>(R)) {
                 // Functions compared as being the same have to be also compared
                 // by ModuleComparator.
@@ -1098,12 +1137,8 @@ void DifferentialFunctionComparator::findTypeDifferences(
             continue;
         if (!STyL->hasName() || !STyR->hasName())
             continue;
-        std::string STyLShortName = hasSuffix(STyL->getName().str())
-                                            ? dropSuffix(STyL->getName().str())
-                                            : STyL->getName().str();
-        std::string STyRShortName = hasSuffix(STyR->getName().str())
-                                            ? dropSuffix(STyR->getName().str())
-                                            : STyR->getName().str();
+        std::string STyLShortName = dropSuffixes(STyL->getName().str());
+        std::string STyRShortName = dropSuffixes(STyR->getName().str());
         if (STyLShortName != STyRShortName)
             continue;
         findTypeDifference(STyL, STyR, L, R);
@@ -1239,7 +1274,8 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
         return cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R);
     }
 
-    auto oldSnMapSize = sn_mapL.size();
+    int oldSnMapSizeL = sn_mapL.size();
+    int oldSnMapSizeR = sn_mapR.size();
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
         if (isa<Constant>(L) && isa<Constant>(R)) {
@@ -1248,7 +1284,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             auto MacroMapping = DI->MacroConstantMap.find(ConstantL);
             if (MacroMapping != DI->MacroConstantMap.end()
                 && MacroMapping->second == valueAsString(ConstantR))
-                return 0;
+                result = 0;
         } else if (isa<BasicBlock>(L) && isa<BasicBlock>(R)) {
             // In case functions have different numbers of BBs, they may be
             // compared as unequal here. However, this can be caused by moving
@@ -1263,16 +1299,23 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
                 if ((unsigned long)sn_mapR[R] == (sn_mapR.size() - 1))
                     sn_mapR.erase(R);
             }
-            return 0;
+            result = 0;
         }
-        if (PatternComp.matchValues(L, R)) {
+        if (result && PatternComp.matchValues(L, R)) {
             // If the values correspond to a value pattern, consider them equal.
-            return 0;
+            result = 0;
         }
-    } else if (oldSnMapSize == (sn_mapL.size() - 1)) {
+    } else if (oldSnMapSizeL == (sn_mapL.size() - 1)) {
         // When the values are equal, remember their mapping.
-        mappedValuesBySn[oldSnMapSize] = {L, R};
+        mappedValuesBySn[oldSnMapSizeL] = {L, R};
     }
+
+    // Register newly mapped values.
+    if (oldSnMapSizeL != sn_mapL.size())
+        newlyMappedValuesL.insert(L);
+    if (oldSnMapSizeR != sn_mapR.size())
+        newlyMappedValuesR.insert(R);
+
     return result;
 }
 
@@ -1463,6 +1506,10 @@ int DifferentialFunctionComparator::cmpOperationsWithOperands(
         const Instruction *L, const Instruction *R) const {
     // Contains code copied out of the original cmpBasicBlocks since it is more
     // convenient to have the code in a separate function.
+
+    // Clear newly mapped values of the previous instruction.
+    newlyMappedValuesL.clear();
+    newlyMappedValuesR.clear();
 
     bool needToCmpOperands = true;
     if (int Res = cmpOperations(L, R, needToCmpOperands)) {
