@@ -169,13 +169,14 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         Build a database for the cscope tool. It will be later used to find
         source files with symbol definitions.
         """
+        cscope_path = os.path.join(self.source_dir, "cscope.files")
+
         # If the database exists, do not rebuild it
-        if "cscope.files" in os.listdir(self.source_dir):
+        if os.path.isfile(cscope_path):
             return
 
         # Write all files that need to be scanned into cscope.files
-        with open(os.path.join(self.source_dir, "cscope.files"), "w") \
-                as cscope_file:
+        with open(cscope_path, "w") as cscope_file:
             for root, dirs, files in os.walk(self.source_dir):
                 if ("/Documentation/" in root or
                         "/scripts/" in root or
@@ -191,7 +192,11 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
                         cscope_file.write("{}\n".format(path))
 
         # Build cscope database
-        check_call(["cscope", "-b", "-q", "-k"], cwd=self.source_dir)
+        try:
+            check_call(["cscope", "-b", "-q", "-k"], cwd=self.source_dir)
+        except CalledProcessError:
+            os.remove(cscope_path)
+            raise BuildException("Error building cscope database")
 
     def _cscope_run(self, symbol, definition):
         """
