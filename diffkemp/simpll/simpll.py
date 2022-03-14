@@ -113,10 +113,16 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         try:
             # Determine the SimpLL binary to use.
             # The manually built one has priority over the installed one.
-            if os.path.isfile("build/diffkemp/simpll/diffkemp-simpll"):
-                simpll_bin = "build/diffkemp/simpll/diffkemp-simpll"
+            # A custom build directory has priority over the default one.
+            build_dir_var = "SIMPLL_BUILD_DIR"
+            if build_dir_var in os.environ:
+                build_dir = os.environ[build_dir_var]
             else:
+                build_dir = "build"
+            simpll_bin = "{}/diffkemp/simpll/diffkemp-simpll".format(build_dir)
+            if not os.path.isfile(simpll_bin):
                 simpll_bin = "diffkemp-simpll"
+
             # SimpLL command
             simpll_command = list([simpll_bin, first, second,
                                    "--print-callstacks"])

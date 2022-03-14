@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 from cffi import FFI
 from subprocess import check_output
 
@@ -36,12 +37,19 @@ llvm_ldflags = list(filter(lambda x: x != "",
 llvm_libs = list(filter(lambda x: x != "",
                         llvm_libs.decode("ascii").strip().split()))
 
+build_dir_var = "SIMPLL_BUILD_DIR"
+if build_dir_var in os.environ:
+    simpll_build_dir = os.environ[build_dir_var]
+else:
+    simpll_build_dir = "build"
+simpll_link_arg = "-L{}/diffkemp/simpll".format(simpll_build_dir)
+
 ffibuilder.set_source(
     "diffkemp.simpll._simpll", '#include <library/FFI.h>',
     language="c++",
     libraries=['simpll-lib'],
     extra_compile_args=["-Idiffkemp/simpll"] + llvm_cflags,
-    extra_link_args=["-Lbuild/diffkemp/simpll", "-lstdc++"] + llvm_ldflags +
+    extra_link_args=[simpll_link_arg, "-lstdc++"] + llvm_ldflags +
     llvm_libs)
 
 if __name__ == "__main__":
