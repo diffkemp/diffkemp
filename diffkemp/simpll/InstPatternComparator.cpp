@@ -557,7 +557,7 @@ int InstPatternComparator::cmpValues(const Value *ModVal,
     // arbitrary, or values loaded from such constants. Drop suffixes to
     // allow for multiple arbitrary value constants in one pattern.
     const Constant *PatConst = dyn_cast<Constant>(PatVal);
-    auto StrippedName = dropSuffixes(PatVal->getName());
+    auto StrippedName = dropSuffixes(PatVal->getName().str());
     bool IsArbitrary = ParentPattern->ArbitraryValues.find(PatVal)
                        != ParentPattern->ArbitraryValues.end();
     if ((PatConst && StrippedName == PatternSet::ArbitraryValueConstName)

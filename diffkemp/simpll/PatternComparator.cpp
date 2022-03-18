@@ -289,8 +289,10 @@ bool PatternComparator::pairwiseMappingValid(
         auto MappedTypeR =
                 PatternComps->second->ArbitraryTypeMatchMap[ArbitraryType];
         if (MappedTypeL->isStructTy() && MappedTypeR->isStructTy()) {
-            auto StrippedNameL = dropSuffixes(MappedTypeL->getStructName());
-            auto StrippedNameR = dropSuffixes(MappedTypeR->getStructName());
+            auto StrippedNameL =
+                    dropSuffixes(MappedTypeL->getStructName().str());
+            auto StrippedNameR =
+                    dropSuffixes(MappedTypeR->getStructName().str());
             if (StrippedNameL != StrippedNameR) {
                 return false;
             }

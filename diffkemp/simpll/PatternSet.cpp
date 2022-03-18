@@ -458,8 +458,8 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
             if (auto Load = dyn_cast<LoadInst>(&Inst)) {
                 auto LoadPtrConstant =
                         dyn_cast<Constant>(Load->getPointerOperand());
-                auto StrippedPtrName =
-                        dropSuffixes(Load->getPointerOperand()->getName());
+                auto StrippedPtrName = dropSuffixes(
+                        Load->getPointerOperand()->getName().str());
                 if (LoadPtrConstant
                     && StrippedPtrName == ArbitraryValueConstName) {
                     Pat.ArbitraryValues[Load] = LoadPtrConstant;
