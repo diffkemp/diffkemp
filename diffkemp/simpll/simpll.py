@@ -5,6 +5,7 @@ from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.simpll._simpll import ffi, lib
 from diffkemp.simpll.library import SimpLLModule
+from diffkemp.simpll.simpll_build import get_simpll_build_dir
 import os
 from subprocess import check_call, check_output, CalledProcessError
 import yaml
@@ -113,13 +114,8 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         try:
             # Determine the SimpLL binary to use.
             # The manually built one has priority over the installed one.
-            # A custom build directory has priority over the default one.
-            build_dir_var = "SIMPLL_BUILD_DIR"
-            if build_dir_var in os.environ:
-                build_dir = os.environ[build_dir_var]
-            else:
-                build_dir = "build"
-            simpll_bin = "{}/diffkemp/simpll/diffkemp-simpll".format(build_dir)
+            simpll_bin = "{}/diffkemp/simpll/diffkemp-simpll".format(
+                get_simpll_build_dir())
             if not os.path.isfile(simpll_bin):
                 simpll_bin = "diffkemp-simpll"
 

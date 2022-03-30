@@ -4,6 +4,13 @@ from cffi import FFI
 from subprocess import check_output
 
 
+def get_simpll_build_dir():
+    build_dir_var = "SIMPLL_BUILD_DIR"
+    if build_dir_var in os.environ:
+        return os.environ[build_dir_var]
+    return "build"
+
+
 def get_c_declarations(header_filename):
     """
     Extracts C declarations important for the cFFI module from the SimpLL FFI
@@ -37,12 +44,7 @@ llvm_ldflags = list(filter(lambda x: x != "",
 llvm_libs = list(filter(lambda x: x != "",
                         llvm_libs.decode("ascii").strip().split()))
 
-build_dir_var = "SIMPLL_BUILD_DIR"
-if build_dir_var in os.environ:
-    simpll_build_dir = os.environ[build_dir_var]
-else:
-    simpll_build_dir = "build"
-simpll_link_arg = "-L{}/diffkemp/simpll".format(simpll_build_dir)
+simpll_link_arg = "-L{}/diffkemp/simpll".format(get_simpll_build_dir())
 
 ffibuilder.set_source(
     "diffkemp.simpll._simpll", '#include <library/FFI.h>',
