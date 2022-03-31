@@ -1309,4 +1309,101 @@ TEST_F(DifferentialFunctionComparatorTest, CmpSkippedBitcast) {
     ASSERT_EQ(DiffComp->testCmpBasicBlocks(BBL, BBR), 0);
     ASSERT_EQ(DiffComp->getLeftSnMapSize(), DiffComp->getRightSnMapSize());
 }
+
+/// Check that branches with swapped operands and inverse condition are compared
+/// as equal.
+TEST_F(DifferentialFunctionComparatorTest, CmpInverseBranches) {
+    // Main blocks with inverse branches
+    // %1 = icmp eq true, false
+    // br %1, %T, %F
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    // %1 = icmp ne true, false
+    // br %1, %F, %T
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Same in both versions:
+    // %T:
+    //   ret true
+    BasicBlock *BBLT = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRT = BasicBlock::Create(CtxR, "", FR);
+    // Same in both versions:
+    // %F:
+    //   ret false
+    BasicBlock *BBLF = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRF = BasicBlock::Create(CtxR, "", FR);
+
+    // Main blocks
+    auto CondL = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_EQ,
+                                  ConstantInt::getTrue(CtxL),
+                                  ConstantInt::getFalse(CtxL),
+                                  "",
+                                  BBL);
+    auto CondR = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_NE,
+                                  ConstantInt::getTrue(CtxR),
+                                  ConstantInt::getFalse(CtxR),
+                                  "",
+                                  BBR);
+    BranchInst::Create(BBLT, BBLF, CondL, BBL);
+    BranchInst::Create(BBRF, BBRT, CondR, BBR);
+
+    // True/false blocks
+    ReturnInst::Create(CtxL, ConstantInt::getTrue(CtxL), BBLT);
+    ReturnInst::Create(CtxL, ConstantInt::getFalse(CtxL), BBLF);
+    ReturnInst::Create(CtxR, ConstantInt::getTrue(CtxR), BBRT);
+    ReturnInst::Create(CtxR, ConstantInt::getFalse(CtxR), BBRF);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+/// Check that branches with swapped operands and conditions such that one is a
+/// negation of the other are compared as equal.
+TEST_F(DifferentialFunctionComparatorTest, CmpInverseBranchesNegation) {
+    // Main blocks with corresponding branches
+    // %1 = icmp eq true, false
+    // br %1, %T, %F
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    // %1 = icmp eq true, false
+    // %2 = xor %1, true
+    // br %2, %F, %T
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Same in both versions:
+    // %T:
+    //   ret true
+    BasicBlock *BBLT = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRT = BasicBlock::Create(CtxR, "", FR);
+    // Same in both versions:
+    // %F:
+    //   ret false
+    BasicBlock *BBLF = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRF = BasicBlock::Create(CtxR, "", FR);
+
+    // Main blocks
+    auto CondL = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_EQ,
+                                  ConstantInt::getTrue(CtxL),
+                                  ConstantInt::getFalse(CtxL),
+                                  "",
+                                  BBL);
+    auto CondR = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_EQ,
+                                  ConstantInt::getTrue(CtxR),
+                                  ConstantInt::getFalse(CtxR),
+                                  "",
+                                  BBR);
+    auto CondNegR = BinaryOperator::Create(
+            llvm::Instruction::Xor, CondR, ConstantInt::getTrue(CtxR), "", BBR);
+    BranchInst::Create(BBLT, BBLF, CondL, BBL);
+    BranchInst::Create(BBRF, BBRT, CondNegR, BBR);
+
+    // True/false blocks
+    ReturnInst::Create(CtxL, ConstantInt::getTrue(CtxL), BBLT);
+    ReturnInst::Create(CtxL, ConstantInt::getFalse(CtxL), BBLF);
+    ReturnInst::Create(CtxR, ConstantInt::getTrue(CtxR), BBRT);
+    ReturnInst::Create(CtxR, ConstantInt::getFalse(CtxR), BBRF);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
 #endif
