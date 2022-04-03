@@ -4,4 +4,5 @@ patterns:
  - tests/regression/patterns/llvm/rhel-82-83/bio_endio.ll
  - tests/regression/patterns/llvm/rhel-82-83/blk_execute_rq.ll
  - tests/regression/patterns/llvm/rhel-82-83/kthread_create_on_node.ll
+ - tests/regression/patterns/llvm/rhel-82-83/prepare_to_wait_event.ll
  - tests/regression/patterns/llvm/rhel-82-83/sigprocmask.ll

@@ -4,4 +4,6 @@ patterns:
  - tests/regression/patterns/llvm/rhel-81-82/__put_task_struct.ll
  - tests/regression/patterns/llvm/rhel-81-82/__stack_chk_fail.ll
  - tests/regression/patterns/llvm/rhel-81-82/blk_mq_end_request.ll
+ - tests/regression/patterns/llvm/rhel-81-82/default_wake_function.ll
  - tests/regression/patterns/llvm/rhel-81-82/down_read.ll
+ - tests/regression/patterns/llvm/rhel-81-82/wake_up_process.ll

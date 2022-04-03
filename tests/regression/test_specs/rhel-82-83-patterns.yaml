@@ -8,4 +8,5 @@ functions:
   bio_endio: equal
   blk_execute_rq: equal
   kthread_create_on_node: equal
+  prepare_to_wait_event: equal
   sigprocmask: equal

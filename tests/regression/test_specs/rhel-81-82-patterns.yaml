@@ -21,3 +21,7 @@ syntax_diffs:
           mmu_notifier_mm_destroy(mm);
     def_new: >
       --- 676,677 ---
+  - function: default_wake_function
+    equal_symbol: task_cpu
+  - function: wake_up_process
+    equal_symbol: __set_task_cpu
