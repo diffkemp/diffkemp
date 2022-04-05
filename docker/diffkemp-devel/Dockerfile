@@ -1,5 +1,6 @@
 FROM ubuntu:focal
 MAINTAINER Viktor Malik <vmalik@redhat.com>
+ENV LLVM_VERSION=13
 RUN apt-get update && \
     apt-get install -y \
       apt-transport-https \
@@ -91,11 +92,6 @@ RUN apt-get remove -y cpp gcc g++ && \
 # Configure links for the clang-format checker script
 RUN update-alternatives --install /usr/local/bin/clang-format clang-format /usr/bin/clang-format-8 40 && \
     ln -s /diffkemp/tools/check-clang-format.sh /usr/local/bin/check-clang-format
-# Copy script for changing default LLVM version
-COPY switch-llvm.sh /switch-llvm.sh
-RUN chmod +x /switch-llvm.sh
-# Default LLVM is 13
-RUN /switch-llvm.sh 13
 # Setup Python 3.8 and install pip packages
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 100
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.8
@@ -107,4 +103,9 @@ RUN python3 -m pip install \
       --ignore-installed
 RUN git clone https://github.com/viktormalik/rhel-kernel-get.git && \
     python3 -m pip install -r rhel-kernel-get/requirements.txt
-ENTRYPOINT python3 -m pip install -e .; /bin/bash
+# Copy neccessary scripts
+COPY install.sh /install.sh
+COPY switch-llvm.sh /switch-llvm.sh
+RUN chmod +x /install.sh
+RUN chmod +x /switch-llvm.sh
+ENTRYPOINT /install.sh; /bin/bash
