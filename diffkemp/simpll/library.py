@@ -1,7 +1,7 @@
 """
 Python interface for the SimpLL library.
 """
-from diffkemp.simpll._simpll import ffi, lib
+from diffkemp.simpll.simpll_lib import ffi, lib
 
 
 def _ptrarray_to_list(ptrarray):

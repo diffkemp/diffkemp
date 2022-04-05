@@ -93,13 +93,13 @@ of a chosen kernel function or option (module parameter, sysctl) changed between
 two different kernel versions.
 
 The analysis is composed of multiple steps:
-* Generate: 
+* Generate:
     * The source files containing definitions of the compared functions are
-      compiled into the LLVM internal representation (LLVM IR). 
+      compiled into the LLVM internal representation (LLVM IR).
     * The snapshot is created by copying the compiled LLVM IR files into the
       snapshot directory and by creating a YAML file with the list of functions
       to be compared.
-* Compare: 
+* Compare:
     * The **SimpLL** component is used to compare the programs for semantic
       equality. The list of functions that are compared as not equal are
       returned.
@@ -108,7 +108,7 @@ The analysis is composed of multiple steps:
 
 ## Components
 * Kernel source builder: finding and building kernel source files into LLVM IR.
-  * Sources with function definitions are found using CScope. 
+  * Sources with function definitions are found using CScope.
   * C sources are built into LLVM IR by checking the commands that are run by
     KBuild for building that file and by replacing GCC by Clang in the command.
 * SimpLL: Comparison of programs for syntactic and simple semantic equivalence.
@@ -131,13 +131,24 @@ prepared that can be retrieved from DockerHub:
 
 After that, the container can be run using
 
-    docker/diffkemp-devel/run-container.sh
+    docker/diffkemp-devel/run-container.py [--llvm-version LLVM_VERSION]
+                                           [--build-dir BUILD_DIR]
+                                           [--diffkemp-dir DIFFKEMP_DIR]
+                                           [--image IMAGE]
 
-The script mounts the current directory (the root DiffKemp directory) as a
-volume inside the container.
+The script mounts the current directory as a volume inside the container.
+Then it automatically builds SimpLL in `BUILD_DIR` (default is "build") using
+`LLVM_VERSION` (default is the newest supported version) and installs DiffKemp.
 
-Follow [build instructions](#install-from-source) to build DiffKemp from source.
-If using the container image, no additional software needs to be installed.
+If running multiple containers at the same time, you need to specify a unique
+`BUILD_DIR` for each one.
+
+If running the container from a different directory than the root DiffKemp
+directory, you need to specify where DiffKemp is located using the
+`--diffkemp-dir` option.
+
+By default, the DockerHub image is used, but a custom image may be set using
+the `--image` option.
 
 ### Tests
 
