@@ -571,9 +571,11 @@ class SimpLLCache:
         def __init__(self, directory, left_module, right_module):
             self.left_module = left_module
             self.right_module = right_module
-            self.filename = os.path.join(directory,
-                                         left_module.replace("/", "$") + ":" +
-                                         right_module.replace("/", "$"))
+            prefix = os.path.commonprefix([left_module, right_module])
+            self.filename = os.path.join(
+                directory,
+                os.path.relpath(left_module, prefix).replace("/", "$") + ":" +
+                os.path.relpath(right_module, prefix).replace("/", "$"))
 
         def add_function_pairs(self, pairs):
             with open(self.filename, "a") as file:
