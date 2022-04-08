@@ -350,7 +350,7 @@ def test_cache_file_init(cache_file):
     """Tests the constructor of the SimpLLCache.CacheFile class."""
     assert cache_file.left_module == "/test/f1/1.ll"
     assert cache_file.right_module == "/test/f2/2.ll"
-    assert cache_file.filename.endswith("$test$f1$1.ll:$test$f2$2.ll")
+    assert cache_file.filename.endswith("..$f1$1.ll:..$f2$2.ll")
 
 
 def test_cache_file_add_function_pairs(cache_file):
@@ -389,14 +389,14 @@ def test_simpll_cache_update(simpll_cache, vertices):
     """Tests updating of a SimpLL cache with vertices from a graph."""
     simpll_cache.update(vertices)
     assert os.path.exists(os.path.join(simpll_cache.directory,
-                                       "$test$f1$1.ll:$test$f2$2.ll"))
+                                       "..$f1$1.ll:..$f2$2.ll"))
     assert os.path.exists(os.path.join(simpll_cache.directory,
-                                       "$test$f1$1.ll:$test$f2$3.ll"))
+                                       "..$f1$1.ll:..$f2$3.ll"))
     with open(os.path.join(simpll_cache.directory,
-                           "$test$f1$1.ll:$test$f2$2.ll"), "r") as file:
+                           "..$f1$1.ll:..$f2$2.ll"), "r") as file:
         assert file.readlines() == ["f:f\n", "g:g\n"]
     with open(os.path.join(simpll_cache.directory,
-                           "$test$f1$1.ll:$test$f2$3.ll"), "r") as file:
+                           "..$f1$1.ll:..$f2$3.ll"), "r") as file:
         assert file.readlines() == ["h:h\n"]
 
 
