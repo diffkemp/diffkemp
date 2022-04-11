@@ -130,90 +130,51 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel());
 
             // Try to inline the problematic function calls
-            CallInst *inlineFirst = findCallInst(tryInline.first, FirstFun);
-            CallInst *inlineSecond = findCallInst(tryInline.second, SecondFun);
+            CallInst *callFirst = findCallInst(tryInline.first, FirstFun);
+            CallInst *callSecond = findCallInst(tryInline.second, SecondFun);
+            auto calledFirst = getCalledFunction(callFirst);
+            auto calledSecond = getCalledFunction(callSecond);
+            auto inlineResultFirst = tryToInline(callFirst, Program::First);
+            auto inlineResultSecond = tryToInline(callSecond, Program::Second);
 
-            ConstFunPair missingDefs;
-            bool inlined = false;
-            Function *InlinedFunFirst =
-                    !inlineFirst ? nullptr : getCalledFunction(inlineFirst);
-            Function *InlinedFunSecond =
-                    !inlineSecond ? nullptr : getCalledFunction(inlineSecond);
-
-            // If the called function is a declaration, add it to missingDefs.
-            // Otherwise, inline the call and simplify the function.
-            // The above is done for the first and the second call to inline.
-            if (inlineFirst) {
-                const Function *toInline = getCalledFunction(inlineFirst);
-
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent() << "Inlining \""
-                                       << toInline->getName()
-                                       << "\" in first\n");
-                if (toInline->isDeclaration()) {
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << getDebugIndent()
-                                           << "Missing definition\n");
-                    if (!toInline->isIntrinsic()
-                        && !isSimpllAbstraction(toInline))
-                        missingDefs.first = toInline;
-                } else {
-                    InlineFunctionInfo ifi;
-                    if (inlineCall(inlineFirst))
-                        inlined = true;
-                }
-            }
-            if (inlineSecond) {
-                const Function *toInline = getCalledFunction(inlineSecond);
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent() << "Inlining \""
-                                       << toInline->getName()
-                                       << "\" in second\n");
-                if (toInline->isDeclaration()) {
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << getDebugIndent()
-                                           << "Missing definition\n");
-                    if (!toInline->isIntrinsic()
-                        && !isSimpllAbstraction(toInline))
-                        missingDefs.second = toInline;
-                } else {
-                    InlineFunctionInfo ifi;
-                    if (inlineCall(inlineSecond))
-                        inlined = true;
-                }
-            }
             // If some function to be inlined does not have a declaration,
             // store it into MissingDefs (will be reported at the end).
-            if (missingDefs.first || missingDefs.second) {
-                MissingDefs.push_back(missingDefs);
-            }
-            tryInline = {nullptr, nullptr};
+            if (inlineResultFirst == MissingDef
+                || inlineResultSecond == MissingDef)
+                MissingDefs.emplace_back(calledFirst, calledSecond);
+
             // If nothing was inlined, do not continue
-            if (!inlined) {
+            if (inlineResultFirst != InliningResult::Inlined
+                && inlineResultSecond != InliningResult::Inlined) {
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
                 break;
             }
+
+            // Always simplify both functions even if inlining was done in one
+            // of them only - this is to keep them synchronized.
             simplifyFunction(FirstFun);
             simplifyFunction(SecondFun);
+
             // Reset the function diff result
             ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
             // Re-run the comparison
             DifferentialFunctionComparator fCompSecond(
                     FirstFun, SecondFun, config, DI, &Patterns, this);
             result = fCompSecond.compare();
+
             // If the functions are equal after the inlining and there is a
             // call to the inlined function, mark it as weak.
-            if (!result) {
-                if (InlinedFunFirst)
+            if (result == 0) {
+                if (calledFirst)
                     for (const CallInfo &CI :
                          ComparedFuns.at({FirstFun, SecondFun}).First.calls) {
-                        if (CI.fun == InlinedFunFirst->getName().str())
+                        if (CI.fun == calledFirst->getName().str())
                             CI.weak = true;
                     }
-                if (InlinedFunSecond)
+                if (calledSecond)
                     for (const CallInfo &CI :
                          ComparedFuns.at({FirstFun, SecondFun}).Second.calls) {
-                        if (CI.fun == InlinedFunSecond->getName().str())
+                        if (CI.fun == calledSecond->getName().str())
                             CI.weak = true;
                     }
             }
@@ -238,4 +199,36 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             }
         }
     }
+}
+
+/// Try to inline a function call.
+/// \param Call     Call instruction to inline
+/// \param program  Program in which the inlining is done
+/// \return InliningResult::Inlined    when inlining was successful
+///         InliningResult::NotInlined when inlining was unsuccessful
+///         Inlining::MissingDef       when inlining was unsuccessful due to
+///                                    missing function definition
+ModuleComparator::InliningResult
+        ModuleComparator::tryToInline(CallInst *Call, Program program) const {
+    if (!Call)
+        return NotInlined;
+
+    Function *toInline = getCalledFunction(Call);
+
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                    dbgs() << getDebugIndent() << "Inlining \""
+                           << toInline->getName() << "\" in "
+                           << programName(program) << "\n");
+    if (toInline->isDeclaration()) {
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent() << "Missing definition\n");
+        if (!toInline->isIntrinsic() && !isSimpllAbstraction(toInline))
+            return MissingDef;
+    } else {
+        InlineFunctionInfo ifi;
+        if (inlineCall(Call)) {
+            return Inlined;
+        }
+    }
+    return NotInlined;
 }

@@ -52,6 +52,10 @@ static std::vector<Attribute::AttrKind> badVoidAttributes = {
         Attribute::AttrKind::Dereferenceable,
         Attribute::AttrKind::DereferenceableOrNull};
 
+std::string programName(Program p) {
+    return p == Program::First ? "first" : "second";
+}
+
 /// Convert a value to a function.
 /// Handles situation when the actual function is inside a bitcast or alias.
 const Function *valueToFunction(const Value *Value) {
@@ -69,6 +73,8 @@ const Function *valueToFunction(const Value *Value) {
 /// Extract called function from a called value.
 /// Handles situation when the called value is a bitcast.
 const Function *getCalledFunction(const CallInst *Call) {
+    if (!Call)
+        return nullptr;
 #if LLVM_VERSION_MAJOR <= 7
     return valueToFunction(Call->getCalledValue());
 #else
