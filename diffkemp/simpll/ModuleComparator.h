@@ -83,6 +83,15 @@ class ModuleComparator {
     /// functions and needs to be inlined.
     std::pair<const CallInst *, const CallInst *> tryInline = {nullptr,
                                                                nullptr};
+
+  protected:
+    enum InliningResult {
+        NotInlined,
+        Inlined,
+        MissingDef,
+    };
+
+    InliningResult tryToInline(CallInst *InlinedCall, Program program) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_MODULECOMPARATOR_H

@@ -35,6 +35,9 @@ typedef SmallPtrSet<const Instruction *, 32> InstructionSet;
 /// Instruction to instruction mapping.
 typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
 
+/// Program to string
+std::string programName(Program p);
+
 /// Convert a value to a function.
 /// Handles situation then the actual function is inside a bitcast or alias.
 const Function *valueToFunction(const Value *Value);
