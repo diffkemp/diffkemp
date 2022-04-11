@@ -126,6 +126,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                                << Color::makeRed(" ==========\n"););
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
 
+        std::set<ConstFunPair> inlinedPairs;
         while (tryInline.first || tryInline.second) {
             DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel());
 
@@ -149,6 +150,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
                 break;
             }
+            inlinedPairs.emplace(calledFirst, calledSecond);
 
             // Always simplify both functions even if inlining was done in one
             // of them only - this is to keep them synchronized.
@@ -181,6 +183,12 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
             DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
             if (result == 0) {
+                // If the functions are equal after inlining, results for all
+                // inlined functions must be reset as they may pollute
+                // the overall output otherwise
+                for (auto &inlinedPair : inlinedPairs)
+                    ComparedFuns.erase(inlinedPair);
+
                 DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                                 dbgs() << getDebugIndent() << "\""
                                        << FirstFun->getName() << "\" and \""
