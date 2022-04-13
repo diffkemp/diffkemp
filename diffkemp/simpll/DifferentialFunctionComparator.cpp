@@ -312,17 +312,13 @@ int DifferentialFunctionComparator::cmpOperations(
         }
     }
 
-    // If PHI nodes are compared and they have the same number of incoming
-    // values, treat them as equal for now. They will be compared at the end,
-    // after all their incoming values have been compared and matched.
+    // If PHI nodes are compared, treat them as equal for now. They will be
+    // compared at the end, after all their incoming values have been compared
+    // and matched.
     if (isa<PHINode>(L) && isa<PHINode>(R)) {
-        auto PhiL = dyn_cast<PHINode>(L);
-        auto PhiR = dyn_cast<PHINode>(R);
-        if (PhiL->getNumIncomingValues() == PhiR->getNumIncomingValues()) {
-            needToCmpOperands = false;
-            phisToCompare.emplace_back(PhiL, PhiR);
-            return 0;
-        }
+        needToCmpOperands = false;
+        phisToCompare.emplace_back(dyn_cast<PHINode>(L), dyn_cast<PHINode>(R));
+        return 0;
     }
 
     if (Result) {
@@ -1461,6 +1457,8 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
 /// be analysed.
 int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
                                             const PHINode *PhiR) const {
+    if (PhiL->getNumIncomingValues() != PhiR->getNumIncomingValues())
+        return 1;
     for (unsigned i = 0; i < PhiL->getNumIncomingValues(); ++i) {
         bool match = false;
         for (unsigned j = 0; j < PhiR->getNumIncomingValues(); ++j) {
