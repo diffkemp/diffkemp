@@ -44,7 +44,8 @@ bool isDebugInfo(const Instruction &Instr) {
 
 bool isDebugInfo(const Function &Fun) {
     return Fun.getIntrinsicID() == Intrinsic::dbg_declare
-           || Fun.getIntrinsicID() == Intrinsic::dbg_value;
+           || Fun.getIntrinsicID() == Intrinsic::dbg_value
+           || Fun.getIntrinsicID() == Intrinsic::dbg_label;
 }
 
 /// Get C name of the struct type. This can be extracted from the LLVM struct
