@@ -129,12 +129,19 @@ class ComparisonGraph:
             """Adds a non-function difference."""
             self.nonfun_diffs.append(diff)
 
+        def same_file(self):
+            return self.files[0] == self.files[1]
+
         def compare_vertex_priority(self, other):
             """
             Compares the priority of the two vertices. If the first should be
             prefered when merging graphs, returns False, else returns True.
             """
             if self.result in [Result.Kind.ASSUMED_EQUAL, Result.Kind.UNKNOWN]:
+                return True
+            if (not self.same_file() and
+                    self.result == Result.Kind.NOT_EQUAL and
+                    other.result == Result.Kind.EQUAL):
                 return True
             # Check lengths of successor lists (this is important for cases
             # where linking happened).

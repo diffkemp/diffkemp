@@ -201,9 +201,10 @@ def functions_diff(mod_first, mod_second,
         while simplify:
             simplify = False
             if (prev_result_graph and
-                fun_first in prev_result_graph.vertices and
-                (prev_result_graph.vertices[fun_first].result !=
-                 Result.Kind.ASSUMED_EQUAL)):
+                    fun_first in prev_result_graph.vertices and
+                    (prev_result_graph[fun_first].result !=
+                     Result.Kind.ASSUMED_EQUAL) and
+                    prev_result_graph[fun_first].same_file()):
                 first_simpl = ""
                 second_simpl = ""
                 curr_result_graph = prev_result_graph
