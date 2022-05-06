@@ -1034,10 +1034,11 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                 auto FunL = dyn_cast<Function>(L);
                 auto FunR = dyn_cast<Function>(R);
 
-                // Do not compare SimpLL abstractions.
+                // Do not compare SimpLL abstractions and intrinsic functions.
                 if (!isSimpllAbstraction(FunL) && !isSimpllAbstraction(FunR)
-                    && (!isPrintFunction(L->getName().str())
-                        && !isPrintFunction(R->getName().str()))) {
+                    && !isPrintFunction(L->getName().str())
+                    && !isPrintFunction(R->getName().str())
+                    && !FunL->isIntrinsic() && !FunR->isIntrinsic()) {
                     // Store the called functions into the current
                     // functions' callee set.
                     ModComparator->ComparedFuns.at({FnL, FnR})
