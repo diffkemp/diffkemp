@@ -28,7 +28,11 @@ def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
         with open(filename, "r", encoding='utf-8') as input_file, \
                 open(os.path.join(tmpdir, tmp_file), "w",
                      encoding='utf-8') as output_file:
-            lines = input_file.readlines()
+            try:
+                lines = input_file.readlines()
+            except UnicodeDecodeError:
+                return "  [could not obtain diff]\n"
+
             start = first_line if filename == first_file else second_line
 
             # The end of the function is detected as a line that contains
