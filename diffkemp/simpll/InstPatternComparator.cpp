@@ -158,7 +158,7 @@ int InstPatternComparator::cmpInputValues(const Value *ModVal,
     return 0;
 }
 
-#if LLVM_VERSION_MAJOR == 13
+#if LLVM_VERSION_MAJOR >= 13
 /// Always compare attributes as equal when using LLVM 13 (necessary due to a
 /// probable bug in LLVM 13).
 int InstPatternComparator::cmpAttrs(const AttributeList /* ModAttrs */,

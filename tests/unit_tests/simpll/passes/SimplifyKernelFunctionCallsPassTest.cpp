@@ -82,7 +82,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, InlineAsm) {
     auto Call1 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(Call1);
     ASSERT_EQ(getCallee(Call1), Asm1);
-    ASSERT_EQ(Call1->getNumArgOperands(), 2);
+    ASSERT_EQ(Call1->arg_size(), 2);
     ASSERT_EQ(Call1->getOperand(0)->getType(),
               PointerType::get(Type::getInt8Ty(Ctx), 0));
     ASSERT_TRUE(isa<ConstantPointerNull>(Call1->getOperand(0)));
@@ -96,7 +96,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, InlineAsm) {
     auto Call2 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(Call2);
     ASSERT_EQ(getCallee(Call2), Asm2);
-    ASSERT_EQ(Call2->getNumArgOperands(), 2);
+    ASSERT_EQ(Call2->arg_size(), 2);
     ASSERT_EQ(Call2->getOperand(0), AuxPtr);
     ASSERT_EQ(Call2->getOperand(1)->getType(), Type::getInt64Ty(Ctx));
     ASSERT_TRUE(isa<ConstantInt>(Call2->getOperand(1)));
@@ -171,7 +171,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, PrintFun) {
         auto Call = dyn_cast<CallInst>(&*Iter);
         ASSERT_TRUE(Call);
         ASSERT_EQ(Call->getCalledFunction(), (i == 0) ? FunPrintk : FunDevWarn);
-        ASSERT_EQ(Call->getNumArgOperands(), 2);
+        ASSERT_EQ(Call->arg_size(), 2);
         ASSERT_TRUE(isa<ConstantPointerNull>(Call->getOperand(0)));
         ASSERT_TRUE(isa<ConstantPointerNull>(Call->getOperand(1)));
         ++Iter;
@@ -227,7 +227,7 @@ TEST(SimplifyKernelFunctionCallsPassTest, DebugFun) {
     auto Call = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(Call);
     ASSERT_EQ(Call->getCalledFunction(), FunMightSleep);
-    ASSERT_EQ(Call->getNumArgOperands(), 3);
+    ASSERT_EQ(Call->arg_size(), 3);
     ASSERT_TRUE(isa<ConstantPointerNull>(Call->getOperand(0)));
     ASSERT_EQ(Call->getOperand(1)->getType(), Type::getInt32Ty(Ctx));
     ASSERT_TRUE(isa<ConstantInt>(Call->getOperand(1)));

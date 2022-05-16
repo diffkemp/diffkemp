@@ -95,9 +95,8 @@ TEST(CalledFunctionsAnalysisTest, Base) {
     // Run the analysis and check the result.
     AnalysisManager<Module, Function *> mam;
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
-#if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
-#endif
+
     auto Result = mam.getResult<CalledFunctionsAnalysis>(*Mod, Main);
     std::set<const Function *> ExpectedResult{Main, Fun1, Fun2, Indir};
 

@@ -42,7 +42,7 @@ PreservedAnalyses
 
                     // Ignore the instruction if the number of
                     // arguments is lower than the number of parameters.
-                    if (Call->getNumArgOperands()
+                    if (Call->arg_size()
                         < srcFun->getFunctionType()->getNumParams()) {
                         continue;
                     }

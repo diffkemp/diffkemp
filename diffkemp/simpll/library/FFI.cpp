@@ -112,9 +112,8 @@ struct ptr_array getCalledFunctions(void *FunRaw) {
     // Run CalledFunctionAnalysis to get the result as a std::set.
     AnalysisManager<Module, Function *> mam;
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
-#if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
-#endif
+
     CalledFunctionsAnalysis::Result CalledFunsSet =
             mam.getResult<CalledFunctionsAnalysis>(*Fun->getParent(), Fun);
 
@@ -259,13 +258,8 @@ void cloneAndRunSimpLL(void *ModL,
                        const char *FunR,
                        struct config Conf,
                        char *Output) {
-#if LLVM_VERSION_MAJOR < 7
-    std::unique_ptr<Module> UqModL(CloneModule((Module *)ModL));
-    std::unique_ptr<Module> UqModR(CloneModule((Module *)ModR));
-#else
     std::unique_ptr<Module> UqModL(CloneModule(*((Module *)ModL)));
     std::unique_ptr<Module> UqModR(CloneModule(*((Module *)ModR)));
-#endif
     runSimpLL(UqModL.get(),
               UqModR.get(),
               ModLOut,

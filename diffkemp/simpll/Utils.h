@@ -18,6 +18,7 @@
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
+#include <map>
 #include <unordered_map>
 
 using namespace llvm;

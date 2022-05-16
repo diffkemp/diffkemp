@@ -156,7 +156,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 // and create the new instruction
                 std::vector<Value *> Args;
 
-                for (Value *A : CI->arg_operands()) {
+                for (Value *A : CI->args()) {
                     Args.push_back(A);
                 }
 

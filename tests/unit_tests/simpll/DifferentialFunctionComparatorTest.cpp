@@ -22,7 +22,6 @@
 #include <passes/StructureDebugInfoAnalysis.h>
 #include <passes/StructureSizeAnalysis.h>
 
-#if LLVM_VERSION_MAJOR > 7
 /// This class is used to expose protected functions in
 /// DifferentialFunctionComparator.
 class TestComparator : public DifferentialFunctionComparator {
@@ -1406,4 +1405,3 @@ TEST_F(DifferentialFunctionComparatorTest, CmpInverseBranchesNegation) {
 
     ASSERT_EQ(DiffComp->compare(), 0);
 }
-#endif

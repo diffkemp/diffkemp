@@ -56,7 +56,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
             }
             if (auto CallInstr = dyn_cast<CallInst>(&Instr)) {
                 // Call instructions
-                for (auto &Arg : CallInstr->arg_operands()) {
+                for (auto &Arg : CallInstr->args()) {
                     if (checkDependency(&Arg))
                         dependent = true;
                 }

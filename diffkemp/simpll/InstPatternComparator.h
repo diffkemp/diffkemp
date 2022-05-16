@@ -62,7 +62,7 @@ class InstPatternComparator : protected FunctionComparator {
     int cmpInputValues(const Value *ModVal, const Value *PatVal);
 
   protected:
-#if LLVM_VERSION_MAJOR == 13
+#if LLVM_VERSION_MAJOR >= 13
     /// Always compare attributes as equal when using LLVM 13 (necessary due to
     /// a probable bug in LLVM 13).
     int cmpAttrs(const AttributeList ModAttrs,

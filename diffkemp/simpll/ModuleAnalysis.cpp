@@ -134,9 +134,7 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
     mam.registerPass([] { return FunctionAbstractionsGenerator(); });
     mam.registerPass([] { return StructureSizeAnalysis(); });
     mam.registerPass([] { return StructureDebugInfoAnalysis(); });
-#if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
-#endif
 
     auto AbstractionGeneratorResultL =
             mam.getResult<FunctionAbstractionsGenerator>(*config.First,
@@ -236,11 +234,7 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
 /// \param FileName Path to the file to write to.
 void writeIRToFile(Module &Mod, StringRef FileName) {
     std::error_code errorCode;
-#if LLVM_VERSION_MAJOR >= 7
     raw_fd_ostream stream(FileName, errorCode, sys::fs::OF_None);
-#else
-    raw_fd_ostream stream(FileName, errorCode, sys::fs::F_None);
-#endif
     Mod.print(stream, nullptr);
     stream.close();
 }

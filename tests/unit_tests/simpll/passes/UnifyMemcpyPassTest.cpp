@@ -39,10 +39,7 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     auto DestAlloca = Builder.CreateAlloca(
             Type::getInt8Ty(Ctx), ConstantInt::get(Type::getInt32Ty(Ctx), 10));
     auto SizeConst = ConstantInt::get(Type::getInt32Ty(Ctx), 5);
-#if LLVM_VERSION_MAJOR < 7
-    Builder.CreateMemCpy(DestAlloca, SrcAlloca, SizeConst, 0);
-    Builder.CreateMemCpy(DestAlloca, SrcAlloca, SizeConst, 2);
-#elif LLVM_VERSION_MAJOR < 10
+#if LLVM_VERSION_MAJOR < 10
     Builder.CreateMemCpy(DestAlloca, 0, SrcAlloca, 0, SizeConst);
     Builder.CreateMemCpy(DestAlloca, 2, SrcAlloca, 2, SizeConst);
 #else
@@ -80,20 +77,15 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     auto TestMemcpy1 = TestCall1->getCalledFunction();
     ASSERT_TRUE(TestMemcpy1);
     ASSERT_EQ(TestMemcpy1->getIntrinsicID(), Intrinsic::memcpy);
-#if LLVM_VERSION_MAJOR < 7
-    ASSERT_EQ(TestCall1->getNumArgOperands(), 5);
-#else
+#if LLVM_VERSION_MAJOR < 14
     ASSERT_EQ(TestCall1->getNumArgOperands(), 4);
+#else
+    ASSERT_EQ(TestCall1->arg_size(), 4);
 #endif
     ASSERT_EQ(TestCall1->getOperand(0), DestAlloca);
     ASSERT_EQ(TestCall1->getOperand(1), SrcAlloca);
     ASSERT_EQ(TestCall1->getOperand(2), SizeConst);
-#if LLVM_VERSION_MAJOR < 7
-    // The alignment is the fourth operand.
-    ASSERT_TRUE(isa<ConstantInt>(TestCall1->getOperand(3)));
-    ASSERT_EQ(dyn_cast<ConstantInt>(TestCall1->getOperand(3))->getZExtValue(),
-              1);
-#elif LLVM_VERSION_MAJOR < 10
+#if LLVM_VERSION_MAJOR < 10
     ASSERT_EQ(TestCall1->getParamAlignment(0), 1);
     ASSERT_EQ(TestCall1->getParamAlignment(1), 1);
 #else
@@ -112,20 +104,11 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     auto TestMemcpy2 = TestCall2->getCalledFunction();
     ASSERT_TRUE(TestMemcpy2);
     ASSERT_EQ(TestMemcpy2->getIntrinsicID(), Intrinsic::memcpy);
-#if LLVM_VERSION_MAJOR < 7
-    ASSERT_EQ(TestCall2->getNumArgOperands(), 5);
-#else
-    ASSERT_EQ(TestCall2->getNumArgOperands(), 4);
-#endif
+    ASSERT_EQ(TestCall2->arg_size(), 4);
     ASSERT_EQ(TestCall2->getOperand(0), DestAlloca);
     ASSERT_EQ(TestCall2->getOperand(1), SrcAlloca);
     ASSERT_EQ(TestCall2->getOperand(2), SizeConst);
-#if LLVM_VERSION_MAJOR < 7
-    // The alignment is the fourth operand.
-    ASSERT_TRUE(isa<ConstantInt>(TestCall2->getOperand(3)));
-    ASSERT_EQ(dyn_cast<ConstantInt>(TestCall2->getOperand(3))->getZExtValue(),
-              2);
-#elif LLVM_VERSION_MAJOR < 10
+#if LLVM_VERSION_MAJOR < 10
     ASSERT_EQ(TestCall2->getParamAlignment(0), 2);
     ASSERT_EQ(TestCall2->getParamAlignment(1), 2);
 #else
@@ -200,11 +183,7 @@ TEST(UnifyMemcpyPassTest, KernelMemcpyToIntrinsic) {
     auto TestMemcpy = TestCall->getCalledFunction();
     ASSERT_TRUE(TestMemcpy);
     ASSERT_EQ(TestMemcpy->getIntrinsicID(), Intrinsic::memcpy);
-#if LLVM_VERSION_MAJOR < 7
-    ASSERT_EQ(TestCall->getNumArgOperands(), 5);
-#else
-    ASSERT_EQ(TestCall->getNumArgOperands(), 4);
-#endif
+    ASSERT_EQ(TestCall->arg_size(), 4);
     ASSERT_EQ(TestCall->getOperand(0), DestAlloca);
     ASSERT_EQ(TestCall->getOperand(1), SrcAlloca);
     ASSERT_EQ(TestCall->getOperand(2), SizeConst);
