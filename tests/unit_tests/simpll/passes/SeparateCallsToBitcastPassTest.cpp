@@ -62,9 +62,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
                               {Type::getInt8Ty(Ctx), Type::getInt16Ty(Ctx)},
                               false);
     CallInst *Call1 = CallInst::Create(
-#if LLVM_VERSION_MAJOR >= 8
             NewType,
-#endif
             ConstantExpr::getCast(
                     Instruction::BitCast, Fun1, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt8Ty(Ctx), 0),
@@ -77,9 +75,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
                                 {Type::getInt16Ty(Ctx), Type::getInt16Ty(Ctx)},
                                 false);
     CallInst *Call2 = CallInst::Create(
-#if LLVM_VERSION_MAJOR >= 8
             NewType,
-#endif
             ConstantExpr::getCast(
                     Instruction::BitCast, Fun1, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt16Ty(Ctx), 0),
@@ -92,9 +88,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     NewType = FunctionType::get(
             Type::getVoidTy(Ctx), {Type::getInt8Ty(Ctx)}, false);
     CallInst *Call3 = CallInst::Create(
-#if LLVM_VERSION_MAJOR >= 8
             NewType,
-#endif
             ConstantExpr::getCast(
                     Instruction::BitCast, Fun1, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt8Ty(Ctx), 0)},
@@ -105,9 +99,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     NewType = FunctionType::get(
             Type::getInt8Ty(Ctx), {Type::getInt16Ty(Ctx)}, true);
     CallInst *Call4 = CallInst::Create(
-#if LLVM_VERSION_MAJOR >= 8
             NewType,
-#endif
             ConstantExpr::getCast(
                     Instruction::BitCast, Fun2, NewType->getPointerTo()),
             {ConstantInt::get(Type::getInt16Ty(Ctx), 0),
@@ -137,7 +129,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
                       ->stripPointerCasts(),
               Fun1);
     ASSERT_EQ(TestCall1->getType(), Type::getInt8Ty(Ctx));
-    ASSERT_EQ(TestCall1->getNumArgOperands(), 2);
+    ASSERT_EQ(TestCall1->arg_size(), 2);
     ASSERT_TRUE(isa<ConstantInt>(TestCall1->getArgOperand(0)));
     ASSERT_TRUE(isa<ConstantInt>(TestCall1->getArgOperand(1)));
     ASSERT_EQ(TestCall1->getArgOperand(0)->getType(), Type::getInt8Ty(Ctx));
@@ -165,7 +157,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     auto TestCall2 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(TestCall2);
     ASSERT_EQ(TestCall2->getCalledFunction(), Fun1);
-    ASSERT_EQ(TestCall2->getNumArgOperands(), 2);
+    ASSERT_EQ(TestCall2->arg_size(), 2);
     ASSERT_EQ(TestCall2->getArgOperand(0), TestCast1);
     ASSERT_TRUE(isa<ConstantInt>(TestCall2->getArgOperand(1)));
     ASSERT_EQ(TestCall2->getArgOperand(1)->getType(), Type::getInt16Ty(Ctx));
@@ -184,7 +176,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
                       ->stripPointerCasts(),
               Fun1);
     ASSERT_EQ(TestCall3->getType(), Type::getVoidTy(Ctx));
-    ASSERT_EQ(TestCall3->getNumArgOperands(), 1);
+    ASSERT_EQ(TestCall3->arg_size(), 1);
     ASSERT_TRUE(isa<ConstantInt>(TestCall3->getArgOperand(0)));
     ASSERT_EQ(TestCall3->getArgOperand(0)->getType(), Type::getInt8Ty(Ctx));
     ASSERT_EQ(
@@ -207,7 +199,7 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     auto TestCall4 = dyn_cast<CallInst>(&*Iter);
     ASSERT_TRUE(TestCall4);
     ASSERT_EQ(getCallee(TestCall4), Fun2);
-    ASSERT_EQ(TestCall4->getNumArgOperands(), 2);
+    ASSERT_EQ(TestCall4->arg_size(), 2);
     ASSERT_EQ(TestCall4->getArgOperand(0), TestCast2);
     ASSERT_TRUE(isa<ConstantInt>(TestCall4->getArgOperand(1)));
     ASSERT_EQ(TestCall4->getArgOperand(1)->getType(), Type::getInt8Ty(Ctx));

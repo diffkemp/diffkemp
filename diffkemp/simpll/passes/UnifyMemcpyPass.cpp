@@ -29,12 +29,7 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                 if (CalledFun->getName() == "__memcpy") {
                     // Replace call to __memcpy by llvm.memcpy intrinsic
                     IRBuilder<> builder(&Instr);
-#if LLVM_VERSION_MAJOR < 7
-                    builder.CreateMemCpy(Call->getArgOperand(0),
-                                         Call->getArgOperand(1),
-                                         Call->getArgOperand(2),
-                                         0);
-#elif LLVM_VERSION_MAJOR < 10
+#if LLVM_VERSION_MAJOR < 10
                     builder.CreateMemCpy(Call->getArgOperand(0),
                                          0,
                                          Call->getArgOperand(1),
@@ -57,16 +52,7 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                     // an attribute instead of an argument. The value is set to
                     // 1 instead of 0 because of a bug in LLVM 7 to 9 which
                     // breaks setting the alignment to zero.
-#if LLVM_VERSION_MAJOR < 7
-                    if (auto MemcpyAlign =
-                                dyn_cast<ConstantInt>(Call->getArgOperand(3))) {
-                        if (MemcpyAlign->getZExtValue() == 0)
-                            Call->setArgOperand(
-                                    3,
-                                    ConstantInt::get(
-                                            MemcpyAlign->getType(), 1, false));
-                    }
-#elif LLVM_VERSION_MAJOR < 10
+#if LLVM_VERSION_MAJOR < 10
                     for (int i : {0, 1}) {
                         if (Call->getParamAlignment(i) == 0) {
                             Call->removeParamAttr(i, Attribute::Alignment);

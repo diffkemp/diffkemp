@@ -87,9 +87,7 @@ TEST(RemoveUnusedReturnValuesPass, Base) {
                 Module *>
             mpm;
     mam.registerPass([] { return CalledFunctionsAnalysis(); });
-#if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
-#endif
     mpm.addPass(RemoveUnusedReturnValuesPass{});
     mpm.run(*Mod, mam, Main, Mod2);
 

@@ -34,12 +34,9 @@ StructureDebugInfoAnalysis::Result StructureDebugInfoAnalysis::run(
         DIGlobalVariableExpressionArray GExprs = CU->getGlobalVariables();
         for (DIGlobalVariableExpression *GExpr : GExprs) {
             DIGlobalVariable *GVar = GExpr->getVariable();
-#if LLVM_VERSION_MAJOR < 9
-            Stack.push_back(GVar->getType().resolve());
-#else
             Stack.push_back(GVar->getType());
-#endif
         }
+
         // The actual DFS.
         // Note: since the type graph apparently is not a tree, a set to record
         // already processed values has to be used.
@@ -51,13 +48,8 @@ StructureDebugInfoAnalysis::Result StructureDebugInfoAnalysis::run(
                 continue;
             processedVals.insert(DTy);
             if (auto DDTy = dyn_cast<DIDerivedType>(DTy)) {
-#if LLVM_VERSION_MAJOR < 9
-                if (DDTy->getBaseType().resolve())
-                    Stack.push_back(DDTy->getBaseType().resolve());
-#else
                 if (DDTy->getBaseType())
                     Stack.push_back(DDTy->getBaseType());
-#endif
             } else if (auto DCTy = dyn_cast<DICompositeType>(DTy)) {
                 if (DCTy->getTag() == dwarf::DW_TAG_structure_type
                     && DCTy->getName() != "") {

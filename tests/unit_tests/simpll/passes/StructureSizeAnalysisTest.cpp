@@ -44,9 +44,7 @@ TEST(StructureSizeAnalysisTest, Base) {
     // Run the analysis and check its result.
     AnalysisManager<Module, Function *> mam;
     mam.registerPass([] { return StructureSizeAnalysis(); });
-#if LLVM_VERSION_MAJOR >= 8
     mam.registerPass([] { return PassInstrumentationAnalysis(); });
-#endif
     auto Result = mam.getResult<StructureSizeAnalysis>(*Mod, nullptr);
     // Note: structure sizes are aligned to 32 bits by default.
     StructureSizeAnalysis::Result ExpectedResult{{4, {"struct.1", "struct.2"}},

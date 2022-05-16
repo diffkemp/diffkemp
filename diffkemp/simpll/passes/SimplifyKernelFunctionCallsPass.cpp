@@ -72,7 +72,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                     if (asm_str.find(".discard.reachable") != std::string::npos
                         || asm_str.find(".discard.unreachable")
                                    != std::string::npos) {
-                        if (CallInstr->getNumArgOperands() > 0)
+                        if (CallInstr->arg_size() > 0)
                             replaceArgByZero(CallInstr, 0);
                     }
                 }

@@ -966,7 +966,7 @@ std::vector<std::unique_ptr<SyntaxDifference>>
         const CallInst *I = std::get<0>(T);
         std::string *argumentNames = std::get<1>(T);
 
-        for (unsigned i = 0; i < I->getNumArgOperands(); i++) {
+        for (unsigned i = 0; i < I->arg_size(); i++) {
             const Value *Op = I->getArgOperand(i);
             std::string OpName = getIdentifierForValue(
                     Op, DI->StructFieldNames, I->getFunction());
@@ -1429,7 +1429,7 @@ int DifferentialFunctionComparator::cmpAPInts(const APInt &L,
 int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
                                               const CallInst *CR) const {
     // Compare all except the third operand (size to set).
-    for (unsigned i = 0; i < CL->getNumArgOperands(); ++i) {
+    for (unsigned i = 0; i < CL->arg_size(); ++i) {
         if (i == 2)
             continue;
         if (int Res = cmpValues(CL->getArgOperand(i), CR->getArgOperand(i)))

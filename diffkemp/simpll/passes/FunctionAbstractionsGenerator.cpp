@@ -51,12 +51,10 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     if (!CalledType->isPointerTy())
                         continue;
 
+                    auto FunType = CallInstr->getFunctionType();
+
                     // Retrieve function from the hash map if it has already
                     // been created or create a new one.
-                    auto FunType = dyn_cast<FunctionType>(
-                            dyn_cast<PointerType>(CalledType)
-                                    ->getElementType());
-
                     std::string hash = funHash(Callee);
                     auto funAbstr = funAbstractions.find(hash);
                     Function *newFun;
@@ -97,7 +95,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
 
                     // Transform the call to a call to the abstraction
                     std::vector<Value *> args;
-                    for (auto &a : CallInstr->arg_operands()) {
+                    for (auto &a : CallInstr->args()) {
                         if (auto argVal = dyn_cast<Value>(&a))
                             args.push_back(argVal);
                     }

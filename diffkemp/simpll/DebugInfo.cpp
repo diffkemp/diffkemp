@@ -431,18 +431,9 @@ void DebugInfo::collectLocalVariables(
                 auto Val = dyn_cast<ValueAsMetadata>(ValMD);
                 if (!Val)
                     continue;
-#if LLVM_VERSION_MAJOR < 6
-                MetadataAsValue *DIVal;
-                if (getCalledFunction(CInst)->getName() == "llvm.dbg.declare")
-                    DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(1));
-                else
-                    DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(2));
-#else
                 auto DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(1));
-#endif
                 auto DI = dyn_cast<DILocalVariable>(DIVal->getMetadata());
                 auto Name = Fun->getName().str() + "::" + DI->getName().str();
-
                 Map[Name] = Val->getValue();
             }
         }

@@ -23,6 +23,7 @@
 #include <llvm/IR/PassManager.h>
 #include <llvm/IR/TypeFinder.h>
 #include <llvm/IR/ValueMap.h>
+#include <map>
 #include <set>
 
 using namespace llvm;

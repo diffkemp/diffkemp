@@ -26,7 +26,6 @@
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Scalar/DCE.h>
-#include <llvm/Transforms/Scalar/NewGVN.h>
 #include <llvm/Transforms/Scalar/SimplifyCFG.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <numeric>
@@ -75,11 +74,7 @@ const Function *valueToFunction(const Value *Value) {
 const Function *getCalledFunction(const CallInst *Call) {
     if (!Call)
         return nullptr;
-#if LLVM_VERSION_MAJOR <= 7
-    return valueToFunction(Call->getCalledValue());
-#else
     return valueToFunction(Call->getCalledOperand());
-#endif
 }
 
 /// Extract called function from a called value.
@@ -90,11 +85,7 @@ Function *getCalledFunction(CallInst *Call) {
 }
 
 const Value *getCallee(const CallInst *Call) {
-#if LLVM_VERSION_MAJOR <= 7
-    return Call->getCalledValue();
-#else
     return Call->getCalledOperand();
-#endif
 }
 
 Value *getCallee(CallInst *Call) {
@@ -278,14 +269,15 @@ StructType *getStructType(const Value *Value) {
     StructType *Type = nullptr;
     if (auto PtrTy = dyn_cast<PointerType>(Value->getType())) {
         // Value is a pointer
-        if (auto *StructTy = dyn_cast<StructType>(PtrTy->getElementType())) {
+        if (auto *StructTy =
+                    dyn_cast<StructType>(PtrTy->getPointerElementType())) {
             // Value points to a struct
             Type = StructTy;
         } else if (auto *BitCast = dyn_cast<BitCastInst>(Value)) {
             // Value is a bicast, get the original type
             if (auto *SrcPtrTy = dyn_cast<PointerType>(BitCast->getSrcTy())) {
-                if (auto *SrcStructTy =
-                            dyn_cast<StructType>(SrcPtrTy->getElementType()))
+                if (auto *SrcStructTy = dyn_cast<StructType>(
+                            SrcPtrTy->getPointerElementType()))
                     Type = SrcStructTy;
             }
         }
@@ -302,11 +294,8 @@ void simplifyFunction(Function *Fun) {
     FunctionPassManager fpm;
     FunctionAnalysisManager fam;
     pb.registerFunctionAnalyses(fam);
-#if LLVM_VERSION_MAJOR > 5
     fpm.addPass(SimplifyCFGPass{});
-#endif
     fpm.addPass(DCEPass{});
-    fpm.addPass(NewGVNPass{});
     fpm.run(*Fun, fam);
 }
 
@@ -324,10 +313,18 @@ AttributeList cleanAttributeList(AttributeList AL, LLVMContext &Context) {
     for (AttributeList::AttrIndex i : indices) {
         AttributeSet AttrSet = AL.getAttributes(i);
         if (AttrSet.getNumAttributes() != 0) {
+#if LLVM_VERSION_MAJOR < 14
             AttrBuilder AB;
+#else
+            AttrBuilder AB(Context);
+#endif
             for (const Attribute &A : AttrSet)
                 AB.addAttribute(A);
+#if LLVM_VERSION_MAJOR < 14
             NewAttrList = NewAttrList.addAttributes(Context, i, AB);
+#else
+            NewAttrList = NewAttrList.addAttributesAtIndex(Context, i, AB);
+#endif
         }
     }
 
@@ -482,8 +479,8 @@ std::string getIdentifierForType(Type *Ty) {
         return getIdentifierForType(ArrTy->getElementType()) + "[]";
     } else if (Ty->isVoidTy()) {
         return "void";
-    } else if (auto PointTy = dyn_cast<PointerType>(Ty)) {
-        return getIdentifierForType(PointTy->getElementType()) + " *";
+    } else if (Ty->isPointerTy()) {
+        return "void*";
     } else
         return "<unknown>";
 }
@@ -603,11 +600,8 @@ std::string getIdentifierForValue(
             return "<unknown>";
 
         DISubprogram *Sub = Parent->getSubprogram();
-#if LLVM_VERSION_MAJOR < 7
-        DINodeArray funArgs = Sub->getVariables();
-#else
         DINodeArray funArgs = Sub->getRetainedNodes();
-#endif
+
         for (DINode *Node : funArgs) {
             if (idx == RegNum) {
                 DILocalVariable *LocVar = dyn_cast<DILocalVariable>(Node);
@@ -638,7 +632,7 @@ Type *getCSourceIdentifierType(
             return nullptr;
 
         PointerType *PTy = dyn_cast<PointerType>(Ty);
-        return PTy->getElementType();
+        return PTy->getPointerElementType();
     } else if (expr[0] == '&') {
         // Reference operator. Return a pointer type.
         Type *InnerTy = getCSourceIdentifierType(
@@ -692,8 +686,13 @@ void copyCallInstProperties(CallInst *srcCall, CallInst *destCall) {
     if (!srcCall->getType()->isVoidTy() && destCall->getType()->isVoidTy()) {
         // Remove attributes that are incompatible with void calls.
         for (Attribute::AttrKind AK : badVoidAttributes) {
+#if LLVM_VERSION_MAJOR < 14
             destCall->removeAttribute(AttributeList::ReturnIndex, AK);
             destCall->removeAttribute(AttributeList::FunctionIndex, AK);
+#else
+            destCall->removeAttributeAtIndex(AttributeList::ReturnIndex, AK);
+            destCall->removeAttributeAtIndex(AttributeList::FunctionIndex, AK);
+#endif
         }
 
         destCall->setAttributes(cleanAttributeList(destCall->getAttributes(),
@@ -709,8 +708,13 @@ void copyFunctionProperties(Function *srcFun, Function *destFun) {
     if (!srcFun->getType()->isVoidTy() && destFun->getType()->isVoidTy()) {
         for (Attribute::AttrKind AK : badVoidAttributes) {
             // Remove attributes that are incompatible with void functions.
+#if LLVM_VERSION_MAJOR < 14
             destFun->removeAttribute(AttributeList::ReturnIndex, AK);
             destFun->removeAttribute(AttributeList::FunctionIndex, AK);
+#else
+            destFun->removeAttributeAtIndex(AttributeList::ReturnIndex, AK);
+            destFun->removeAttributeAtIndex(AttributeList::FunctionIndex, AK);
+#endif
         }
         destFun->setAttributes(cleanAttributeList(destFun->getAttributes(),
                                                   destFun->getContext()));
