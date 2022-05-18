@@ -1463,10 +1463,15 @@ int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
     for (unsigned i = 0; i < PhiL->getNumIncomingValues(); ++i) {
         bool match = false;
         for (unsigned j = 0; j < PhiR->getNumIncomingValues(); ++j) {
-            if (!cmpValues(PhiL->getIncomingBlock(i), PhiR->getIncomingBlock(j))
-                && !cmpValues(PhiL->getIncomingValue(i),
-                              PhiR->getIncomingValue(j)))
+            auto BBL_sn = sn_mapL[PhiL->getIncomingBlock(i)];
+            auto BBR_sn = sn_mapR[PhiR->getIncomingBlock(i)];
+            if (BBL_sn == BBR_sn
+                && cmpValues(PhiL->getIncomingValue(i),
+                             PhiR->getIncomingValue(j))
+                           == 0) {
                 match = true;
+                break;
+            }
         }
         if (!match)
             return 1;
