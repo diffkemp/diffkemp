@@ -50,6 +50,10 @@ def __make_argument_parser():
     generate_ap.add_argument("--sysctl", action="store_true",
                              help="function list is a list of function "
                                   "parameters")
+    generate_ap.add_argument("--no-source-dir", action="store_true",
+                             help="do not store path to source directory in "
+                                  "snapshot")
+
     generate_ap.set_defaults(func=generate)
 
     # "compare" sub-command
@@ -138,7 +142,8 @@ def generate(args):
     snapshot = Snapshot.create_from_source(
         args.source_dir, args.output_dir,
         source_finder_cls, source_finder_path,
-        "sysctl" if args.sysctl else None)
+        "sysctl" if args.sysctl else None,
+        not args.no_source_dir)
     source = snapshot.source_tree
 
     # Build sources for symbols from the list into LLVM IR
