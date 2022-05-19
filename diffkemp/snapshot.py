@@ -46,18 +46,20 @@ class Snapshot:
             self.functions = dict()
 
     def __init__(self, source_tree=None, snapshot_tree=None,
-                 fun_kind=None):
+                 fun_kind=None, store_source_dir=True):
         self.source_tree = source_tree
         self.snapshot_tree = snapshot_tree
         self.fun_kind = fun_kind
         self.fun_groups = dict()
         self.created_time = None
         self.llvm_version = None
+        self.store_source_dir = store_source_dir
 
     @classmethod
     def create_from_source(cls, source_dir, output_dir,
                            source_finder_cls, source_finder_path,
-                           fun_kind=None, setup_dir=True):
+                           fun_kind=None, store_source_dir=True,
+                           setup_dir=True):
         """
         Create a snapshot from a project source directory and prepare it for
         snapshot directory generation.
@@ -67,6 +69,7 @@ class Snapshot:
         :param source_finder_path: Path to the files required by the source
                                    finder.
         :param fun_kind: Snapshot function kind.
+        :param store_source_dir: Whether to store source dir path to snapshot.
         :param setup_dir: Whether to recreate the output directory.
         :return: Desired instance of Snapshot.
         """
@@ -88,7 +91,7 @@ class Snapshot:
                                       source_finder_path)
         snapshot_tree = source_tree_cls(output_path)
 
-        snapshot = cls(source_tree, snapshot_tree, fun_kind)
+        snapshot = cls(source_tree, snapshot_tree, fun_kind, store_source_dir)
 
         # Add a new None group to the snapshot if the function kind is None.
         if fun_kind is None:
@@ -212,7 +215,8 @@ class Snapshot:
             self.snapshot_tree.create_source_finder(llvm_finder_cls,
                                                     llvm_finder_path)
 
-        if os.path.isdir(yaml_dict["source_dir"]):
+        if "source_dir" in yaml_dict and \
+                os.path.isdir(yaml_dict["source_dir"]):
             self.source_tree = SourceTree(yaml_dict["source_dir"],
                                           llvm_finder_cls, llvm_finder_path)
         else:
@@ -276,10 +280,11 @@ class Snapshot:
             "systcl_group_list",
             "list": fun_yaml_dict[0]["functions"] if None in self.fun_groups
             else fun_yaml_dict,
-            "source_dir": self.source_tree.source_dir,
             "llvm_source_finder": {
                 "kind": self.source_tree.source_finder.str(),
                 "path": self.source_tree.source_finder.path
             }
         }]
+        if self.store_source_dir:
+            yaml_dict[0]["source_dir"] = self.source_tree.source_dir
         return yaml.dump(yaml_dict)
