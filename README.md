@@ -13,7 +13,7 @@ prepared RPM package for Fedora.
 ### Install from source
 
 Currently, DiffKemp runs on Linux and needs the following software installed:
-* Clang and LLVM (supported versions are 5, 6, 7, 8, 9, 10, 11, and 12)
+* Clang and LLVM (supported versions are 9, 10, 11, 12, 13, and 14)
 * Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 * Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
 * CScope
@@ -179,6 +179,7 @@ order:
 - Tomáš Glozar
 - Tomáš Vojnar
 - Petr Šilling
+- Pavol Žáčik
 - Tatiana Malecová
 - Jakub Rozek
 
