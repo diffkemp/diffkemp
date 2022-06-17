@@ -245,6 +245,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// 3. Look a macro-function difference.
     void processCallInstDifference(const CallInst *CL,
                                    const CallInst *CR) const;
+
+    /// Check if there is a dependency between the given instruction and the
+    /// currently stored relocation.
+    /// There is a dependency if both the instruction and the relocated code
+    /// (any instruction within it) access the same pointer and one of the
+    /// accesses is a store and the other one is a load.
+    bool isDependingOnReloc(const Instruction &Inst) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
