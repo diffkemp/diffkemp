@@ -965,6 +965,14 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             if (Res)
                 return Res;
         } else {
+            if (Reloc.status == RelocationInfo::Stored) {
+                // If there is a dependency between the skipped instruction and
+                // the relocated code, fail the comparison
+                if (Reloc.prog == Program::First && isDependingOnReloc(*InstL))
+                    return 1;
+                if (Reloc.prog == Program::Second && isDependingOnReloc(*InstR))
+                    return 1;
+            }
             if (Reloc.status == RelocationInfo::Matching) {
                 // If the relocated code has been entirely matched, we can
                 // continue from the restore point.
@@ -1743,6 +1751,11 @@ bool DifferentialFunctionComparator::findMatchingOpWithOffset(
             Reloc.prog = prog_to_search;
             Reloc.tryInlineBackup = tryInlineBackup;
 
+            // Make sure that the first equal instruction is not depending on
+            // the relocation
+            if (isDependingOnReloc(*MovedInst))
+                return false;
+
             DEBUG_WITH_TYPE(DEBUG_SIMPLL,
                             dbgs() << getDebugIndent()
                                    << "Possible relocation found:\n"
@@ -1759,5 +1772,36 @@ bool DifferentialFunctionComparator::findMatchingOpWithOffset(
     }
     MovedInst = MovedInstBackup;
     ModComparator->tryInline = tryInlineBackup;
+    return false;
+}
+
+/// Check if there is a dependency between the given instruction and the
+/// currently stored relocation.
+/// There is a dependency if both the instruction and the relocated code (any
+/// instruction within it) access the same pointer and one of the accesses
+/// is a store and the other one is a load.
+/// \param Inst Instruction to check
+/// \return True if there exists a dependency, otherwise false.
+bool DifferentialFunctionComparator::isDependingOnReloc(
+        const Instruction &Inst) const {
+    auto *Load = dyn_cast<LoadInst>(&Inst);
+    auto *Store = dyn_cast<StoreInst>(&Inst);
+    if (!Load && !Store)
+        return false;
+
+    auto RelocInst = Reloc.begin;
+    do {
+        if (!Load)
+            Load = dyn_cast<LoadInst>(&*RelocInst);
+        if (!Store)
+            Store = dyn_cast<StoreInst>(&*RelocInst);
+
+        if (Load && Store
+            && Load->getPointerOperand() == Store->getPointerOperand())
+            return true;
+
+        RelocInst++;
+    } while (RelocInst != Reloc.end);
+
     return false;
 }
