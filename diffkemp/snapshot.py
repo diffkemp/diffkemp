@@ -56,18 +56,14 @@ class Snapshot:
         self.store_source_dir = store_source_dir
 
     @classmethod
-    def create_from_source(cls, source_dir, output_dir,
-                           source_finder_cls, source_finder_path,
-                           fun_kind=None, store_source_dir=True,
-                           setup_dir=True):
+    def create_from_source(cls, source_tree, output_dir, fun_kind,
+                           store_source_dir=True, setup_dir=True):
         """
         Create a snapshot from a project source directory and prepare it for
         snapshot directory generation.
-        :param source_dir: Source directory.
+        :param source_tree: Instance of SourceTree representing the project
+                            source directory.
         :param output_dir: Snapshot output directory.
-        :param source_finder_cls: Class of the source finder to be used.
-        :param source_finder_path: Path to the files required by the source
-                                   finder.
         :param fun_kind: Snapshot function kind.
         :param store_source_dir: Whether to store source dir path to snapshot.
         :param setup_dir: Whether to recreate the output directory.
@@ -81,16 +77,7 @@ class Snapshot:
                 shutil.rmtree(output_path)
             os.mkdir(output_path)
 
-        if fun_kind == "sysctl":
-            source_tree_cls = KernelSourceTree
-        else:
-            source_tree_cls = SourceTree
-
-        # Prepare source representations for the new snapshot
-        source_tree = source_tree_cls(source_dir, source_finder_cls,
-                                      source_finder_path)
-        snapshot_tree = source_tree_cls(output_path)
-
+        snapshot_tree = source_tree.clone_to_dir(output_dir)
         snapshot = cls(source_tree, snapshot_tree, fun_kind, store_source_dir)
 
         # Add a new None group to the snapshot if the function kind is None.
@@ -207,18 +194,20 @@ class Snapshot:
 
         self.llvm_version = yaml_dict["llvm_version"]
 
-        llvm_finder_cls = None
-        llvm_finder_path = None
+        # Override the default source finder when the snapshot was originally
+        # built with a special one. This is useful for snapshots in which
+        # it is possible to look for additional symbol defs during comparison.
+        # This is now done for snapshots built with KernelLlvmSourceBuilder.
         if yaml_dict["llvm_source_finder"]["kind"] == "kernel_with_builder":
-            llvm_finder_cls = KernelLlvmSourceBuilder
-        if llvm_finder_cls is not None:
-            self.snapshot_tree.create_source_finder(llvm_finder_cls,
-                                                    llvm_finder_path)
+            source_dir = self.snapshot_tree.source_dir
+            source_finder = KernelLlvmSourceBuilder(source_dir)
+            self.snapshot_tree = KernelSourceTree(source_dir, source_finder)
 
+        # Add source tree if present
         if "source_dir" in yaml_dict and \
                 os.path.isdir(yaml_dict["source_dir"]):
-            self.source_tree = SourceTree(yaml_dict["source_dir"],
-                                          llvm_finder_cls, llvm_finder_path)
+            self.source_tree = self.snapshot_tree.clone_to_dir(
+                yaml_dict["source_dir"])
         else:
             sys.stderr.write(
                 "Warning: snapshot in {} has missing or invalid source_dir, "
@@ -282,7 +271,6 @@ class Snapshot:
             else fun_yaml_dict,
             "llvm_source_finder": {
                 "kind": self.source_tree.source_finder.str(),
-                "path": self.source_tree.source_finder.path
             }
         }]
         if self.store_source_dir:

@@ -10,8 +10,8 @@ import pytest
 
 @pytest.fixture
 def source():
-    s = KernelSourceTree("kernel/linux-3.10.0-957.el7",
-                         KernelLlvmSourceBuilder)
+    kernel_dir = "kernel/linux-3.10.0-957.el7"
+    s = KernelSourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     yield s
     s.finalize()
 

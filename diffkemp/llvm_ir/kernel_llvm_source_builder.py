@@ -19,8 +19,8 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
     it into LLVM IR.
     Extends the SourceFinder abstract class.
     """
-    def __init__(self, source_dir, path=None):
-        LlvmSourceFinder.__init__(self, source_dir, None)
+    def __init__(self, source_dir):
+        LlvmSourceFinder.__init__(self, source_dir)
         self.cscope_cache = dict()
         # Compiler headers (containing 'asm goto' constructions)
         self.compiler_headers = [os.path.join(self.source_dir, h) for h in
@@ -37,6 +37,9 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
 
     def str(self):
         return "kernel_with_builder"
+
+    def clone_to_dir(self, new_source_dir):
+        return KernelLlvmSourceBuilder(new_source_dir)
 
     def initialize(self):
         """

@@ -18,12 +18,8 @@ class LlvmSourceFinder(ABC):
     Abstract class for finding LLVM files in a source tree.
     Defines methods that each LLVM source finder must implement.
     """
-    def __init__(self, source_dir, path):
+    def __init__(self, source_dir):
         self.source_dir = os.path.abspath(source_dir)
-        if path is not None:
-            self.path = os.path.relpath(path, source_dir)
-        else:
-            self.path = None
 
     @abstractmethod
     def str(self):
@@ -37,6 +33,11 @@ class LlvmSourceFinder(ABC):
     @abstractmethod
     def finalize(self):
         """Finalize the source finder."""
+        pass
+
+    @abstractmethod
+    def clone_to_dir(self, new_source_dir):
+        """Create a copy of this finder with a different source directory"""
         pass
 
     @abstractmethod

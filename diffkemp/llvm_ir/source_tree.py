@@ -14,12 +14,9 @@ class SourceTree:
     Contains functions for getting LLVM modules from the project.
     Requires a source finder that extends the LlvmSourceFinder abstract class.
     """
-    def __init__(self, source_dir, source_finder_cls=None,
-                 source_finder_path=None):
+    def __init__(self, source_dir, source_finder=None):
         self.source_dir = os.path.abspath(source_dir)
-        self.source_finder = None
-        if source_finder_cls is not None:
-            self.create_source_finder(source_finder_cls, source_finder_path)
+        self.source_finder = source_finder
         self.modules = dict()
 
     def initialize(self):
@@ -30,8 +27,11 @@ class SourceTree:
         if self.source_finder is not None:
             self.source_finder.finalize()
 
-    def create_source_finder(self, finder_cls, path):
-        self.source_finder = finder_cls(self.source_dir, path)
+    def clone_to_dir(self, new_source_dir):
+        new_source_finder = None
+        if self.source_finder is not None:
+            new_source_finder = self.source_finder.clone_to_dir(new_source_dir)
+        return SourceTree(new_source_dir, new_source_finder)
 
     def _make_abs_path(self, file):
         if not os.path.isabs(file):

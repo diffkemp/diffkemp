@@ -18,7 +18,8 @@ import tempfile
 def source():
     # If a new class extending LlvmSourceFinder is implemented, it should be
     # added here for testing that it provides correct LLVM IR files.
-    s = SourceTree("kernel/linux-3.10.0-957.el7", KernelLlvmSourceBuilder)
+    kernel_dir = "kernel/linux-3.10.0-957.el7"
+    s = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     yield s
     s.finalize()
 

@@ -1,8 +1,9 @@
 from argparse import ArgumentParser, SUPPRESS
 from diffkemp.config import Config
 from diffkemp.snapshot import Snapshot
+from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
-from diffkemp.llvm_ir.source_tree import SourceNotFoundException
+from diffkemp.llvm_ir.source_tree import SourceTree, SourceNotFoundException
 from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
 from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
 from diffkemp.semdiff.caching import SimpLLCache
@@ -131,20 +132,19 @@ def generate(args):
     # the file/folder that the finder needs.
     if args.kernel_with_builder:
         # Linux kernel to LLVM builder
-        source_finder_cls = KernelLlvmSourceBuilder
-        source_finder_path = None
+        source_finder = KernelLlvmSourceBuilder(args.source_dir)
+        source = KernelSourceTree(args.source_dir, source_finder)
     elif args.single_llvm_file:
         # Project pre-built into a single LLVM IR file
-        source_finder_cls = SingleLlvmFinder
-        source_finder_path = args.single_llvm_file
+        source_finder = SingleLlvmFinder(args.source_dir,
+                                         args.single_llvm_file)
+        source = SourceTree(args.source_dir, source_finder)
 
     # Create a new snapshot from the source directory.
-    snapshot = Snapshot.create_from_source(
-        args.source_dir, args.output_dir,
-        source_finder_cls, source_finder_path,
-        "sysctl" if args.sysctl else None,
-        not args.no_source_dir)
-    source = snapshot.source_tree
+    snapshot = Snapshot.create_from_source(source,
+                                           args.output_dir,
+                                           "sysctl" if args.sysctl else None,
+                                           not args.no_source_dir)
 
     # Build sources for symbols from the list into LLVM IR
     with open(args.functions_list, "r") as fun_list_file:

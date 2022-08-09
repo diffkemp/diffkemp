@@ -15,9 +15,8 @@ def test_create_snapshot_from_source():
     """Create a new kernel directory snapshot."""
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
-                                       None, True, False)
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir, None, True, False)
 
     assert snap.source_tree is not None
     assert kernel_dir in snap.source_tree.source_dir
@@ -27,9 +26,8 @@ def test_create_snapshot_from_source():
     assert len(snap.fun_groups) == 1
     assert len(snap.fun_groups[None].functions) == 0
 
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
-                                       "sysctl", True, False)
+    snap = Snapshot.create_from_source(
+        source, output_dir, "sysctl", True, False)
 
     assert snap.fun_kind == "sysctl"
     assert len(snap.fun_groups) == 0
@@ -162,8 +160,8 @@ def test_add_sysctl_fun_group():
 
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
     snap.add_fun_group("kernel.sched_latency_ns")
@@ -176,8 +174,8 @@ def test_add_fun_none_group():
     """Create a snapshot and try to add functions into a None group."""
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        None, True, False)
 
     mod = LlvmModule("net/core/skbuff.ll")
@@ -194,8 +192,8 @@ def test_add_fun_sysctl_group():
     """Create a snapshot and try to add functions into sysctl groups."""
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
     snap.add_fun_group("kernel.sched_latency_ns")
@@ -223,8 +221,8 @@ def test_get_modules():
     """
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
     snap.add_fun_group("kernel.sched_latency_ns")
@@ -246,8 +244,8 @@ def test_get_by_name_functions():
     """Get the module of inserted function by its name."""
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        None, True, False)
 
     mod_buff = LlvmModule("net/core/skbuff.ll")
@@ -265,8 +263,8 @@ def test_get_by_name_sysctls():
     """Get the module of inserted function by its name and sysctl group."""
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
     snap.add_fun_group("kernel.sched_latency_ns")
@@ -291,8 +289,8 @@ def test_filter():
     """Filter snapshot functions."""
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        None, True, False)
 
     snap.add_fun("___pskb_trim", LlvmModule("net/core/skbuff.ll"))
@@ -316,8 +314,8 @@ def test_to_yaml_functions():
     """
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        None, True, False)
 
     snap.add_fun("___pskb_trim", LlvmModule(
@@ -356,8 +354,8 @@ def test_to_yaml_sysctls():
     """
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots-sysctl/linux-3.10.0-957.el7"
-    snap = Snapshot.create_from_source(kernel_dir, output_dir,
-                                       KernelLlvmSourceBuilder, None,
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
+    snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
     snap.add_fun_group("kernel.sched_latency_ns")
