@@ -46,17 +46,17 @@ class Snapshot:
             self.functions = dict()
 
     def __init__(self, source_tree=None, snapshot_tree=None,
-                 fun_kind=None, store_source_dir=True):
+                 list_kind=None, store_source_dir=True):
         self.source_tree = source_tree
         self.snapshot_tree = snapshot_tree
-        self.fun_kind = fun_kind
+        self.list_kind = list_kind
         self.fun_groups = dict()
         self.created_time = None
         self.llvm_version = None
         self.store_source_dir = store_source_dir
 
     @classmethod
-    def create_from_source(cls, source_tree, output_dir, fun_kind,
+    def create_from_source(cls, source_tree, output_dir, list_kind,
                            store_source_dir=True, setup_dir=True):
         """
         Create a snapshot from a project source directory and prepare it for
@@ -64,7 +64,7 @@ class Snapshot:
         :param source_tree: Instance of SourceTree representing the project
                             source directory.
         :param output_dir: Snapshot output directory.
-        :param fun_kind: Snapshot function kind.
+        :param list_kind: Snapshot list kind.
         :param store_source_dir: Whether to store source dir path to snapshot.
         :param setup_dir: Whether to recreate the output directory.
         :return: Desired instance of Snapshot.
@@ -78,11 +78,7 @@ class Snapshot:
             os.mkdir(output_path)
 
         snapshot_tree = source_tree.clone_to_dir(output_dir)
-        snapshot = cls(source_tree, snapshot_tree, fun_kind, store_source_dir)
-
-        # Add a new None group to the snapshot if the function kind is None.
-        if fun_kind is None:
-            snapshot._add_none_group()
+        snapshot = cls(source_tree, snapshot_tree, list_kind, store_source_dir)
 
         return snapshot
 
@@ -131,23 +127,11 @@ class Snapshot:
         :param tag: Function tag.
         :param group: Group to put the function to.
         """
+        if group not in self.fun_groups:
+            self.fun_groups[group] = self.FunctionGroup()
         self.fun_groups[group].functions[name] = self.FunctionDesc(llvm_mod,
                                                                    glob_var,
                                                                    tag)
-
-    def _add_none_group(self):
-        """
-        Add new group with None name which is used when only a single group
-        is used.
-        """
-        self.fun_groups[None] = self.FunctionGroup()
-
-    def add_fun_group(self, name):
-        """
-        Add new function group with the given name.
-        :param name: Name of the group.
-        """
-        self.fun_groups[name] = self.FunctionGroup()
 
     def modules(self):
         """
@@ -214,20 +198,20 @@ class Snapshot:
                 "some comparison features may not be available\n".format(
                     self.snapshot_tree.source_dir))
 
-        if "sysctl" in yaml_dict["list"][0]:
-            self.kind = "sysctl"
-            groups = yaml_dict["list"]
-        else:
+        self.list_kind = yaml_dict["list_kind"]
+        # Load functions (possibly divided into groups)
+        if self.list_kind == "function":
             groups = [yaml_dict["list"]]
+        else:
+            groups = yaml_dict["list"]
+
         for g in groups:
             if "sysctl" in g:
-                self.kind = "sysctl"
                 group = g["sysctl"]
                 functions = g["functions"]
             else:
                 group = None
                 functions = g
-            self.fun_groups[group] = self.FunctionGroup()
             for f in functions:
                 self.add_fun(f["name"],
                              LlvmModule(
@@ -247,7 +231,7 @@ class Snapshot:
         """
         # Create the function group list.
         fun_yaml_dict = [{
-            self.fun_kind: group_name,
+            self.list_kind: group_name,
             "functions": [{
                 "name": fun_name,
                 "llvm": os.path.relpath(fun_desc.mod.llvm,
@@ -259,16 +243,17 @@ class Snapshot:
         } for group_name, g in self.fun_groups.items()
         ]
 
+        if len(self.fun_groups) == 1 and None in self.fun_groups:
+            fun_yaml_dict = fun_yaml_dict[0]["functions"]
+
         # Create the top level YAML structure.
         yaml_dict = [{
             "diffkemp_version": pkg_resources.require("diffkemp")[0].version,
             "llvm_version": subprocess.check_output(
                 ["llvm-config", "--version"]).decode().rstrip().split(".")[0],
             "created_time": datetime.datetime.now(datetime.timezone.utc),
-            "kind": "function_list" if self.fun_kind is None else
-            "systcl_group_list",
-            "list": fun_yaml_dict[0]["functions"] if None in self.fun_groups
-            else fun_yaml_dict,
+            "list_kind": self.list_kind,
+            "list": fun_yaml_dict,
             "llvm_source_finder": {
                 "kind": self.source_tree.source_finder.str(),
             }

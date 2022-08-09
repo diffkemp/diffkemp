@@ -140,10 +140,15 @@ def generate(args):
                                          args.single_llvm_file)
         source = SourceTree(args.source_dir, source_finder)
 
+    if args.sysctl:
+        list_kind = "sysctl"
+    else:
+        list_kind = "function"
+
     # Create a new snapshot from the source directory.
     snapshot = Snapshot.create_from_source(source,
                                            args.output_dir,
-                                           "sysctl" if args.sysctl else None,
+                                           list_kind,
                                            not args.no_source_dir)
 
     # Build sources for symbols from the list into LLVM IR
@@ -174,8 +179,6 @@ def generate(args):
                     print("{}: no sysctl found".format(symbol))
                 for sysctl in sysctl_list:
                     print("{}:".format(sysctl))
-                    # New group in function list for the sysctl
-                    snapshot.add_fun_group(sysctl)
 
                     # Proc handler function for sysctl
                     proc_fun = sysctl_mod.get_proc_fun(sysctl)

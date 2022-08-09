@@ -16,20 +16,19 @@ def test_create_snapshot_from_source():
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
     source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
-    snap = Snapshot.create_from_source(source, output_dir, None, True, False)
+    snap = Snapshot.create_from_source(source, output_dir,
+                                       "function", True, False)
 
     assert snap.source_tree is not None
     assert kernel_dir in snap.source_tree.source_dir
     assert snap.snapshot_tree is not None
     assert output_dir in snap.snapshot_tree.source_dir
-    assert snap.fun_kind is None
-    assert len(snap.fun_groups) == 1
-    assert len(snap.fun_groups[None].functions) == 0
+    assert snap.list_kind == "function"
 
-    snap = Snapshot.create_from_source(
-        source, output_dir, "sysctl", True, False)
+    snap = Snapshot.create_from_source(source, output_dir,
+                                       "sysctl", True, False)
 
-    assert snap.fun_kind == "sysctl"
+    assert snap.list_kind == "sysctl"
     assert len(snap.fun_groups) == 0
 
 
@@ -48,7 +47,7 @@ def test_load_snapshot_from_dir_functions():
         config_file.writelines("""
         - created_time: 2020-01-01 00:00:00.000001+00:00
           diffkemp_version: '0.1'
-          kind: function_list
+          list_kind: function
           list:
           - glob_var: null
             llvm: net/core/skbuff.ll
@@ -107,7 +106,7 @@ def test_load_snapshot_from_dir_sysctls():
         config_file.writelines("""
         - created_time: 2020-01-01 00:00:00.000001+00:00
           diffkemp_version: '0.1'
-          kind: function_list
+          list_kind: sysctl
           list:
           - functions:
             - glob_var: null
@@ -155,28 +154,13 @@ def test_load_snapshot_from_dir_sysctls():
             assert f.glob_var is None
 
 
-def test_add_sysctl_fun_group():
-    """Create a snapshot and check the creation of a sysctl function group."""
-
-    kernel_dir = "kernel/linux-3.10.0-957.el7"
-    output_dir = "snapshots/linux-3.10.0-957.el7"
-    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
-    snap = Snapshot.create_from_source(source, output_dir,
-                                       "sysctl", True, False)
-
-    snap.add_fun_group("kernel.sched_latency_ns")
-
-    assert len(snap.fun_groups) == 1
-    assert "kernel.sched_latency_ns" in snap.fun_groups
-
-
 def test_add_fun_none_group():
     """Create a snapshot and try to add functions into a None group."""
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots/linux-3.10.0-957.el7"
     source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     snap = Snapshot.create_from_source(source, output_dir,
-                                       None, True, False)
+                                       "function", True, False)
 
     mod = LlvmModule("net/core/skbuff.ll")
     snap.add_fun("___pskb_trim", mod)
@@ -196,7 +180,6 @@ def test_add_fun_sysctl_group():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
-    snap.add_fun_group("kernel.sched_latency_ns")
     mod = LlvmModule("kernel/sched/debug.ll")
     snap.add_fun("sched_debug_header",
                  mod,
@@ -225,8 +208,6 @@ def test_get_modules():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
-    snap.add_fun_group("kernel.sched_latency_ns")
-    snap.add_fun_group("kernel.timer_migration")
     snap.add_fun("sched_proc_update_handler",
                  LlvmModule("kernel/sched/fair.ll"), None,
                  "proc_handler", "kernel.sched_latency_ns")
@@ -246,7 +227,7 @@ def test_get_by_name_functions():
     output_dir = "snapshots/linux-3.10.0-957.el7"
     source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     snap = Snapshot.create_from_source(source, output_dir,
-                                       None, True, False)
+                                       "function", True, False)
 
     mod_buff = LlvmModule("net/core/skbuff.ll")
     mod_alloc = LlvmModule("mm/page_alloc.ll")
@@ -267,8 +248,6 @@ def test_get_by_name_sysctls():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
-    snap.add_fun_group("kernel.sched_latency_ns")
-    snap.add_fun_group("kernel.timer_migration")
     mod_fair = LlvmModule(
         "snapshots-sysctl/linux-3.10.0-957.el7/kernel/sched/fair.ll")
     mod_sysctl = LlvmModule(
@@ -291,7 +270,7 @@ def test_filter():
     output_dir = "snapshots/linux-3.10.0-957.el7"
     source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     snap = Snapshot.create_from_source(source, output_dir,
-                                       None, True, False)
+                                       "function", True, False)
 
     snap.add_fun("___pskb_trim", LlvmModule("net/core/skbuff.ll"))
     snap.add_fun("__alloc_pages_nodemask",
@@ -316,7 +295,7 @@ def test_to_yaml_functions():
     output_dir = "snapshots/linux-3.10.0-957.el7"
     source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     snap = Snapshot.create_from_source(source, output_dir,
-                                       None, True, False)
+                                       "function", True, False)
 
     snap.add_fun("___pskb_trim", LlvmModule(
         "snapshots/linux-3.10.0-957.el7/net/core/skbuff.ll"))
@@ -358,8 +337,6 @@ def test_to_yaml_sysctls():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
-    snap.add_fun_group("kernel.sched_latency_ns")
-    snap.add_fun_group("kernel.timer_migration")
     snap.add_fun("sched_proc_update_handler",
                  LlvmModule(
                      "snapshots-sysctl/linux-3.10.0-957.el7/"
