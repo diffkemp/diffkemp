@@ -15,7 +15,8 @@ import tempfile
 @pytest.fixture
 def source():
     """Create KernelSource shared among multiple tests."""
-    s = SourceTree("kernel/linux-3.10.0-957.el7", KernelLlvmSourceBuilder)
+    kernel_dir = "kernel/linux-3.10.0-957.el7"
+    s = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     yield s
     s.finalize()
 
@@ -68,7 +69,8 @@ def test_find_param_var():
     This is necessary since for parameters defined with module_param_named,
     names of the parameter and of the variable differ.
     """
-    source = SourceTree("kernel/linux-3.10", KernelLlvmSourceBuilder)
+    kernel_dir = "kernel/linux-3.10"
+    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     mod = source.get_module_for_symbol("rfkill_init")
     assert mod.find_param_var("default_state").name == "rfkill_default_state"
 

@@ -11,8 +11,8 @@ def mod():
     """
     Build LlvmSysctlModule for net.core.* sysctl options shared among tests.
     """
-    source = KernelSourceTree("kernel/linux-3.10.0-957.el7",
-                              KernelLlvmSourceBuilder)
+    kernel_dir = "kernel/linux-3.10.0-957.el7"
+    source = KernelSourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     kernel_module = source.get_module_for_symbol("net_core_table")
     yield LlvmSysctlModule(kernel_module, "net_core_table")
     source.finalize()
@@ -39,8 +39,8 @@ def test_get_data(mod):
 
 def test_get_child():
     """Test getting child of a sysctl definition."""
-    source = KernelSourceTree("kernel/linux-3.10.0-957.el7",
-                              KernelLlvmSourceBuilder)
+    kernel_dir = "kernel/linux-3.10.0-957.el7"
+    source = KernelSourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     kernel_module = source.get_module_for_symbol("sysctl_base_table")
     sysctl_module = LlvmSysctlModule(kernel_module, "sysctl_base_table")
     assert sysctl_module.get_child("vm").name == "vm_table"

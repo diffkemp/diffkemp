@@ -56,10 +56,10 @@ class TaskSpec:
             self.control_flow_only = False
 
         # Create LLVM sources and configuration
-        self.old_kernel = KernelSourceTree(self.old_kernel_dir,
-                                           KernelLlvmSourceBuilder)
-        self.new_kernel = KernelSourceTree(self.new_kernel_dir,
-                                           KernelLlvmSourceBuilder)
+        self.old_kernel = KernelSourceTree(
+            self.old_kernel_dir, KernelLlvmSourceBuilder(self.old_kernel_dir))
+        self.new_kernel = KernelSourceTree(
+            self.new_kernel_dir, KernelLlvmSourceBuilder(self.new_kernel_dir))
         self.old_snapshot = Snapshot(self.old_kernel, self.old_kernel)
         self.new_snapshot = Snapshot(self.new_kernel, self.new_kernel)
         self.config = Config(self.old_snapshot, self.new_snapshot, False,
