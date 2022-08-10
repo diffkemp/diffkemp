@@ -5,7 +5,7 @@ __pycache__/
 
 # Build files
 .Python
-build/
+build*/
 tests/unit_tests/simpll/runTests
 diffkemp/simpll/_simpll.c
 
