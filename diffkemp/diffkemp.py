@@ -151,92 +151,132 @@ def generate(args):
                                            list_kind,
                                            not args.no_source_dir)
 
-    # Build sources for symbols from the list into LLVM IR
-    with open(args.functions_list, "r") as fun_list_file:
-        for line in fun_list_file.readlines():
-            symbol = line.strip()
-            if not symbol or not (symbol[0].isalpha() or symbol[0] == "_"):
-                continue
-            if args.sysctl:
-                # For a sysctl parameter, we have to:
-                #  - get LLVM of a file which defines the sysctl option
-                #  - find and compile proc handler function and add it to the
-                #    snapshot
-                #  - find sysctl data variable
-                #  - find, compile, and add to snapshot all functions that
-                #    use the data variable
+    symbol_list = read_symbol_list(args.functions_list)
+    if not symbol_list:
+        sys.stderr.write("ERROR: symbol list is empty or could not be read\n")
+        return
 
-                # Get module with sysctl definitions
-                try:
-                    sysctl_mod = source.get_sysctl_module(symbol)
-                except SourceNotFoundException:
-                    print("{}: sysctl not supported".format(symbol))
+    # Generate snapshot contents
+    if args.sysctl:
+        generate_from_sysctl_list(snapshot, symbol_list)
+    else:
+        generate_from_function_list(snapshot, symbol_list)
 
-                # Iterate all sysctls represented by the symbol (it can be
-                # a pattern).
-                sysctl_list = sysctl_mod.parse_sysctls(symbol)
-                if not sysctl_list:
-                    print("{}: no sysctl found".format(symbol))
-                for sysctl in sysctl_list:
-                    print("{}:".format(sysctl))
-
-                    # Proc handler function for sysctl
-                    proc_fun = sysctl_mod.get_proc_fun(sysctl)
-                    if proc_fun:
-                        try:
-                            proc_fun_mod = source.get_module_for_symbol(
-                                proc_fun)
-                            snapshot.add_fun(name=proc_fun,
-                                             llvm_mod=proc_fun_mod,
-                                             glob_var=None,
-                                             tag="proc handler function",
-                                             group=sysctl)
-                            print("  {}: {} (proc handler)".format(
-                                proc_fun,
-                                os.path.relpath(proc_fun_mod.llvm,
-                                                args.source_dir)))
-                        except SourceNotFoundException:
-                            print("  could not build proc handler")
-
-                    # Functions using the sysctl data variable
-                    data = sysctl_mod.get_data(sysctl)
-                    if not data:
-                        continue
-                    for data_mod in source.get_modules_using_symbol(data.name):
-                        for data_fun in \
-                                data_mod.get_functions_using_param(data):
-                            if data_fun == proc_fun:
-                                continue
-                            snapshot.add_fun(
-                                name=data_fun,
-                                llvm_mod=data_mod,
-                                glob_var=data.name,
-                                tag="function using sysctl data "
-                                    "variable \"{}\"".format(data.name),
-                                group=sysctl)
-                            print(
-                                "  {}: {} (using data variable \"{}\")".format(
-                                    data_fun,
-                                    os.path.relpath(data_mod.llvm,
-                                                    args.source_dir),
-                                    data.name))
-            else:
-                try:
-                    # For a normal function, we compile its source and include
-                    # it into the snapshot
-                    sys.stdout.write("{}: ".format(symbol))
-                    llvm_mod = source.get_module_for_symbol(symbol)
-                    if not llvm_mod.has_function(symbol):
-                        print("unsupported")
-                        continue
-                    print(os.path.relpath(llvm_mod.llvm, args.source_dir))
-                    snapshot.add_fun(symbol, llvm_mod)
-                except SourceNotFoundException:
-                    print("source not found")
-                    snapshot.add_fun(symbol, None)
-
+    # Create the snapshot directory containing the YAML description file
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
+
+
+def read_symbol_list(list_path):
+    """
+    Read and parse the symbol list file. Filters out entries which are not
+    valid symbols (do not start with letter or underscore).
+    :param list_path: Path to the list.
+    :return: List of symbols (strings).
+    """
+    with open(list_path, "r") as list_file:
+        return [symbol for line in list_file.readlines() if
+                (symbol := line.strip()) and
+                (symbol[0].isalpha() or symbol[0] == "_")]
+
+
+def generate_from_function_list(snapshot, fun_list):
+    """
+    Generate a snapshot from a list of functions.
+    For each function, find the source with its definition, compile it into
+    LLVM IR, and add the appropriate entry to the snapshot.
+    :param snapshot: Existing Snapshot object to fill.
+    :param fun_list: List of functions to add. If non-function symbols are
+                     present, these are added into the snapshot with empty
+                     module entry.
+    """
+    for symbol in fun_list:
+        try:
+            sys.stdout.write("{}: ".format(symbol))
+            sys.stdout.flush()
+
+            # Find the source for function definition and add it to
+            # the snapshot
+            llvm_mod = snapshot.source_tree.get_module_for_symbol(symbol)
+            if llvm_mod.has_function(symbol):
+                snapshot.add_fun(symbol, llvm_mod)
+                print(os.path.relpath(llvm_mod.llvm,
+                                      snapshot.source_tree.source_dir))
+            else:
+                snapshot.add_fun(symbol, None)
+                print("not a function")
+        except SourceNotFoundException:
+            print("source not found")
+            snapshot.add_fun(symbol, None)
+
+
+def generate_from_sysctl_list(snapshot, sysctl_list):
+    """
+    Generate a snapshot from a list of sysctl options.
+    For each sysctl option:
+      - get LLVM IR of the file which defines the sysctl option
+      - find and compile the proc handler function and add it to the snapshot
+      - find the sysctl data variable
+      - find, compile, and add to the snapshot all functions that use
+        the data variable
+    :param snapshot: Existing Snapshot object to fill
+    :param sysctl_list: List of sysctl options.
+                        May contain patterns such as "kernel.*".
+    """
+    for symbol in sysctl_list:
+        # Get module with sysctl definitions
+        try:
+            sysctl_mod = snapshot.source_tree.get_sysctl_module(symbol)
+        except SourceNotFoundException:
+            print("{}: sysctl not supported".format(symbol))
+            continue
+
+        # Iterate all sysctls represented by the symbol (it can be a pattern)
+        sysctl_list = sysctl_mod.parse_sysctls(symbol)
+        if not sysctl_list:
+            print("{}: no sysctl found".format(symbol))
+            continue
+        for sysctl in sysctl_list:
+            print("{}:".format(sysctl))
+
+            # Proc handler function for sysctl
+            proc_fun = sysctl_mod.get_proc_fun(sysctl)
+            if proc_fun:
+                try:
+                    proc_fun_mod = snapshot.source_tree.get_module_for_symbol(
+                        proc_fun)
+                    snapshot.add_fun(name=proc_fun,
+                                     llvm_mod=proc_fun_mod,
+                                     glob_var=None,
+                                     tag="proc handler function",
+                                     group=sysctl)
+                    print("  {}: {} (proc handler)".format(
+                        proc_fun,
+                        os.path.relpath(proc_fun_mod.llvm,
+                                        snapshot.source_tree.source_dir)))
+                except SourceNotFoundException:
+                    print("  could not build proc handler")
+
+            # Functions using the sysctl data variable
+            data = sysctl_mod.get_data(sysctl)
+            if not data:
+                continue
+            for data_mod in \
+                    snapshot.source_tree.get_modules_using_symbol(data.name):
+                for data_fun in data_mod.get_functions_using_param(data):
+                    if data_fun == proc_fun:
+                        continue
+                    snapshot.add_fun(
+                        name=data_fun,
+                        llvm_mod=data_mod,
+                        glob_var=data.name,
+                        tag="using data variable \"{}\"".format(data.name),
+                        group=sysctl)
+                    print("  {}: {} (using data variable \"{}\")".format(
+                        data_fun,
+                        os.path.relpath(data_mod.llvm,
+                                        snapshot.source_tree.source_dir),
+                        data.name))
 
 
 def _get_modules_to_cache(functions, group_name, other_snapshot,
