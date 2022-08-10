@@ -12,35 +12,38 @@ def make_argument_parser():
     sub_ap = ap.add_subparsers(dest="command", metavar="command")
     sub_ap.required = True
 
-    # "generate" sub-command
-    generate_ap = sub_ap.add_parser(
-        "generate",
+    # "build-kernel" sub-command
+    build_kernel_ap = sub_ap.add_parser(
+        "build-kernel",
         help="generate snapshot from Linux kernel")
-    generate_ap.add_argument("source_dir",
-                             help="kernel's root directory")
-    generate_ap.add_argument("output_dir",
-                             help="output directory of the snapshot")
-    generate_ap.add_argument("functions_list",
-                             help="list of functions to compare")
-
-    source_kind = generate_ap.add_mutually_exclusive_group(required=True)
-    source_kind.add_argument(
-        "--kernel-with-builder", action="store_true",
-        help="source is the Linux kernel not pre-built into LLVM IR")
-    source_kind.add_argument(
-        "--single-llvm-file", metavar="FILE",
-        help="source project is built into a single LLVM IR file")
-
-    generate_ap.add_argument(
+    build_kernel_ap.add_argument("source_dir",
+                                 help="kernel's root directory")
+    build_kernel_ap.add_argument("output_dir",
+                                 help="output directory of the snapshot")
+    build_kernel_ap.add_argument("symbol_list",
+                                 help="list of symbols (functions) to compare")
+    build_kernel_ap.add_argument(
         "--sysctl",
         action="store_true",
-        help="function list is a list of sysctl parameters")
-    generate_ap.add_argument(
+        help="interpret symbol list as a list of sysctl parameters")
+    build_kernel_ap.add_argument(
         "--no-source-dir",
         action="store_true",
         help="do not store path to the source kernel directory in snapshot")
+    build_kernel_ap.set_defaults(func=diffkemp.diffkemp.build_kernel)
 
-    generate_ap.set_defaults(func=diffkemp.diffkemp.generate)
+    # "llvm-to-snapshot" sub-command
+    llvm_snapshot_ap = sub_ap.add_parser(
+        "llvm-to-snapshot",
+        help="generate snapshot from a single LLVM IR file")
+    llvm_snapshot_ap.add_argument("source_dir",
+                                  help="project's root directory")
+    llvm_snapshot_ap.add_argument("llvm_file", help="name of the LLVM IR file")
+    llvm_snapshot_ap.add_argument("output_dir",
+                                  help="output directory of the snapshot")
+    llvm_snapshot_ap.add_argument("function_list",
+                                  help="list of functions to compare")
+    llvm_snapshot_ap.set_defaults(func=diffkemp.diffkemp.llvm_to_snapshot)
 
     # "compare" sub-command
     compare_ap = sub_ap.add_parser("compare",
