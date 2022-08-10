@@ -26,38 +26,25 @@ def run_from_cli():
     args.func(args)
 
 
-def generate(args):
+def build_kernel(args):
     """
-    Generate snapshot of sources of the compared functions.
-    This involves:
-      - get LLVM files with function definitions
-      - copy LLVM and C source files into the snapshot directory
-      - create YAML with a list mapping functions to their LLVM sources
+    Create snapshot of a Linux kernel source tree. Kernel sources are
+    compiled into LLVM IR on-the-fly as necessary.
+    Supports two kinds of symbol lists to generate the snapshot from:
+      - list of functions (default)
+      - list of sysctl options
     """
-    # Choose the right LlvmSourceFinder and set the corresponding path to
-    # the file/folder that the finder needs.
-    if args.kernel_with_builder:
-        # Linux kernel to LLVM builder
-        source_finder = KernelLlvmSourceBuilder(args.source_dir)
-        source = KernelSourceTree(args.source_dir, source_finder)
-    elif args.single_llvm_file:
-        # Project pre-built into a single LLVM IR file
-        source_finder = SingleLlvmFinder(args.source_dir,
-                                         args.single_llvm_file)
-        source = SourceTree(args.source_dir, source_finder)
-
-    if args.sysctl:
-        list_kind = "sysctl"
-    else:
-        list_kind = "function"
-
-    # Create a new snapshot from the source directory.
+    # Create a new snapshot from the kernel source directory.
+    source_finder = KernelLlvmSourceBuilder(args.source_dir)
+    source = KernelSourceTree(args.source_dir, source_finder)
+    list_kind = "sysctl" if args.sysctl else "function"
     snapshot = Snapshot.create_from_source(source,
                                            args.output_dir,
                                            list_kind,
                                            not args.no_source_dir)
 
-    symbol_list = read_symbol_list(args.functions_list)
+    # Read the symbol list
+    symbol_list = read_symbol_list(args.symbol_list)
     if not symbol_list:
         sys.stderr.write("ERROR: symbol list is empty or could not be read\n")
         return
@@ -69,6 +56,25 @@ def generate(args):
         generate_from_function_list(snapshot, symbol_list)
 
     # Create the snapshot directory containing the YAML description file
+    snapshot.generate_snapshot_dir()
+    snapshot.finalize()
+
+
+def llvm_to_snapshot(args):
+    """
+    Create snapshot from a project pre-compiled into a single LLVM IR file.
+    :param args: CLI arguments of the "diffkemp llvm-to-snapshot" command.
+    """
+    source_finder = SingleLlvmFinder(args.source_dir, args.llvm_file)
+    source = SourceTree(args.source_dir, source_finder)
+    snapshot = Snapshot.create_from_source(source, args.output_dir, "function")
+
+    function_list = read_symbol_list(args.function_list)
+    if not function_list:
+        sys.stderr.write("ERROR: symbol list is empty or could not be read\n")
+        return
+
+    generate_from_function_list(snapshot, function_list)
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
 
