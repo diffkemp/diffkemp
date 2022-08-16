@@ -45,7 +45,7 @@ kernels are installed.
 
 First, generate snapshots for each kernel version that you need to compare:
 
-    bin/diffkemp generate KERNEL_DIR SNAPSHOT_DIR FUNCTION_LIST --kernel-with-builder
+    bin/diffkemp build-kernel KERNEL_DIR SNAPSHOT_DIR FUNCTION_LIST
 
 The command creates a DiffKemp snapshot for semantic diff of functions from
 `FUNCTION_LIST` for the kernel located in `KERNEL_DIR`. The snapshot is stored
@@ -72,9 +72,9 @@ variables), they will be ignored.
 
 Apart from comparing specific functions, DiffKemp supports comparison of
 semantics of sysctl options. List of the options to compare can be passed as the
-`FUNCTION_LIST` in the `generate` command. In such case, use `--sysctl` switch
-to generate snapshot for sysctl parameter comparison. The `compare` command is
-used in normal way.
+`FUNCTION_LIST` in the `build-kernel` command. In such case, use `--sysctl`
+switch to generate snapshot for sysctl parameter comparison. The `compare`
+command is used in normal way.
 
 Sysctl option comparison compares semantics of the proc handler function and
 semantics of all functions using the data variable that the sysctl option sets.
@@ -93,12 +93,18 @@ of a chosen kernel function or option (module parameter, sysctl) changed between
 two different kernel versions.
 
 The analysis is composed of multiple steps:
-* Generate:
+* Generate snapshot:
     * The source files containing definitions of the compared functions are
       compiled into the LLVM internal representation (LLVM IR).
     * The snapshot is created by copying the compiled LLVM IR files into the
       snapshot directory and by creating a YAML file with the list of functions
       to be compared.
+    * Currently, there are 2 ways for generating snapshots corresponding to the
+      2 supported types of projects:
+      * the Linux kernel (the snapshots are generated using the `build-kernel`
+        command) and
+      * projects that can be entirely built into a single LLVM IR file (the
+        snapshots are generated using the `llvm-to-snapshot` command).
 * Compare:
     * The **SimpLL** component is used to compare the programs for semantic
       equality. The list of functions that are compared as not equal are
