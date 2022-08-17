@@ -320,6 +320,7 @@ class FunctionComparator {
   virtual int cmpTypes(Type *TyL, Type *TyR) const;
 
   virtual int cmpNumbers(uint64_t L, uint64_t R) const;
+  virtual int cmpAligns(Align L, Align R) const;
   virtual int cmpAPInts(const APInt &L, const APInt &R) const;
   virtual int cmpAPFloats(const APFloat &L, const APFloat &R) const;
   virtual int cmpMem(StringRef L, StringRef R) const;

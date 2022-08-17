@@ -1,9 +1,8 @@
 //===- FunctionComparator.h - Function Comparator ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,7 +16,6 @@
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/IR/Attributes.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/IR/ValueMap.h"
@@ -29,6 +27,7 @@
 namespace llvm {
 
 class APFloat;
+class AttributeList;
 class APInt;
 class BasicBlock;
 class Constant;
@@ -66,7 +65,7 @@ class GlobalNumberState {
   // The next unused serial number to assign to a global.
   uint64_t NextNumber = 0;
 
-public:
+  public:
   GlobalNumberState() = default;
 
   virtual uint64_t getNumber(GlobalValue* Global) {
@@ -92,7 +91,7 @@ public:
 /// used if available. The comparator always fails conservatively (erring on the
 /// side of claiming that two functions are different).
 class FunctionComparator {
-public:
+  public:
   FunctionComparator(const Function *F1, const Function *F2,
                      GlobalNumberState* GN)
       : FnL(F1), FnR(F2), GlobalNumbers(GN) {}
@@ -105,7 +104,7 @@ public:
   using FunctionHash = uint64_t;
   static FunctionHash functionHash(Function &);
 
-protected:
+  protected:
   /// Start the comparison.
   virtual void beginCompare() {
     sn_mapL.clear();
@@ -276,7 +275,7 @@ protected:
   /// still must be compared afterwards. In this case it's already guaranteed
   /// that both instructions have the same number of operands.
   virtual int cmpOperations(const Instruction *L, const Instruction *R,
-                            bool &needToCmpOperands) const;
+                    bool &needToCmpOperands) const;
 
   /// cmpType - compares two types,
   /// defines total ordering among the types set.
@@ -321,6 +320,7 @@ protected:
   virtual int cmpTypes(Type *TyL, Type *TyR) const;
 
   virtual int cmpNumbers(uint64_t L, uint64_t R) const;
+  virtual int cmpAligns(Align L, Align R) const;
   virtual int cmpAPInts(const APInt &L, const APInt &R) const;
   virtual int cmpAPFloats(const APFloat &L, const APFloat &R) const;
   virtual int cmpMem(StringRef L, StringRef R) const;
@@ -332,7 +332,7 @@ protected:
   virtual int cmpInlineAsm(const InlineAsm *L, const InlineAsm *R) const;
   virtual int cmpAttrs(const AttributeList L, const AttributeList R) const;
   virtual int cmpRangeMetadata(const MDNode *L, const MDNode *R) const;
-  virtual int cmpOperandBundlesSchema(const Instruction *L, const Instruction *R) const;
+  virtual int cmpOperandBundlesSchema(const CallBase &LCS, const CallBase &RCS) const;
 
   /// Compare two GEPs for equivalent pointer arithmetic.
   /// Parts to be compared for each comparison stage,
@@ -383,7 +383,7 @@ protected:
   /// So it's impossible to use dominance properties in general.
   mutable DenseMap<const Value*, int> sn_mapL, sn_mapR;
 
-private:
+  private:
   // The global state we will use
   GlobalNumberState* GlobalNumbers;
 };
