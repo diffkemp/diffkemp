@@ -17,8 +17,11 @@
 #include <DifferentialFunctionComparator.h>
 #include <ModuleComparator.h>
 #include <ResultsCache.h>
+#include <Utils.h>
 #include <gtest/gtest.h>
 #include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/DebugInfoMetadata.h>
+#include <llvm/IR/IntrinsicInst.h>
 #include <passes/StructureDebugInfoAnalysis.h>
 #include <passes/StructureSizeAnalysis.h>
 
@@ -545,6 +548,25 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
                              {ConstantInt::get(Type::getInt32Ty(CtxR), 42)},
                              "",
                              BBR);
+
+    // Create calls to llvm.dbg.value with type metadata.
+    DIBuilder builderL(ModL);
+    DIBuilder builderR(ModR);
+    DIBasicType *PointeeTypeL = builderL.createNullPtrType();
+    DIBasicType *PointeeTypeR = builderR.createNullPtrType();
+    DIDerivedType *PointerTypeL = builderL.createPointerType(PointeeTypeL, 64);
+    DIDerivedType *PointerTypeR = builderR.createPointerType(PointeeTypeR, 64);
+    DILocalVariable *varL = builderL.createAutoVariable(
+            nullptr, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR = builderR.createAutoVariable(
+            nullptr, "var", nullptr, 0, PointerTypeR);
+    DIExpression *exprL = builderL.createExpression();
+    DIExpression *exprR = builderR.createExpression();
+    DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
+    DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
+    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, BBL);
+    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
+
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 0);
 
     // Create structure types and calls for testing of allocation comparison
@@ -570,8 +592,48 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
                           BBR);
 
     // Add casts to allow cmpAllocs to check whether the structure types match.
+#if LLVM_VERSION_MAJOR < 15
     CastInst *CastL = CastInst::CreateTruncOrBitCast(CL, STyL, "", BBL);
     CastInst *CastR = CastInst::CreateTruncOrBitCast(CR, STyR, "", BBR);
+#endif
+    DIBasicType *Int8TypeL =
+            builderL.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
+    DIBasicType *Int8TypeR =
+            builderR.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
+    DICompositeType *StructTypeL = builderL.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            16,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderL.getOrCreateArray({Int8TypeL, Int8TypeL}));
+    DICompositeType *StructTypeR = builderR.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            24,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
+
+    // Create calls to llvm.dbg.value with type metadata.
+    PointerTypeL = builderL.createPointerType(StructTypeL, 64);
+    PointerTypeR = builderR.createPointerType(StructTypeR, 64);
+    varL = builderL.createAutoVariable(
+            nullptr, "var", nullptr, 0, PointerTypeL);
+    varR = builderR.createAutoVariable(
+            nullptr, "var", nullptr, 0, PointerTypeR);
+    exprL = builderL.createExpression();
+    exprR = builderR.createExpression();
+    locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
+    locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
+    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, BBL);
+    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 0);
 
     // Repeat the test again, but now with different structure types.
@@ -580,18 +642,30 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
                                             Type::getInt8Ty(CtxR)});
     STyR2->setName("struct.test2");
     uint64_t STyR2Size = ModR.getDataLayout().getTypeStoreSize(STyR2);
-    CL = CallInst::Create(AuxFL->getFunctionType(),
-                          AuxFL,
-                          {ConstantInt::get(Type::getInt32Ty(CtxL), STyLSize)},
-                          "",
-                          BBL);
     CR = CallInst::Create(AuxFR->getFunctionType(),
                           AuxFR,
-                          {ConstantInt::get(Type::getInt32Ty(CtxR), STyRSize)},
+                          {ConstantInt::get(Type::getInt32Ty(CtxR), STyR2Size)},
                           "",
                           BBR);
-    CastL = CastInst::CreateTruncOrBitCast(CL, STyL, "", BBL);
+#if LLVM_VERSION_MAJOR < 15
     CastR = CastInst::CreateTruncOrBitCast(CR, STyR2, "", BBR);
+#endif
+
+    // Create calls to llvm.dbg.value with type metadata.
+    StructTypeR = builderR.createStructType(
+            nullptr,
+            "struct.test2",
+            nullptr,
+            0,
+            24,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
+    PointerTypeR = builderR.createPointerType(StructTypeR, 64);
+    varR = builderR.createAutoVariable(
+            nullptr, "var", nullptr, 0, PointerTypeR);
+    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 1);
 }
 
@@ -650,6 +724,47 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
              ConstantInt::get(Type::getInt32Ty(CtxR), STyRSize)},
             "",
             BBR);
+
+    // Create calls to llvm.dbg.value with type metadata.
+    DIBuilder builderL(ModL);
+    DIBuilder builderR(ModR);
+    auto Int8TypeL =
+            builderL.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
+    auto Int8TypeR =
+            builderR.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
+    auto StructTypeL = builderL.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            STyLSize * 8,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderL.getOrCreateArray({Int8TypeL, Int8TypeL}));
+    auto StructTypeR = builderR.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            STyRSize * 8,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
+    auto PointerTypeL = builderL.createPointerType(StructTypeL, 64);
+    auto PointerTypeR = builderR.createPointerType(StructTypeR, 64);
+    DILocalVariable *varL = builderL.createAutoVariable(
+            nullptr, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR = builderR.createAutoVariable(
+            nullptr, "var", nullptr, 0, PointerTypeR);
+    DIExpression *exprL = builderL.createExpression();
+    DIExpression *exprR = builderR.createExpression();
+    DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
+    DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), -1);
 
     // Then test a case when the set value is the same and the arguments differ
@@ -668,6 +783,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
                            ConstantInt::get(Type::getInt32Ty(CtxR), STyRSize)},
                           "",
                           BBR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
 
@@ -1664,4 +1781,56 @@ TEST_F(DifferentialFunctionComparatorTest, CodeRelocationDependency) {
     ReturnInst::Create(CtxR, ConstantInt::get(Type::getInt32Ty(CtxR), 0), BB3R);
 
     ASSERT_EQ(DiffComp->compare(), 1);
+}
+
+TEST_F(DifferentialFunctionComparatorTest, GetCSourceIdentifierType) {
+    // Prepare the necessary infrastructure and a basic llvm value (constant)
+    std::unordered_map<std::string, const DIType *> LocalVariableMap;
+    Function *AuxF = Function::Create(
+            FunctionType::get(Type::getVoidTy(CtxL), {}, false),
+            GlobalValue::ExternalLinkage,
+            "Aux",
+            &ModL);
+    Constant *Val = ConstantInt::get(Type::getInt16Ty(CtxL), 0);
+    DIBuilder Builder(ModL);
+    DIBasicType *BasicType =
+            Builder.createBasicType("int16_t", 16, dwarf::DW_ATE_signed);
+
+    // Local variable, test correct type and debuginfo type
+    LocalVariableMap["Aux::LocVar"] = BasicType;
+    const DIType *ResType =
+            getCSourceIdentifierType("LocVar", AuxF, LocalVariableMap);
+    ASSERT_EQ(ResType, BasicType);
+
+    // Global variable, test correct type and debuginfo type
+    GlobalVariable *GVar = new GlobalVariable(ModL,
+                                              Val->getType(),
+                                              true,
+                                              GlobalValue::ExternalLinkage,
+                                              Val,
+                                              Twine("GlobVar"));
+    DIGlobalVariableExpression *GVE = Builder.createGlobalVariableExpression(
+            nullptr, "GlobVar", "", nullptr, 0, BasicType, false);
+    GVar->addDebugInfo(GVE);
+    ResType = getCSourceIdentifierType("GlobVar", AuxF, LocalVariableMap);
+    ASSERT_EQ(ResType, BasicType);
+
+    // Dereference of a global variable, test correct debuginfo type
+    PointerType *PtrType = PointerType::get(Val->getType(), 0);
+    GlobalVariable *GVarPtr = new GlobalVariable(ModL,
+                                                 PtrType,
+                                                 true,
+                                                 GlobalValue::ExternalLinkage,
+                                                 Val,
+                                                 Twine("GlobVarPtr"));
+    DIDerivedType *DIPtrType = Builder.createPointerType(BasicType, 0);
+    DIGlobalVariableExpression *GVEPtr = Builder.createGlobalVariableExpression(
+            nullptr, "GlobVarPtr", "", nullptr, 0, DIPtrType, false);
+    GVarPtr->addDebugInfo(GVEPtr);
+    ResType = getCSourceIdentifierType("*GlobVarPtr", AuxF, LocalVariableMap);
+    ASSERT_EQ(ResType, BasicType);
+
+    // Reference of a global variable, test correct type
+    ResType = getCSourceIdentifierType("&GlobVar", AuxF, LocalVariableMap);
+    ASSERT_EQ(ResType, DIPtrType);
 }

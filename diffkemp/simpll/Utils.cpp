@@ -16,6 +16,9 @@
 #include "PatternSet.h"
 #include <algorithm>
 #include <iostream>
+#include <llvm/BinaryFormat/Dwarf.h>
+#include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
@@ -262,30 +265,6 @@ std::string valueAsString(const Constant *Val) {
     return "";
 }
 
-/// Extract struct type of the value.
-/// Works if the value is of pointer type which can be even bitcasted.
-/// Returns nullptr if the value is not a struct.
-StructType *getStructType(const Value *Value) {
-    StructType *Type = nullptr;
-    if (auto PtrTy = dyn_cast<PointerType>(Value->getType())) {
-        // Value is a pointer
-        if (auto *StructTy =
-                    dyn_cast<StructType>(PtrTy->getPointerElementType())) {
-            // Value points to a struct
-            Type = StructTy;
-        } else if (auto *BitCast = dyn_cast<BitCastInst>(Value)) {
-            // Value is a bicast, get the original type
-            if (auto *SrcPtrTy = dyn_cast<PointerType>(BitCast->getSrcTy())) {
-                if (auto *SrcStructTy = dyn_cast<StructType>(
-                            SrcPtrTy->getPointerElementType()))
-                    Type = SrcStructTy;
-            }
-        }
-    } else
-        Type = dyn_cast<StructType>(Value->getType());
-    return Type;
-}
-
 /// Run simplification passes on the function
 ///  - simplify CFG
 ///  - dead code elimination
@@ -421,9 +400,11 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
     case Instruction::ExtractElement:
         return ExtractElementInst::Create(Ops[0], Ops[1]);
     case Instruction::InsertValue:
-        return InsertValueInst::Create(Ops[0], Ops[1], CEx->getIndices());
+        return InsertValueInst::Create(
+                Ops[0], Ops[1], dyn_cast<InsertValueInst>(CEx)->getIndices());
     case Instruction::ExtractValue:
-        return ExtractValueInst::Create(Ops[0], CEx->getIndices());
+        return ExtractValueInst::Create(
+                Ops[0], dyn_cast<ExtractValueInst>(CEx)->getIndices());
     case Instruction::ShuffleVector:
         return new ShuffleVectorInst(Ops[0], Ops[1], Ops[2]);
 
@@ -617,60 +598,111 @@ std::string getIdentifierForValue(
         return "<unknown>";
 }
 
-/// Retrieves the type of the value based its C source code expression.
-Type *getCSourceIdentifierType(
-        std::string expr,
-        const Function *Parent,
-        const std::unordered_map<std::string, const Value *>
-                &LocalVariableMap) {
+/// Retrieve information about a structured type being pointed to by a value.
+/// Note: There are two completely different approaches used. Up to LLVM 14,
+/// type information can be obtained directly from the value. Since LLVM 15,
+/// type information is obtained from calls to debug intrinsics.
+TypeInfo getPointeeStructTypeInfo(const Value *Val, const DataLayout *Layout) {
+#if LLVM_VERSION_MAJOR >= 15
+    (void)Layout;
+    // Look for the type of the value in debug intrinsics
+    SmallVector<DbgValueInst *> DbgValues;
+    findDbgValues(DbgValues, const_cast<Value *>(Val));
+    if (DbgValues.empty())
+        return {"", 0};
+    const DIType *Ty = DbgValues[0]->getVariable()->getType();
+
+    // Check if it is a pointer type (derived type)
+    const DIDerivedType *PtrTy = dyn_cast<DIDerivedType>(Ty);
+    if (!PtrTy)
+        return {"", 0};
+
+    // Get the pointee type
+    const DIType *PointeeTy = PtrTy->getBaseType();
+
+    // Check if the pointee type is a structured type (composite type)
+    const DICompositeType *StrTy = dyn_cast<DICompositeType>(PointeeTy);
+    if (!StrTy)
+        return {"", 0};
+
+    return {StrTy->getName(), StrTy->getSizeInBits() / 8};
+#else
+    // Get the type of the value
+    Type *Ty = Val->getType();
+
+    // It may be a pointer type, retrieve the pointee type from it
+    PointerType *PtrTy = dyn_cast<PointerType>(Ty);
+    Type *PointeeTy = PtrTy ? PtrTy->getPointerElementType() : Ty;
+
+    // Check if the pointee type is a structured type
+    StructType *StrTy = dyn_cast<StructType>(PointeeTy);
+    if (!StrTy)
+        return {"", 0};
+
+    return {StrTy->getName(), Layout->getTypeStoreSize(StrTy)};
+#endif
+}
+
+/// Retrieves the type of the value based on its C source code expression.
+const DIType *getCSourceIdentifierType(std::string expr,
+                                       const Function *Parent,
+                                       const LocalVariableMap &LVMap) {
     // First we have to remove pointer operators from the call.
     if (expr[0] == '*') {
         // Dereference operator. Return the original type.
-        Type *Ty = getCSourceIdentifierType(
-                expr.substr(1), Parent, LocalVariableMap);
-        if (!Ty)
+        const DIType *DereferencedTy =
+                getCSourceIdentifierType(expr.substr(1), Parent, LVMap);
+        if (!DereferencedTy || !isa<DIDerivedType>(DereferencedTy))
             return nullptr;
-
-        PointerType *PTy = dyn_cast<PointerType>(Ty);
-        return PTy->getPointerElementType();
-    } else if (expr[0] == '&') {
+        const DIDerivedType *PointerTy =
+                dyn_cast<DIDerivedType>(DereferencedTy);
+        return PointerTy->getBaseType();
+    }
+    if (expr[0] == '&') {
         // Reference operator. Return a pointer type.
-        Type *InnerTy = getCSourceIdentifierType(
-                expr.substr(1), Parent, LocalVariableMap);
-
+        const DIType *ReferencedType =
+                getCSourceIdentifierType(expr.substr(1), Parent, LVMap);
         // Note: assuming von Neumann architecture with single address space.
-        if (!InnerTy)
+        if (!ReferencedType)
             return nullptr;
-        else
-            return PointerType::get(InnerTy, 0);
-    } else {
-        // Determine whether the expression is an identifier at this point.
-        // If not, it is not supported.
-        std::vector<bool> Tmp;
-        std::transform(expr.begin(),
-                       expr.end(),
-                       std::back_inserter(Tmp),
-                       isValidCharForIdentifier);
-        if (!std::accumulate(Tmp.begin(), Tmp.end(), true, [](auto a, auto b) {
-                return a && b;
-            })) {
-            // There are some characters that are not allowed in an identifier.
-            return nullptr;
-        }
-
-        // Now try to look up the identifier first in global variables, then in
-        // local variables.
-        auto Glob = Parent->getParent()->getGlobalVariable(expr);
-        if (Glob)
-            return Glob->getValueType();
-
-        auto Loc = LocalVariableMap.find(Parent->getName().str() + "::" + expr);
-        if (Loc != LocalVariableMap.end())
-            return Loc->second->getType();
-
-        // If everything failed, return null.
+        DIBuilder Builder(*(const_cast<Module *>(Parent->getParent())));
+        return Builder.createPointerType(const_cast<DIType *>(ReferencedType),
+                                         0);
+    }
+    // Determine whether the expression is an identifier at this point.
+    // If not, it is not supported.
+    std::vector<bool> Tmp;
+    std::transform(expr.begin(),
+                   expr.end(),
+                   std::back_inserter(Tmp),
+                   isValidCharForIdentifier);
+    if (!std::accumulate(Tmp.begin(), Tmp.end(), true, [](auto a, auto b) {
+            return a && b;
+        })) {
+        // There are some characters that are not allowed in an identifier.
         return nullptr;
     }
+
+    // Now try to look up the identifier first in global variables, then in
+    // local variables.
+    auto Glob = Parent->getParent()->getGlobalVariable(expr);
+    if (Glob) {
+#if LLVM_VERSION_MAJOR >= 12
+        SmallVector<DIGlobalVariableExpression *> GVs;
+#else
+        SmallVector<DIGlobalVariableExpression *, 1> GVs;
+#endif
+        Glob->getDebugInfo(GVs);
+        if (!GVs.empty())
+            return GVs[0]->getVariable()->getType();
+    }
+
+    auto Loc = LVMap.find(Parent->getName().str() + "::" + expr);
+    if (Loc != LVMap.end())
+        return Loc->second;
+
+    // If everything failed, return null.
+    return nullptr;
 }
 
 /// Copies properties from one call instruction to another.

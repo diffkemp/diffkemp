@@ -18,6 +18,7 @@
 #include "SourceCodeUtils.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <deque>
+#include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
@@ -352,8 +353,13 @@ int DifferentialFunctionComparator::cmpOperations(
                     dyn_cast<AllocaInst>(R)->getAllocatedType());
             if (TypeL && TypeR
                 && TypeL->getStructName() == TypeR->getStructName())
+#if LLVM_VERSION_MAJOR >= 14
+                return cmpAligns(dyn_cast<AllocaInst>(L)->getAlign(),
+                                 dyn_cast<AllocaInst>(R)->getAlign());
+#else
                 return cmpNumbers(dyn_cast<AllocaInst>(L)->getAlignment(),
                                   dyn_cast<AllocaInst>(R)->getAlignment());
+#endif
         }
         // Record inverse conditions
         if (isa<CmpInst>(L) && isa<CmpInst>(R)) {
@@ -439,12 +445,13 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
     }
 }
 
-/// Compare structure size with a constant.
-/// @return 0 if equal, 1 otherwise.
-int DifferentialFunctionComparator::cmpStructTypeSizeWithConstant(
-        StructType *Type, const Value *Const) const {
+/// Compare an integer value with an LLVM constant
+int DifferentialFunctionComparator::cmpIntWithConstant(
+        uint64_t Integer, const Value *Const) const {
+    if (!isa<ConstantInt>(Const))
+        return 1;
     uint64_t ConstValue = dyn_cast<ConstantInt>(Const)->getZExtValue();
-    return ConstValue != LayoutL.getTypeStoreSize(Type);
+    return ConstValue != Integer;
 }
 
 /// Handle comparing of memory allocation function in cases where the size
@@ -457,28 +464,26 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
         return 0;
     }
 
-    // The instruction is a call instrution calling the function kzalloc. Now
-    // look whether the next instruction is a BitCastInst casting to a structure
-    // type.
-    if (!isa<BitCastInst>(CL->getNextNode())
-        || !isa<BitCastInst>(CR->getNextNode()))
-        return 1;
-
     // Check if kzalloc has constant size of the allocated memory
     if (!isa<ConstantInt>(CL->getOperand(0))
         || !isa<ConstantInt>(CR->getOperand(0)))
         return 1;
 
-    // Get the allocated structure types
-    StructType *STyL = getStructType(CL->getNextNode());
-    StructType *STyR = getStructType(CR->getNextNode());
+    // If the next instruction is a bitcast, compare its type instead
+    const Value *ValL =
+            isa<BitCastInst>(CL->getNextNode()) ? CL->getNextNode() : CL;
+    const Value *ValR =
+            isa<BitCastInst>(CR->getNextNode()) ? CR->getNextNode() : CR;
 
-    // Return 0 (equality) if both allocated types are structs of the same name
-    // and each struct has a size equal to the size of the allocated memory.
-    return !STyL || !STyR
-           || cmpStructTypeSizeWithConstant(STyL, CL->getOperand(0))
-           || cmpStructTypeSizeWithConstant(STyR, CR->getOperand(0))
-           || STyL->getStructName() != STyR->getStructName();
+    // Retrieve type names and sizes
+    TypeInfo TypeInfoL = getPointeeStructTypeInfo(ValL, &LayoutL);
+    TypeInfo TypeInfoR = getPointeeStructTypeInfo(ValR, &LayoutR);
+
+    // Compare the names and check if type sizes correspond with allocs
+    return TypeInfoL.Name.empty() || TypeInfoR.Name.empty()
+           || TypeInfoL.Name.compare(TypeInfoR.Name)
+           || cmpIntWithConstant(TypeInfoL.Size, CL->getOperand(0))
+           || cmpIntWithConstant(TypeInfoR.Size, CR->getOperand(0));
 }
 
 /// Check if the given instruction can be ignored (it does not affect
@@ -770,39 +775,9 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
             auto SizeL = ModComparator->StructSizeMapL.find(IntL);
             auto SizeR = ModComparator->StructSizeMapR.find(IntR);
 
-            // Extract the identifiers inside sizeofs
-            auto IdL = getSubstringToMatchingBracket(CArgsL[i], 6);
-            auto IdR = getSubstringToMatchingBracket(CArgsR[i], 6);
-            IdL = IdL.substr(1, IdL.size() - 2);
-            IdR = IdR.substr(1, IdR.size() - 2);
-
-            auto TyIdL = getCSourceIdentifierType(
-                    IdL, BBL->getParent(), DI->LocalVariableMapL);
-            auto TyIdR = getCSourceIdentifierType(
-                    IdR, BBR->getParent(), DI->LocalVariableMapR);
-
-            // If the types are structure types, prepare their names for
-            // comparison. (Use different generic names for non-structure
-            // types.)
-            // Note: since the sizeof is different the types would likely be
-            // also compared as different using cmpTypes.
-            auto TyIdLName =
-                    TyIdL && TyIdL->isStructTy()
-                            ? dyn_cast<StructType>(TyIdL)->getStructName()
-                            : "Type 1";
-            auto TyIdRName =
-                    TyIdR && TyIdR->isStructTy()
-                            ? dyn_cast<StructType>(TyIdR)->getStructName()
-                            : "Type 2";
-
-            // In case both values belong to the sizes of the same structure or
-            // the original types were found and their names (in the case of
-            // structure types) are the same, compare the sizeof as equal.
-            if ((SizeL != ModComparator->StructSizeMapL.end()
-                 && SizeR != ModComparator->StructSizeMapR.end()
-                 && SizeL->second == SizeR->second)
-                || (TyIdL != nullptr && TyIdR != nullptr
-                    && (!cmpTypes(TyIdL, TyIdR) || TyIdLName == TyIdRName))) {
+            if (SizeL != ModComparator->StructSizeMapL.end()
+                && SizeR != ModComparator->StructSizeMapR.end()
+                && SizeL->second == SizeR->second) {
                 DEBUG_WITH_TYPE(
                         DEBUG_SIMPLL,
                         dbgs() << getDebugIndent()
@@ -810,9 +785,29 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
                                << "correspondence to structure type sizes\n");
                 return 0;
             }
+
+            // Extract the identifiers inside sizeofs
+            auto IdL = getSubstringToMatchingBracket(CArgsL[i], 6);
+            auto IdR = getSubstringToMatchingBracket(CArgsR[i], 6);
+            IdL = IdL.substr(1, IdL.size() - 2);
+            IdR = IdR.substr(1, IdR.size() - 2);
+
+            const DIType *DITypeL = getCSourceIdentifierType(
+                    IdL, BBL->getParent(), DI->LocalVariableMapL);
+            const DIType *DITypeR = getCSourceIdentifierType(
+                    IdR, BBR->getParent(), DI->LocalVariableMapR);
+
+            if (DITypeL && DITypeR
+                && DITypeL->getName() == DITypeR->getName()) {
+                DEBUG_WITH_TYPE(
+                        DEBUG_SIMPLL,
+                        dbgs() << getDebugIndent()
+                               << "Comparing integers as equal because of"
+                               << "correspondence of structure names\n");
+                return 0;
+            }
         }
     }
-
     return 1;
 }
 
@@ -1517,19 +1512,31 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
             return Res;
     }
 
+    // If the structure sizes are equal, we can end right away
     if (!cmpValues(CL->getArgOperand(2), CR->getArgOperand(2)))
         return 0;
 
-    // Get the struct types of memset destinations.
-    StructType *STyL = getStructType(CL->getOperand(0));
-    StructType *STyR = getStructType(CR->getOperand(0));
+    // Get the destination pointers
+    const Value *destL = CL->getArgOperand(0);
+    const Value *destR = CR->getArgOperand(0);
+
+    // If the destination is a bitcast, compare the original source value
+    const Value *ValL = isa<BitCastInst>(destL)
+                                ? dyn_cast<BitCastInst>(destL)->getOperand(0)
+                                : destL;
+    const Value *ValR = isa<BitCastInst>(destR)
+                                ? dyn_cast<BitCastInst>(destR)->getOperand(0)
+                                : destR;
+
+    TypeInfo TypeInfoL = getPointeeStructTypeInfo(ValL, &LayoutL);
+    TypeInfo TypeInfoR = getPointeeStructTypeInfo(ValR, &LayoutR);
 
     // Return 0 (equality) if both memory destinations are structs of the same
     // name and each memset size is equal to the corresponding struct size.
-    return !STyL || !STyR
-           || cmpStructTypeSizeWithConstant(STyL, CL->getOperand(2))
-           || cmpStructTypeSizeWithConstant(STyR, CR->getOperand(2))
-           || STyL->getStructName() != STyR->getStructName();
+    return TypeInfoL.Name.empty() || TypeInfoR.Name.empty()
+           || TypeInfoL.Name.compare(TypeInfoR.Name)
+           || cmpIntWithConstant(TypeInfoL.Size, CL->getOperand(2))
+           || cmpIntWithConstant(TypeInfoR.Size, CR->getOperand(2));
 }
 
 /// Comparing PHI instructions.
