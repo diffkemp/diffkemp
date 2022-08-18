@@ -88,6 +88,9 @@ std::vector<std::string>
         if (!Sysctl || Sysctl->getNumOperands() == 0)
             continue;
 
+#if LLVM_VERSION_MAJOR >= 15
+        auto GVar = dyn_cast<GlobalVariable>(Sysctl->getOperand(0));
+#else
         // Sysctl option name is the first element of the entry.
         auto GEP = dyn_cast<GEPOperator>(Sysctl->getOperand(0));
         if (!GEP)
@@ -95,6 +98,7 @@ std::vector<std::string>
 
         // Sysctl name is a constant string stored inside a global variable.
         auto GVar = dyn_cast<GlobalVariable>(GEP->getOperand(0));
+#endif
         if (!GVar)
             continue;
         auto StringConst =

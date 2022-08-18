@@ -1,5 +1,6 @@
 """Unit tests for working with sysctl modules."""
 
+from diffkemp.utils import get_llvm_version
 import pytest
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
@@ -32,9 +33,11 @@ def test_get_data(mod):
     assert data.name == "net_ratelimit_state"
     assert data.indices == [8]
     # Data variable with GEP (without bitcast)
+    # Note: The GEP is missing (redundant) when opaque pointers are enabled
     data = mod.get_data("netdev_rss_key")
     assert data.name == "netdev_rss_key"
-    assert data.indices == [0, 0]
+    if get_llvm_version() < 15:
+        assert data.indices == [0, 0]
 
 
 def test_get_child():
