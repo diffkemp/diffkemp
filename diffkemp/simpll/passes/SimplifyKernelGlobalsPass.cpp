@@ -53,11 +53,16 @@ PreservedAnalyses
         std::vector<Constant *> newValues;
 
         for (Value *C : Used->operands()) {
-            // The element is always a bitcast.
-            ConstantExpr *CE = dyn_cast<ConstantExpr>(C);
+            // The element may be a bitcast.
+            StringRef Name;
+            if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C)) {
+                Name = CE->getOperand(0)->getName();
+            } else {
+                Name = C->getName();
+            }
 
-            // Check whether the bitcast is a kernel symbol
-            if (!CE->getOperand(0)->getName().startswith("__ksym"))
+            // Check whether the element is a kernel symbol
+            if (!Name.startswith("__ksym"))
                 newValues.push_back(dyn_cast<Constant>(C));
         }
 

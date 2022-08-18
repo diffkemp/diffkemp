@@ -110,21 +110,20 @@ TEST(SimplifyKernelGlobalsPass, KSymRemoval) {
     ASSERT_FALSE(Mod->getGlobalVariable("__ksym_test_3"));
     ASSERT_EQ(Mod->getGlobalVariable("ksym_test_3"), GV3);
 
-    // Check the uses of GV3 (if there are two or more, it means the initializer
-    // of GV4 wasn't removed properly).
-    ASSERT_EQ(++GV3->uses().begin(), GV3->uses().end());
+    // Check the uses of GV3 (there should be no struct initializer)
+    for (auto &Use : GV3->uses()) {
+        ASSERT_NE(Use.getUser()->getType(), StrTy);
+    }
 
     // Check llvm.used (only GV3 should be in the initializer).
-    auto TestUsedGV = Mod->getGlobalVariable("llvm.used");
-    ASSERT_TRUE(TestUsedGV);
-    ASSERT_TRUE(TestUsedGV->hasInitializer());
-    auto TestUsedArray = dyn_cast<ConstantArray>(TestUsedGV->getInitializer());
-    ASSERT_TRUE(TestUsedArray);
-    ASSERT_EQ(TestUsedArray->getNumOperands(), 1);
-    auto TestCast = dyn_cast<ConstantExpr>(TestUsedArray->getOperand(0));
-    ASSERT_TRUE(TestCast);
-    ASSERT_EQ(TestCast->getOpcode(), Instruction::BitCast);
-    ASSERT_EQ(TestCast->getOperand(0), GV3);
+#if LLVM_VERSION_MAJOR >= 13
+    SmallVector<GlobalValue *> UsedGlobals;
+#else
+    SmallPtrSet<GlobalValue *, 1> UsedGlobals;
+#endif
+    collectUsedGlobalVariables(*Mod, UsedGlobals, false);
+    ASSERT_NE(UsedGlobals.begin(), UsedGlobals.end());
+    ASSERT_EQ(*UsedGlobals.begin(), GV3);
 }
 
 /// Tests merging of compile time assert functions.
