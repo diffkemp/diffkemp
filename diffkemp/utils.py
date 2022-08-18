@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 
 def get_simpll_build_dir():
@@ -10,3 +11,11 @@ def get_simpll_build_dir():
     if build_dir_var in os.environ:
         return os.environ[build_dir_var]
     return "build"
+
+
+def get_llvm_version():
+    """
+    Return the current LLVM major version number.
+    """
+    return int(subprocess.check_output(
+        ["llvm-config", "--version"]).decode().rstrip().split(".")[0])

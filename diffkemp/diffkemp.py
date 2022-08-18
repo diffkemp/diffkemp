@@ -13,13 +13,13 @@ from diffkemp.semdiff.pattern_config import PatternConfig
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from subprocess import check_call, CalledProcessError
+from diffkemp.utils import get_llvm_version
 from tempfile import mkdtemp
 from timeit import default_timer
 import errno
 import os
 import re
 import sys
-import subprocess
 
 
 def run_from_cli():
@@ -323,8 +323,7 @@ def compare(args):
     new_snapshot = Snapshot.load_from_dir(args.snapshot_dir_new)
 
     # Check if snapshot LLVM versions are compatible with the current version
-    llvm_version = subprocess.check_output(
-        ["llvm-config", "--version"]).decode().rstrip().split(".")[0]
+    llvm_version = get_llvm_version()
 
     if llvm_version != old_snapshot.llvm_version:
         sys.stderr.write(
