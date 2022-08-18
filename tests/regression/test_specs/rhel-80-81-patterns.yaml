@@ -1,7 +1,9 @@
 old_kernel: kernel/linux-4.18.0-80.el8
 new_kernel: kernel/linux-4.18.0-147.el8
 
-pattern_config: rhel-80-81-config.yaml
+pattern_config: 
+  explicit: rhel-80-81-config-explicit.yaml
+  opaque: rhel-80-81-config-opaque.yaml
 
 functions:
   ipmi_set_gets_events: equal
