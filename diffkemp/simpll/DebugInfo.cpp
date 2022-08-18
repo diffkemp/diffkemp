@@ -14,6 +14,7 @@
 #include "DebugInfo.h"
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/InstIterator.h>
 #include <llvm/Passes/PassBuilder.h>
 
 using namespace llvm;
@@ -411,30 +412,23 @@ void DebugInfo::collectMacrosWithValue(const Constant *Val) {
 }
 
 /// Find all local variables and create a map from their names to their
-/// values.
-void DebugInfo::collectLocalVariables(
-        std::set<const Function *> &Called,
-        std::unordered_map<std::string, const Value *> &Map) {
+/// debuginfo types.
+void DebugInfo::collectLocalVariables(std::set<const Function *> &Called,
+                                      LocalVariableMap &Map) {
     for (auto Fun : Called) {
         for (auto &BB : *Fun) {
             for (auto &Inst : BB) {
-                if (!isa<CallInst>(Inst))
-                    continue;
-                auto CInst = dyn_cast<CallInst>(&Inst);
-                if (!getCalledFunction(CInst)->getName().startswith("llvm.dbg"))
+                auto DebugCall = dyn_cast<DbgVariableIntrinsic>(&Inst);
+                if (!DebugCall)
                     continue;
 
-                // Get the value name and the value itself.
-                auto WrappedVal = CInst->getOperand(0);
-                auto ValMD =
-                        dyn_cast<MetadataAsValue>(WrappedVal)->getMetadata();
-                auto Val = dyn_cast<ValueAsMetadata>(ValMD);
-                if (!Val)
+                auto DIVar = DebugCall->getVariable();
+                if (!DIVar)
                     continue;
-                auto DIVal = dyn_cast<MetadataAsValue>(CInst->getOperand(1));
-                auto DI = dyn_cast<DILocalVariable>(DIVal->getMetadata());
-                auto Name = Fun->getName().str() + "::" + DI->getName().str();
-                Map[Name] = Val->getValue();
+
+                auto Name =
+                        Fun->getName().str() + "::" + DIVar->getName().str();
+                Map[Name] = DIVar->getType();
             }
         }
     }

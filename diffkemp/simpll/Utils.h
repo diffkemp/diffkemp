@@ -26,6 +26,12 @@ using namespace llvm;
 /// Enumeration type to easy distinguishing between the compared programs.
 enum Program { First, Second };
 
+/// A structure containing basic type information: its name and size in bytes
+struct TypeInfo {
+    StringRef Name;
+    uint64_t Size;
+};
+
 typedef std::pair<Function *, Function *> FunPair;
 typedef std::pair<const Function *, const Function *> ConstFunPair;
 typedef std::pair<const GlobalValue *, const GlobalValue *> GlobalValuePair;
@@ -36,6 +42,9 @@ typedef SmallPtrSet<const Instruction *, 32> InstructionSet;
 
 /// Instruction to instruction mapping.
 typedef DenseMap<const Instruction *, const Instruction *> InstructionMap;
+
+/// Variable name to debug info type mapping.
+typedef std::unordered_map<std::string, const DIType *> LocalVariableMap;
 
 /// Program to string
 std::string programName(Program p);
@@ -105,10 +114,6 @@ void simplifyFunction(Function *Fun);
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val);
 
-/// Extract struct type of the value.
-/// Works if the value is of pointer type which can be even bitcasted.
-StructType *getStructType(const Value *Value);
-
 /// Removes empty attribute sets from an attribute list.
 AttributeList cleanAttributeList(AttributeList AL, LLVMContext &Context);
 
@@ -138,10 +143,9 @@ void findAndReplace(std::string &input, std::string find, std::string replace);
 const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx);
 
 /// Retrives type of the value based its C source code identifier.
-Type *getCSourceIdentifierType(
-        std::string expr,
-        const Function *Parent,
-        const std::unordered_map<std::string, const Value *> &LocalVariableMap);
+const DIType *getCSourceIdentifierType(std::string expr,
+                                       const Function *Parent,
+                                       const LocalVariableMap &LVMap);
 
 /// Generates human-readable C-like identifier for type.
 std::string getIdentifierForType(Type *Ty);
@@ -193,5 +197,8 @@ std::string makeYellow(std::string text);
 
 /// Return LLVM struct type of the given name
 StructType *getTypeByName(const Module &Mod, StringRef Name);
+
+/// Retrieve information about a structured type being pointed to by a value
+TypeInfo getPointeeStructTypeInfo(const Value *Val, const DataLayout *Layout);
 
 #endif // DIFFKEMP_SIMPLL_UTILS_H

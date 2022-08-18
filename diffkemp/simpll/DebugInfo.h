@@ -68,9 +68,9 @@ class DebugInfo {
     /// to corresponding values in the second module.
     std::map<const Constant *, std::string> MacroConstantMap;
 
-    /// Maps local variable names to their values.
-    std::unordered_map<std::string, const Value *> LocalVariableMapL;
-    std::unordered_map<std::string, const Value *> LocalVariableMapR;
+    /// Maps local variable names to their values and types.
+    LocalVariableMap LocalVariableMapL;
+    LocalVariableMap LocalVariableMapR;
 
   private:
     Function *FunFirst;
@@ -104,10 +104,9 @@ class DebugInfo {
     void collectMacrosWithValue(const Constant *Val);
 
     /// Find all local variables and create a map from their names to their
-    /// values.
-    void collectLocalVariables(
-            std::set<const Function *> &Called,
-            std::unordered_map<std::string, const Value *> &Map);
+    /// values and types.
+    void collectLocalVariables(std::set<const Function *> &Called,
+                               LocalVariableMap &Map);
 
     /// Add an alignment of macros if it exists
     /// \param MacroName Name of the macro in the second module

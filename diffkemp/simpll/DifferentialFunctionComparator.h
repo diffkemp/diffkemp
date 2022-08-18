@@ -113,9 +113,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     int cmpConstants(const Constant *L, const Constant *R) const override;
     /// Specific comarison of memcpy instructions
     int cmpMemset(const CallInst *CL, const CallInst *CR) const;
-    /// Comparing of a structure size with a constant
-    int cmpStructTypeSizeWithConstant(StructType *Type,
-                                      const Value *Const) const;
+    /// Compare and integer value with and LLVM constant
+    int cmpIntWithConstant(uint64_t Integer, const Value *Const) const;
     /// Comparing PHI instructions
     int cmpPHIs(const PHINode *PhiL, const PHINode *PhiR) const;
     /// Try to find a matching instruction that has been moved forward in one of
