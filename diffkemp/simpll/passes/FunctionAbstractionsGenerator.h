@@ -43,7 +43,7 @@ class FunctionAbstractionsGenerator
   protected:
     /// Hash of the abstraction function to be used in the function map.
     /// \param Fun Called value (can be a value or an inline assembly).
-    std::string funHash(Value *Fun);
+    std::string funHash(CallInst *Fun);
 
     /// Prefix of the abstraction function.
     /// \param Fun Called value (can be a value or an inline assembly).

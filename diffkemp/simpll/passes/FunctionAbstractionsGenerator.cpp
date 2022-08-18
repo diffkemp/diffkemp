@@ -55,7 +55,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
 
                     // Retrieve function from the hash map if it has already
                     // been created or create a new one.
-                    std::string hash = funHash(Callee);
+                    std::string hash = funHash(CallInstr);
                     auto funAbstr = funAbstractions.find(hash);
                     Function *newFun;
 
@@ -124,9 +124,9 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
 /// A hash that uniquely identifies an indirect function or an inline asm.
 /// It contains the string representing the function type, and for inline asm
 /// also the assembly parameters and code.
-std::string FunctionAbstractionsGenerator::funHash(Value *Fun) {
-    std::string result = typeName(Fun->getType());
-    if (auto inlineAsm = dyn_cast<InlineAsm>(Fun)) {
+std::string FunctionAbstractionsGenerator::funHash(CallInst *Call) {
+    std::string result = typeName(Call->getFunctionType());
+    if (auto inlineAsm = dyn_cast<InlineAsm>(getCallee(Call))) {
         result += "$" + inlineAsm->getAsmString() + "$"
                   + inlineAsm->getConstraintString();
     }
@@ -146,8 +146,8 @@ std::string FunctionAbstractionsGenerator::abstractionPrefix(Value *Fun) {
 /// \param DestName Name of the other of the functions.
 /// \return True if the swap was successful.
 bool trySwap(FunctionAbstractionsGenerator::FunMap &Map,
-             const std::string SrcHash,
-             const std::string DestName) {
+             const std::string &SrcHash,
+             const std::string &DestName) {
     for (auto &Fun : Map) {
         if (Fun.second->getName() == DestName) {
             const std::string srcName =
