@@ -8,13 +8,13 @@ from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
+from diffkemp.utils import get_llvm_version
 import datetime
 import os
 import pkg_resources
 import shutil
 import sys
 import yaml
-import subprocess
 
 
 class Snapshot:
@@ -249,8 +249,7 @@ class Snapshot:
         # Create the top level YAML structure.
         yaml_dict = [{
             "diffkemp_version": pkg_resources.require("diffkemp")[0].version,
-            "llvm_version": subprocess.check_output(
-                ["llvm-config", "--version"]).decode().rstrip().split(".")[0],
+            "llvm_version": get_llvm_version(),
             "created_time": datetime.datetime.now(datetime.timezone.utc),
             "list_kind": self.list_kind,
             "list": fun_yaml_dict,

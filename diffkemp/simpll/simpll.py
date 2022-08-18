@@ -5,7 +5,7 @@ from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.simpll.library import SimpLLModule
 from diffkemp.simpll.simpll_lib import ffi, lib
-from diffkemp.simpll.utils import get_simpll_build_dir
+from diffkemp.utils import get_simpll_build_dir
 import os
 from subprocess import check_call, check_output, CalledProcessError
 import yaml

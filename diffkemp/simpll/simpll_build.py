@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from cffi import FFI
 from subprocess import check_output
-from diffkemp.simpll.utils import get_simpll_build_dir
+from diffkemp.utils import get_simpll_build_dir
 
 
 def get_c_declarations(header_filename):

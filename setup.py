@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from diffkemp.simpll.utils import get_simpll_build_dir
+from diffkemp.utils import get_simpll_build_dir
 import subprocess
 
 setup(name="diffkemp",

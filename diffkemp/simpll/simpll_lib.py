@@ -1,5 +1,5 @@
 import sys
-from diffkemp.simpll.utils import get_simpll_build_dir
+from diffkemp.utils import get_simpll_build_dir
 
 # Dynamically import the SimpLL C extension module.
 # This way, we can prettily import the module objects into other files.
