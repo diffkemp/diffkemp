@@ -26,6 +26,8 @@
 /// the first two in various ways with different casts.
 /// Finally the pass is run on the main function and the pass results are
 /// checked.
+/// Note: The test becomes deprecated with opaque pointers.
+#if LLVM_VERSION_MAJOR < 15
 TEST(SeparateCallsToBitcastPassTest, Base) {
     LLVMContext Ctx;
     Module *Mod = new Module("test", Ctx);
@@ -213,3 +215,4 @@ TEST(SeparateCallsToBitcastPassTest, Base) {
     ++Iter;
     ASSERT_EQ(Iter, BB->end());
 }
+#endif

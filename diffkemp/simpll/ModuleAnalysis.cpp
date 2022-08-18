@@ -92,8 +92,9 @@ void preprocessModule(Module &Mod,
     fpm.addPass(DCEPass{});
     fpm.addPass(LowerExpectIntrinsicPass{});
     fpm.addPass(ReduceFunctionMetadataPass{});
+#if LLVM_VERSION_MAJOR < 15
     fpm.addPass(SeparateCallsToBitcastPass{});
-
+#endif
     for (auto &Fun : Mod)
         fpm.run(Fun, fam);
 
