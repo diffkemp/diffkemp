@@ -9,6 +9,7 @@ from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.semdiff.pattern_config import PatternConfig
 from diffkemp.semdiff.result import Result
 from diffkemp.snapshot import Snapshot
+from diffkemp.utils import get_llvm_version
 
 
 base_path = os.path.abspath(".")
@@ -44,8 +45,12 @@ class TaskSpec:
         self.name = task_name
         self.task_dir = os.path.join(tasks_path, task_name)
         if "pattern_config" in spec:
+            if get_llvm_version() >= 15:
+                config_filename = spec["pattern_config"]["opaque"]
+            else:
+                config_filename = spec["pattern_config"]["explicit"]
             self.pattern_config = PatternConfig.create_from_file(
-                path=os.path.join(patterns_path, spec["pattern_config"]),
+                path=os.path.join(patterns_path, config_filename),
                 patterns_path=base_path
             )
         else:
