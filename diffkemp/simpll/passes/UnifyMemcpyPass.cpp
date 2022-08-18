@@ -63,7 +63,7 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                     }
 #else
                     for (int i : {0, 1}) {
-                        if (Call->getParamAlign(i) == 0) {
+                        if (Call->getParamAlign(i) == MaybeAlign(0)) {
                             Call->removeParamAttr(i, Attribute::Alignment);
                             Call->addParamAttr(
                                     i,

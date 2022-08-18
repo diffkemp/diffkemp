@@ -89,8 +89,8 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     ASSERT_EQ(TestCall1->getParamAlignment(0), 1);
     ASSERT_EQ(TestCall1->getParamAlignment(1), 1);
 #else
-    ASSERT_EQ(TestCall1->getParamAlign(0), 1);
-    ASSERT_EQ(TestCall1->getParamAlign(1), 1);
+    ASSERT_EQ(TestCall1->getParamAlign(0), MaybeAlign(1));
+    ASSERT_EQ(TestCall1->getParamAlign(1), MaybeAlign(1));
 #endif
     ++Iter;
 
@@ -112,8 +112,8 @@ TEST(UnifyMemcpyPassTest, AlignmentUnification) {
     ASSERT_EQ(TestCall2->getParamAlignment(0), 2);
     ASSERT_EQ(TestCall2->getParamAlignment(1), 2);
 #else
-    ASSERT_EQ(TestCall2->getParamAlign(0), 2);
-    ASSERT_EQ(TestCall2->getParamAlign(1), 2);
+    ASSERT_EQ(TestCall2->getParamAlign(0), MaybeAlign(2));
+    ASSERT_EQ(TestCall2->getParamAlign(1), MaybeAlign(2));
 #endif
     ++Iter;
 
