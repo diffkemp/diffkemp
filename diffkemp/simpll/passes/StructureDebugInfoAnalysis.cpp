@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "StructureDebugInfoAnalysis.h"
+#include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/DebugInfoMetadata.h>
 
 AnalysisKey StructureDebugInfoAnalysis::Key;
