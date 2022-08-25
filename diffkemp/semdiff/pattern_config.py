@@ -1,5 +1,6 @@
 """Configuration for difference code patterns."""
 from subprocess import check_call, CalledProcessError, DEVNULL
+from diffkemp.utils import get_llvm_version
 import os
 import yaml
 
@@ -117,7 +118,13 @@ class PatternConfig:
         """
         try:
             # Ensure that the pattern is valid.
-            check_call(["opt", "-verify", path], stdout=DEVNULL)
+            # Note: Possibly due to a bug in `opt`, some valid LLVM IR
+            # files with opaque pointers are not accepted when using
+            # LLVM 15 without manually enabling opaque pointers.
+            call_opt = ["opt", "-verify", path]
+            if get_llvm_version() >= 15:
+                call_opt.append("-opaque-pointers=1")
+            check_call(call_opt, stdout=DEVNULL)
         except CalledProcessError:
             self._on_parse_failure(f"failed to parse pattern file {path}")
 
