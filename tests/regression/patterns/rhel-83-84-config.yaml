@@ -1,0 +1,3 @@
+on_parse_failure: ERROR
+patterns:
+ - tests/regression/patterns/llvm/rhel-83-84/wait_for_completion.ll

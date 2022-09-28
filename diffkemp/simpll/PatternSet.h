@@ -43,8 +43,22 @@ struct PatternMetadata {
     bool GroupStart = false;
     /// End of the previous instruction group.
     bool GroupEnd = false;
-    /// Disables the default name-based comparison of globals and structures.
+    /// Global arbitrary constant associated with a GEP instruction. GEP
+    /// instructions with an associated  constant have use arbitrary structure
+    /// index.
+    const Constant *ArbitraryGEPConst = nullptr;
+    /// Regular expressions that can be used during function name comparison.
+    /// Each expression has to be mapped to a global constant for verification
+    /// purposes.
+    std::vector<std::pair<std::string, const Constant *>> FunctionNameRegexes;
+    /// Enables the name-based comparison of globals and structures. Default.
+    bool EnableNameComparison = false;
+    /// Disables the name-based comparison of globals and structures.
     bool DisableNameComparison = false;
+    /// Enables alignment comparison.
+    bool EnableAlignComparison = false;
+    /// Disables alignment comparison. Default.
+    bool DisableAlignComparison = false;
     /// Does not register the instruction as an input.
     bool NotAnInput = false;
     /// Disables detection of value patterns, making them instruction based.
@@ -61,11 +75,14 @@ struct PatternConfiguration {
 
 /// Base pattern representation.
 struct Pattern {
-    /// Input instructions and arguments.
-    using InputSet = SmallPtrSet<const Value *, 16>;
+    /// Small set of values.
+    using ValueSet = SmallPtrSet<const Value *, 16>;
 
-    /// Mapping between input values from different pattern sides.
-    using InputMap = DenseMap<const Value *, const Value *>;
+    /// Mapping between pattern matched values.
+    using ValueMap = DenseMap<const Value *, const Value *>;
+
+    /// Mapping between arbitrary types and their module counterparts.
+    using TypeMap = DenseMap<const Type *, Type *>;
 
     /// Name of the pattern.
     const std::string Name;
@@ -90,13 +107,16 @@ struct InstPattern : public Pattern {
     /// Map of all included pattern metadata.
     mutable std::unordered_map<const Value *, PatternMetadata> MetadataMap;
     /// Input instructions and arguments for the left part of the pattern.
-    mutable InputSet InputL;
+    mutable ValueSet InputL;
     /// Input instructions and arguments for the right part of the pattern.
-    mutable InputSet InputR;
+    mutable ValueSet InputR;
     /// Mapping of input arguments from new to old part of the pattern.
-    mutable InputMap ArgumentMapping;
+    mutable ValueMap ArgumentMapping;
     /// Output mapping of instructions from the pattern.
     mutable InstructionMap OutputMapping;
+    /// Arbitrary pattern values mapped to the corresponding arbitrary
+    /// constants.
+    mutable DenseMap<const Value *, const Constant *> ArbitraryValues;
     /// Comparison start position for the left part of the pattern.
     const Instruction *StartPositionL = nullptr;
     /// Comparison start position for the right part of the pattern.
@@ -167,6 +187,10 @@ class PatternSet {
     static const std::string OutputMappingFunName;
     /// Name for pattern metadata nodes.
     static const std::string MetadataName;
+    /// Name for constants that represent an arbitrary value.
+    static const std::string ArbitraryValueConstName;
+    /// Structure name representing an arbitrary type.
+    static const std::string ArbitraryTypeStructName;
     /// Set of loaded instruction difference patterns.
     std::unordered_set<InstPattern> InstPatterns;
     /// Set of loaded value difference patterns.

@@ -26,15 +26,12 @@ PreservedAnalyses
     std::unordered_map<std::string, std::vector<Function *>> GroupingMap;
 
     // Go over all called functions and put them into the map. Functions without
-    // a suffix are included, too, because there may be variants that have it.
+    // suffixes are included, too, because there may be variants that have it.
     for (Function &Fun : Mod) {
         if (isSimpllAbstraction(&Fun) || Fun.getName().startswith("llvm."))
             // Do not merge LLVM intrinsics and SimpLL abstractions.
             continue;
-        std::string originalName = Fun.getName().str();
-        std::string strippedName = hasSuffix(originalName)
-                                           ? dropSuffix(originalName)
-                                           : originalName;
+        std::string strippedName = dropSuffixes(Fun.getName().str());
         GroupingMap[strippedName].push_back(&Fun);
     }
 
@@ -54,10 +51,9 @@ PreservedAnalyses
             (*F)->eraseFromParent();
         }
 
-        // If FirstF has a suffix, drop it to ensure that the suffix won't end
-        // up anywhere in the output of SimpLL.
-        auto name = FirstF->getName().str();
-        name = hasSuffix(name) ? dropSuffix(name) : name;
+        // If FirstF has suffixes, drop them to ensure that they won't end up
+        // anywhere in the output of SimpLL.
+        auto name = dropSuffixes(FirstF->getName().str());
         FirstF->setName(name);
     }
 

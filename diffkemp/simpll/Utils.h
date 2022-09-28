@@ -70,8 +70,8 @@ void deleteAliasToFun(Module &Mod, Function *Fun);
 /// Check if an LLVM name has a .<NUMBER> suffix.
 bool hasSuffix(std::string Name);
 
-/// Drop the .<NUMBER> suffix from the LLVM name.
-std::string dropSuffix(std::string Name);
+/// Drop the .<NUMBER> suffixes from the LLVM name.
+std::string dropSuffixes(std::string Name);
 
 /// Join directory path with a filename in case the filename does not already
 /// contain the directory.

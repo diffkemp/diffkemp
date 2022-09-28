@@ -144,10 +144,11 @@ bool hasSuffix(std::string Name) {
                || Name.substr(dotPos) == ".void");
 }
 
-/// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned
-/// true for the name.
-std::string dropSuffix(std::string Name) {
-    return Name.substr(0, Name.find_last_of('.'));
+/// Remove all dot ('.') suffixes containing only numbers.
+std::string dropSuffixes(std::string Name) {
+    while (hasSuffix(Name))
+        Name = Name.substr(0, Name.find_last_of('.'));
+    return Name;
 }
 
 /// Join directory path with a filename in case the filename does not already
@@ -734,8 +735,8 @@ void copyFunctionProperties(Function *srcFun, Function *destFun) {
 /// are the same or if the DiffKemp pattern name prefixes are used.
 bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
     // Remove number suffixes
-    std::string NameL = hasSuffix(L.str()) ? dropSuffix(L.str()) : L.str();
-    std::string NameR = hasSuffix(R.str()) ? dropSuffix(R.str()) : R.str();
+    std::string NameL = dropSuffixes(L.str());
+    std::string NameR = dropSuffixes(R.str());
 
     // Compare the names themselves.
     if (NameL == NameR)
