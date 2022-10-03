@@ -229,14 +229,16 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
         DICompileUnit *DCUL =
                 builderL.createCompileUnit(0, DScoL, "test", false, "", 0);
         DSubL = builderL.createFunction(
-                DScoL, "test", "test", DScoL, 1, nullptr, 1);
+                DCUL, "test", "test", DScoL, 1, nullptr, 1);
+        builderL.finalizeSubprogram(DSubL);
 
         DIBuilder builderR(ModR);
         DIFile *DScoR = builderR.createFile("test", "test");
         DICompileUnit *DCUR =
                 builderR.createCompileUnit(0, DScoR, "test", false, "", 0);
         DSubR = builderR.createFunction(
-                DScoR, "test", "test", DScoR, 1, nullptr, 1);
+                DCUR, "test", "test", DScoR, 1, nullptr, 1);
+        builderL.finalizeSubprogram(DSubR);
     }
 
     /// Compares two functions using cmpGlobalValues called through
@@ -461,12 +463,14 @@ TEST_F(DifferentialFunctionComparatorTest, CmpOperationsICmp) {
     BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
 
     GlobalVariable *GVL =
-            new GlobalVariable(Type::getInt8Ty(CtxL),
+            new GlobalVariable(ModL,
+                               Type::getInt8Ty(CtxL),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxL), 6));
     GlobalVariable *GVR =
-            new GlobalVariable(Type::getInt8Ty(CtxR),
+            new GlobalVariable(ModR,
+                               Type::getInt8Ty(CtxR),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxR), 6));
@@ -479,6 +483,9 @@ TEST_F(DifferentialFunctionComparatorTest, CmpOperationsICmp) {
     ASSERT_EQ(DiffComp->testCmpOperations(ICmpL, ICmpR, needToCmpOperands), -1);
     Conf.ControlFlowOnly = true;
     ASSERT_EQ(DiffComp->testCmpOperations(ICmpL, ICmpR, needToCmpOperands), 0);
+
+    ICmpL->eraseFromParent();
+    ICmpR->eraseFromParent();
 }
 
 /// Tests specific comparison of allocas of a structure type whose layout
@@ -846,17 +853,20 @@ TEST_F(DifferentialFunctionComparatorTest, CmpBasicBlocksIgnore) {
 /// Tests the comparison of constant global variables using cmpGlobalValues.
 TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesConstGlobalVars) {
     GlobalVariable *GVL1 =
-            new GlobalVariable(Type::getInt8Ty(CtxL),
+            new GlobalVariable(ModL,
+                               Type::getInt8Ty(CtxL),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxL), 6));
     GlobalVariable *GVR1 =
-            new GlobalVariable(Type::getInt8Ty(CtxR),
+            new GlobalVariable(ModR,
+                               Type::getInt8Ty(CtxR),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxR), 6));
     GlobalVariable *GVR2 =
-            new GlobalVariable(Type::getInt8Ty(CtxR),
+            new GlobalVariable(ModR,
+                               Type::getInt8Ty(CtxR),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxR), 5));
@@ -868,19 +878,22 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesConstGlobalVars) {
 /// Tests the comparison of non-constant global variables using cmpGlobalValues.
 TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesNonConstGlobalVars) {
     GlobalVariable *GVL1 =
-            new GlobalVariable(Type::getInt8Ty(CtxL),
+            new GlobalVariable(ModL,
+                               Type::getInt8Ty(CtxL),
                                false,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxL), 6),
                                "test.0");
     GlobalVariable *GVR1 =
-            new GlobalVariable(Type::getInt8Ty(CtxR),
+            new GlobalVariable(ModR,
+                               Type::getInt8Ty(CtxR),
                                false,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxR), 6),
                                "test.1");
     GlobalVariable *GVR2 =
-            new GlobalVariable(Type::getInt8Ty(CtxR),
+            new GlobalVariable(ModR,
+                               Type::getInt8Ty(CtxR),
                                false,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxR), 6),
@@ -928,11 +941,17 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFunctions) {
 /// using cmpGlobalValues (they should be added to the list of missing
 /// definitions).
 TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesMissingDefs) {
-    GlobalVariable *GVL1 = new GlobalVariable(
-            Type::getInt8Ty(CtxL), true, GlobalValue::ExternalLinkage);
+    GlobalVariable *GVL1 = new GlobalVariable(ModL,
+                                              Type::getInt8Ty(CtxL),
+                                              true,
+                                              GlobalValue::ExternalLinkage,
+                                              nullptr);
     GVL1->setName("missing");
-    GlobalVariable *GVR1 = new GlobalVariable(
-            Type::getInt8Ty(CtxR), true, GlobalValue::ExternalLinkage);
+    GlobalVariable *GVR1 = new GlobalVariable(ModR,
+                                              Type::getInt8Ty(CtxR),
+                                              true,
+                                              GlobalValue::ExternalLinkage,
+                                              nullptr);
     GVR1->setName("missing2");
     ASSERT_EQ(DiffComp->testCmpGlobalValues(GVL1, GVR1), 1);
     ASSERT_EQ(ModComp->MissingDefs.size(), 1);
@@ -1040,7 +1059,6 @@ TEST_F(DifferentialFunctionComparatorTest, CmpValuesIntExt) {
     DiffComp->testCmpBasicBlocks(BBL, BBR);
     ASSERT_EQ(DiffComp->testCmpValues(CastL, ConstR), 0);
 
-    CastL->eraseFromParent();
     RetL->eraseFromParent();
     RetR->eraseFromParent();
 
