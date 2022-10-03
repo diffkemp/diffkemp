@@ -22,6 +22,11 @@ file(GLOB library library/*.cpp)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fpic -Wall -Wextra")
 
+if (${SANITIZE_ADDRESS})
+  add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address -fno-omit-frame-pointer)
+endif()
+
 exec_program(llvm-config ARGS --libs irreader passes support OUTPUT_VARIABLE llvm_libs)
 exec_program(llvm-config ARGS --system-libs OUTPUT_VARIABLE system_libs)
 string(STRIP ${system_libs} system_libs)

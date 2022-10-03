@@ -12,6 +12,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 include(GNUInstallDirs)
 
+option(SANITIZE_ADDRESS "Enable address sanitizer" OFF)
+
 add_subdirectory(diffkemp/simpll)
 
 option(BUILD_LLREVE "Build the LLReve tool for semantic comparison" OFF)

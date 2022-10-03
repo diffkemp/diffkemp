@@ -14,6 +14,11 @@ add_subdirectory("${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
 # Disable RTTI to link with SimpLL correctly.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fvisibility=hidden")
 
+if (${SANITIZE_ADDRESS})
+  add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address -fno-omit-frame-pointer)
+endif()
+
 enable_testing()
 
 include_directories(${CMAKE_SOURCE_DIR}/diffkemp/simpll)
