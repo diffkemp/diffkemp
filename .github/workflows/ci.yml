@@ -24,12 +24,23 @@ jobs:
         env:
           - CC: gcc-9
             CXX: g++-9
+        asan: [OFF]
+        regression-tests: [true]
 
         include:
           - llvm: 14
             env:
               CC: clang
               CXX: clang++
+            asan: OFF
+            regression-tests: true
+
+          - llvm: 14
+            env:
+              CC: gcc-9
+              CXX: g++-9
+            asan: ON
+            regression-tests: false
 
     steps:
       - uses: actions/checkout@v2
@@ -56,10 +67,12 @@ jobs:
           echo "/usr/lib/llvm-${{ matrix.llvm }}/bin" >> $GITHUB_PATH
 
       - name: Set GCC Version for Kernel Builds
+        if: matrix.regression-tests
         run: |
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100
 
       - name: Cache Linux Kernels
+        if: matrix.regression-tests
         id: kernel-cache
         uses: actions/cache@v2
         with:
@@ -67,7 +80,7 @@ jobs:
           key: kernels-${{ env.KERNELS }}
 
       - name: Obtain Linux Kernels
-        if: steps.kernel-cache.outputs.cache-hit != 'true'
+        if: steps.kernel-cache.outputs.cache-hit != 'true' && matrix.regression-tests
         working-directory: ${{ github.workspace }}
         run: |
           mkdir -p ${{ github.workspace }}/kernel
@@ -78,7 +91,7 @@ jobs:
           done
       
       - name: Clean Linux Kernels
-        if: steps.kernel-cache.outputs.cache-hit == 'true'
+        if: steps.kernel-cache.outputs.cache-hit == 'true' && matrix.regression-tests
         working-directory: ${{ github.workspace }}/kernel
         run: find -name *.ll -delete
 
@@ -90,7 +103,7 @@ jobs:
         env: ${{ matrix.env }}
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: cmake $GITHUB_WORKSPACE -GNinja
+        run: cmake $GITHUB_WORKSPACE -GNinja -DSANITIZE_ADDRESS=${{ matrix.asan }}
 
       - name: Build
         env: ${{ matrix.env }}
@@ -102,10 +115,15 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pip3 install -e .
 
-      - name: Run Tests
+      - name: Run Unit Tests
         working-directory: ${{ github.workspace }}
         run: |
           tests/unit_tests/simpll/runTests
+
+      - name: Run Regression Tests
+        if: matrix.regression-tests
+        working-directory: ${{ github.workspace }}
+        run: |
           pytest tests
 
   code-style:
