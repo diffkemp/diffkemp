@@ -767,7 +767,7 @@ void VarDependencySlicer::changeToVoid(Function &Fun) {
 
     // Rename functions
     // New function gets original name. Old functions gets ".old" suffix.
-    auto Name = Fun.getName();
+    std::string Name = Fun.getName().str();
     Fun.setName(Name + ".old");
     NewFun->setName(Name);
 }
