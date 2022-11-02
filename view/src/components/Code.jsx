@@ -1,0 +1,94 @@
+// Visualisation of code of function.
+// Author: Lukas Petr
+
+import { useState, useEffect } from 'react';
+import path from 'path-browserify';
+
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+
+import DiffViewWrapper from './DiffViewWrapper';
+
+/**
+ * Code/function preparation and visualisation.
+ * @param {Object} props
+ * @param {Object} props.specification - Specification of code to be shown.
+ * @param {string} props.specification.oldSrc - Path to the source file in which
+ *                                              is located old version of function.
+ * @param {string} props.specification.newSrc - Path to source file of the
+ *                                              new version of function.
+ * @param {string} props.specification.diff - Path to file with diff of function.
+ * @param {Number} props.specification.oldStart - The file line number where the old version
+ *                                                of the function starts.
+ * @param {Number} props.specification.newStart - The file line number for the new version.
+ * @param {Number} props.specification.oldEnd - The file line number where the old version
+ *                                              of the function ends.
+ * @param {Number} [props.specification.calling] - Tuple (old, new) of line numbers where are called
+ *                                                 next functions which should be highlighted
+ *                                                 or undefined if it is differing function.
+ * @param {string} props.oldFolder - Name of snapshot folder with old version of project.
+ * @param {string} props.newFolder - Name of snapshot folder with new version of project.
+ * @param {Function} props.getFile - Function for getting file.
+ * @returns Return code visualisation component.
+ */
+export default function Code({
+  specification, oldFolder, newFolder, getFile,
+}) {
+  const [oldCode, setOldCode] = useState(null);
+  const [diff, setDiff] = useState(null);
+  // Getting content of source and diff file.
+  useEffect(() => {
+    // variable for handling race conditions
+    let ignoreFetchedFiles = false;
+
+    const getOldCode = async () => {
+      const oldCodeFile = await getFile(specification.oldSrc);
+      if (ignoreFetchedFiles) return;
+      setOldCode(oldCodeFile);
+    };
+    const getDiff = async () => {
+      const diffFile = await getFile(specification.diff);
+      if (ignoreFetchedFiles) return;
+      setDiff(diffFile);
+    };
+
+    if (specification) {
+      getOldCode();
+      if (specification.diff) {
+        getDiff();
+      } else {
+        setDiff('');
+      }
+    }
+    return () => {
+      ignoreFetchedFiles = true;
+    };
+  }, [specification, getFile]);
+
+  if (oldCode === null || diff == null) {
+    return null;
+  }
+  return (
+    <div>
+      {/* showing info about location of file */}
+      <Row className="py-2 border border-primary rounded-top text-bg-primary">
+        <Col>{path.join(oldFolder, specification.oldSrc)}</Col>
+        <Col>{path.join(newFolder, specification.newSrc)}</Col>
+      </Row>
+      {/* showing code of function */}
+      <Row className="border border-primary rounded-bottom p-1">
+        <DiffViewWrapper
+          oldCode={oldCode}
+          diff={diff}
+          oldStart={specification.oldStart}
+          newStart={specification.newStart}
+          oldEnd={specification.oldEnd}
+          showDiff={specification.calling === undefined}
+          linesToShow={specification.calling === undefined
+            ? null
+            : specification.calling}
+        />
+      </Row>
+    </div>
+  );
+}

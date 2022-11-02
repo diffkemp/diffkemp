@@ -1,0 +1,75 @@
+/* Appearance of result viewer */
+/* Author: Lukas Petr */
+
+#root {
+    font-size: 12px;
+    /* overriding react-diff-view default values */
+    --diff-code-selected-background-color: #ffffb3;
+    --diff-gutter-selected-background-color: #ffff99;
+    --diff-font-family: ui-monospace, "Consolas", "Monaco", "DejaVu Sans Mono",
+        monospace;
+    --diff-code-insert-background-color: #e6ffe6;
+    --diff-gutter-insert-background-color: #ccffcc;
+    --diff-code-delete-background-color: #ffe6e6;
+    --diff-gutter-delete-background-color: #ffcccc;
+}
+
+h2 {
+    font-size: 18px;
+}
+
+.diff {
+    font-size: 11.5px;
+}
+
+.diff-gutter-col {
+    background-color: rgb(250, 250, 250);
+}
+
+.result-nav {
+    font-size: 14px;
+}
+
+.result-nav a {
+    text-decoration: none !important;
+}
+
+.diff-view-expand-button {
+    width: 100%;
+    text-align: center;
+    line-height: 25px;
+    color: rgb(159, 159, 255);
+    background-color: rgb(238, 238, 238);
+    border: none;
+}
+
+/* overriding color of differences if we do not want to highlight them*/
+.do-not-show-diff .diff-code-delete,
+.do-not-show-diff .diff-code-insert,
+.do-not-show-diff .diff-gutter-delete,
+.do-not-show-diff .diff-gutter-insert {
+    background-color: initial;
+}
+/* overring to highlight selected lines even if there is difference in them*/
+.diff-code-selected {
+    background-color: var(--diff-code-selected-background-color) !important;
+}
+.diff-gutter-selected {
+    background-color: var(--diff-gutter-selected-background-color) !important;
+}
+
+.callstack-call {
+    /* showing only part of a name of call which fit in the callstack */
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
+/* when cursor is over callstack expanding it to show whole names of all calls */
+.callstack-calls:hover {
+    position: relative;
+    min-width: fit-content;
+    z-index: 1;
+}
+
+.list-group-item-action {
+    cursor: pointer;
+}
