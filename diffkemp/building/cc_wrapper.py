@@ -35,7 +35,7 @@ def get_cc_wrapper_path(no_native_cc_wrapper=False):
     :param no_native_cc_wrapper: Always use wrapper source file
     """
     # Note: this function is ignored by RPython
-    from diffkemp.simpll.utils import get_simpll_build_dir
+    from diffkemp.utils import get_simpll_build_dir
     wrapper_exe = os.path.join(os.path.abspath(get_simpll_build_dir()),
                                "cc_wrapper-c")
     if os.path.exists(wrapper_exe) and not no_native_cc_wrapper:
