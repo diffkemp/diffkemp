@@ -2,21 +2,43 @@
 
 # DiffKemp
 
-DiffKemp is a tool for automatic static analysis of semantic differences between
-different versions of the Linux kernel.
+DiffKemp is a framework for automatic static analysis of semantic differences
+between different versions of projects written in C, with main focus on the
+Linux kernel.
+
+The main use-case of DiffKemp is to compare selected functions and configuration
+options in two versions of a project and to report any discovered semantic
+differences.
+
+## About
+
+The main focus of DiffKemp is high scalability, such that it can be applied to
+large-scale projects containing a lot of code. To achieve that, the analysed
+functions are first compiled into LLVM IR, then several code transformations are
+applied, and finally the comparison itself is performed.
+
+Wherever possible, DiffKemp tries to compare instruction-by-instruction (on LLVM
+IR instructions) which is typically sufficient for most of the code. When not
+sufficient, DiffKemp tries to apply one of the built-in or user-supplied
+*semantics-preserving patterns*. If a semantic difference is still discovered,
+the relevant diffs are reported to the user.
+
+Note that DiffKemp is incomplete it its nature, hence may provide false positive
+results (i.e. claiming that functions are not equivalent even though they are).
+This especially happens with complex refactorings.
 
 ## Installation
 
-There are two options to install the project, either build from source or use a
+There are two options to install DiffKemp, either build from source or use a
 prepared RPM package for Fedora.
 
 ### Install from source
 
 Currently, DiffKemp runs on Linux and needs the following software installed:
-* Clang and LLVM (supported versions are 9, 10, 11, 12, 13, and 14)
+* Clang and LLVM (supported versions are 9, 10, 11, 12, 13, 14, 15)
 * Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 * Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
-* CScope
+* CScope (when comparing versions of the Linux kernel)
 
 Additionally, to build manually, you need to install the following tools:
 * CMake
@@ -32,6 +54,8 @@ Build can be done by running:
 
     pip install -e .
 
+The DiffKemp binary is then located in `bin/diffkemp`.
+
 ### Install from RPM
 
 Alternatively, you can use a prepared RPM package for Fedora that can be
@@ -39,40 +63,61 @@ installed from our Copr repository:
 [https://copr.fedorainfracloud.org/coprs/viktormalik/diffkemp/](https://copr.fedorainfracloud.org/coprs/viktormalik/diffkemp/)
 
 ## Usage
-DiffKemp assumes that the compared kernel versions are properly configured (by
-running `make prepare`) and that all the tools necessary for building the
-kernels are installed.
+DiffKemp runs in two phases:
 
-First, generate snapshots for each kernel version that you need to compare:
+- **Snapshot generation** compiles the compared project versions into LLVM IR
+  and creates so-called *snapshots* which contain the relevant LLVM IR files and
+  additional metadata.
 
-    bin/diffkemp build-kernel KERNEL_DIR SNAPSHOT_DIR FUNCTION_LIST
+  There are several options for snapshot generation:
+  - ```
+    diffkemp build PROJ_DIR SNAPSHOT_DIR [SYMBOL_LIST]
+    ```
+    is the default snapshot generation command for `make`-based projects. It
+    takes the project located in `PROJ_DIR`, builds it into LLVM IR, and creates
+    a snapshot for comparing semantics of functions from `SYMBOL_LIST` (if no
+    list is given, all exported functions from the project are considered). The
+    snapshot is stored in `SNAPSHOT_DIR`. Warning: if `SNAPSHOT_DIR` exists, it
+    will be rewritten.
 
-The command creates a DiffKemp snapshot for semantic diff of functions from
-`FUNCTION_LIST` for the kernel located in `KERNEL_DIR`. The snapshot is stored
-as a directory `SNAPSHOT_DIR`. Warning - if `SNAPSHOT_DIR` exists, it will be
-rewritten.
+    The command should be run twice, once for each of the compared versions.  It
+    also has additional options to configure the project build, see `diffkemp
+    build --help` for the complete list.
 
-After that, run the actual semantic comparison:
+  - ```
+    diffkemp build-kernel KERNEL_DIR SNAPSHOT_DIR SYMBOL_LIST
+    ```
+    is a command similar to `build` which is specialized for building snapshots
+    from the Linux kernel. Its main advantage is that it does not build the
+    entire kernel, only the files containing functions from `SYMBOL_LIST`. The
+    kernel source to build must be properly configured (by `make prepare`) and
+    all the tools necessary for building kernel must be installed.
 
-    bin/diffkemp compare SNAPSHOT_DIR_1 SNAPSHOT_DIR_2 --show-diff
+  - ```
+    diffkemp llvm-to-snapshot PROJ_DIR LLVM_FILE SNAPSHOT_DIR SYMBOL_LIST
+    ```
+    can be used if the project is already compiled into a single LLVM IR file.
+    The file name is given in `LLVM_FILE` and must be relative to `PROJ_DIR`.
+    The remaining options are the same as for the other commands.
 
-The command compares functions from function lists stored inside the snapshots
-pairwise and prints syntactic diffs (thanks to the `--syntax-diff` option) of
-functions that are semantically different.
+- **Semantic comparison** takes two snapshots and compares them for semantic
+  equality. It is invoked via:
+  ```
+  diffkemp compare SNAPSHOT_DIR_1 SNAPSHOT_DIR_2
+  ```
 
-The diffs are stored in separate files (one file for each compared function that
-is different) in a newly created directory. The name of the directory can be
-specified using the `-o` option, otherwise it is generated automatically. Using
-the `--stdout` option causes the diffs to be printed to standard output.
-
-Note: if `FUNCTION_LIST` contains any symbols other than functions (e.g. global
-variables), they will be ignored.
+  To show syntactic diffs of the discovered differences, use the `--syntax-diff`
+  option. The diffs are stored in separate files (one file for each compared
+  function that is different) in a newly created directory. The name of the
+  directory can be specified using the `-o` option, otherwise it is generated
+  automatically. The `--stdout` option causes the diffs to be printed to
+  standard output.
 
 ### Comparing sysctl options
 
 Apart from comparing specific functions, DiffKemp supports comparison of
-semantics of sysctl options. List of the options to compare can be passed as the
-`FUNCTION_LIST` in the `build-kernel` command. In such case, use `--sysctl`
+semantics of sysctl options. The list of the options to compare can be passed
+via `SYMBOL_LIST` to the `build-kernel` command. In such case, use `--sysctl`
 switch to generate snapshot for sysctl parameter comparison. The `compare`
 command is used in normal way.
 
@@ -87,47 +132,24 @@ once such as:
 Currently, these sysctl option groups are supported: `kernel.*`,
 `vm.*`, `fs.*`, `net.core.*`, `net.ipv4.conf.*`.
 
-## About
-The tool uses static analysis methods to automatically determine how the effect
-of a chosen kernel function or option (module parameter, sysctl) changed between
-two different kernel versions.
+## Important implementation details
 
-The analysis is composed of multiple steps:
-* Generate snapshot:
-    * The source files containing definitions of the compared functions are
-      compiled into the LLVM internal representation (LLVM IR).
-    * The snapshot is created by copying the compiled LLVM IR files into the
-      snapshot directory and by creating a YAML file with the list of functions
-      to be compared.
-    * Currently, there are 2 ways for generating snapshots corresponding to the
-      2 supported types of projects:
-      * the Linux kernel (the snapshots are generated using the `build-kernel`
-        command) and
-      * projects that can be entirely built into a single LLVM IR file (the
-        snapshots are generated using the `llvm-to-snapshot` command).
-* Compare:
-    * The **SimpLL** component is used to compare the programs for semantic
-      equality. The list of functions that are compared as not equal are
-      returned.
-    * For all functions and macros that are found to be semantically different,
-      result of the standard `diff` command is shown.
+The core of DiffKemp is the *SimpLL* component, written in C++ for performance
+reasons. The user inputs and comparison results are handled by Python for
+simplicity. SimpLL performs several important steps:
 
-## Components
-* Kernel source builder: finding and building kernel source files into LLVM IR.
-  * Sources with function definitions are found using CScope.
-  * C sources are built into LLVM IR by checking the commands that are run by
-    KBuild for building that file and by replacing GCC by Clang in the command.
-* SimpLL: Comparison of programs for syntactic and simple semantic equivalence.
-  Does the following steps:
-  * Simplification of the compared programs. Multiple transformations are
-    applied:
-      * If comparing kernel options, slicing out the code that is not influenced
-        by the value of the given option.
-      * Dead code elimination.
-      * Removal of code dependent on line numbers, file names, etc.
-      * ... and many others.
-  * Comparing programs for semantic equality. Programs are mostly compared
-    instruction-by-instruction.
+- Simplification of the compared programs by applying multiple code
+  transformations such as dead code elimination, indirect calls abstraction,
+  etc.
+- Debug info parsing to collect information important for the comparison.
+  DiffKemp needs the analysed project to be built with debugging information in
+  order to work properly.
+- The comparison itself is mostly done instruction-by-instruction. In addition,
+  DiffKemp handles semantics-preserving changes that adhere to one of the
+  built-in patterns. Additional patterns can be specified manually and passed to
+  the `compare` command.
+- See publications on the bottom of this page for futher information on DiffKemp
+  internals.
 
 ## Development
 
@@ -192,8 +214,15 @@ order:
 ## Publications and talks
 
 There is a number of publications and talks related to DiffKemp:
-- ICST'21 [paper](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9438578)
-  and [talk](https://zenodo.org/record/4658966):
-  Malík, V., Vojnar, T.: Automatically Checking Semantic Equivalence between
-  Versions of Large-Scale C Projects + the related
-- [DevConf.CZ'19 talk](https://www.youtube.com/watch?v=PUZSaLf9exg)
+- ICST'21 [paper](https://ieeexplore.ieee.org/document/9438578)
+  and [talk](https://zenodo.org/record/4658966):  
+  V. Malík and T. Vojnar, "Automatically Checking Semantic Equivalence between
+  Versions of Large-Scale C Projects," 2021 14th IEEE Conference on Software
+  Testing, Verification and Validation (ICST), 2021, pp. 329-339.
+- NETYS'22
+  [paper](https://link.springer.com/chapter/10.1007/978-3-031-17436-0_18) and
+  [talk](https://www.youtube.com/watch?v=FPOUfgorF8s):  
+  Malík, V., Šilling, P., Vojnar, T. (2022). Applying Custom Patterns in
+  Semantic Equality Analysis. In: Koulali, MA., Mezini, M. (eds) Networked
+  Systems. NETYS 2022.
+- [DevConf.CZ'19 talk](https://www.youtube.com/watch?v=PUZSaLf9exg).
