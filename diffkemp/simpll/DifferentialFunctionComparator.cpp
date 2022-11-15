@@ -844,8 +844,12 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
 
         if ((&InstL->getDebugLoc())->get())
             CurrentLocL = &InstL->getDebugLoc();
+        else
+            CurrentLocL = nullptr;
         if ((&InstR->getDebugLoc())->get())
             CurrentLocR = &InstR->getDebugLoc();
+        else
+            CurrentLocR = nullptr;
 
         if (int Res = cmpOperationsWithOperands(&*InstL, &*InstR)) {
             // Detect a difference caused by a field access change that does
@@ -1118,9 +1122,13 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                     // Store the called functions into the current
                     // functions' callee set.
                     ModComparator->ComparedFuns.at({FnL, FnR})
-                            .First.addCall(FunL, CurrentLocL->getLine());
+                            .First.addCall(FunL,
+                                           CurrentLocL ? CurrentLocL->getLine()
+                                                       : 0);
                     ModComparator->ComparedFuns.at({FnL, FnR})
-                            .Second.addCall(FunR, CurrentLocR->getLine());
+                            .Second.addCall(FunR,
+                                            CurrentLocR ? CurrentLocR->getLine()
+                                                        : 0);
                     if (ModComparator->ComparedFuns.find({FunL, FunR})
                         == ModComparator->ComparedFuns.end())
                         ModComparator->compareFunctions(FunL, FunR);
