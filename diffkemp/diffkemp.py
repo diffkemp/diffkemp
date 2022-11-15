@@ -365,7 +365,7 @@ def compare(args):
     config = Config(old_snapshot, new_snapshot, args.show_diff,
                     args.output_llvm_ir, pattern_config,
                     args.control_flow_only, args.print_asm_diffs,
-                    args.verbose, args.enable_simpll_ffi,
+                    args.verbose, not args.disable_simpll_ffi,
                     args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old, start_time=default_timer())

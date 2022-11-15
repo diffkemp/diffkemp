@@ -121,13 +121,12 @@ def make_argument_parser():
                             help="show functions that are either unknown or \
                             ended with an error in statistics",
                             action="store_true")
-    compare_ap.add_argument("--enable-simpll-ffi",
-                            help="calls SimpLL through FFI",
+    compare_ap.add_argument("--disable-simpll-ffi",
+                            help="call SimpLL through binary (for debugging)",
                             action="store_true")
     compare_ap.add_argument("--enable-module-cache",
                             help="loads frequently used modules to memory and \
-                            uses them in SimpLL (requires SimpLL FFI to be \
-                            enabled)",
+                            uses them in SimpLL",
                             action="store_true")
     compare_ap.set_defaults(func=diffkemp.diffkemp.compare)
     return ap
