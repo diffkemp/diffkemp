@@ -91,15 +91,14 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
              ++idx, indices.push_back(*idx)) {
             auto indexedType = GEP->getIndexedType(GEP->getSourceElementType(),
                                                    ArrayRef<Value *>(indices));
+            if (!indexedType || !indexedType->isStructTy())
+                continue;
 
             Type *indexedTypeOther = nullptr;
             if (OtherGEP)
                 indexedTypeOther = OtherGEP->getIndexedType(
                         OtherGEP->getSourceElementType(),
                         ArrayRef<Value *>(indicesOther));
-
-            if (!indexedType->isStructTy())
-                continue;
 
             if (indexedTypeOther && !indexedTypeOther->isStructTy()) {
                 // The type in the corresponding GEP instruction is different,
