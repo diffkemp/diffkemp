@@ -1,7 +1,7 @@
 Name:           diffkemp
-Version:        0.3.0
+Version:        0.4.0
 Release:        1%{?dist}
-Summary:        A tool for analyzing differences in kernel functions
+Summary:        A tool for analyzing semantic differences in C projects
 
 License:        ASL 2.0
 URL:            https://github.com/viktormalik/diffkemp
@@ -23,11 +23,11 @@ Requires:       python3-setuptools
 %{?python_enable_dependency_generator}
 
 %description
-DiffKemp is a tool for finding changes in semantics of various parts of the
-Linux kernel between different kernel versions. It allows to compare semantics
-of functions and of sysctl kernel parameters. The comparison is based on static
-analysis of the source code that is translated into the LLVM intermediate
-representation.
+DiffKemp is a tool for finding changes in semantics between versions of C
+projects, with the main focus on the Linux kernel. It allows to compare
+semantics of functions and of sysctl kernel parameters. The comparison is based
+on static analysis of the source code that is translated into the LLVM
+intermediate representation.
 
 
 %prep
@@ -69,11 +69,20 @@ tests/unit_tests/simpll/runTests
 %{_bindir}/%{name}-cc-wrapper.py
 # SimpLL (C++ part)
 %{_bindir}/%{name}
-%{_bindir}/%{name}-simpll
 %{_libdir}/libsimpll-lib.so
 
 
 %changelog
+* Wed Nov 23 2022 Viktor Malik <vmalik@redhat.com> - 0.4.0-1
+- Reworked CLI interface (generate split into multiple commands)
+- New command for analysing any Makefile-based projects
+- Support for LLVM 14 and 15
+- SimpLL used as a library by default
+- Support for custom patterns
+- Handling code relocations
+- Improved handling of inverse branching conditions
+- Prevent analysing snapshots with other LLVM version
+
 * Mon Feb 28 2022 Viktor Malik <vmalik@redhat.com> - 0.3.0-1
 - Improved CLI interface
 - Support analysis of projects built into a single LLVM IR file
