@@ -4,7 +4,7 @@ import os
 import subprocess
 
 setup(name="diffkemp",
-      version="0.3.0",
+      version="0.4.0",
       description="A tool for semantic difference analysis of kernel functions",
       author="Viktor Malik",
       author_email="vmalik@redhat.com",
