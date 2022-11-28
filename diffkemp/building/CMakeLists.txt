@@ -1,4 +1,15 @@
+# Try to find RPython as:
+# - standalone executable (rpython)
+# - Python2 module (python2 -m rpython)
 find_program(RPYTHON rpython)
+if (NOT RPYTHON)
+  execute_process(COMMAND python2 -m rpython --help
+                  RESULT_VARIABLE HAVE_RPYTHON_MODULE
+                  OUTPUT_QUIET ERROR_QUIET)
+  if (${HAVE_RPYTHON_MODULE} EQUAL 0)
+    set(RPYTHON python2 -m rpython)
+  endif ()
+endif ()
 set(CC_WRAPPER_SOURCE "${CMAKE_SOURCE_DIR}/diffkemp/building/cc_wrapper.py")
 add_custom_target(cc-wrapper-source ALL DEPENDS ${CC_WRAPPER_SOURCE})
 install(PROGRAMS ${CC_WRAPPER_SOURCE} RENAME diffkemp-cc-wrapper.py DESTINATION ${CMAKE_INSTALL_BINDIR})
