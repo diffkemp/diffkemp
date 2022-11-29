@@ -5,8 +5,11 @@ result.
 
 from subprocess import check_output, CalledProcessError
 from tempfile import mkdtemp
+from diffkemp.utils import get_end_line, EndLineNotFound
 
 import os
+
+DIFF_NOT_OBTAINED_MESSAGE = "  [could not obtain diff]\n"
 
 
 def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
@@ -15,37 +18,28 @@ def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
     command = ["diff", "-C", "1", os.path.join(tmpdir, "1"),
                os.path.join(tmpdir, "2")]
 
-    if kind == "function":
-        terminator_list = ["}", ");"]
-    elif kind == "type":
-        terminator_list = ["};"]
-
     # Use the provided arguments "first_line" and "second_line" that contain
     # the lines on which the function starts in each file to extract both
     # functions into temporary files
     for filename in [first_file, second_file]:
         tmp_file = "1" if filename == first_file else "2"
+        start = first_line if filename == first_file else second_line
+
+        try:
+            end = get_end_line(filename, start, kind)
+        except (UnicodeDecodeError, EndLineNotFound):
+            return DIFF_NOT_OBTAINED_MESSAGE
+
         with open(filename, "r", encoding='utf-8') as input_file, \
                 open(os.path.join(tmpdir, tmp_file), "w",
                      encoding='utf-8') as output_file:
             try:
                 lines = input_file.readlines()
             except UnicodeDecodeError:
-                return "  [could not obtain diff]\n"
+                return DIFF_NOT_OBTAINED_MESSAGE
 
-            start = first_line if filename == first_file else second_line
-
-            # The end of the function is detected as a line that contains
-            # nothing but an ending curly bracket
-            line_index = start - 1
-            line = lines[line_index]
-            while line.rstrip() not in terminator_list:
-                line_index += 1
-                if line_index == len(lines):
-                    return "Error: cannot get diff\n"
+            for line in lines[start - 1:end]:
                 output_file.write(line)
-                line = lines[line_index]
-            output_file.write(line)
 
     # check_output fails when the two files are different due to the error code
     # (1), which in fact signalizes success; the exception has to be caught and

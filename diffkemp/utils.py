@@ -38,3 +38,36 @@ def get_opt_command(passes, llvm_file, overwrite=True):
     if overwrite:
         opt_command.extend(["-S", "-o", llvm_file])
     return opt_command
+
+
+class EndLineNotFound(Exception):
+    """
+    Error to inform that end line of function / type was not found.
+    """
+    pass
+
+
+def get_end_line(filename, start, kind):
+    """
+    Get number of line where function / type ends.
+    Can raise UnicodeDecodeError, EndLineError.
+    """
+
+    if kind == "function":
+        terminator_list = ["}", ");"]
+    elif kind == "type":
+        terminator_list = ["};"]
+
+    with open(filename, "r", encoding='utf-8') as file:
+        lines = file.readlines()
+
+        # The end of the function is detected as a line that contains
+        # nothing but an ending curly bracket
+        line_number = start
+        line = lines[line_number - 1]
+        while line.rstrip() not in terminator_list:
+            line_number += 1
+            if line_number > len(lines):
+                raise EndLineNotFound
+            line = lines[line_number - 1]
+        return line_number
