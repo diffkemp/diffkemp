@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 from diffkemp.utils import get_simpll_build_dir
+import os
 import subprocess
 
 setup(name="diffkemp",
@@ -13,5 +14,6 @@ setup(name="diffkemp",
       install_requires=["pyyaml", "cffi"],
       cffi_modules=["./diffkemp/simpll/simpll_build.py:ffibuilder"])
 
-build_dir = get_simpll_build_dir()
-subprocess.run(["mv", "diffkemp/simpll/_simpll.abi3.so", build_dir])
+if os.path.isfile("diffkemp/simpll/_simpll.abi3.so"):
+    build_dir = get_simpll_build_dir()
+    subprocess.run(["cp", "diffkemp/simpll/_simpll.abi3.so", build_dir])
