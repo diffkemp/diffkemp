@@ -6,11 +6,14 @@ Summary:        A tool for analyzing differences in kernel functions
 License:        ASL 2.0
 URL:            https://github.com/viktormalik/diffkemp
 Source0:        https://github.com/viktormalik/diffkemp/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/f9/71/4931d0c9b9be01a401f89ced4afb41aa46064f08b2659c31ccdaa5a8b679/rpython-0.2.1.tar.gz
+Source2:        https://files.pythonhosted.org/packages/98/ff/fec109ceb715d2a6b4c4a85a61af3b40c723a961e8828319fbcb15b868dc/py-1.11.0.tar.gz
 
 BuildRequires:  gcc gcc-c++ cmake ninja-build
 BuildRequires:  llvm-devel
-BuildRequires:  python3-devel python3-pip python3-setuptools
+BuildRequires:  python3-devel python3-pip python3-setuptools python2
 BuildRequires:  git
+BuildRequires:  /usr/bin/pathfix.py
 Requires:       cscope
 Requires:       clang llvm-devel
 Requires:       make
@@ -28,10 +31,11 @@ representation.
 
 
 %prep
-%setup -q
-
+%setup -q -a 1 -a 2
 
 %build
+PYTHONPATH=$PWD/rpython-0.2.1:$PWD/py-1.11.0:$PYTHONPATH
+export PYTHONPATH
 mkdir build
 # SimpLL (C++ part)
 %cmake -S . -B build -GNinja
@@ -47,6 +51,7 @@ mkdir -p %{buildroot}/%{_bindir}
 install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
 # Python part
 %py3_install
+pathfix.py -pni "%{__python3} %{py3_shbang_opts}" %{buildroot}%{_bindir}/diffkemp-cc-wrapper.py
 
 
 %check
@@ -60,6 +65,8 @@ tests/unit_tests/simpll/runTests
 # Python part
 %{python3_sitearch}/%{name}-*.egg-info/
 %{python3_sitearch}/%{name}
+%{_bindir}/%{name}-cc-wrapper
+%{_bindir}/%{name}-cc-wrapper.py
 # SimpLL (C++ part)
 %{_bindir}/%{name}
 %{_bindir}/%{name}-simpll
