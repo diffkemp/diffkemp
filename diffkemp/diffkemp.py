@@ -12,6 +12,7 @@ from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.pattern_config import PatternConfig
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
+from diffkemp.output import YamlOutput
 from subprocess import check_call, CalledProcessError
 from diffkemp.utils import get_llvm_version
 from tempfile import mkdtemp
@@ -470,7 +471,13 @@ def compare(args):
             old_fun_desc.mod.clean_module()
             new_fun_desc.mod.clean_module()
             LlvmModule.clean_all()
-
+    # Create yaml output
+    if output_dir is not None and os.path.isdir(output_dir):
+        old_dir_abs = os.path.join(os.path.abspath(args.snapshot_dir_old), "")
+        new_dir_abs = os.path.join(os.path.abspath(args.snapshot_dir_new), "")
+        yaml_output = YamlOutput(snapshot_dir_old=old_dir_abs,
+                                 snapshot_dir_new=new_dir_abs, result=result)
+        yaml_output.save(output_dir=output_dir, file_name="diffkemp-out.yaml")
     old_snapshot.finalize()
     new_snapshot.finalize()
 

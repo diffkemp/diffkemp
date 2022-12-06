@@ -71,6 +71,50 @@ class Result:
             to prefix."""
             return str(self).replace(prefix, "")
 
+        def to_output_yaml_with_rel_path(self, prefix):
+            """Returns callstack as output YAML representation with
+            relative file paths to prefix"""
+            if self.calls is None:
+                return []
+            return [{"name": call["name"],
+                     "file": call["file"].replace(prefix, ""),
+                     "line": call["line"]}
+                    for call in self.calls]
+
+        def get_symbol_names(self, compared_fun):
+            """
+            Returns a tuple containing three sets of symbol names which appear
+            in callstack:
+            - function names (set of strings)
+            - macro names (set of strings)
+            - type names (set of string pairs)
+                (type name, name of function in which the type is used)
+
+            :param compared_fun: Name of compared function.
+            """
+            function_names = set()
+            macro_names = set()
+            type_names = set()
+            if self.calls:
+                for index, call in enumerate(self.calls):
+                    # getting symbol name
+                    name = call["name"]
+                    kind = "function"
+                    if " " in name:
+                        name, kind = name.split(" ")
+                    if kind == "function":
+                        function_names.add(name)
+                    elif kind == "(macro)":
+                        macro_names.add(name)
+                    elif kind == "(type)":
+                        # name of type and name of function
+                        # in which it is used
+                        parent_name = (self.calls[index - 1]["name"]
+                                       if index >= 1
+                                       else compared_fun)
+                        type_names.add((name, parent_name))
+            return function_names, macro_names, type_names
+
         def __str__(self):
             """Converts a callstack to a string representation."""
             if self.calls is None:
