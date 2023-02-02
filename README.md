@@ -202,6 +202,9 @@ The required configuration of each kernel can be done by running:
 
     make prepare
     make modules_prepare
+    
+The [rhel-kernel-get.py](https://github.com/viktormalik/rhel-kernel-get) script can also be used
+to download and configure the aforementioned kernels.
 
 ## Contributors
 
