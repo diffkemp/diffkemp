@@ -193,10 +193,10 @@ configured in `kernel/linux-{version}` directories:
 * 3.10.0-693.el7 (CentOS 7.4 kernel)
 * 3.10.0-862.el7 (CentOS 7.5 kernel)
 * 3.10.0-957.el7 (CentOS 7.6 kernel)
-* 4.18.0-80.el8
-* 4.18.0-147.el8
-* 4.18.0-193.el8
-* 4.18.0-240.el8
+* 4.18.0-80.el8 (RHEL 8.0 kernel)
+* 4.18.0-147.el8 (RHEL 8.1 kernel)
+* 4.18.0-193.el8 (RHEL 8.2 kernel)
+* 4.18.0-240.el8 (RHEL 8.3 kernel)
 
 The required configuration of each kernel can be done by running:
 
