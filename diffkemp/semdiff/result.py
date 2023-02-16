@@ -38,6 +38,48 @@ class Result:
         def __str__(self):
             return self.name.lower().replace("_", " ")
 
+    class Callstack:
+        """
+        Callstack of called functions.
+        Calls is a list of dictionaries with keys: name, file, line.
+        """
+
+        def __init__(self, calls):
+            self.calls = calls
+
+        def __add__(self, other):
+            return Result.Callstack(self.calls + other.calls)
+
+        @classmethod
+        def from_edge_objects(cls, callstack):
+            """Creates a Callstack from callstack consisting
+            of Edge objects."""
+            return cls([{"name": call.target_name, "file": call.filename,
+                         "line": call.line}
+                        for call in callstack])
+
+        @classmethod
+        def from_simpll_yaml(cls, callstack):
+            """Creates a Callstack from a YAML representation of
+            a callstack (used in non-fun diffs)."""
+            return cls([{"name": call["function"], "file": call["file"],
+                         "line": call["line"]}
+                        for call in callstack])
+
+        def as_str_with_rel_paths(self, prefix):
+            """Returns callstack as string with relative paths
+            to prefix."""
+            return str(self).replace(prefix, "")
+
+        def __str__(self):
+            """Converts a callstack to a string representation."""
+            if self.calls is None:
+                return ""
+            return "\n".join(["{} at {}:{}".format(call["name"],
+                                                   call["file"],
+                                                   call["line"])
+                             for call in self.calls])
+
     class Entity:
         """
         Compared entity information. This can be e.g. a function, a module,

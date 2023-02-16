@@ -252,22 +252,22 @@ def test_graph_to_fun_pair_list(graph):
                        if obj[side].name == "struct file"][0]
         assert do_check.filename == "app/main.c"
         assert do_check.line == 105
-        assert do_check.callstack == "do_check at app/main.c:58"
+        assert str(do_check.callstack) == "do_check at app/main.c:58"
         assert do_check.diff_kind == "function"
         assert do_check.covered
         assert macro.filename is None
         assert macro.line is None
-        assert macro.callstack == ("do_check at app/main.c:58\n"
-                                   "_MACRO at test.c:1\n"
-                                   "__MACRO at test.c:2\n"
-                                   "___MACRO at test.c:3")
+        assert str(macro.callstack) == ("do_check at app/main.c:58\n"
+                                        "_MACRO at test.c:1\n"
+                                        "__MACRO at test.c:2\n"
+                                        "___MACRO at test.c:3")
         assert macro.diff_kind == "syntactic"
         assert not macro.covered
         assert struct_file.filename == "include/file.h"
         assert struct_file.line == 121
-        assert struct_file.callstack == ("do_check at app/main.c:58\n"
-                                         "struct file (type) at "
-                                         "include/file.h:121")
+        assert str(struct_file.callstack) == (
+            "do_check at app/main.c:58\n"
+            "struct file (type) at include/file.h:121")
         assert struct_file.diff_kind == "type"
         assert not struct_file.covered
     # All results should be not equal.
