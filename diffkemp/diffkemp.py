@@ -519,6 +519,9 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
         """Indent each line in the text by a number of spaces given by width"""
         return ''.join(" " * width + line for line in text.splitlines(True))
 
+    old_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_old), "")
+    new_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_new), "")
+
     if fun_result.kind == Result.Kind.NOT_EQUAL:
         if output_dir:
             output = open(os.path.join(output_dir, "{}.diff".format(fun)), "w")
@@ -554,19 +557,16 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
                     text_indent("Callstack ({}):\n".format(snapshot_dir_old),
                                 indent))
                 output.write(text_indent(
-                    called_res.first.callstack.replace(
-                        os.path.join(os.path.abspath(snapshot_dir_old), ""),
-                        ""), indent))
+                    called_res.first.callstack.as_str_with_rel_paths(
+                        old_dir_abs_path), indent))
                 output.write("\n\n")
             if called_res.second.callstack:
                 output.write(
                     text_indent("Callstack ({}):\n".format(snapshot_dir_new),
                                 indent))
                 output.write(text_indent(
-                    called_res.second.callstack.replace(
-                        os.path.join(os.path.abspath(snapshot_dir_new), ""),
-                        ""),
-                    indent))
+                    called_res.second.callstack.as_str_with_rel_paths(
+                        new_dir_abs_path), indent))
                 output.write("\n\n")
 
             if show_diff:

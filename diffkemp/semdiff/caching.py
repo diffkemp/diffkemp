@@ -440,22 +440,6 @@ class ComparisonGraph:
                     predecessor.cachable = False
                     vertex.prevents_caching_of.append(predecessor)
 
-    def _edge_callstack_to_string(self, callstack):
-        """Converts a callstack consisting of Edge objects to a string
-        representation."""
-        return "\n".join(["{} at {}:{}".format(call.target_name,
-                                               call.filename,
-                                               call.line)
-                          for call in callstack])
-
-    def _yaml_callstack_to_string(self, callstack):
-        """Converts a YAML representation of a callstack (used in non-fun)
-        diffs to a string representation."""
-        return "\n".join(["{} at {}:{}".format(call["function"],
-                                               call["file"],
-                                               call["line"])
-                          for call in callstack])
-
     def graph_to_fun_pair_list(self, fun_first, fun_second):
         # Extract the functions that should be compared from the graph in
         # the form of Vertex objects.
@@ -490,10 +474,9 @@ class ComparisonGraph:
                     # There is no callstack from the base function.
                     calls = None
                 else:
-                    # Transform the Edge objects returned by
-                    # get_shortest_path to a readable callstack.
+                    # Transform the Edge objects to a Callstack
                     edges = _get_callstack(backtracking_map, self[fun], vertex)
-                    calls = self._edge_callstack_to_string(edges)
+                    calls = Result.Callstack.from_edge_objects(edges)
                 # Note: a function diff is covered (i.e. hidden when empty)
                 # if and only if there is a non-function difference
                 # referencing it.
@@ -518,18 +501,19 @@ class ComparisonGraph:
                     backtracking_map = (backtracking_map_left
                                         if side == ComparisonGraph.Side.LEFT
                                         else backtracking_map_right)
-                    # Convert the YAML callstack format to string.
-                    calls = self._yaml_callstack_to_string(
+
+                    # Convert the YAML callstack format.
+                    calls = Result.Callstack.from_simpll_yaml(
                         nonfun_diff.callstack[side])
                     # Append the parent function's callstack.
                     # (unless it is the base function)
                     fun = fun_first if side == ComparisonGraph.Side.LEFT \
                         else fun_second
                     if nonfun_diff.parent_fun != fun:
-                        parent_calls = self._edge_callstack_to_string(
+                        parent_calls = Result.Callstack.from_edge_objects(
                             _get_callstack(backtracking_map, self[fun],
                                            vertex))
-                        calls = parent_calls + "\n" + calls
+                        calls = parent_calls + calls
 
                     if isinstance(nonfun_diff, ComparisonGraph.SyntaxDiff):
                         nonfun_pair.append(Result.Entity(
