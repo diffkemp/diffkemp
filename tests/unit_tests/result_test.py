@@ -112,7 +112,7 @@ def result(graph):
 
     comp1_result = Result(Result.Kind.NONE, "main_function", "main_function")
     objects_to_compare, *_ = \
-        graph.graph_to_fun_pair_list("main_function", "main_function")
+        graph.graph_to_fun_pair_list("main_function", "main_function", False)
     for fun_pair in objects_to_compare:
         fun_result = Result(fun_pair[2], "main_function", "main_function")
         fun_result.first = fun_pair[0]

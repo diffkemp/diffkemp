@@ -166,7 +166,7 @@ def test_graph_to_fun_pair_list(graph):
     """Tests the conversion of a graph to a structure representing the output
     of DiffKemp."""
     objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
-        graph.graph_to_fun_pair_list("main_function", "main_function")
+        graph.graph_to_fun_pair_list("main_function", "main_function", False)
     for side in [0, 1]:
         assert {obj[side].name for obj in objects_to_compare} == {
             "do_check", "MACRO", "struct_file"}

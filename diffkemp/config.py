@@ -9,7 +9,7 @@ class ConfigException(Exception):
 class Config:
     def __init__(self, snapshot_first, snapshot_second, show_diff,
                  output_llvm_ir, pattern_config, control_flow_only,
-                 print_asm_diffs, verbosity, use_ffi, semdiff_tool):
+                 print_asm_diffs, verbosity, use_ffi, full_diff, semdiff_tool):
         """
         Store configuration of DiffKemp
         :param snapshot_first: First snapshot representation.
@@ -31,6 +31,7 @@ class Config:
         self.print_asm_diffs = print_asm_diffs
         self.verbosity = verbosity
         self.use_ffi = use_ffi
+        self.full_diff = full_diff
 
         # Semantic diff tool configuration
         self.semdiff_tool = semdiff_tool

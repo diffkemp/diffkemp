@@ -91,6 +91,9 @@ def make_argument_parser():
     compare_ap.add_argument("--show-diff",
                             help="show diff for non-equal functions",
                             action="store_true")
+    compare_ap.add_argument("--no-show-diff",
+                            help="do not show diff for non-equal functions",
+                            action="store_true")
     compare_ap.add_argument("--regex-filter",
                             help="filter function diffs by given regex")
     compare_ap.add_argument("--output-dir", "-o",
@@ -130,6 +133,10 @@ def make_argument_parser():
     compare_ap.add_argument("--enable-module-cache",
                             help="loads frequently used modules to memory and \
                             uses them in SimpLL",
+                            action="store_true")
+    compare_ap.add_argument("--full-diff",
+                            help="show diff for all functions \
+                            (even semantically equivalent ones)",
                             action="store_true")
     compare_ap.set_defaults(func=diffkemp.diffkemp.compare)
     return ap

@@ -365,11 +365,12 @@ def compare(args):
     else:
         pattern_config = None
 
-    config = Config(old_snapshot, new_snapshot, args.show_diff,
+    config = Config(old_snapshot, new_snapshot,
+                    not args.no_show_diff or args.show_diff,
                     args.output_llvm_ir, pattern_config,
                     args.control_flow_only, args.print_asm_diffs,
                     args.verbose, not args.disable_simpll_ffi,
-                    args.semdiff_tool)
+                    args.full_diff, args.semdiff_tool)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old, start_time=default_timer())
 
@@ -436,8 +437,10 @@ def compare(args):
 
                 # Printing information about failures and non-equal functions.
                 if fun_result.kind in [Result.Kind.NOT_EQUAL,
-                                       Result.Kind.ERROR, Result.Kind.UNKNOWN]:
-                    if fun_result.kind == Result.Kind.NOT_EQUAL:
+                                       Result.Kind.UNKNOWN,
+                                       Result.Kind.ERROR] or config.full_diff:
+                    if fun_result.kind == Result.Kind.NOT_EQUAL or \
+                       config.full_diff:
                         # Create the output directory if needed
                         if output_dir is not None:
                             if not os.path.isdir(output_dir):
@@ -457,9 +460,10 @@ def compare(args):
                             fun_result=fun_result,
                             fun_tag=old_fun_desc.tag,
                             output_dir=group_dir if group_dir else output_dir,
-                            show_diff=args.show_diff,
+                            show_diff=config.show_diff,
                             initial_indent=2 if (group_name is not None and
-                                                 group_dir is None) else 0)
+                                                 group_dir is None) else 0,
+                            full_diff=config.full_diff)
                     else:
                         # Print the group name if needed
                         if group_name is not None and not group_printed:
@@ -509,7 +513,8 @@ def default_output_dir(src_snapshot, dest_snapshot):
 
 
 def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
-                      fun_tag, output_dir, show_diff, initial_indent):
+                      fun_tag, output_dir, show_diff, initial_indent,
+                      full_diff):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
@@ -529,7 +534,12 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
     old_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_old), "")
     new_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_new), "")
 
-    if fun_result.kind == Result.Kind.NOT_EQUAL:
+    # Do not print anything if there is neither semantic nor syntax difference
+    empty_diff = not "".join(map(lambda x: x.diff, fun_result.inner.values()))
+    if fun_result.kind == Result.Kind.EQUAL and empty_diff:
+        return
+
+    if fun_result.kind == Result.Kind.NOT_EQUAL or full_diff:
         if output_dir:
             output = open(os.path.join(output_dir, "{}.diff".format(fun)), "w")
             output.write(

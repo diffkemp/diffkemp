@@ -440,7 +440,7 @@ class ComparisonGraph:
                     predecessor.cachable = False
                     vertex.prevents_caching_of.append(predecessor)
 
-    def graph_to_fun_pair_list(self, fun_first, fun_second):
+    def graph_to_fun_pair_list(self, fun_first, fun_second, full_diff):
         # Extract the functions that should be compared from the graph in
         # the form of Vertex objects.
         called_funs_left, backtracking_map_left = self.reachable_from(
@@ -458,8 +458,8 @@ class ComparisonGraph:
         syndiff_bodies_left = dict()
         syndiff_bodies_right = dict()
         for vertex in vertices_to_compare:
-            if vertex.result in [Result.Kind.EQUAL,
-                                 Result.Kind.ASSUMED_EQUAL]:
+            if (vertex.result == Result.Kind.EQUAL and not full_diff) or \
+               vertex.result == Result.Kind.ASSUMED_EQUAL:
                 # Do not include equal functions into the result.
                 continue
             # Generate and add the function difference.
