@@ -111,6 +111,7 @@ function App() {
       <ResultNavigation
         comparedFunction={comparedFunction}
         diffFunction={diffFunction}
+        result={resultDescription}
         setComparedFunction={setComparedFunction}
         setDiffFunction={setDiffFunction}
       />

@@ -116,4 +116,109 @@ export default class Result {
   getDiff(compFunName, diffFunName) {
     return this.#allCompFuns.get(compFunName).get(diffFunName);
   }
+
+  /**
+   * Returns true if compared function is first in ordered array of compared
+   * functions.
+   */
+  isFirstCompFun(compFunName) {
+    return this.getCompFuns()[0] === compFunName;
+  }
+
+  /**
+   * Returns true if compared function is last in ordered array of compared
+   * functions.
+   */
+  isLastCompFun(compFunName) {
+    const comparedFunctions = this.getCompFuns();
+    return comparedFunctions[comparedFunctions.length - 1] === compFunName;
+  }
+
+  /**
+   * Returns true if differing function is first in ordered array of differing
+   * functions for compared function.
+   */
+  isFirstDiffFunForComp(compFunName, diffFunName) {
+    const firstDiffFunName = this.getDiffFuns(compFunName)[0];
+    return diffFunName === firstDiffFunName;
+  }
+
+  /**
+   * Returns true if differing function is last in ordered array of differing
+   * functions for compared function.
+   */
+  isLastDiffFunForComp(compFunName, diffFunName) {
+    const diffFuns = this.getDiffFuns(compFunName);
+    const lastDiffFunName = diffFuns[diffFuns.length - 1];
+    return diffFunName === lastDiffFunName;
+  }
+
+  /**
+   * Returns next compared function according specified compared function.
+   * Return null if specified function was last.
+   */
+  getNextCompName(compFunName) {
+    const compFunNames = this.getCompFuns();
+    const index = compFunNames.indexOf(compFunName);
+    if (index + 1 < compFunNames.length) {
+      return compFunNames[index + 1];
+    }
+    return null;
+  }
+
+  /**
+   * Returns next differing function for compared function
+   * according specified compared and differing function.
+   * Return null if specified function was last.
+   */
+  getNextDiffFunNameForComp(compFunName, diffFunName) {
+    const diffFunNames = this.getDiffFuns(compFunName);
+    const index = diffFunNames.indexOf(diffFunName);
+    if (index + 1 < diffFunNames.length) {
+      return diffFunNames[index + 1];
+    }
+    return null;
+  }
+
+  /**
+   * Returns previous compared function according specified compared function.
+   * Return null if specified function was first.
+   */
+  getPrevCompName(compFunName) {
+    const compFunNames = this.getCompFuns();
+    const index = compFunNames.indexOf(compFunName);
+    if (index - 1 >= 0) {
+      return compFunNames[index - 1];
+    }
+    return null;
+  }
+
+  /**
+   * Returns previous differing function for compared function
+   * according specified compared and differing function.
+   * Return null if specified function was first.
+   */
+  getPrevDiffFunNameForComp(compFunName, diffFunName) {
+    const diffFunNames = this.getDiffFuns(compFunName);
+    const index = diffFunNames.indexOf(diffFunName);
+    if (index - 1 >= 0) {
+      return diffFunNames[index - 1];
+    }
+    return null;
+  }
+
+  /**
+   * Returns first differing function for specified compared function.
+   */
+  getFirstDiffFunForComp(compFunName) {
+    return this.getDiffFuns(compFunName)[0];
+  }
+
+  /**
+   * Returns last differing function for specified compared function.
+   */
+  getLastDiffFunForComp(compFunName) {
+    const diffFuns = this.getDiffFuns(compFunName);
+    return diffFuns[diffFuns.length - 1];
+  }
 }
