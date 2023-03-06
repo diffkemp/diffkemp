@@ -18,23 +18,30 @@ export default function ResultNavigation({
   diffFunction,
   onResultsClick,
   onCompareClick,
+  onDifferingClick,
 }) {
+  let compItem = null;
+  // location in compared function
+  if (comparedFunction || diffFunction) {
+    compItem = (
+      <Breadcrumb.Item onClick={onCompareClick} title="Compared function">
+        {comparedFunction || '*'}
+      </Breadcrumb.Item>
+    );
+  }
+
   return (
     <Container>
       <Breadcrumb className="result-nav d-inline-block">
         <Breadcrumb.Item onClick={onResultsClick}>
           Results
         </Breadcrumb.Item>
-        {comparedFunction && (
-        <Breadcrumb.Item
-          onClick={onCompareClick}
-          title="Compared function"
-        >
-          {comparedFunction}
-        </Breadcrumb.Item>
-        )}
+        {compItem}
         {diffFunction && (
-        <Breadcrumb.Item title="Differing function">
+        <Breadcrumb.Item
+          onClick={onDifferingClick}
+          title="Differing function"
+        >
           {diffFunction}
         </Breadcrumb.Item>
         )}

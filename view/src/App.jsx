@@ -76,6 +76,15 @@ function App() {
         onFunctionSelect={setDiffFunction}
       />
     );
+  } else if (diffFunction) {
+    // showing compared functions for differing function
+    content = (
+      <FunctionListing
+        headline={`Compared functions which differs in '${diffFunction}'`}
+        functions={resultDescription.getCompFuns(diffFunction)}
+        onFunctionSelect={setComparedFunction}
+      />
+    );
   } else {
     // showing selection of compared functions
     content = (
@@ -110,6 +119,9 @@ function App() {
         }}
         onCompareClick={() => {
           setDiffFunction(null);
+        }}
+        onDifferingClick={() => {
+          setComparedFunction(null);
         }}
       />
       {content}
