@@ -104,7 +104,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     auto newCall =
                             CallInst::Create(newFun, args, "", CallInstr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
+                    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
                                     dbgs() << "Replacing :" << *CallInstr
                                            << "\n     with :" << *newCall
                                            << "\n");
