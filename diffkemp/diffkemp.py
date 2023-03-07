@@ -26,6 +26,8 @@ def run_from_cli():
     """Main method to run the tool."""
     ap = make_argument_parser()
     args = ap.parse_args()
+    if args.verbose or args.debug:
+        args.verbose = 1 + args.debug
     args.func(args)
 
 
