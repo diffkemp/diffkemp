@@ -74,7 +74,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             // Nothing to replace.
             continue;
 
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
                         dbgs() << getDebugIndent(' ')
                                << "Creating void-returning variant of "
                                << Fun->getName() << "\n");
@@ -167,7 +167,7 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 copyCallInstProperties(CI, CI_New);
 
                 DEBUG_WITH_TYPE(
-                        DEBUG_SIMPLL_VERBOSE, increaseDebugIndentLevel();
+                        DEBUG_SIMPLL_VERBOSE_EXTRA, increaseDebugIndentLevel();
                         dbgs()
                         << getDebugIndent() << "Replacing :" << *CI << "\n"
                         << getDebugIndent() << "     with :" << *CI_New << "\n";

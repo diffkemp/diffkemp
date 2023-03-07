@@ -41,7 +41,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     IncludedBasicBlocks.clear();
     IncludedParams.clear();
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
                     dbgs() << "Function: " << Fun.getName().str() << "\n");
 
     // First phase - determine which instructions are dependent on the parameter
@@ -69,7 +69,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
             if (dependent) {
                 addToDependent(&Instr);
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE, {
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
                     dbgs() << "Dependent: ";
                     Instr.print(dbgs());
                 });
@@ -89,7 +89,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
     // Second phase - determine which additional instructions we need to
     // produce a valid CFG
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE, dbgs() << "Second phase\n");
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, dbgs() << "Second phase\n");
     // Recursively add all instruction operands to included
     for (auto &Inst : DependentInstrs) {
         if (isa<PHINode>(Inst))
@@ -173,7 +173,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
         // Collect and clear all instruction that can be removed
         for (auto &Inst : BB) {
             if (!isIncluded(&Inst) && !Inst.isTerminator()) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
                                 { dbgs() << "Clearing " << Inst << "\n"; });
                 Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
                 toRemove.push_back(&Inst);
@@ -190,7 +190,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     // to return void
     if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
         && !Fun.getReturnType()->isVoidTy()) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE,
+        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
                         dbgs() << "Changing return type of " << Fun.getName()
                                << " to void.\n");
         changeToVoid(Fun);
@@ -230,7 +230,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     //       in a newer version of LLVM.
     deleteUnreachableBlocks(Fun);
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE, {
+    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
         dbgs() << "Function " << Fun.getName().str() << " after cleanup:\n";
         Fun.print(dbgs());
         dbgs() << "\n";
@@ -281,7 +281,7 @@ void VarDependencySlicer::addAllInstrs(
         IncludedBasicBlocks.insert(BB);
         for (auto &Instr : *BB) {
             DependentInstrs.insert(&Instr);
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE, {
+            DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
                 dbgs() << "Dependent: ";
                 Instr.print(dbgs());
             });
@@ -342,7 +342,7 @@ bool VarDependencySlicer::addAllOpsToIncluded(const Instruction *Inst) {
     for (auto &Op : Inst->operands()) {
         if (auto OpInst = dyn_cast<Instruction>(&Op)) {
             if (addToIncluded(OpInst)) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE, {
+                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
                     dbgs() << "Included: ";
                     OpInst->print(dbgs());
                 });
