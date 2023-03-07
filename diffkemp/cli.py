@@ -9,6 +9,9 @@ def make_argument_parser():
     ap.add_argument("-v", "--verbose",
                     help="increase output verbosity",
                     action="count", default=0)
+    ap.add_argument("-d", "--debug",
+                    help="increase debug output verbosity",
+                    action="count", default=0)
     sub_ap = ap.add_subparsers(dest="command", metavar="command")
     sub_ap.required = True
 
