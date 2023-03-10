@@ -29,4 +29,8 @@ if (${BUILD_LLREVE})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/llreve/reve)
 endif ()
 
+execute_process(COMMAND
+  ${CMAKE_CURRENT_SOURCE_DIR}/tools/simpll_clean.sh
+  ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_subdirectory(tests/unit_tests/simpll)
