@@ -69,13 +69,7 @@ export default function Difference({
       }
       return undefined;
     };
-    if (oldDefintion.file !== newDefintion.file) {
-      errorCodeMessage = `Function was moved to different file 
-                (${oldDefintion.file} -> ${newDefintion.file}).`;
-    } else if (
-      !('end-line' in oldDefintion)
-            || !('end-line' in newDefintion)
-    ) {
+    if (!('end-line' in oldDefintion) || !('end-line' in newDefintion)) {
       errorCodeMessage = 'Missing info about ending of function.';
     } else {
       // creating component for code visualisation
@@ -83,7 +77,9 @@ export default function Difference({
       const specification = {
         oldSrc: oldDefintion.file,
         newSrc: newDefintion.file,
-        diff: oldDefintion.file.replace(/\.[ch]$/, '.diff'),
+        diff: definitions[name].diff
+          ? `${name}.diff`
+          : null,
         oldStart: oldDefintion.line,
         newStart: newDefintion.line,
         oldEnd: oldDefintion['end-line'],

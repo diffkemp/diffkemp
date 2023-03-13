@@ -1,5 +1,6 @@
-# Output directory with results of diffkemp
-/public/output
+# Ignore results for visualisation
+/public
+!/public/index.html
 
 # dependencies
 /node_modules
