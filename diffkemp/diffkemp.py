@@ -12,6 +12,7 @@ from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from diffkemp.output import YamlOutput
+from diffkemp.syndiff.function_syntax_diff import unified_syntax_diff
 from subprocess import check_call, CalledProcessError
 from tempfile import mkdtemp
 from timeit import default_timer
@@ -19,6 +20,8 @@ import errno
 import os
 import re
 import sys
+import shutil
+import yaml
 
 
 def run_from_cli():
@@ -558,3 +561,93 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
             if not output_dir:
                 output.write(text_indent("}}}\n", indent - 2))
             output.write("\n")
+
+
+def view(args):
+    """
+    View the compare differences. Prepares files for the visualisation
+    and runs viewer.
+    """
+    # Load yaml describing results
+    YAML_FILE_NAME = "diffkemp-out.yaml"
+    yaml_path = os.path.join(args.compare_output_dir, YAML_FILE_NAME)
+    if not os.path.exists(yaml_path):
+        sys.stderr.write(
+            "ERROR: compare output is missing file " + f"'{YAML_FILE_NAME}'\n")
+        sys.exit(errno.EINVAL)
+    with open(yaml_path, "r") as file:
+        yaml_result = yaml.safe_load(file)
+
+    # Path to folder with viewer
+    VIEW_DIRECTORY = os.path.join(os.path.dirname(__file__), "../view")
+    # Path to folder which viewer can access
+    PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "public")
+
+    # Preparing source directory
+    SOURCE_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "src")
+    if os.path.isdir(SOURCE_DIRECTORY):
+        shutil.rmtree(SOURCE_DIRECTORY)
+    os.mkdir(SOURCE_DIRECTORY)
+    # Preparing diff directory
+    DIFF_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "diffs")
+    if os.path.isdir(DIFF_DIRECTORY):
+        shutil.rmtree(DIFF_DIRECTORY)
+    os.mkdir(DIFF_DIRECTORY)
+
+    # Prepare source and diff files to view directory
+    old_snapshot_dir = yaml_result["old-snapshot"]
+    new_snapshot_dir = yaml_result["new-snapshot"]
+    # Check if snapshot dirs exist
+    if not os.path.isdir(old_snapshot_dir):
+        sys.stderr.write(
+            f"Error: expecting to find old snapshot in {old_snapshot_dir}\n")
+        sys.exit(errno.EINVAL)
+    if not os.path.isdir(new_snapshot_dir):
+        sys.stderr.write(
+            f"Error: expecting to find new snapshot in {new_snapshot_dir}\n")
+        sys.exit(errno.EINVAL)
+
+    processed_files = set()
+    for name, definition in yaml_result["definitions"].items():
+        # Relatives paths to source files
+        old_file = definition["old"]["file"]
+        new_file = definition["new"]["file"]
+
+        old_file_abs_path = os.path.join(old_snapshot_dir, old_file)
+        new_file_abs_path = os.path.join(new_snapshot_dir, new_file)
+
+        # Copy source file
+        if old_file not in processed_files:
+            processed_files.add(old_file)
+
+            output_file_path = os.path.join(SOURCE_DIRECTORY, old_file)
+            output_dir_path = os.path.dirname(output_file_path)
+            if not os.path.isdir(output_dir_path):
+                os.makedirs(output_dir_path)
+
+            shutil.copy(old_file_abs_path, output_dir_path)
+
+        # Make diff of function, add diff info to YAML
+        if "end-line" in definition["old"] and "end-line" in definition["new"]:
+            diff = unified_syntax_diff(first_file=old_file_abs_path,
+                                       second_file=new_file_abs_path,
+                                       first_line=definition["old"]["line"],
+                                       second_line=definition["new"]["line"],
+                                       first_end=definition["old"]["end-line"],
+                                       second_end=definition["new"]["end-line"]
+                                       )
+            if diff.isspace() or diff == "":
+                definition["diff"] = False
+            else:
+                definition["diff"] = True
+                diff_path = os.path.join(DIFF_DIRECTORY, name + ".diff")
+                with open(diff_path, "w") as file:
+                    file.write(diff)
+        else:
+            definition["diff"] = False
+
+    # save YAML
+    with open(os.path.join(PUBLIC_DIRECTORY, YAML_FILE_NAME), "w") as file:
+        yaml.dump(yaml_result, file, sort_keys=False)
+
+    os.system(f"cd {VIEW_DIRECTORY} && npm start")
