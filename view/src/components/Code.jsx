@@ -9,6 +9,9 @@ import Col from 'react-bootstrap/Col';
 
 import DiffViewWrapper from './DiffViewWrapper';
 
+const SOURCE_DIRECTORY = 'src';
+const DIFF_DIRECTORY = 'diffs';
+
 /**
  * Code/function preparation and visualisation.
  * @param {Object} props
@@ -42,12 +45,16 @@ export default function Code({
     let ignoreFetchedFiles = false;
 
     const getOldCode = async () => {
-      const oldCodeFile = await getFile(specification.oldSrc);
+      const oldCodeFile = await getFile(
+        path.join(SOURCE_DIRECTORY, specification.oldSrc),
+      );
       if (ignoreFetchedFiles) return;
       setOldCode(oldCodeFile);
     };
     const getDiff = async () => {
-      const diffFile = await getFile(specification.diff);
+      const diffFile = await getFile(
+        path.join(DIFF_DIRECTORY, specification.diff),
+      );
       if (ignoreFetchedFiles) return;
       setDiff(diffFile);
     };

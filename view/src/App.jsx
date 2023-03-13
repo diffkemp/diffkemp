@@ -21,15 +21,13 @@ import Difference from './components/Difference';
 import Result from './Result';
 
 const DEFAULT_DESCRIPTION_FILE = 'diffkemp-out.yaml';
-const DEFAULT_DIRECTORY = 'output';
 
 /**
- * Returns Promise with content of the file from DEFAULT_DIRECTORY as string.
- * @param {string} filePath Relative path to the file from DEFAULT_DIRECTORY.
+ * Returns Promise with content of the file as string.
+ * @param {string} filePath Path to the file.
  */
 async function getFileWithAjax(filePath) {
-  const path = [DEFAULT_DIRECTORY, filePath].join('/');
-  const response = await fetch(path);
+  const response = await fetch(filePath);
   return response.text();
 }
 
