@@ -139,4 +139,11 @@ def make_argument_parser():
                             (even semantically equivalent ones)",
                             action="store_true")
     compare_ap.set_defaults(func=diffkemp.diffkemp.compare)
+
+    # "view" sub-command
+    view_ap = sub_ap.add_parser("view",
+                                help="view differences found by compare")
+    view_ap.add_argument("compare_output_dir",
+                         help="directory with the compare output")
+    view_ap.set_defaults(func=diffkemp.diffkemp.view)
     return ap
