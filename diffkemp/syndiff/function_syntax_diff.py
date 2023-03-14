@@ -8,49 +8,23 @@ from tempfile import mkdtemp
 from diffkemp.utils import get_end_line, EndLineNotFound
 
 import os
+from enum import IntEnum
 
 DIFF_NOT_OBTAINED_MESSAGE = "  [could not obtain diff]\n"
 
 
 def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
     """Get diff of a C function or type between first_file and second_file"""
-    tmpdir = mkdtemp()
-    command = ["diff", "-C", "1", os.path.join(tmpdir, "1"),
-               os.path.join(tmpdir, "2")]
-
-    # Use the provided arguments "first_line" and "second_line" that contain
-    # the lines on which the function starts in each file to extract both
-    # functions into temporary files
-    for filename in [first_file, second_file]:
-        tmp_file = "1" if filename is first_file else "2"
-        start = first_line if filename is first_file else second_line
-
-        try:
-            end = get_end_line(filename, start, kind)
-        except (UnicodeDecodeError, EndLineNotFound):
-            return DIFF_NOT_OBTAINED_MESSAGE
-
-        with open(filename, "r", encoding='utf-8') as input_file, \
-                open(os.path.join(tmpdir, tmp_file), "w",
-                     encoding='utf-8') as output_file:
-            try:
-                lines = input_file.readlines()
-            except UnicodeDecodeError:
-                return DIFF_NOT_OBTAINED_MESSAGE
-
-            for line in lines[start - 1:end]:
-                output_file.write(line)
-
-    # check_output fails when the two files are different due to the error code
-    # (1), which in fact signalizes success; the exception has to be caught and
-    # the error code evaluated manually
     try:
-        diff = check_output(command).decode('utf-8')
-    except CalledProcessError as e:
-        if e.returncode == 1:
-            diff = e.output.decode('utf-8')
-        else:
-            raise
+        first_end = get_end_line(first_file, first_line, kind)
+        second_end = get_end_line(second_file, second_line, kind)
+        diff, first_file_fragment, _ = \
+            make_diff(diff_format=DiffFormat.CONTEXT,
+                      first_file=first_file, second_file=second_file,
+                      first_start=first_line, second_start=second_line,
+                      first_end=first_end, second_end=second_end)
+    except (UnicodeDecodeError, EndLineNotFound):
+        return DIFF_NOT_OBTAINED_MESSAGE
 
     if diff.isspace() or diff == "":
         # Empty diff
@@ -67,7 +41,7 @@ def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
 
         # Add function header
         if set(list(line)) == set(["*"]):
-            with open(os.path.join(tmpdir, "1"), "r") as extract:
+            with open(os.path.join(first_file_fragment), "r") as extract:
                 line += " " + extract.readline().strip()
 
         # Check whether the line is a line number line
@@ -89,3 +63,58 @@ def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
     diff = "\n".join(diff_lines_new)
 
     return diff
+
+
+class DiffFormat(IntEnum):
+    """Enumeration type for possible syntax diff formats."""
+    CONTEXT = 0
+
+
+def make_diff(diff_format, first_file, second_file, first_start, second_start,
+              first_end, second_end):
+    """Creates diff between to fragments of files specified by start and end
+    line. Does not fix the line numbers.
+    Returns tuple containing:
+      - diff,
+      - path to file with selected fragment of first file,
+      - path to file with selected fragment of second file.
+    """
+    tmpdir = mkdtemp()
+
+    if diff_format == DiffFormat.CONTEXT:
+        option = "-C"
+
+    first_file_fragment = os.path.join(tmpdir, "1")
+    second_file_fragment = os.path.join(tmpdir, "2")
+
+    command = ["diff", option, "1", first_file_fragment, second_file_fragment]
+
+    extract_code(first_file, first_start, first_end, first_file_fragment)
+    extract_code(second_file, second_start, second_end, second_file_fragment)
+
+    # check_output fails when the two files are different due to the error code
+    # (1), which in fact signalizes success; the exception has to be caught and
+    # the error code evaluated manually
+    try:
+        diff = check_output(command).decode('utf-8')
+    except CalledProcessError as e:
+        if e.returncode == 1:
+            diff = e.output.decode('utf-8')
+        else:
+            raise
+    return diff, first_file_fragment, second_file_fragment
+
+
+def extract_code(file, start, end, output_file_path):
+    """Extracts code (e. g. function) from file from start to end line,
+    saves it in the output_file_path"""
+    with open(file, "r", encoding='utf-8') as input_file, \
+        open(output_file_path, "w",
+             encoding='utf-8') as output_file:
+        try:
+            lines = input_file.readlines()
+        except UnicodeDecodeError:
+            raise
+
+        for line in lines[start - 1:end]:
+            output_file.write(line)
