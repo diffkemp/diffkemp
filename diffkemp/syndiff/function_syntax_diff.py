@@ -9,8 +9,15 @@ from diffkemp.utils import get_end_line, EndLineNotFound
 
 import os
 from enum import IntEnum
+import re
 
 DIFF_NOT_OBTAINED_MESSAGE = "  [could not obtain diff]\n"
+UNIFIED_HUNK_HEAD_REGEX = re.compile(r"""^@@\ -(\d+) # from file start
+                                         ((?:,\d+)?) # from file count
+                                         \           # space
+                                         \+(\d+)     # to file start
+                                         ((?:,\d+)?) # to file count
+                                         \ @@$""", re.VERBOSE)
 
 
 def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
@@ -68,6 +75,7 @@ def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
 class DiffFormat(IntEnum):
     """Enumeration type for possible syntax diff formats."""
     CONTEXT = 0
+    UNIFIED = 1
 
 
 def make_diff(diff_format, first_file, second_file, first_start, second_start,
@@ -83,6 +91,8 @@ def make_diff(diff_format, first_file, second_file, first_start, second_start,
 
     if diff_format == DiffFormat.CONTEXT:
         option = "-C"
+    elif diff_format == DiffFormat.UNIFIED:
+        option = "-U"
 
     first_file_fragment = os.path.join(tmpdir, "1")
     second_file_fragment = os.path.join(tmpdir, "2")
@@ -118,3 +128,27 @@ def extract_code(file, start, end, output_file_path):
 
         for line in lines[start - 1:end]:
             output_file.write(line)
+
+
+def unified_syntax_diff(first_file, second_file, first_line, second_line,
+                        first_end, second_end):
+    diff, *_ = make_diff(diff_format=DiffFormat.UNIFIED,
+                         first_file=first_file, second_file=second_file,
+                         first_start=first_line, second_start=second_line,
+                         first_end=first_end, second_end=second_end)
+
+    # Empty diff
+    if diff.isspace() or diff == "":
+        return diff
+
+    # Fixing line numbers
+    diff_lines = diff.split('\n')
+    diff_lines_new = []
+    for line in diff_lines:
+        match = UNIFIED_HUNK_HEAD_REGEX.match(line)
+        if match:
+            line = f"@@ -{int(match.group(1))+first_line-1}{match.group(2)} " \
+                   + f"+{int(match.group(3))+second_line-1}{match.group(4)} @@"
+        diff_lines_new += [line]
+    diff = "\n".join(diff_lines_new)
+    return diff
