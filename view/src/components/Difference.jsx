@@ -102,7 +102,7 @@ export default function Difference({
   return (
     <Container fluid className="difference">
       <Row>
-        <Col xs="12" xl="1" xxl="2">
+        <Col className="callstack-col" xs="12" xl="1" xxl="2">
           <Callstack
             compFunName={compare}
             oldCallStack={diff['old-callstack']}

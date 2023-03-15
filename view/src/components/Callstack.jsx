@@ -42,7 +42,7 @@ export default function Callstack({
 
   return (
     <div className="callstack">
-      <div className="text-center">
+      <div className="ms-1">
         <b>Call stack</b>
       </div>
       <ListGroup className="callstack-calls" as="ul">
