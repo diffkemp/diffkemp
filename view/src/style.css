@@ -57,6 +57,29 @@ h2 {
 .diff-gutter-selected {
     background-color: var(--diff-gutter-selected-background-color) !important;
 }
+/* size of callstack is dependent on the screen resolution */
+/* trying to make fit 80 chars of code in one line */
+.callstack-col {
+    width: 100%;
+}
+
+@media (min-width: 1280px) {
+    .callstack-col {
+        width: 4.5%;
+    }
+}
+
+@media (min-width: 1366px) {
+    .callstack-col {
+        width: 10%;
+    }
+}
+
+@media (min-width: 1920px) {
+    .callstack-col {
+        width: 20%;
+    }
+}
 
 .callstack-call {
     /* showing only part of a name of call which fit in the callstack */
