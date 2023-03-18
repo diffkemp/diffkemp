@@ -41,7 +41,7 @@ export default function Callstack({
   });
 
   return (
-    <div className="callstack">
+    <div className="callstack" data-testid="callstack">
       <div className="ms-1">
         <b>Call stack</b>
       </div>
