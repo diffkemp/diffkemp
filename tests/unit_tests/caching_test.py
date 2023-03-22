@@ -45,15 +45,15 @@ def graph():
     g["do_check"].nonfun_diffs.append(ComparisonGraph.SyntaxDiff(
         "MACRO", "do_check",
         dup([
-            {"function": "_MACRO", "file": "test.c", "line": 1},
-            {"function": "__MACRO", "file": "test.c", "line": 2},
-            {"function": "___MACRO", "file": "test.c", "line": 3},
+            {"function": "_MACRO (macro)", "file": "test.c", "line": 1},
+            {"function": "__MACRO (macro)", "file": "test.c", "line": 2},
+            {"function": "___MACRO (macro)", "file": "test.c", "line": 3},
         ]), ("5", "5L")
     ))
     g["do_check"].nonfun_diffs.append(ComparisonGraph.TypeDiff(
-        "struct file", "do_check",
+        "struct_file", "do_check",
         dup([
-            {"function": "struct file (type)", "file": "include/file.h",
+            {"function": "struct_file (type)", "file": "include/file.h",
              "line": 121},
         ]), dup("include/file.h"), dup(121)
     ))
@@ -243,13 +243,13 @@ def test_graph_to_fun_pair_list(graph):
         graph.graph_to_fun_pair_list("main_function", "main_function")
     for side in [0, 1]:
         assert {obj[side].name for obj in objects_to_compare} == {
-            "do_check", "MACRO", "struct file"}
+            "do_check", "MACRO", "struct_file"}
         do_check = [obj[side] for obj in objects_to_compare
                     if obj[side].name == "do_check"][0]
         macro = [obj[side] for obj in objects_to_compare
                  if obj[side].name == "MACRO"][0]
         struct_file = [obj[side] for obj in objects_to_compare
-                       if obj[side].name == "struct file"][0]
+                       if obj[side].name == "struct_file"][0]
         assert do_check.filename == "app/main.c"
         assert do_check.line == 105
         assert str(do_check.callstack) == "do_check at app/main.c:58"
@@ -258,16 +258,16 @@ def test_graph_to_fun_pair_list(graph):
         assert macro.filename is None
         assert macro.line is None
         assert str(macro.callstack) == ("do_check at app/main.c:58\n"
-                                        "_MACRO at test.c:1\n"
-                                        "__MACRO at test.c:2\n"
-                                        "___MACRO at test.c:3")
+                                        "_MACRO (macro) at test.c:1\n"
+                                        "__MACRO (macro) at test.c:2\n"
+                                        "___MACRO (macro) at test.c:3")
         assert macro.diff_kind == "syntactic"
         assert not macro.covered
         assert struct_file.filename == "include/file.h"
         assert struct_file.line == 121
         assert str(struct_file.callstack) == (
             "do_check at app/main.c:58\n"
-            "struct file (type) at include/file.h:121")
+            "struct_file (type) at include/file.h:121")
         assert struct_file.diff_kind == "type"
         assert not struct_file.covered
     # All results should be not equal.
