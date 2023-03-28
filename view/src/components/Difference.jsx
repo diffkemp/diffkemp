@@ -109,6 +109,7 @@ export default function Difference({
             newCallStack={diff['new-callstack']}
             onSelect={setFunctionToShow}
             selectedFunction={functionToShow}
+            definitions={definitions}
           />
         </Col>
         <Col>

@@ -85,12 +85,32 @@ h2 {
     /* showing only part of a name of call which fit in the callstack */
     overflow-x: hidden;
     text-overflow: ellipsis;
+    
+    height: 100%;
+    border-radius: 0px;
+}
+/* group of calls from one callstack which does not appears in second callstack */
+.callstack-call-group, .callstack-subcalls {
+    /* hidding rest of name which does not fit in the callstack */
+    overflow-x: hidden;
+    /* making sure that both columns of call groups have equal width */
+    flex: 1;
+
+    border-radius: 0px;
+    padding: 0px;
+    margin: 0px;
+    border-width: 0px;
 }
 /* when cursor is over callstack expanding it to show whole names of all calls */
 .callstack-calls:hover {
     position: relative;
     min-width: fit-content;
     z-index: 1;
+}
+
+.callstack-calls:hover .callstack-call{
+    min-width: fit-content;
+    overflow-x: initial;
 }
 
 .list-group-item-action {
