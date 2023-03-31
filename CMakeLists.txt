@@ -33,4 +33,22 @@ execute_process(COMMAND
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/simpll_clean.sh
   ${CMAKE_CURRENT_SOURCE_DIR})
 
+option(BUILD_VIEWER "Install packages for result viewer and create production build" ON)
+if (${BUILD_VIEWER})
+  find_program(NODE node REQUIRED)
+  message(STATUS "Found node ${NODE}")
+  find_program(NPM npm REQUIRED)
+  message(STATUS "Found npm ${NPM}")
+  message(STATUS "Installing packages for result viewer")
+  execute_process(
+    COMMAND npm install
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/view
+  )
+  message(STATUS "Creating production build of result viewer")
+  execute_process(
+    COMMAND npm run build
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/view
+  )
+endif ()
+
 add_subdirectory(tests/unit_tests/simpll)
