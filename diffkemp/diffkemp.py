@@ -581,7 +581,10 @@ def view(args):
     # Path to folder with viewer
     VIEW_DIRECTORY = os.path.join(os.path.dirname(__file__), "../view")
     # Path to folder which viewer can access
-    PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "public")
+    if args.devel:
+        PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "public")
+    else:
+        PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "build")
 
     # Preparing source directory
     SOURCE_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "src")
@@ -650,4 +653,7 @@ def view(args):
     with open(os.path.join(PUBLIC_DIRECTORY, YAML_FILE_NAME), "w") as file:
         yaml.dump(yaml_result, file, sort_keys=False)
 
-    os.system(f"cd {VIEW_DIRECTORY} && npm start")
+    if args.devel:
+        os.system(f"cd {VIEW_DIRECTORY} && npm start")
+    else:
+        os.system(f"cd {VIEW_DIRECTORY} && npm run prod")
