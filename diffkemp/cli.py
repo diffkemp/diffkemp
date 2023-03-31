@@ -145,5 +145,9 @@ def make_argument_parser():
                                 help="view differences found by compare")
     view_ap.add_argument("compare_output_dir",
                          help="directory with the compare output")
+    view_ap.add_argument("--devel",
+                         action="store_true",
+                         help="runs development server instead of production \
+                         server")
     view_ap.set_defaults(func=diffkemp.diffkemp.view)
     return ap
