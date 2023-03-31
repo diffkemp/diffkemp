@@ -56,6 +56,14 @@ Build can be done by running:
 
 The DiffKemp binary is then located in `bin/diffkemp`.
 
+For running the result viewer, it is necessary to have installed:
+* Node.js (>= 14.x)
+* npm (8)
+
+Manually building with `cmake` will automatically install necessary packages for
+the result viewer and build an optimized version of the result viewer.
+You can turn this off with the `-DBUILD_VIEWER=OFF` option when using `cmake`.
+
 ### Install from RPM
 
 Alternatively, you can use a prepared RPM package for Fedora that can be
@@ -112,6 +120,17 @@ DiffKemp runs in two phases:
   directory can be specified using the `-o` option, otherwise it is generated
   automatically. The `--stdout` option causes the diffs to be printed to
   standard output.
+
+Additionally, you can run **result viewer** to get a visualisation of the found
+differences.
+
+- **Result viewer** takes the directory with the output of the compare phase. 
+  It is invoked via:
+  ```
+  diffkemp view COMPARE_OUTPUT_DIR
+  ```
+
+  It prepares the necessary files and runs a static server. The command displays the URL that you can use to access the result viewer.
 
 ### Comparing sysctl options
 
@@ -206,6 +225,11 @@ The required configuration of each kernel can be done by running:
 The [rhel-kernel-get.py](https://github.com/viktormalik/rhel-kernel-get) script can also be used
 to download and configure the aforementioned kernels.
 
+The result viewer contains unit tests and integration tests
+which can be run by:
+
+    cd view && npm test -- --watchAll
+    
 ## Contributors
 
 The list of code and non-code contributors to this project, in pseudo-random
