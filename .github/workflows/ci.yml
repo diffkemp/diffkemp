@@ -167,4 +167,21 @@ jobs:
           flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
           flake8 tests
           tools/check-clang-format.sh -d
-
+  
+  result-viewer:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [14.x, 16.x, 18.x, 20.x]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Node ${{ matrix.node }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node }}
+    - name: Install packages
+      run: npm ci --prefix view
+    - name: Run tests
+      run: npm test --prefix view
+    - name: Create build with ESLint checks
+      run: CI=false npm run build --prefix view
