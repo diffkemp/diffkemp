@@ -173,7 +173,7 @@ def wrapper(argv):
     if clang != llvm_link:
         clang_argv.extend(append)
         # TODO: allow compiling into binary IR
-        clang_argv.extend(["-S", "-emit-llvm"])
+        clang_argv.extend(["-S", "-emit-llvm", "-g"])
     else:
         # Keep only arguments with input files (and llvm-link itself)
         clang_argv = [arg for arg in clang_argv if arg == clang or
