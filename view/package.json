@@ -16,6 +16,7 @@
     "react-bootstrap": "^2.7.2",
     "react-diff-view": "^2.4.10",
     "react-dom": "^18.2.0",
+    "react-error-boundary": "^4.0.4",
     "react-scripts": "5.0.1",
     "refractor": "^3.6.0",
     "serve": "^14.2.0",

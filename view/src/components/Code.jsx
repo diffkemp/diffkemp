@@ -2,8 +2,10 @@
 // Author: Lukas Petr
 
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import path from 'path-browserify';
 
+import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
@@ -84,17 +86,27 @@ export default function Code({
       </Row>
       {/* showing code of function */}
       <Row className="border border-primary rounded-bottom p-1">
-        <DiffViewWrapper
-          oldCode={oldCode}
-          diff={diff}
-          oldStart={specification.oldStart}
-          newStart={specification.newStart}
-          oldEnd={specification.oldEnd}
-          showDiff={specification.calling === undefined}
-          linesToShow={specification.calling === undefined
-            ? null
-            : specification.calling}
-        />
+        {/* catching errors in component for showing code of function to not crash whole app  */}
+        <ErrorBoundary
+          fallback={(
+            <Alert>
+              Error occurred while trying to display code.
+            </Alert>
+          )}
+          onError={(error) => console.error(error)}
+        >
+          <DiffViewWrapper
+            oldCode={oldCode}
+            diff={diff}
+            oldStart={specification.oldStart}
+            newStart={specification.newStart}
+            oldEnd={specification.oldEnd}
+            showDiff={specification.calling === undefined}
+            linesToShow={specification.calling === undefined
+              ? null
+              : specification.calling}
+          />
+        </ErrorBoundary>
       </Row>
     </div>
   );
