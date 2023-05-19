@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DebugInfo.h"
+#include "Logger.h"
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/InstIterator.h>
@@ -162,11 +163,11 @@ void DebugInfo::extractAlignmentFromInstructions(GetElementPtrInst *GEP,
                                                (unsigned)indexSecond,
                                                IndexConstant->getBitWidth(),
                                                ModFirst.getContext());
-                        DEBUG_WITH_TYPE(
-                                DEBUG_SIMPLL_VERBOSE_EXTRA,
-                                dbgs() << "Index alignment in:" << *GEP << "\n"
-                                       << "                     " << indexFirst
-                                       << " -> " << indexSecond << "\n");
+                        LOG_VERBOSE_EXTRA_NO_INDENT("Index alignment in:"
+                                                    << *GEP << "\n"
+                                                    << "                     "
+                                                    << indexFirst << " -> "
+                                                    << indexSecond << "\n");
                     }
                     // Insert the names of the indices into StructFieldNames.
                     StructFieldNames.insert(

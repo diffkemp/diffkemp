@@ -14,6 +14,7 @@
 #include "RemoveUnusedReturnValuesPass.h"
 #include "CalledFunctionsAnalysis.h"
 #include "FunctionAbstractionsGenerator.h"
+#include "Logger.h"
 #include "Utils.h"
 #include <Config.h>
 #include <llvm/IR/Instructions.h>
@@ -25,10 +26,9 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         AnalysisManager<Module, Function *> &mam,
         Function *Main,
         Module *ModOther) {
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "Removing unused return values in "
-                           << Mod.getName() << "...\n";
-                    increaseDebugIndentLevel());
+    LOG_NO_INDENT("Removing unused return values in " << Mod.getName()
+                                                      << "...\n");
+    LOG_INDENT();
 
     auto &CalledFuns = mam.getResult<CalledFunctionsAnalysis>(Mod, Main);
 
@@ -74,10 +74,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
             // Nothing to replace.
             continue;
 
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                        dbgs() << getDebugIndent(' ')
-                               << "Creating void-returning variant of "
-                               << Fun->getName() << "\n");
+        LOG_VERBOSE_EXTRA("Creating void-returning variant of "
+                          << Fun->getName() << "\n");
 
         // Create a clone of the function.
         // Note: this is needed because the arguments of the original function
@@ -166,12 +164,10 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 CallInst *CI_New = CallInst::Create(Fun_New, Args_AR, "", CI);
                 copyCallInstProperties(CI, CI_New);
 
-                DEBUG_WITH_TYPE(
-                        DEBUG_SIMPLL_VERBOSE_EXTRA, increaseDebugIndentLevel();
-                        dbgs()
-                        << getDebugIndent() << "Replacing :" << *CI << "\n"
-                        << getDebugIndent() << "     with :" << *CI_New << "\n";
-                        decreaseDebugIndentLevel());
+                LOG_INDENT();
+                LOG_VERBOSE_EXTRA("Replacing :" << *CI << "\n");
+                LOG_VERBOSE_EXTRA("     with :" << *CI_New << "\n");
+                LOG_UNINDENT();
                 // Erase the old instruction
                 CI->eraseFromParent();
             }
@@ -184,6 +180,6 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         Fun->eraseFromParent();
     }
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+    LOG_UNINDENT();
     return PreservedAnalyses();
 }

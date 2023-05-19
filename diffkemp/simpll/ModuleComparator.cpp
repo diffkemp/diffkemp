@@ -15,6 +15,7 @@
 #include "ModuleComparator.h"
 #include "Config.h"
 #include "DifferentialFunctionComparator.h"
+#include "Logger.h"
 #include "Utils.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <llvm/Support/raw_ostream.h>
@@ -26,18 +27,15 @@
 /// is designed for comparing functions between different modules.
 void ModuleComparator::compareFunctions(Function *FirstFun,
                                         Function *SecondFun) {
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << getDebugIndent() << "Comparing \""
-                           << FirstFun->getName() << "\" and \""
-                           << SecondFun->getName() << "\" { ";
-                    increaseDebugIndentLevel(););
+    LOG("Comparing \"" << FirstFun->getName() << "\" and \""
+                       << SecondFun->getName() << "\" { ");
+    LOG_INDENT();
     ComparedFuns.emplace(std::make_pair(FirstFun, SecondFun),
                          Result(FirstFun, SecondFun));
 
     // Check if the functions is in the ignored list.
     if (ResCache.isFunctionPairCached(FirstFun, SecondFun)) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent() << "ignored }\n");
+        LOG("ignored }\n");
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
         return;
     }
@@ -83,52 +81,44 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             }
         }
 
-        DEBUG_WITH_TYPE(
-                DEBUG_SIMPLL,
-
-                decreaseDebugIndentLevel();
-                switch (ComparedFuns.at({FirstFun, SecondFun}).kind) {
-                    case Result::NOT_EQUAL:
-                        dbgs() << "declaration, names are "
-                               << Color::makeRed("not equal") << " }\n";
-                        break;
-                    case Result::ASSUMED_EQUAL:
-                        dbgs() << "declaration, "
-                               << Color::makeGreen("assumed equal") << " }\n";
-                        break;
-                    default:
-                        break;
-                });
+        LOG_UNINDENT();
+        switch (ComparedFuns.at({FirstFun, SecondFun}).kind) {
+        case Result::NOT_EQUAL:
+            LOG_NO_INDENT("declaration, names are "
+                          << Color::makeRed("not equal") << " }\n");
+            break;
+        case Result::ASSUMED_EQUAL:
+            LOG_NO_INDENT("declaration, " << Color::makeGreen("assumed equal")
+                                          << " }\n");
+            break;
+        default:
+            break;
+        };
 
         return;
     }
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << "\n");
+    LOG_NO_INDENT("\n");
 
     // Comparing functions with bodies using custom FunctionComparator.
     DifferentialFunctionComparator fComp(
             FirstFun, SecondFun, config, DI, &Patterns, this);
     int result = fComp.compare();
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+    LOG_UNINDENT();
     if (result == 0) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent() << "} "
-                               << Color::makeGreen("equal\n"););
+        LOG("} " << Color::makeGreen("equal\n"));
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
     } else {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent() << "} "
-                               << Color::makeRed("not equal\n")
-                               << Color::makeRed("========== ")
-                               << "Found difference between \""
-                               << FirstFun->getName() << "\" and \""
-                               << SecondFun->getName() << "\""
-                               << Color::makeRed(" ==========\n"););
+        LOG("} " << Color::makeRed("not equal\n")
+                 << Color::makeRed("========== ")
+                 << "Found difference between \"" << FirstFun->getName()
+                 << "\" and \"" << SecondFun->getName() << "\""
+                 << Color::makeRed(" ==========\n"));
         ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
 
         std::set<ConstFunPair> inlinedPairs;
         while (tryInline.first || tryInline.second) {
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL, increaseDebugIndentLevel());
+            LOG_INDENT();
 
             // Try to inline the problematic function calls
             CallInst *callFirst = findCallInst(tryInline.first, FirstFun);
@@ -147,7 +137,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // If nothing was inlined, do not continue
             if (inlineResultFirst != InliningResult::Inlined
                 && inlineResultSecond != InliningResult::Inlined) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+                LOG_UNINDENT();
                 break;
             }
             inlinedPairs.emplace(calledFirst, calledSecond);
@@ -181,7 +171,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                     }
             }
 
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+            LOG_UNINDENT();
             if (result == 0) {
                 // If the functions are equal after inlining, results for all
                 // inlined functions must be reset as they may pollute
@@ -189,20 +179,14 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 for (auto &inlinedPair : inlinedPairs)
                     ComparedFuns.erase(inlinedPair);
 
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent() << "\""
-                                       << FirstFun->getName() << "\" and \""
-                                       << SecondFun->getName() << "\" "
-                                       << Color::makeGreen("equal")
-                                       << " after inlining\n");
+                LOG("\"" << FirstFun->getName() << "\" and \""
+                         << SecondFun->getName() << "\" "
+                         << Color::makeGreen("equal") << " after inlining\n");
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
             } else {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent() << "\""
-                                       << FirstFun->getName() << "\" and \""
-                                       << SecondFun->getName() << "\" still "
-                                       << Color::makeRed("not equal")
-                                       << " after inlining\n");
+                LOG("\"" << FirstFun->getName() << "\" and \""
+                         << SecondFun->getName() << "\" still "
+                         << Color::makeRed("not equal") << " after inlining\n");
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
             }
         }
@@ -223,13 +207,10 @@ ModuleComparator::InliningResult
 
     Function *toInline = getCalledFunction(Call);
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << getDebugIndent() << "Inlining \""
-                           << toInline->getName() << "\" in "
-                           << programName(program) << "\n");
+    LOG("Inlining \"" << toInline->getName() << "\" in " << programName(program)
+                      << "\n");
     if (toInline->isDeclaration()) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent() << "Missing definition\n");
+        LOG("Missing definition\n");
         if (!toInline->isIntrinsic() && !isSimpllAbstraction(toInline))
             return MissingDef;
     } else {

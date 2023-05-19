@@ -16,6 +16,7 @@
 
 #include "SeparateCallsToBitcastPass.h"
 
+#include "Logger.h"
 #include "Utils.h"
 #include <Config.h>
 #include <llvm/IR/Instructions.h>
@@ -109,10 +110,9 @@ PreservedAnalyses
 
                     // Replace the old call instruction with the last generated
                     // instruction.
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                                    dbgs() << "Replacing :" << *Call
-                                           << "\n   with :" << *replacementValue
-                                           << "\n");
+                    LOG_VERBOSE_EXTRA_NO_INDENT("Replacing :"
+                                                << *Call << "\n   with :"
+                                                << *replacementValue << "\n");
                     Call->replaceAllUsesWith(replacementValue);
                     toRemove.push_back(Call);
                 }

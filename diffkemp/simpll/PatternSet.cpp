@@ -19,6 +19,7 @@
 
 #include "PatternSet.h"
 #include "Config.h"
+#include "Logger.h"
 #include "ModuleAnalysis.h"
 #include <algorithm>
 #include <llvm/Support/Debug.h>
@@ -121,11 +122,8 @@ Optional<PatternMetadata>
                 // no-value-pattern-detection metadata: string type.
                 Metadata.NoValuePatternDetection = true;
             } else {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent()
-                                       << "Invalid metadata type " << TypeName
-                                       << " in node " << *InstMetadata
-                                       << ".\n");
+                LOG("Invalid metadata type " << TypeName << " in node "
+                                             << *InstMetadata << ".\n");
                 return None;
             }
             // Shift the operand offset accordingly.
@@ -142,10 +140,8 @@ Optional<PatternMetadata>
 void PatternSet::loadConfig(std::string &ConfigPath) {
     auto ConfigFile = MemoryBuffer::getFile(ConfigPath);
     if (std::error_code EC = ConfigFile.getError()) {
-        DEBUG_WITH_TYPE(
-                DEBUG_SIMPLL,
-                dbgs() << getDebugIndent() << "Failed to open difference "
-                       << "pattern configuration " << ConfigPath << ".\n");
+        LOG("Failed to open difference "
+            << "pattern configuration " << ConfigPath << ".\n");
         return;
     }
 
@@ -155,10 +151,8 @@ void PatternSet::loadConfig(std::string &ConfigPath) {
     YamlFile >> Config;
 
     if (YamlFile.error()) {
-        DEBUG_WITH_TYPE(
-                DEBUG_SIMPLL,
-                dbgs() << getDebugIndent() << "Failed to parse difference "
-                       << "pattern configuration " << ConfigPath << ".\n");
+        LOG("Failed to parse difference "
+            << "pattern configuration " << ConfigPath << ".\n");
         return;
     }
 
@@ -174,10 +168,8 @@ void PatternSet::addPattern(std::string &Path) {
     SMDiagnostic err;
     auto PatternModule = parseIRFile(Path, err, PatternContext);
     if (!PatternModule) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "Failed to parse difference pattern "
-                               << "module " << Path << ".\n");
+        LOG("Failed to parse difference pattern "
+            << "module " << Path << ".\n");
         return;
     }
 
@@ -194,10 +186,8 @@ void PatternSet::addPattern(std::string &Path) {
         auto FunctionR = PatternModule->getFunction(NameR);
         if (!FunctionR)
             continue;
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "Loading a new difference pattern " << Name
-                               << " from module " << Path << ".\n");
+        LOG("Loading a new difference pattern " << Name << " from module "
+                                                << Path << ".\n");
 
         switch (getPatternType(&Function, FunctionR)) {
         case PatternType::INST: {
@@ -217,10 +207,7 @@ void PatternSet::addPattern(std::string &Path) {
         }
 
         default:
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << getDebugIndent()
-                                   << "An unknown pattern type has "
-                                      "been used.\n");
+            LOG("An unknown pattern type has been used.\n");
             break;
         }
     }
@@ -261,10 +248,8 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
 
     // Map input arguments from the left side to the right side.
     if (Pat.PatternL->arg_size() != Pat.PatternR->arg_size()) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "The number of input arguments does not "
-                               << "match in pattern " << Pat.Name << ".\n");
+        LOG("The number of input arguments does not "
+            << "match in pattern " << Pat.Name << ".\n");
         return false;
     }
     for (auto L = Pat.PatternL->arg_begin(), R = Pat.PatternR->arg_begin();
@@ -275,10 +260,8 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
 
     // Create references for the expected output instruction mapping.
     if (OutputMappingInfoL.second != OutputMappingInfoR.second) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "The number of output instructions does "
-                               << "not match in pattern " << Pat.Name << ".\n");
+        LOG("The number of output instructions does "
+            << "not match in pattern " << Pat.Name << ".\n");
         return false;
     }
     if (OutputMappingInfoL.first && OutputMappingInfoR.first) {
@@ -288,12 +271,9 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
             auto MappedInstR = dyn_cast<Instruction>(
                     OutputMappingInfoR.first->getOperand(i));
             if (!MappedInstL || !MappedInstR) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent()
-                                       << "Output instruction mapping in "
-                                       << "pattern " << Pat.Name << " contains "
-                                       << "values that do not reference "
-                                       << "instructions.\n");
+                LOG("Output instruction mapping in pattern "
+                    << Pat.Name << " contains "
+                    << "values that do not reference instructions.\n");
                 return false;
             }
             Pat.OutputMapping[MappedInstL] = MappedInstR;
@@ -337,12 +317,8 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
                 // If present, register start position metadata.
                 if (PatMetadata->PatternStart) {
                     if (*StartPosition) {
-                        DEBUG_WITH_TYPE(
-                                DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent()
-                                       << "Duplicit start instruction found "
-                                       << "in pattern " << Pat.Name << ". "
-                                       << "Using the first one.\n");
+                        LOG("Duplicit start instruction found in pattern "
+                            << Pat.Name << ". Using the first one.\n");
                     } else {
                         *StartPosition = &Inst;
                     }
@@ -422,10 +398,8 @@ bool PatternSet::initializeValuePattern(ValuePattern &Pat) {
     bool IsValidPtrR = (!Pat.ValueR->getType()->isPointerTy()
                         || isa<GlobalVariable>(Pat.ValueR));
     if (!IsValidPtrL || !IsValidPtrR) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "Failed to load value pattern " << Pat.Name
-                               << " since it uses pointers to parameters.\n");
+        LOG("Failed to load value pattern "
+            << Pat.Name << " since it uses pointers to parameters.\n");
         return false;
     }
 

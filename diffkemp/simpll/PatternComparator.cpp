@@ -17,6 +17,7 @@
 #include "PatternComparator.h"
 #include "Config.h"
 #include "DifferentialFunctionComparator.h"
+#include "Logger.h"
 #include "Utils.h"
 
 /// Tries to match a difference pattern starting with the given instruction
@@ -47,10 +48,8 @@ bool PatternComparator::matchValues(const Value *L, const Value *R) {
                 continue;
             }
 
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << getDebugIndent()
-                                   << "Found a match for value pattern "
-                                   << ValuePatternCompPair.first->Name << "\n");
+            LOG("Found a match for value pattern "
+                << ValuePatternCompPair.first->Name << "\n");
             return true;
         }
     }
@@ -79,10 +78,8 @@ bool PatternComparator::matchInstPattern(const Instruction *InstL,
                 continue;
             }
 
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << getDebugIndent()
-                                   << "Found a match for instruction pattern "
-                                   << InstPatternCompPair.first->Name << "\n");
+            LOG("Found a match for instruction pattern "
+                << InstPatternCompPair.first->Name << "\n");
 
             // Create a new instruction mapping since the match is valid.
             InstMappings.clear();

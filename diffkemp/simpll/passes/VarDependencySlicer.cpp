@@ -14,6 +14,7 @@
 
 #include "VarDependencySlicer.h"
 #include "DebugInfo.h"
+#include "Logger.h"
 #include <Config.h>
 #include <llvm/Analysis/CFG.h>
 #include <llvm/IR/CFG.h>
@@ -26,10 +27,9 @@
 PreservedAnalyses VarDependencySlicer::run(Function &Fun,
                                            FunctionAnalysisManager &fam,
                                            GlobalVariable *Var) {
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "Slicing " << Fun.getName() << " w.r.t. value of "
-                           << Var->getName() << "...\n";
-                    increaseDebugIndentLevel());
+    LOG_NO_INDENT("Slicing " << Fun.getName() << " w.r.t. value of "
+                             << Var->getName() << "...\n");
+    LOG_INDENT();
     if (Fun.isDeclaration())
         return PreservedAnalyses::all();
 
@@ -41,8 +41,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     IncludedBasicBlocks.clear();
     IncludedParams.clear();
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                    dbgs() << "Function: " << Fun.getName().str() << "\n");
+    LOG_VERBOSE_EXTRA_NO_INDENT("Function: " << Fun.getName().str() << "\n");
 
     // First phase - determine which instructions are dependent on the parameter
     for (auto &BB : Fun) {
@@ -69,10 +68,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
             if (dependent) {
                 addToDependent(&Instr);
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
-                    dbgs() << "Dependent: ";
-                    Instr.print(dbgs());
-                });
+                LOG_VERBOSE_EXTRA_NO_INDENT("Dependent: ";
+                                            Instr.print(dbgs()););
                 if (auto BranchInstr = dyn_cast<BranchInst>(&Instr)) {
                     auto affectedBBs = affectedBasicBlocks(BranchInstr);
                     addAllInstrs(affectedBBs);
@@ -89,7 +86,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
 
     // Second phase - determine which additional instructions we need to
     // produce a valid CFG
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, dbgs() << "Second phase\n");
+    LOG_VERBOSE_EXTRA_NO_INDENT("Second phase\n");
     // Recursively add all instruction operands to included
     for (auto &Inst : DependentInstrs) {
         if (isa<PHINode>(Inst))
@@ -173,8 +170,7 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
         // Collect and clear all instruction that can be removed
         for (auto &Inst : BB) {
             if (!isIncluded(&Inst) && !Inst.isTerminator()) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                                { dbgs() << "Clearing " << Inst << "\n"; });
+                LOG_VERBOSE_EXTRA_NO_INDENT("Clearing " << Inst << "\n");
                 Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
                 toRemove.push_back(&Inst);
             }
@@ -190,9 +186,8 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     // to return void
     if (RetBB && !RetBB->empty() && !isIncluded(RetBB->getTerminator())
         && !Fun.getReturnType()->isVoidTy()) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                        dbgs() << "Changing return type of " << Fun.getName()
-                               << " to void.\n");
+        LOG_VERBOSE_EXTRA_NO_INDENT("Changing return type of "
+                                    << Fun.getName() << " to void.\n");
         changeToVoid(Fun);
     }
 
@@ -230,12 +225,11 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     //       in a newer version of LLVM.
     deleteUnreachableBlocks(Fun);
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
-        dbgs() << "Function " << Fun.getName().str() << " after cleanup:\n";
-        Fun.print(dbgs());
-        dbgs() << "\n";
-        decreaseDebugIndentLevel();
-    });
+    LOG_VERBOSE_EXTRA_NO_INDENT("Function " << Fun.getName().str()
+                                            << " after cleanup:\n";
+                                Fun.print(dbgs()));
+    LOG_VERBOSE_EXTRA_NO_INDENT("\n");
+    LOG_UNINDENT();
     return PreservedAnalyses::none();
 }
 
@@ -281,10 +275,7 @@ void VarDependencySlicer::addAllInstrs(
         IncludedBasicBlocks.insert(BB);
         for (auto &Instr : *BB) {
             DependentInstrs.insert(&Instr);
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
-                dbgs() << "Dependent: ";
-                Instr.print(dbgs());
-            });
+            LOG_VERBOSE_EXTRA_NO_INDENT("Dependent: "; Instr.print(dbgs()););
         }
     }
 }
@@ -342,10 +333,8 @@ bool VarDependencySlicer::addAllOpsToIncluded(const Instruction *Inst) {
     for (auto &Op : Inst->operands()) {
         if (auto OpInst = dyn_cast<Instruction>(&Op)) {
             if (addToIncluded(OpInst)) {
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA, {
-                    dbgs() << "Included: ";
-                    OpInst->print(dbgs());
-                });
+                LOG_VERBOSE_EXTRA_NO_INDENT("Included: ";
+                                            OpInst->print(dbgs()););
                 added = true;
                 addAllOpsToIncluded(OpInst);
             }

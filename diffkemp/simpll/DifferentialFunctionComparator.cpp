@@ -422,9 +422,7 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
             ModComparator->tryInline = {nullptr, dyn_cast<CallInst>(R)};
         }
 
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent() << "Writing function-macro "
-                               << "syntactic difference\n");
+        LOG("Writing function-macro syntactic difference\n");
 
         std::unique_ptr<SyntaxDifference> diff =
                 std::make_unique<SyntaxDifference>();
@@ -758,10 +756,8 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
     if ((CArgsL.size() > i) && (CArgsR.size() > i)) {
         if (mayIgnoreMacro(CArgsL[i]) && mayIgnoreMacro(CArgsR[i])
             && (CArgsL[i] == CArgsR[i])) {
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << getDebugIndent()
-                                   << "Comparing integers as equal because of "
-                                   << "correspondence to an ignored macro\n");
+            LOG("Comparing integers as equal because of "
+                << "correspondence to an ignored macro\n");
             return 0;
         }
 
@@ -778,11 +774,8 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
             if (SizeL != ModComparator->StructSizeMapL.end()
                 && SizeR != ModComparator->StructSizeMapR.end()
                 && SizeL->second == SizeR->second) {
-                DEBUG_WITH_TYPE(
-                        DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "Comparing integers as equal because of"
-                               << "correspondence to structure type sizes\n");
+                LOG("Comparing integers as equal because of "
+                    << "correspondence to structure type sizes\n");
                 return 0;
             }
 
@@ -799,11 +792,8 @@ bool DifferentialFunctionComparator::cmpCallArgumentUsingCSource(
 
             if (DITypeL && DITypeR
                 && DITypeL->getName() == DITypeR->getName()) {
-                DEBUG_WITH_TYPE(
-                        DEBUG_SIMPLL,
-                        dbgs() << getDebugIndent()
-                               << "Comparing integers as equal because of"
-                               << "correspondence of structure names\n");
+                LOG("Comparing integers as equal because of "
+                    << "correspondence of structure names\n");
                 return 0;
             }
         }
@@ -913,9 +903,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 // If there is an inequality found and we have previously found
                 // a possibly relocated block, try to match it now.
                 Reloc.status = RelocationInfo::Matching;
-                DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                dbgs() << getDebugIndent()
-                                       << "Try to match the relocated block\n");
+                LOG("Try to match the relocated block\n");
                 // The instructions are not equal
                 undoLastInstCompare(InstL, InstR);
                 // Move instruction in the module that contains the relocated
@@ -976,18 +964,14 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 // If the relocated code has been entirely matched, we can
                 // continue from the restore point.
                 if (Reloc.prog == Program::First && InstL == Reloc.end) {
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << getDebugIndent()
-                                           << "Relocated block matched\n");
+                    LOG("Relocated block matched\n");
                     InstL = Reloc.restore;
                     InstR++;
                     Reloc.status = RelocationInfo::None;
                     continue;
                 } else if (Reloc.prog == Program::Second
                            && InstR == Reloc.end) {
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                                    dbgs() << getDebugIndent()
-                                           << "Relocated block matched\n");
+                    LOG("Relocated block matched\n");
                     InstL++;
                     InstR = Reloc.restore;
                     Reloc.status = RelocationInfo::None;
@@ -1771,11 +1755,9 @@ bool DifferentialFunctionComparator::findMatchingOpWithOffset(
             if (isDependingOnReloc(*MovedInst))
                 return false;
 
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << getDebugIndent()
-                                   << "Possible relocation found:\n"
-                                   << "    from: " << *Reloc.begin << "\n"
-                                   << "      to: " << *Reloc.end << "\n");
+            LOG("Possible relocation found:\n"
+                << "    from: " << *Reloc.begin << "\n"
+                << "      to: " << *Reloc.end << "\n");
             return true;
         }
         // Restore serial maps since the instructions do not match

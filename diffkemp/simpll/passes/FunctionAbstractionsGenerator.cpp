@@ -14,6 +14,7 @@
 
 #include "FunctionAbstractionsGenerator.h"
 #include "CalledFunctionsAnalysis.h"
+#include "Logger.h"
 #include "Utils.h"
 #include <Config.h>
 #include <llvm/ADT/Hashing.h>
@@ -26,10 +27,9 @@ AnalysisKey FunctionAbstractionsGenerator::Key;
 /// and for each pair of assembly code and constraint.
 FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
         Module &Mod, AnalysisManager<Module, Function *> &mam, Function *Main) {
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "Generating function abstractions in "
-                           << Mod.getName() << "...\n";
-                    increaseDebugIndentLevel());
+    LOG_NO_INDENT("Generating function abstractions in " << Mod.getName()
+                                                         << "...\n");
+    LOG_INDENT();
     FunMap funAbstractions;
     int i = 0;
     std::vector<Instruction *> toErase;
@@ -104,10 +104,9 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     auto newCall =
                             CallInst::Create(newFun, args, "", CallInstr);
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
-                    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                                    dbgs() << "Replacing :" << *CallInstr
-                                           << "\n     with :" << *newCall
-                                           << "\n");
+                    LOG_VERBOSE_EXTRA_NO_INDENT("Replacing :"
+                                                << *CallInstr << "\n     with :"
+                                                << *newCall << "\n");
                     CallInstr->replaceAllUsesWith(newCall);
                     toErase.push_back(&Instr);
                 }
@@ -117,7 +116,7 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
             toErase.clear();
         }
     }
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+    LOG_UNINDENT();
     return FunctionAbstractionsGenerator::Result{funAbstractions};
 }
 

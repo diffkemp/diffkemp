@@ -14,6 +14,7 @@
 
 #include "SourceCodeUtils.h"
 #include "Config.h"
+#include "Logger.h"
 #include "Utils.h"
 #include <deque>
 #include <llvm/ADT/STLExtras.h>
@@ -32,16 +33,11 @@ void MacroDiffAnalysis::collectMacroUsesAtLocation(
     std::string line = extractLineFromLocation(Loc, lineOffset);
     if (line.empty()) {
         // Source line was not found
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                        dbgs() << getDebugIndent()
-                               << "Source for macro not found\n");
+        LOG_VERBOSE_EXTRA("Source for macro not found\n");
         return;
     }
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                    dbgs() << getDebugIndent()
-                           << "Looking for all macros on line:" << line
-                           << "\n");
+    LOG_VERBOSE_EXTRA("Looking for all macros on line:" << line << "\n");
 
     StringMap<MacroUse> &ResultMacroUses = MacroUsesAtLocation.at(Loc);
 
@@ -116,16 +112,13 @@ void MacroDiffAnalysis::collectMacroUsesAtLocation(
                     if (inserted.second) {
                         // If the macro use is new (it was not in the result
                         // map, yet), add its body into the toExpand queue.
-                        DEBUG_WITH_TYPE(
-                                DEBUG_SIMPLL_VERBOSE_EXTRA,
-                                dbgs() << getDebugIndent() << "Adding macro "
-                                       << newMacroUse.def->name << " : "
-                                       << newMacroUse.def->body
-                                       << ", parent macro "
-                                       << (parentMacroUse
-                                                   ? parentMacroUse->def->name
+                        LOG_VERBOSE_EXTRA(
+                                "Adding macro "
+                                << newMacroUse.def->name << " : "
+                                << newMacroUse.def->body << ", parent macro "
+                                << (parentMacroUse ? parentMacroUse->def->name
                                                    : "")
-                                       << "\n");
+                                << "\n");
                         toExpand.emplace_back(newMacroUse.def->body.str(),
                                               &inserted.first->second);
                     }
@@ -227,9 +220,7 @@ const StringMap<MacroUse> &
                                                      int lineOffset) {
     if (!Loc || Loc->getNumOperands() == 0) {
         // DILocation has no scope or is not present - cannot get macro stack
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                        dbgs() << getDebugIndent()
-                               << "Scope for macro not found\n");
+        LOG_VERBOSE_EXTRA("Scope for macro not found\n");
         MacroUsesAtLocation.emplace(Loc, StringMap<MacroUse>());
         return MacroUsesAtLocation.at(Loc);
     }
@@ -293,28 +284,20 @@ std::vector<std::unique_ptr<SyntaxDifference>>
             std::reverse(StackL.begin(), StackL.end());
             std::reverse(StackR.begin(), StackR.end());
 
-            DEBUG_WITH_TYPE(
-                    DEBUG_SIMPLL_VERBOSE_EXTRA,
-                    dbgs() << getDebugIndent() << "Left stack:\n\t";
-                    dbgs() << getDebugIndent() << MacroUseL.second.def->body
-                           << "\n";
-                    for (CallInfo &elem
-                         : StackL) {
-                        dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
-                               << " in file " << elem.file << " on line "
-                               << elem.line << "\n";
-                    });
-            DEBUG_WITH_TYPE(
-                    DEBUG_SIMPLL_VERBOSE_EXTRA,
-                    dbgs() << getDebugIndent() << "Right stack:\n\t";
-                    dbgs() << getDebugIndent() << MacroUseR->second.def->body
-                           << "\n";
-                    for (CallInfo &elem
-                         : StackR) {
-                        dbgs() << getDebugIndent() << "\t\tfrom " << elem.fun
-                               << " in file " << elem.file << " on line "
-                               << elem.line << "\n";
-                    });
+            LOG_VERBOSE_EXTRA("Left stack:\n\t");
+            LOG_VERBOSE_EXTRA(MacroUseL.second.def->body << "\n");
+            for (CallInfo &elem : StackL) {
+                LOG_VERBOSE_EXTRA("\t\tfrom " << elem.fun << " in file "
+                                              << elem.file << " on line "
+                                              << elem.line << "\n");
+            }
+            LOG_VERBOSE_EXTRA("Right stack:\n\t");
+            LOG_VERBOSE_EXTRA(MacroUseR->second.def->body << "\n");
+            for (CallInfo &elem : StackR) {
+                LOG_VERBOSE_EXTRA("\t\tfrom " << elem.fun << " in file "
+                                              << elem.file << " on line "
+                                              << elem.line << "\n");
+            };
 
             result.push_back(std::make_unique<SyntaxDifference>(
                     MacroUseL.second.def->name,
