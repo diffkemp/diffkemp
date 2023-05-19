@@ -15,6 +15,7 @@
 
 #include "ControlFlowSlicer.h"
 #include "Config.h"
+#include "Logger.h"
 #include "Utils.h"
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
@@ -85,9 +86,8 @@ bool isResultOnlyStored(const Instruction *Inst) {
 /// parameters, and all instructions depending on these.
 PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
                                          FunctionAnalysisManager & /*fam*/) {
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "Slicing control-flow-only statements...\n";
-                    increaseDebugIndentLevel());
+    LOG_NO_INDENT("Slicing control-flow-only statements...\n");
+    LOG_INDENT();
     std::set<const Instruction *> Dependent;
     for (const auto &BB : Fun) {
         for (const auto &Instr : BB) {
@@ -141,15 +141,14 @@ PreservedAnalyses ControlFlowSlicer::run(Function &Fun,
     }
 
     if (!ToRemove.empty()) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL_VERBOSE_EXTRA,
-                        dbgs() << "Removed instructions from " << Fun.getName()
-                               << ": \n");
+        LOG_VERBOSE_EXTRA_NO_INDENT("Removed instructions from "
+                                    << Fun.getName() << ": \n");
     }
 
     for (auto &Instr : ToRemove) {
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL, dbgs() << *Instr << "\n";);
+        LOG_NO_INDENT(*Instr << "\n");
         Instr->eraseFromParent();
     }
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+    LOG_UNINDENT();
     return PreservedAnalyses::none();
 }

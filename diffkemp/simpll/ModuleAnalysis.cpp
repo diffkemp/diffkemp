@@ -15,6 +15,7 @@
 #include "ModuleAnalysis.h"
 #include "DebugInfo.h"
 #include "DifferentialFunctionComparator.h"
+#include "Logger.h"
 #include "ModuleComparator.h"
 #include "ResultsCache.h"
 #include "SourceCodeUtils.h"
@@ -60,9 +61,8 @@ void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
                       bool ControlFlowOnly) {
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                    dbgs() << "Preprocessing " << Mod.getName() << "...\n";
-                    increaseDebugIndentLevel());
+    LOG_NO_INDENT("Preprocessing " << Mod.getName() << "...\n");
+    LOG_INDENT();
     if (Var) {
         // Slicing of the program w.r.t. the value of a global variable
         PassManager<Function, FunctionAnalysisManager, GlobalVariable *> fpm;
@@ -110,7 +110,7 @@ void preprocessModule(Module &Mod,
 
     mpm.run(Mod, mam);
 
-    DEBUG_WITH_TYPE(DEBUG_SIMPLL, decreaseDebugIndentLevel());
+    LOG_UNINDENT();
 
     // Mark module as pre-processed
     Mod.getOrInsertNamedMetadata("preprocessed");
@@ -189,8 +189,7 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
     if (config.FirstFun && config.SecondFun) {
         modComp.compareFunctions(config.FirstFun, config.SecondFun);
 
-        DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                        dbgs() << "Semantic comparison results:\n");
+        LOG_NO_INDENT("Semantic comparison results:\n");
         bool allEqual = true;
         for (auto &funPairResult : modComp.ComparedFuns) {
             if (!funPairResult.first.first->isIntrinsic()
@@ -200,20 +199,17 @@ void simplifyModulesDiff(Config &config, OverallResult &Result) {
             }
             if (funPairResult.second.kind == Result::Kind::NOT_EQUAL) {
                 allEqual = false;
-                DEBUG_WITH_TYPE(
-                        DEBUG_SIMPLL,
-                        dbgs() << funPairResult.first.first->getName()
-                               << " are "
-                               << Color::makeRed("semantically different\n"));
+                LOG_NO_INDENT(funPairResult.first.first->getName()
+                              << " are "
+                              << Color::makeRed("semantically different\n"));
             }
         }
         if (allEqual) {
             // Functions are equal iff all functions that were compared by
             // module comparator (i.e. those that are recursively called by the
             // main functions) are equal.
-            DEBUG_WITH_TYPE(DEBUG_SIMPLL,
-                            dbgs() << Color::makeGreen(
-                                    "All functions are semantically equal\n"));
+            LOG_NO_INDENT(
+                    Color::makeGreen("All functions are semantically equal\n"));
             config.FirstFun->deleteBody();
             config.SecondFun->deleteBody();
             deleteAliasToFun(*config.First, config.FirstFun);
