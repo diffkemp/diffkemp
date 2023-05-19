@@ -15,6 +15,7 @@
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
 #include "FieldAccessUtils.h"
+#include "Logger.h"
 #include "SourceCodeUtils.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include <deque>
@@ -80,11 +81,13 @@ int DifferentialFunctionComparator::cmpValuesByMapping(const Value *L,
 /// Uses data saved in StructFieldNames.
 int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
                                             const GEPOperator *GEPR) const {
+    PREP_LOG("GEP", GEPL, GEPR);
+
     int OriginalResult = FunctionComparator::cmpGEPs(GEPL, GEPR);
 
     if (OriginalResult == 0)
         // The original function says the GEPs are equal - return the value
-        return OriginalResult;
+        RETURN_WITH_LOG(OriginalResult);
 
     if (isa<ArrayType>(GEPL->getSourceElementType())
         && isa<ArrayType>(GEPR->getSourceElementType())) {
@@ -93,57 +96,57 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
 
         if (GEPL->getNumOperands() != 3 || GEPR->getNumOperands() != 3)
             // We only handle GEPs that access exactly one array element
-            return OriginalResult;
+            RETURN_WITH_LOG(OriginalResult);
 
         if (GEPL->getSourceElementType()->getArrayNumElements()
             == GEPR->getSourceElementType()->getArrayNumElements())
-            return OriginalResult;
+            RETURN_WITH_LOG(OriginalResult);
 
         auto *STyL = cast<ArrayType>(GEPL->getSourceElementType());
         auto *STyR = cast<ArrayType>(GEPR->getSourceElementType());
         if (int Res = cmpTypes(STyL->getElementType(), STyR->getElementType()))
             // The array element type must be the same
-            return Res;
+            RETURN_WITH_LOG(Res);
 
         for (unsigned i = 0, e = GEPL->getNumOperands(); i != e; ++i) {
             if (int Res = cmpValues(GEPL->getOperand(i), GEPR->getOperand(i)))
-                return Res;
+                RETURN_WITH_LOG(Res);
         }
 
         auto TypeL = getVariableTypeInfo(GEPL->getOperand(2));
         auto TypeR = getVariableTypeInfo(GEPR->getOperand(2));
 
         if (!TypeL || !TypeR)
-            return OriginalResult;
+            RETURN_WITH_LOG(OriginalResult);
 
         if (TypeL->getTag() == dwarf::DW_TAG_enumeration_type
             && TypeR->getTag() == dwarf::DW_TAG_enumeration_type)
-            return 0;
+            RETURN_WITH_LOG(0);
 
-        return OriginalResult;
+        RETURN_WITH_LOG(OriginalResult);
     }
 
     if (!isa<StructType>(GEPL->getSourceElementType())
         || !isa<StructType>(GEPR->getSourceElementType()))
         // One of the types in not a structure - the original function is
         // sufficient for correct comparison
-        return OriginalResult;
+        RETURN_WITH_LOG(OriginalResult);
 
     if (getStructTypeName(dyn_cast<StructType>(GEPL->getSourceElementType()))
         != getStructTypeName(
                 dyn_cast<StructType>(GEPR->getSourceElementType())))
         // Different structure names - the indices may be same by coincidence,
         // therefore index comparison can't be used
-        return OriginalResult;
+        RETURN_WITH_LOG(OriginalResult);
 
     unsigned int ASL = GEPL->getPointerAddressSpace();
     unsigned int ASR = GEPR->getPointerAddressSpace();
 
     if (int Res = cmpNumbers(ASL, ASR))
-        return Res;
+        RETURN_WITH_LOG(Res);
 
     if (int Res = cmpNumbers(GEPL->getNumIndices(), GEPR->getNumIndices()))
-        return Res;
+        RETURN_WITH_LOG(Res);
 
     if (GEPL->hasAllConstantIndices() && GEPR->hasAllConstantIndices()) {
         std::vector<Value *> IndicesL;
@@ -153,7 +156,7 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
         const GetElementPtrInst *GEPiR = dyn_cast<GetElementPtrInst>(GEPR);
 
         if (!GEPiL || !GEPiR)
-            return OriginalResult;
+            RETURN_WITH_LOG(OriginalResult);
 
         for (auto idxL = GEPL->idx_begin(), idxR = GEPR->idx_begin();
              idxL != GEPL->idx_end() && idxR != GEPR->idx_end();
@@ -171,7 +174,7 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
                 // If the indexed type is not a structure type, the indices have
                 // to match in order for the instructions to be equivalent
                 if (int Res = cmpValues(idxL->get(), idxR->get()))
-                    return Res;
+                    RETURN_WITH_LOG(Res);
 
                 IndicesL.push_back(*idxL);
                 IndicesR.push_back(*idxR);
@@ -193,7 +196,7 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
                 || MemberNameR == DI->StructFieldNames.end()
                 || !MemberNameL->second.equals(MemberNameR->second))
                 if (int Res = cmpValues(idxL->get(), idxR->get()))
-                    return Res;
+                    RETURN_WITH_LOG(Res);
 
             IndicesL.push_back(*idxL);
             IndicesR.push_back(*idxR);
@@ -203,12 +206,12 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
         // element access. We do not need to compare source element type since
         // members of the elements are not accessed here.
         // Just the index itself is compared.
-        return cmpValues(GEPL->getOperand(1), GEPR->getOperand(1));
+        RETURN_WITH_LOG(cmpValues(GEPL->getOperand(1), GEPR->getOperand(1)));
     } else
         // Indices can't be compared by name, because they are not constant
-        return OriginalResult;
+        RETURN_WITH_LOG(OriginalResult);
 
-    return 0;
+    RETURN_WITH_LOG(0);
 }
 
 /// Ignore differences in attributes.
@@ -456,16 +459,18 @@ int DifferentialFunctionComparator::cmpIntWithConstant(
 /// of the composite type is different.
 int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
                                               const CallInst *CR) const {
+    PREP_LOG("alloc", CL, CR);
+
     // Look whether the sizes for allocation match. If yes, then return zero
     // (ignore flags).
     if (cmpValues(CL->op_begin()->get(), CR->op_begin()->get()) == 0) {
-        return 0;
+        RETURN_WITH_LOG(0);
     }
 
     // Check if kzalloc has constant size of the allocated memory
     if (!isa<ConstantInt>(CL->getOperand(0))
         || !isa<ConstantInt>(CR->getOperand(0)))
-        return 1;
+        RETURN_WITH_LOG(1);
 
     // If the next instruction is a bitcast, compare its type instead
     const Value *ValL =
@@ -478,10 +483,10 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
     TypeInfo TypeInfoR = getPointeeStructTypeInfo(ValR, &LayoutR);
 
     // Compare the names and check if type sizes correspond with allocs
-    return TypeInfoL.Name.empty() || TypeInfoR.Name.empty()
-           || TypeInfoL.Name.compare(TypeInfoR.Name)
-           || cmpIntWithConstant(TypeInfoL.Size, CL->getOperand(0))
-           || cmpIntWithConstant(TypeInfoR.Size, CR->getOperand(0));
+    RETURN_WITH_LOG(TypeInfoL.Name.empty() || TypeInfoR.Name.empty()
+                    || TypeInfoL.Name.compare(TypeInfoR.Name)
+                    || cmpIntWithConstant(TypeInfoL.Size, CL->getOperand(0))
+                    || cmpIntWithConstant(TypeInfoR.Size, CR->getOperand(0)));
 }
 
 /// Check if the given instruction can be ignored (it does not affect
@@ -1073,13 +1078,16 @@ std::vector<std::unique_ptr<SyntaxDifference>>
 /// of comparing functions in two different modules.
 int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                                                     GlobalValue *R) const {
+    PREP_LOG("global value", L, R);
+
     auto GVarL = dyn_cast<GlobalVariable>(L);
     auto GVarR = dyn_cast<GlobalVariable>(R);
 
     if (GVarL && GVarR && GVarL->hasInitializer() && GVarR->hasInitializer()
         && GVarL->isConstant() && GVarR->isConstant()) {
         // Constant global variables are compared using their initializers.
-        return cmpConstants(GVarL->getInitializer(), GVarR->getInitializer());
+        RETURN_WITH_LOG_NEQ(
+                cmpConstants(GVarL->getInitializer(), GVarR->getInitializer()));
     } else if (L->hasName() && R->hasName()) {
         // Both values are named, compare them by names
         auto NameL = L->getName();
@@ -1127,10 +1135,11 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                     StringRef constraintL = getInlineAsmConstraintString(FunL);
                     StringRef constraintR = getInlineAsmConstraintString(FunR);
 
-                    return !(asmL == asmR && constraintL == constraintR);
+                    RETURN_WITH_LOG_NEQ(
+                            !(asmL == asmR && constraintL == constraintR));
                 }
             }
-            return 0;
+            RETURN_WITH_LOG_NEQ(0);
 
         } else if (NameL != NameR && GVarL && GVarR && GVarL->isConstant()
                    && GVarR->isConstant() && !GVarL->hasInitializer()
@@ -1138,13 +1147,13 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
             // Externally defined constants (those without initializer
             // and with different names) need to have their definitions linked.
             ModComparator->MissingDefs.push_back({GVarL, GVarR});
-            return 1;
+            RETURN_WITH_LOG_NEQ(1);
         }
 
         else
-            return 1;
+            RETURN_WITH_LOG_NEQ(1);
     } else
-        return L != R;
+        RETURN_WITH_LOG_NEQ(L != R);
 }
 
 // Takes all GEPs in a basic block and computes the sum of their offsets if
@@ -1252,6 +1261,8 @@ int DifferentialFunctionComparator::cmpFieldAccess(
     // without a doubt this is semantically equal (and probably would, in fact,
     // be also equal in machine code).
 
+    PREP_LOG("field access", &*InstL, &*InstR);
+
     // Backup the instruction iterators - if the comparison is not successful,
     // we'll have to restore them.
     auto FirstInstL = InstL;
@@ -1261,16 +1272,16 @@ int DifferentialFunctionComparator::cmpFieldAccess(
     auto GEPR = dyn_cast<GetElementPtrInst>(InstR);
 
     if (!(GEPL && GEPR))
-        return 1;
+        RETURN_WITH_LOG(1);
 
     if (!GEPL->hasAllConstantIndices() || !GEPR->hasAllConstantIndices())
-        return 1;
+        RETURN_WITH_LOG(1);
 
     const Value *PtrL = GEPL->getOperand(0);
     const Value *PtrR = GEPR->getOperand(0);
 
     if (int CmpPtrs = cmpValues(PtrL, PtrR))
-        return CmpPtrs;
+        RETURN_WITH_LOG(CmpPtrs);
 
     uint64_t OffsetL = 0, OffsetR = 0;
     bool l_end = false, r_end = false;
@@ -1297,13 +1308,13 @@ int DifferentialFunctionComparator::cmpFieldAccess(
         // Makes sure that the resulting pointers coming out of the sequences
         // are synchronized (have the same serial number).
         cmpValues(PtrL, PtrR);
-        return 0;
+        RETURN_WITH_LOG(0);
     }
 
     // Restore instruction iterators to their original values
     InstL = FirstInstL;
     InstR = FirstInstR;
-    return 1;
+    RETURN_WITH_LOG(1);
 }
 
 /// Handle values generated from macros and enums whose value changed.
@@ -1313,12 +1324,15 @@ int DifferentialFunctionComparator::cmpFieldAccess(
 /// of the cast.
 int DifferentialFunctionComparator::cmpValues(const Value *L,
                                               const Value *R) const {
+    PREP_LOG("value", L, R);
+
     // Use replacement references for ignored values.
     auto replaceL = getReplacementValue(L, sn_mapL);
     auto replaceR = getReplacementValue(R, sn_mapR);
     if (replaceL || replaceR) {
         // Repeat the comparison with replacements for all ignored values.
-        return cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R);
+        RETURN_WITH_LOG_NEQ(
+                cmpValues(replaceL ? replaceL : L, replaceR ? replaceR : R));
     }
 
     auto oldSnMapSize = sn_mapL.size();
@@ -1330,7 +1344,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             auto MacroMapping = DI->MacroConstantMap.find(ConstantL);
             if (MacroMapping != DI->MacroConstantMap.end()
                 && MacroMapping->second == valueAsString(ConstantR))
-                return 0;
+                RETURN_WITH_LOG_NEQ(0);
         } else if (isa<BasicBlock>(L) && isa<BasicBlock>(R)) {
             // In case functions have different numbers of BBs, they may be
             // compared as unequal here. However, this can be caused by moving
@@ -1345,17 +1359,17 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
                 if ((unsigned long)sn_mapR[R] == (sn_mapR.size() - 1))
                     sn_mapR.erase(R);
             }
-            return 0;
+            RETURN_WITH_LOG_NEQ(0);
         }
         if (PatternComp.matchValues(L, R)) {
             // If the values correspond to a value pattern, consider them equal.
-            return 0;
+            RETURN_WITH_LOG_NEQ(0);
         }
     } else if (oldSnMapSize == (sn_mapL.size() - 1)) {
         // When the values are equal, remember their mapping.
         mappedValuesBySn[oldSnMapSize] = {L, R};
     }
-    return result;
+    RETURN_WITH_LOG_NEQ(result);
 }
 
 /// Specific comparing of constants. If one of them (or both) is a cast
@@ -1431,6 +1445,8 @@ int DifferentialFunctionComparator::cmpCallsWithExtraArg(
 /// Compares array types with equivalent element types as equal when
 /// comparing the control flow only.
 int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
+    PREP_LOG("type", L, R);
+
     // Compare union as equal to another type in case it is at least of the same
     // size.
     // Note: a union type is represented in Clang-generated LLVM IR by a
@@ -1454,7 +1470,7 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
         if (StrTy->getStructName().startswith("union")
             && (StrTyLayout->getTypeAllocSize(StrTy)
                 >= TyLayout->getTypeAllocSize(Ty))) {
-            return 0;
+            RETURN_WITH_LOG_NEQ(0);
         }
     }
 
@@ -1462,17 +1478,18 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
     // comparing the control flow only.
     if (L->isIntegerTy() && R->isIntegerTy() && config.ControlFlowOnly) {
         if (L->getIntegerBitWidth() == 1 || R->getIntegerBitWidth() == 1)
-            return !(L->getIntegerBitWidth() == R->getIntegerBitWidth());
-        return 0;
+            RETURN_WITH_LOG_NEQ(
+                    !(L->getIntegerBitWidth() == R->getIntegerBitWidth()));
+        RETURN_WITH_LOG_NEQ(0);
     }
 
     if (!L->isArrayTy() || !R->isArrayTy() || !config.ControlFlowOnly)
-        return FunctionComparator::cmpTypes(L, R);
+        RETURN_WITH_LOG_NEQ(FunctionComparator::cmpTypes(L, R));
 
     ArrayType *AL = dyn_cast<ArrayType>(L);
     ArrayType *AR = dyn_cast<ArrayType>(R);
 
-    return cmpTypes(AL->getElementType(), AR->getElementType());
+    RETURN_WITH_LOG_NEQ(cmpTypes(AL->getElementType(), AR->getElementType()));
 }
 
 /// Do not compare bitwidth when comparing the control flow only.
@@ -1496,17 +1513,19 @@ int DifferentialFunctionComparator::cmpAPInts(const APInt &L,
 /// the structure size changed.
 int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
                                               const CallInst *CR) const {
+    PREP_LOG("memset", CL, CR);
+
     // Compare all except the third operand (size to set).
     for (unsigned i = 0; i < CL->arg_size(); ++i) {
         if (i == 2)
             continue;
         if (int Res = cmpValues(CL->getArgOperand(i), CR->getArgOperand(i)))
-            return Res;
+            RETURN_WITH_LOG(Res);
     }
 
     // If the structure sizes are equal, we can end right away
     if (!cmpValues(CL->getArgOperand(2), CR->getArgOperand(2)))
-        return 0;
+        RETURN_WITH_LOG(0);
 
     // Get the destination pointers
     const Value *destL = CL->getArgOperand(0);
@@ -1525,10 +1544,11 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
 
     // Return 0 (equality) if both memory destinations are structs of the same
     // name and each memset size is equal to the corresponding struct size.
-    return TypeInfoL.Name.empty() || TypeInfoR.Name.empty()
-           || TypeInfoL.Name.compare(TypeInfoR.Name)
-           || cmpIntWithConstant(TypeInfoL.Size, CL->getOperand(2))
-           || cmpIntWithConstant(TypeInfoR.Size, CR->getOperand(2));
+
+    RETURN_WITH_LOG(TypeInfoL.Name.empty() || TypeInfoR.Name.empty()
+                    || TypeInfoL.Name.compare(TypeInfoR.Name)
+                    || cmpIntWithConstant(TypeInfoL.Size, CL->getOperand(2))
+                    || cmpIntWithConstant(TypeInfoR.Size, CR->getOperand(2)));
 }
 
 /// Comparing PHI instructions.
@@ -1538,8 +1558,10 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
 /// be analysed.
 int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
                                             const PHINode *PhiR) const {
+    PREP_LOG("PHI", PhiL, PhiR);
+
     if (PhiL->getNumIncomingValues() != PhiR->getNumIncomingValues())
-        return 1;
+        RETURN_WITH_LOG_NEQ(1);
     for (unsigned i = 0; i < PhiL->getNumIncomingValues(); ++i) {
         bool match = false;
         for (unsigned j = 0; j < PhiR->getNumIncomingValues(); ++j) {
@@ -1554,17 +1576,18 @@ int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
             }
         }
         if (!match)
-            return 1;
+            RETURN_WITH_LOG_NEQ(1);
     }
-    return 0;
+    RETURN_WITH_LOG_NEQ(0);
 }
 
 /// Compare two instructions along with their operands.
 int DifferentialFunctionComparator::cmpOperationsWithOperands(
         const Instruction *L, const Instruction *R) const {
+    PREP_LOG("instruction", L, R);
+
     // Contains code copied out of the original cmpBasicBlocks since it is more
     // convenient to have the code in a separate function.
-
     bool needToCmpOperands = true;
     if (int Res = cmpOperations(L, R, needToCmpOperands)) {
         auto *CallL = dyn_cast<CallInst>(L);
@@ -1582,7 +1605,7 @@ int DifferentialFunctionComparator::cmpOperationsWithOperands(
                     ModComparator->tryInline = {nullptr, CallR};
             }
         }
-        return Res;
+        RETURN_WITH_LOG(Res);
     }
     if (needToCmpOperands) {
         assert(L->getNumOperands() == R->getNumOperands());
@@ -1599,13 +1622,13 @@ int DifferentialFunctionComparator::cmpOperationsWithOperands(
                                                       OpR,
                                                       i);
                 }
-                return Res;
+                RETURN_WITH_LOG(Res);
             }
             // cmpValues should ensure this is true.
             assert(cmpTypes(OpL->getType(), OpR->getType()) == 0);
         }
     }
-    return 0;
+    RETURN_WITH_LOG(0);
 }
 
 /// Try to find a syntax difference that could be causing the semantic

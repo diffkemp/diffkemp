@@ -18,6 +18,7 @@
 
 #include "DebugInfo.h"
 #include "FunctionComparator.h"
+#include "Logger.h"
 #include "ModuleComparator.h"
 #include "PatternComparator.h"
 #include "Utils.h"
@@ -132,6 +133,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     const DataLayout &LayoutL, &LayoutR;
 
     mutable const DebugLoc *CurrentLocL, *CurrentLocR;
+    mutable Logger logger;
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
     mutable std::vector<std::pair<const PHINode *, const PHINode *>>
             phisToCompare;
