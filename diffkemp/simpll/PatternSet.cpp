@@ -85,11 +85,11 @@ PatternSet::PatternSet(std::string ConfigPath) {
 }
 
 /// Retrives pattern metadata attached to the given instruction.
-Optional<PatternMetadata>
+std::optional<PatternMetadata>
         PatternSet::getPatternMetadata(const Instruction &Inst) const {
     auto InstMetadata = Inst.getMetadata(MetadataName);
     if (!InstMetadata) {
-        return None;
+        return {};
     }
 
     unsigned int OperandIndex = 0;
@@ -124,13 +124,13 @@ Optional<PatternMetadata>
             } else {
                 LOG("Invalid metadata type " << TypeName << " in node "
                                              << *InstMetadata << ".\n");
-                return None;
+                return {};
             }
             // Shift the operand offset accordingly.
             OperandIndex +=
                     PatternMetadata::MetadataOperandCounts.lookup(TypeName) + 1;
         } else {
-            return None;
+            return {};
         }
     }
     return {Metadata};

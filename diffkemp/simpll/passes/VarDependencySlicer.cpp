@@ -24,9 +24,10 @@
 #include <llvm/Transforms/Utils/Local.h>
 #include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
 
-PreservedAnalyses VarDependencySlicer::run(Function &Fun,
-                                           FunctionAnalysisManager &fam,
-                                           GlobalVariable *Var) {
+PreservedAnalyses
+        VarDependencySlicer::run(Function &Fun,
+                                 [[maybe_unused]] FunctionAnalysisManager &fam,
+                                 GlobalVariable *Var) {
     LOG_NO_INDENT("Slicing " << Fun.getName() << " w.r.t. value of "
                              << Var->getName() << "...\n");
     LOG_INDENT();
@@ -99,9 +100,6 @@ PreservedAnalyses VarDependencySlicer::run(Function &Fun,
     unifyExitPass.run(Fun, fam);
     RetBB = findReturnBlock(Fun);
 #else
-    // TODO: once we use C++17, mark `fam` as [[maybe_unused]] in parameter
-    // definition
-    (void)fam;
     UnifyFunctionExitNodes unifyExitPass;
     unifyExitPass.runOnFunction(Fun);
     RetBB = unifyExitPass.getReturnBlock();

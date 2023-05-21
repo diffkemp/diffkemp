@@ -8,7 +8,7 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 include(GNUInstallDirs)
 
