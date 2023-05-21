@@ -826,7 +826,9 @@ void decreaseDebugIndentLevel() {
 /// Inline a function call and return true if inlining succeeded.
 bool inlineCall(CallInst *Call) {
     InlineFunctionInfo ifi;
-#if LLVM_VERSION_MAJOR >= 11
+#if LLVM_VERSION_MAJOR >= 16
+    return InlineFunction(*Call, ifi, false, nullptr, false).isSuccess();
+#elif LLVM_VERSION_MAJOR >= 11
     return InlineFunction(*Call, ifi, nullptr, false).isSuccess();
 #else
     return InlineFunction(Call, ifi, nullptr, false);
