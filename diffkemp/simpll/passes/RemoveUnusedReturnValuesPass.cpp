@@ -16,6 +16,7 @@
 #include "FunctionAbstractionsGenerator.h"
 #include "Logger.h"
 #include "Utils.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <Config.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
@@ -121,16 +122,19 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
         if (Fun->getMetadata("inlineasm"))
             Fun_New->setMetadata("inlineasm", Fun->getMetadata("inlineasm"));
 
+#if LLVM_VERSION_MAJOR >= 16
         // Copy the function body.
+        Fun_New->splice(Fun_New->begin(), Fun);
+#else
         Fun_New->getBasicBlockList().splice(Fun_New->begin(),
                                             Fun->getBasicBlockList());
+#endif
 
         // Replace return instructions on ends of basic blocks with ret void
         for (BasicBlock &B : *Fun_New)
             if (dyn_cast<ReturnInst>(B.getTerminator())) {
-                B.getInstList().pop_back();
                 ReturnInst *Term_New = ReturnInst::Create(B.getContext());
-                B.getInstList().push_back(Term_New);
+                ReplaceInstWithInst(&B.back(), Term_New);
             }
 
         // Replace all uses of the old arguments

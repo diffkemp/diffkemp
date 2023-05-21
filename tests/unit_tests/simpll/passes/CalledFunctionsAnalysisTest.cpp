@@ -40,7 +40,7 @@ static void addCall(Function *Src, Function *Dest) {
     if (Src->isDeclaration()) {
         BB = BasicBlock::Create(Src->getParent()->getContext(), "", Src);
     } else {
-        BB = &*Src->getBasicBlockList().begin();
+        BB = &*Src->begin();
     }
 
     CallInst::Create(Dest, {}, "", BB);
@@ -52,7 +52,7 @@ static void addNonCallUsage(Function *Src, Function *Dest) {
     if (Src->isDeclaration()) {
         BB = BasicBlock::Create(Src->getParent()->getContext(), "", Src);
     } else {
-        BB = &*Src->getBasicBlockList().begin();
+        BB = &*Src->begin();
     }
 
     AllocaInst *All = new AllocaInst(Dest->getType(), 0, "", BB);
@@ -89,7 +89,7 @@ TEST(CalledFunctionsAnalysisTest, Base) {
     // Create return instructions at the end of all functions.
     std::vector<Function *> AllFuns{Main, Fun1, Fun2, Fun3, Fun4, Indir};
     for (Function *F : AllFuns) {
-        ReturnInst::Create(Ctx, nullptr, &*F->getBasicBlockList().begin());
+        ReturnInst::Create(Ctx, nullptr, &*F->begin());
     }
 
     // Run the analysis and check the result.

@@ -47,7 +47,7 @@ static void addCall(Function *Src, Function *Dest) {
     if (Src->isDeclaration()) {
         BB = BasicBlock::Create(Src->getParent()->getContext(), "", Src);
     } else {
-        BB = &*Src->getBasicBlockList().begin();
+        BB = &*Src->begin();
     }
 
     CallInst::Create(Dest, {}, "", BB);

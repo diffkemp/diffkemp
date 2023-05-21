@@ -50,7 +50,7 @@ TEST(RemoveLifetimeCallPassTest, Base) {
     mpm.addPass(RemoveLifetimeCallsPass{});
     mpm.run(*Mod, mam);
 
-    ASSERT_EQ(BB->getInstList().size(), 2);
+    ASSERT_EQ(BB->size(), 2);
     ASSERT_TRUE(isa<IntToPtrInst>(&*BB->begin()));
     ASSERT_TRUE(isa<ReturnInst>(&*BB->begin()->getNextNode()));
 }
