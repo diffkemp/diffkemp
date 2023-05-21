@@ -5,7 +5,7 @@ from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.simpll.library import SimpLLModule
 from diffkemp.simpll.simpll_lib import ffi, lib
-from diffkemp.utils import get_simpll_build_dir
+from diffkemp.utils import get_simpll_build_dir, get_opt_command
 import os
 from subprocess import check_call, check_output, CalledProcessError
 import yaml
@@ -160,11 +160,11 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
             raise SimpLLException("Simplifying files failed")
 
     if output_llvm_ir:
-        check_call(["opt", "-S", "-deadargelim", "-o", first_out_name,
-                    first_out_name],
+        check_call(get_opt_command([("deadargelim", "module")],
+                                   first_out_name),
                    stderr=stderr)
-        check_call(["opt", "-S", "-deadargelim", "-o", second_out_name,
-                    second_out_name],
+        check_call(get_opt_command([("deadargelim", "module")],
+                                   second_out_name),
                    stderr=stderr)
 
     first_out = LlvmModule(first_out_name)

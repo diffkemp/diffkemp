@@ -1,6 +1,6 @@
 """Configuration for difference code patterns."""
 from subprocess import check_call, CalledProcessError, DEVNULL
-from diffkemp.utils import get_llvm_version
+from diffkemp.utils import get_llvm_version, get_opt_command
 import os
 import yaml
 
@@ -121,7 +121,7 @@ class PatternConfig:
             # Note: Possibly due to a bug in `opt`, some valid LLVM IR
             # files with opaque pointers are not accepted when using
             # LLVM 15 without manually enabling opaque pointers.
-            call_opt = ["opt", "-verify", path]
+            call_opt = get_opt_command([("verify", "module")], path, False)
             if get_llvm_version() >= 15:
                 call_opt.append("-opaque-pointers=1")
             check_call(call_opt, stdout=DEVNULL)

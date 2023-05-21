@@ -5,6 +5,7 @@ Functions for working with modules and parameters in them.
 
 from diffkemp.simpll.library import SimpLLModule
 from diffkemp.simpll._simpll.lib import shutdownSimpLL
+from diffkemp.utils import get_opt_command
 import os
 import re
 import shutil
@@ -81,7 +82,7 @@ class LlvmModule:
         link_command = ["llvm-link", "-S", self.llvm]
         link_command.extend([m.llvm for m in link_llvm_modules])
         link_command.extend(["-o", new_llvm])
-        opt_command = ["opt", "-S", "-constmerge", new_llvm, "-o", new_llvm]
+        opt_command = get_opt_command([("constmerge", "module")], new_llvm)
         with open(os.devnull, "w") as devnull:
             try:
                 check_call(link_command, stdout=devnull, stderr=devnull)

@@ -4,6 +4,7 @@ Building kernel sources into LLVM IR.
 from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.llvm_ir.llvm_source_finder import LlvmSourceFinder, \
     SourceNotFoundException
+from diffkemp.utils import get_opt_command
 import os
 from subprocess import check_call, check_output, CalledProcessError
 
@@ -416,10 +417,16 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         For linked files (using llvm-link), run -constmerge to remove
         duplicate constants that might have come from linked files.
         """
-        opt_command = ["opt", "-S", llvm_file, "-o", llvm_file]
-        opt_command.extend(["-lowerswitch", "-mem2reg", "-loop-simplify",
-                            "-simplifycfg", "-gvn", "-dce", "-constmerge",
-                            "-mergereturn", "-simplifycfg"])
+        passes = [("lowerswitch", "function"),
+                  ("mem2reg", "function"),
+                  ("loop-simplify", "function"),
+                  ("simplifycfg", "function"),
+                  ("gvn", "function"),
+                  ("dce", "function"),
+                  ("constmerge", "module"),
+                  ("mergereturn", "function"),
+                  ("simplifycfg", "function")]
+        opt_command = get_opt_command(passes, llvm_file)
         try:
             with open(os.devnull, "w") as devnull:
                 check_call(opt_command, stderr=devnull)
