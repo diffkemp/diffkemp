@@ -153,8 +153,8 @@ TEST(RemoveUnusedReturnValuesPass, Base) {
     ASSERT_TRUE(Fun1->isDeclaration());
     ASSERT_TRUE(Fun1Void->isDeclaration());
     ASSERT_FALSE(Fun2->isDeclaration());
-    ASSERT_EQ(Fun2->getBasicBlockList().size(), 1);
-    ASSERT_EQ(Fun2->begin()->getInstList().size(), 1);
+    ASSERT_EQ(Fun2->size(), 1);
+    ASSERT_EQ(Fun2->begin()->size(), 1);
     auto Fun2Ret = dyn_cast<ReturnInst>(&*Fun2->begin()->begin());
     ASSERT_TRUE(Fun2Ret);
 }

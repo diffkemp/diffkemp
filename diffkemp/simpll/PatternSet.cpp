@@ -308,7 +308,7 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
         PatternInput->insert(&Arg);
     }
     // Analyse instruction data of the selected pattern side.
-    for (auto &&BB : PatternSide->getBasicBlockList()) {
+    for (auto &BB : *PatternSide) {
         for (auto &Inst : BB) {
             // Load instruction metadata.
             auto PatMetadata = getPatternMetadata(Inst);
