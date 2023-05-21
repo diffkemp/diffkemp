@@ -1,6 +1,6 @@
 FROM ubuntu:focal
 MAINTAINER Viktor Malik <vmalik@redhat.com>
-ENV LLVM_VERSION=15
+ENV LLVM_VERSION=16
 RUN apt-get update && \
     apt-get install -y \
       apt-transport-https \
@@ -15,7 +15,8 @@ RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main" && \
     add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main" && \
     add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main" && \
-    add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main"
+    add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main" && \
+    add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main"
 RUN apt-get update && \
     apt-get install -y \
       autoconf \
@@ -29,6 +30,7 @@ RUN apt-get update && \
       clang-13 \
       clang-14 \
       clang-15 \
+      clang-16 \
       clang-format-8 \
       cmake \
       cpio \
@@ -57,6 +59,7 @@ RUN apt-get update && \
       llvm-13-dev \
       llvm-14-dev \
       llvm-15-dev \
+      llvm-16-dev \
       make \
       kmod \
       ninja-build \
@@ -99,6 +102,10 @@ RUN apt-get remove -y cpp gcc g++ && \
     update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-15 80 && \
     update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-15 80 && \
     update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-15 80 && \
+    update-alternatives --install /usr/local/bin/llvm-config llvm-config /usr/bin/llvm-config-16 80 && \
+    update-alternatives --install /usr/local/bin/clang clang /usr/bin/clang-16 80 && \
+    update-alternatives --install /usr/local/bin/opt opt /usr/bin/opt-16 80 && \
+    update-alternatives --install /usr/local/bin/llvm-link llvm-link /usr/bin/llvm-link-16 80 && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 --slave /usr/bin/g++ g++ /usr/bin/g++-7 && \
     update-alternatives --install /usr/bin/x86_64-linux-gnu-gcc x86_64-linux-gnu-gcc /usr/bin/x86_64-linux-gnu-gcc-7 100 \
                         --slave   /usr/bin/x86_64-linux-gnu-g++ x86_64-linux-gnu-g++ /usr/bin/x86_64-linux-gnu-g++-7
