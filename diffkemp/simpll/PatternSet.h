@@ -19,6 +19,7 @@
 #include <llvm/ADT/SmallPtrSet.h>
 #include <llvm/ADT/StringMap.h>
 #include <llvm/IR/Module.h>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -175,7 +176,8 @@ class PatternSet {
     PatternSet(std::string ConfigPath);
 
     /// Retrieves pattern metadata attached to the given instruction.
-    Optional<PatternMetadata> getPatternMetadata(const Instruction &Inst) const;
+    std::optional<PatternMetadata>
+            getPatternMetadata(const Instruction &Inst) const;
 
   private:
     /// Basic information about the output instruction mapping present on one
