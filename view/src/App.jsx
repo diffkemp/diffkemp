@@ -111,16 +111,8 @@ function App() {
       <ResultNavigation
         comparedFunction={comparedFunction}
         diffFunction={diffFunction}
-        onResultsClick={() => {
-          setComparedFunction(null);
-          setDiffFunction(null);
-        }}
-        onCompareClick={() => {
-          setDiffFunction(null);
-        }}
-        onDifferingClick={() => {
-          setComparedFunction(null);
-        }}
+        setComparedFunction={setComparedFunction}
+        setDiffFunction={setDiffFunction}
       />
       {content}
     </>
