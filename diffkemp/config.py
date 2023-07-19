@@ -30,8 +30,8 @@ class Config:
         Store configuration of DiffKemp
         :param snapshot_first: First snapshot representation.
         :param snapshot_second: Second snapshot representation.
-        :param show_diff: Only perform the syntax diff.
-        :param full_diff: Evaluate all syntactic differences.
+        :param show_diff: Evaluate syntax differences.
+        :param full_diff: Evaluate semantics-preserving syntax differences too.
         :param output_llvm_ir: Output each simplified module into a file.
         :param pattern_config: Valid difference patterns configuration.
         :param print_asm_diffs: Print assembly differences.

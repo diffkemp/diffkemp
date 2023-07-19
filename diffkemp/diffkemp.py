@@ -423,9 +423,9 @@ def compare(args):
                             fun_tag=old_fun_desc.tag,
                             output_dir=group_dir if group_dir else output_dir,
                             show_diff=config.show_diff,
+                            full_diff=config.full_diff,
                             initial_indent=2 if (group_name is not None and
-                                                 group_dir is None) else 0,
-                            full_diff=config.full_diff)
+                                                 group_dir is None) else 0)
                     else:
                         # Print the group name if needed
                         if group_name is not None and not group_printed:
@@ -475,8 +475,8 @@ def default_output_dir(src_snapshot, dest_snapshot):
 
 
 def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
-                      fun_tag, output_dir, show_diff, initial_indent,
-                      full_diff):
+                      fun_tag, output_dir, show_diff, full_diff,
+                      initial_indent):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
@@ -487,6 +487,7 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
     :param fun_result: Result of the analysis
     :param output_dir: True if the output is to be written into a file
     :param show_diff: Print syntax diffs.
+    :param full_diff: Print semantics-preserving syntax diffs too.
     :param initial_indent: Initial indentation of printed messages
     """
     def text_indent(text, width):
