@@ -9,12 +9,10 @@ from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
 from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.semdiff.caching import SimpLLCache
-from diffkemp.semdiff.pattern_config import PatternConfig
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from diffkemp.output import YamlOutput
 from subprocess import check_call, CalledProcessError
-from diffkemp.utils import get_llvm_version
 from tempfile import mkdtemp
 from timeit import default_timer
 import errno
@@ -321,27 +319,6 @@ def compare(args):
     Compare the generated snapshots. Runs the semantic comparison and shows
     information about the compared functions that are semantically different.
     """
-    # Parse both the new and the old snapshot.
-    old_snapshot = Snapshot.load_from_dir(args.snapshot_dir_old)
-    new_snapshot = Snapshot.load_from_dir(args.snapshot_dir_new)
-
-    # Check if snapshot LLVM versions are compatible with the current version
-    llvm_version = get_llvm_version()
-
-    if llvm_version != old_snapshot.llvm_version:
-        sys.stderr.write(
-            "Error: old snapshot was built with LLVM {}, "
-            "current version is LLVM {}.\n".format(
-                old_snapshot.llvm_version, llvm_version))
-        sys.exit(errno.EINVAL)
-
-    if llvm_version != new_snapshot.llvm_version:
-        sys.stderr.write(
-            "Error: new snapshot was built with LLVM {}, "
-            "current version is LLVM {}.\n".format(
-                new_snapshot.llvm_version, llvm_version))
-        sys.exit(errno.EINVAL)
-
     # Set the output directory
     if not args.stdout:
         if args.output_dir:
@@ -355,26 +332,11 @@ def compare(args):
     else:
         output_dir = None
 
-    if args.function:
-        old_snapshot.filter([args.function])
-        new_snapshot.filter([args.function])
-
-    # Transform difference pattern files into an LLVM IR based configuration.
-    if args.patterns:
-        pattern_config = PatternConfig.create_from_file(args.patterns)
-    else:
-        pattern_config = None
-
-    config = Config(old_snapshot, new_snapshot,
-                    not args.no_show_diff or args.show_diff,
-                    args.output_llvm_ir, pattern_config,
-                    args.control_flow_only, args.print_asm_diffs,
-                    args.verbose, not args.disable_simpll_ffi,
-                    args.full_diff, args.semdiff_tool)
+    config = Config.from_args(args)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old, start_time=default_timer())
 
-    for group_name, group in sorted(old_snapshot.fun_groups.items()):
+    for group_name, group in sorted(config.snapshot_first.fun_groups.items()):
         group_printed = False
 
         # Set the group directory
@@ -390,14 +352,14 @@ def compare(args):
         if args.enable_module_cache:
             modules_to_cache = _get_modules_to_cache(group.functions.items(),
                                                      group_name,
-                                                     new_snapshot,
+                                                     config.snapshot_second,
                                                      2)
         else:
             modules_to_cache = set()
 
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
-            new_fun_desc = new_snapshot.get_by_name(fun, group_name)
+            new_fun_desc = config.snapshot_second.get_by_name(fun, group_name)
             if not new_fun_desc:
                 continue
 
@@ -482,8 +444,8 @@ def compare(args):
         yaml_output = YamlOutput(snapshot_dir_old=old_dir_abs,
                                  snapshot_dir_new=new_dir_abs, result=result)
         yaml_output.save(output_dir=output_dir, file_name="diffkemp-out.yaml")
-    old_snapshot.finalize()
-    new_snapshot.finalize()
+    config.snapshot_first.finalize()
+    config.snapshot_second.finalize()
 
     if output_dir is not None and os.path.isdir(output_dir):
         print("Differences stored in {}/".format(output_dir))
