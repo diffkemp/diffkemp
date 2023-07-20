@@ -1,0 +1,7 @@
+on_parse_failure: ERROR
+patterns:
+ - tests/regression/custom_patterns/llvm/rhel-82-83/opaque/__put_page.ll
+ - tests/regression/custom_patterns/llvm/rhel-82-83/opaque/bio_endio.ll
+ - tests/regression/custom_patterns/llvm/rhel-82-83/opaque/blk_execute_rq.ll
+ - tests/regression/custom_patterns/llvm/rhel-82-83/opaque/kthread_create_on_node.ll
+ - tests/regression/custom_patterns/llvm/rhel-82-83/opaque/sigprocmask.ll

@@ -1,5 +1,5 @@
 """Configuration of the tool."""
-from diffkemp.semdiff.pattern_config import PatternConfig
+from diffkemp.semdiff.custom_pattern_config import CustomPatternConfig
 from diffkemp.snapshot import Snapshot
 import os
 
@@ -16,7 +16,7 @@ class Config:
         show_diff=True,
         full_diff=False,
         output_llvm_ir=False,
-        pattern_config=None,
+        custom_pattern_config=None,
         control_flow_only=False,
         print_asm_diffs=False,
         verbosity=0,
@@ -30,7 +30,7 @@ class Config:
         :param show_diff: Evaluate syntax differences.
         :param full_diff: Evaluate semantics-preserving syntax differences too.
         :param output_llvm_ir: Output each simplified module into a file.
-        :param pattern_config: Valid difference patterns configuration.
+        :param custom_pattern_config: Valid custom pattern configuration.
         :param print_asm_diffs: Print assembly differences.
         :param control_flow_only: Check only for control-flow differences.
         :param verbosity: Verbosity level (currently boolean).
@@ -43,7 +43,7 @@ class Config:
         self.show_diff = show_diff
         self.full_diff = full_diff
         self.output_llvm_ir = output_llvm_ir
-        self.pattern_config = pattern_config
+        self.custom_pattern_config = custom_pattern_config
         self.control_flow_only = control_flow_only
         self.print_asm_diffs = print_asm_diffs
         self.verbosity = verbosity
@@ -75,17 +75,19 @@ class Config:
 
         # Transform difference pattern files into an LLVM IR
         # based configuration.
-        if args.patterns:
-            pattern_config = PatternConfig.create_from_file(args.patterns)
+        if args.custom_patterns:
+            custom_pattern_config = CustomPatternConfig.create_from_file(
+                args.custom_patterns
+            )
         else:
-            pattern_config = None
+            custom_pattern_config = None
 
         return cls(
             snapshot_first=snapshot_first,
             snapshot_second=snapshot_second,
             show_diff=not args.no_show_diff or args.show_diff,
             full_diff=args.full_diff,
-            pattern_config=pattern_config,
+            custom_pattern_config=custom_pattern_config,
             control_flow_only=args.control_flow_only,
             output_llvm_ir=args.output_llvm_ir,
             print_asm_diffs=args.print_asm_diffs,

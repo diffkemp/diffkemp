@@ -6,14 +6,14 @@ import shutil
 from diffkemp.config import Config
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
-from diffkemp.semdiff.pattern_config import PatternConfig
+from diffkemp.semdiff.custom_pattern_config import CustomPatternConfig
 from diffkemp.semdiff.result import Result
 from diffkemp.snapshot import Snapshot
 from diffkemp.utils import get_llvm_version
 
 
 base_path = os.path.abspath(".")
-patterns_path = os.path.abspath("tests/regression/patterns")
+custom_patterns_path = os.path.abspath("tests/regression/custom_patterns")
 specs_path = os.path.abspath("tests/regression/test_specs")
 tasks_path = os.path.abspath("tests/regression/kernel_modules")
 
@@ -44,17 +44,17 @@ class TaskSpec:
         self.new_kernel_dir = os.path.join(kernel_path, spec["new_kernel"])
         self.name = task_name
         self.task_dir = os.path.join(tasks_path, task_name)
-        if "pattern_config" in spec:
+        if "custom_pattern_config" in spec:
             if get_llvm_version() >= 15:
-                config_filename = spec["pattern_config"]["opaque"]
+                config_filename = spec["custom_pattern_config"]["opaque"]
             else:
-                config_filename = spec["pattern_config"]["explicit"]
-            pattern_config = PatternConfig.create_from_file(
-                path=os.path.join(patterns_path, config_filename),
+                config_filename = spec["custom_pattern_config"]["explicit"]
+            custom_pattern_config = CustomPatternConfig.create_from_file(
+                path=os.path.join(custom_patterns_path, config_filename),
                 patterns_path=base_path
             )
         else:
-            pattern_config = None
+            custom_pattern_config = None
         if "control_flow_only" in spec:
             control_flow_only = spec["control_flow_only"]
         else:
@@ -69,7 +69,7 @@ class TaskSpec:
         self.new_snapshot = Snapshot(self.new_kernel, self.new_kernel)
         self.config = Config(snapshot_first=self.old_snapshot,
                              snapshot_second=self.new_snapshot,
-                             pattern_config=pattern_config,
+                             custom_pattern_config=custom_pattern_config,
                              control_flow_only=control_flow_only)
         self.functions = dict()
 

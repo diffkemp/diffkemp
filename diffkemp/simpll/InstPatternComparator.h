@@ -16,8 +16,8 @@
 #ifndef DIFFKEMP_SIMPLL_INSTPATTERNCOMPARATOR_H
 #define DIFFKEMP_SIMPLL_INSTPATTERNCOMPARATOR_H
 
+#include "CustomPatternSet.h"
 #include "FunctionComparator.h"
-#include "PatternSet.h"
 #include <unordered_map>
 #include <vector>
 

@@ -1,4 +1,4 @@
-//===----------- PatternSet.cpp - Unordered set of code patterns ----------===//
+//===-------- CustomPatternSet.cpp - Unordered set of code patterns -------===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -17,7 +17,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "PatternSet.h"
+#include "CustomPatternSet.h"
 #include "Config.h"
 #include "Logger.h"
 #include "ModuleAnalysis.h"
@@ -42,7 +42,7 @@ template <> struct MappingTraits<PatternConfiguration> {
 } // namespace llvm
 
 /// Metadata operand counts for different kinds of pattern metadata.
-const StringMap<int> PatternMetadata::MetadataOperandCounts = {
+const StringMap<int> CustomPatternMetadata::MetadataOperandCounts = {
         {"pattern-start", 0},
         {"pattern-end", 0},
         {"group-start", 0},
@@ -52,26 +52,26 @@ const StringMap<int> PatternMetadata::MetadataOperandCounts = {
         {"no-value-pattern-detection", 0}};
 
 /// Default DiffKemp prefix for all pattern information.
-const std::string PatternSet::DefaultPrefix = "diffkemp.";
+const std::string CustomPatternSet::DefaultPrefix = "diffkemp.";
 /// Prefix for the left (old) side of difference patterns.
-const std::string PatternSet::PrefixL = "old.";
+const std::string CustomPatternSet::PrefixL = "old.";
 /// Prefix for the right (new) side of difference patterns.
-const std::string PatternSet::PrefixR = "new.";
+const std::string CustomPatternSet::PrefixR = "new.";
 /// Complete prefix for the old side of difference patterns.
-const std::string PatternSet::FullPrefixL =
-        PatternSet::DefaultPrefix + PatternSet::PrefixL;
+const std::string CustomPatternSet::FullPrefixL =
+        CustomPatternSet::DefaultPrefix + CustomPatternSet::PrefixL;
 /// Complete prefix for the right side of difference patterns.
-const std::string PatternSet::FullPrefixR =
-        PatternSet::DefaultPrefix + PatternSet::PrefixR;
+const std::string CustomPatternSet::FullPrefixR =
+        CustomPatternSet::DefaultPrefix + CustomPatternSet::PrefixR;
 /// Name for the function defining output instuction mapping.
-const std::string PatternSet::OutputMappingFunName =
-        PatternSet::DefaultPrefix + "output_mapping";
+const std::string CustomPatternSet::OutputMappingFunName =
+        CustomPatternSet::DefaultPrefix + "output_mapping";
 /// Name for pattern metadata nodes.
-const std::string PatternSet::MetadataName =
-        PatternSet::DefaultPrefix + "pattern";
+const std::string CustomPatternSet::MetadataName =
+        CustomPatternSet::DefaultPrefix + "pattern";
 
 /// Create a new pattern set based on the given configuration.
-PatternSet::PatternSet(std::string ConfigPath) {
+CustomPatternSet::CustomPatternSet(std::string ConfigPath) {
     if (ConfigPath.empty()) {
         return;
     }
@@ -85,15 +85,15 @@ PatternSet::PatternSet(std::string ConfigPath) {
 }
 
 /// Retrives pattern metadata attached to the given instruction.
-std::optional<PatternMetadata>
-        PatternSet::getPatternMetadata(const Instruction &Inst) const {
+std::optional<CustomPatternMetadata>
+        CustomPatternSet::getPatternMetadata(const Instruction &Inst) const {
     auto InstMetadata = Inst.getMetadata(MetadataName);
     if (!InstMetadata) {
         return {};
     }
 
     unsigned int OperandIndex = 0;
-    PatternMetadata Metadata;
+    CustomPatternMetadata Metadata;
     while (OperandIndex < InstMetadata->getNumOperands()) {
         /// Parse the current pattern metadata operand as well as the operands
         /// that depend on it.
@@ -127,8 +127,9 @@ std::optional<PatternMetadata>
                 return {};
             }
             // Shift the operand offset accordingly.
-            OperandIndex +=
-                    PatternMetadata::MetadataOperandCounts.lookup(TypeName) + 1;
+            OperandIndex += CustomPatternMetadata::MetadataOperandCounts.lookup(
+                                    TypeName)
+                            + 1;
         } else {
             return {};
         }
@@ -137,7 +138,7 @@ std::optional<PatternMetadata>
 }
 
 /// Load the given LLVM IR based difference pattern YAML configuration.
-void PatternSet::loadConfig(std::string &ConfigPath) {
+void CustomPatternSet::loadConfig(std::string &ConfigPath) {
     auto ConfigFile = MemoryBuffer::getFile(ConfigPath);
     if (std::error_code EC = ConfigFile.getError()) {
         LOG("Failed to open difference "
@@ -163,7 +164,7 @@ void PatternSet::loadConfig(std::string &ConfigPath) {
 }
 
 /// Add a new LLVM IR difference pattern file.
-void PatternSet::addPattern(std::string &Path) {
+void CustomPatternSet::addPattern(std::string &Path) {
     // Try to load the pattern module.
     SMDiagnostic err;
     auto PatternModule = parseIRFile(Path, err, PatternContext);
@@ -190,7 +191,7 @@ void PatternSet::addPattern(std::string &Path) {
                                                 << Path << ".\n");
 
         switch (getPatternType(&Function, FunctionR)) {
-        case PatternType::INST: {
+        case CustomPatternType::INST: {
             InstPattern NewInstPattern(Name, &Function, FunctionR);
             if (initializeInstPattern(NewInstPattern)) {
                 InstPatterns.emplace(NewInstPattern);
@@ -198,7 +199,7 @@ void PatternSet::addPattern(std::string &Path) {
             break;
         }
 
-        case PatternType::VALUE: {
+        case CustomPatternType::VALUE: {
             ValuePattern NewValuePattern(Name, &Function, FunctionR);
             if (initializeValuePattern(NewValuePattern)) {
                 ValuePatterns.emplace(NewValuePattern);
@@ -217,8 +218,8 @@ void PatternSet::addPattern(std::string &Path) {
 }
 
 /// Finds the pattern type associated with the given pattern functions.
-PatternType PatternSet::getPatternType(const Function *FnL,
-                                       const Function *FnR) {
+CustomPatternType CustomPatternSet::getPatternType(const Function *FnL,
+                                                   const Function *FnR) {
     // Value patterns should only contain a single return instruction.
     auto EntryBBL = &FnL->getEntryBlock(), EntryBBR = &FnR->getEntryBlock();
     if (EntryBBL->size() == 1 && EntryBBR->size() == 1) {
@@ -227,11 +228,11 @@ PatternType PatternSet::getPatternType(const Function *FnL,
         auto PatMetadataR = getPatternMetadata(*EntryBBR->begin());
         if ((!PatMetadataL || !PatMetadataL->NoValuePatternDetection)
             && (!PatMetadataR || !PatMetadataR->NoValuePatternDetection)) {
-            return PatternType::VALUE;
+            return CustomPatternType::VALUE;
         }
     }
 
-    return PatternType::INST;
+    return CustomPatternType::INST;
 }
 
 /// Initializes an instruction pattern, loading all metadata, start positions,
@@ -239,7 +240,7 @@ PatternType PatternSet::getPatternType(const Function *FnL,
 /// metadata, it is set to the first differing pair of pattern instructions.
 /// Patterns with conflicting differences in concurrent branches are skipped,
 /// returning false.
-bool PatternSet::initializeInstPattern(InstPattern &Pat) {
+bool CustomPatternSet::initializeInstPattern(InstPattern &Pat) {
     OutputMappingInfo OutputMappingInfoL, OutputMappingInfoR;
 
     // Initialize both pattern sides.
@@ -285,9 +286,8 @@ bool PatternSet::initializeInstPattern(InstPattern &Pat) {
 
 /// Initializes a single side of a pattern, loading all metadata, start
 /// positions, and retrevies instruction mapping information.
-void PatternSet::initializeInstPatternSide(InstPattern &Pat,
-                                           OutputMappingInfo &OutputMapInfo,
-                                           bool IsLeftSide) {
+void CustomPatternSet::initializeInstPatternSide(
+        InstPattern &Pat, OutputMappingInfo &OutputMapInfo, bool IsLeftSide) {
     Pattern::InputSet *PatternInput;
     bool PatternEndFound = false;
     const Function *PatternSide;
@@ -360,7 +360,7 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
             auto OriginalMetadata =
                     Pat.MetadataMap.find(OutputMappingInstruction);
             if (OriginalMetadata == Pat.MetadataMap.end()) {
-                PatternMetadata PatMetadata;
+                CustomPatternMetadata PatMetadata;
                 PatMetadata.PatternEnd = true;
                 Pat.MetadataMap[OutputMappingInstruction] = PatMetadata;
             } else {
@@ -382,7 +382,7 @@ void PatternSet::initializeInstPatternSide(InstPattern &Pat,
 
 /// Initializes a value pattern loading value differences from both sides of
 /// the pattern.
-bool PatternSet::initializeValuePattern(ValuePattern &Pat) {
+bool CustomPatternSet::initializeValuePattern(ValuePattern &Pat) {
     // Find the compared return instruction on both sides.
     auto EntryBBL = &Pat.PatternL->getEntryBlock(),
          EntryBBR = &Pat.PatternR->getEntryBlock();

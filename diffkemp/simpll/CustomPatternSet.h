@@ -1,4 +1,4 @@
-//===------------ PatternSet.h - Unordered set of code patterns -----------===//
+//===--------- CustomPatternSet.h - Unordered set of code patterns --------===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -11,8 +11,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef DIFFKEMP_SIMPLL_PATTERNSET_H
-#define DIFFKEMP_SIMPLL_PATTERNSET_H
+#ifndef DIFFKEMP_SIMPLL_CUSTOMPATTERNSET_H
+#define DIFFKEMP_SIMPLL_CUSTOMPATTERNSET_H
 
 #include "Utils.h"
 #include <llvm/ADT/DenseMap.h>
@@ -30,10 +30,10 @@ using namespace llvm;
 class DifferentialFunctionComparator;
 
 /// Available types of difference patterns.
-enum class PatternType { INST, VALUE };
+enum class CustomPatternType { INST, VALUE };
 
 /// Representation of difference pattern metadata configuration.
-struct PatternMetadata {
+struct CustomPatternMetadata {
     /// Metadata operand counts for different kinds of pattern metadata.
     static const StringMap<int> MetadataOperandCounts;
     /// Marker for the first differing instruction pair.
@@ -89,7 +89,8 @@ struct Pattern {
 /// Representation of a difference pattern pair based on instruction matching.
 struct InstPattern : public Pattern {
     /// Map of all included pattern metadata.
-    mutable std::unordered_map<const Value *, PatternMetadata> MetadataMap;
+    mutable std::unordered_map<const Value *, CustomPatternMetadata>
+            MetadataMap;
     /// Input instructions and arguments for the left part of the pattern.
     mutable InputSet InputL;
     /// Input instructions and arguments for the right part of the pattern.
@@ -152,7 +153,7 @@ template <> struct hash<ValuePattern> {
 
 /// Compares difference patterns against functions, possibly eliminating reports
 /// of prior semantic differences.
-class PatternSet {
+class CustomPatternSet {
   public:
     /// Default DiffKemp prefix for all pattern information.
     static const std::string DefaultPrefix;
@@ -173,10 +174,10 @@ class PatternSet {
     /// Set of loaded value difference patterns.
     std::unordered_set<ValuePattern> ValuePatterns;
 
-    PatternSet(std::string ConfigPath);
+    CustomPatternSet(std::string ConfigPath);
 
     /// Retrieves pattern metadata attached to the given instruction.
-    std::optional<PatternMetadata>
+    std::optional<CustomPatternMetadata>
             getPatternMetadata(const Instruction &Inst) const;
 
   private:
@@ -198,7 +199,7 @@ class PatternSet {
     void addPattern(std::string &Path);
 
     /// Finds the pattern type associated with the given pattern functions.
-    PatternType getPatternType(const Function *FnL, const Function *FnR);
+    CustomPatternType getPatternType(const Function *FnL, const Function *FnR);
 
     /// Initializes a pattern, loading all metadata, start positions, and the
     /// output mapping of instructions.
@@ -215,4 +216,4 @@ class PatternSet {
     bool initializeValuePattern(ValuePattern &Pat);
 };
 
-#endif // DIFFKEMP_SIMPLL_PATTERNSET_H
+#endif // DIFFKEMP_SIMPLL_CUSTOMPATTERNSET_H
