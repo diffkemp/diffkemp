@@ -286,8 +286,10 @@ def functions_diff(mod_first, mod_second,
                 fun_result.second = fun_pair[1]
                 if fun_result.kind == Result.Kind.NOT_EQUAL or \
                    config.full_diff:
-                    if fun_result.first.diff_kind in ["function", "type"] or \
-                       config.full_diff:
+                    if fun_result.first.diff_kind in ["function", "type"] or (
+                            config.full_diff and
+                            fun_result.first.filename is not None and
+                            fun_result.second.filename is not None):
                         # Get the syntactic diff of functions or types
                         fun_result.diff = syntax_diff(
                             fun_result.first.filename,
