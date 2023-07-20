@@ -16,11 +16,11 @@
 #ifndef DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
 #define DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
 
+#include "CustomPatternComparator.h"
 #include "DebugInfo.h"
 #include "FunctionComparator.h"
 #include "Logger.h"
 #include "ModuleComparator.h"
-#include "PatternComparator.h"
 #include "Utils.h"
 
 using namespace llvm;
@@ -35,12 +35,12 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const Function *F2,
                                    const Config &config,
                                    const DebugInfo *DI,
-                                   const PatternSet *PS,
+                                   const CustomPatternSet *PS,
                                    ModuleComparator *MC)
             : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
               LayoutL(F1->getParent()->getDataLayout()),
               LayoutR(F2->getParent()->getDataLayout()),
-              PatternComp(PatternComparator(PS, this, F1, F2)),
+              CustomPatternComp(CustomPatternComparator(PS, this, F1, F2)),
               ModComparator(MC) {}
 
     int compare() override;
@@ -125,7 +125,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                   Program prog_to_search) const;
 
   private:
-    friend class PatternComparator;
+    friend class CustomPatternComparator;
 
     const Config &config;
     const DebugInfo *DI;
@@ -166,7 +166,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     };
     mutable RelocationInfo Reloc;
 
-    mutable PatternComparator PatternComp;
+    mutable CustomPatternComparator CustomPatternComp;
     ModuleComparator *ModComparator;
 
     /// Try to find a syntax difference that could be causing the semantic

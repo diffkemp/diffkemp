@@ -51,8 +51,8 @@ class Config {
     std::string SecondOutFile;
     // Cache file directory.
     std::string CacheDir;
-    // Path to LLVM IR pattern configuration.
-    std::string PatternConfigPath;
+    // Path to custom LLVM IR differential pattern configuration.
+    std::string CustomPatternConfigPath;
 
     // Save the simplified IR of the module to a file.
     bool OutputLlvmIR;
@@ -70,7 +70,7 @@ class Config {
            std::string FirstOutFile,
            std::string SecondOutFile,
            std::string CacheDir,
-           std::string PatternConfigPath,
+           std::string CustomPatternConfigPath,
            std::string Variable = "",
            bool OutputLlvmIR = false,
            bool ControlFlowOnly = false,
@@ -81,14 +81,14 @@ class Config {
     Config(std::string FirstFunName,
            std::string SecondFunName,
            std::string CacheDir,
-           std::string PatternConfigPath,
+           std::string CustomPatternConfigPath,
            bool ControlFlowOnly = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true)
             : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
               First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
-              PatternConfigPath(PatternConfigPath),
+              CustomPatternConfigPath(PatternConfigPath),
               ControlFlowOnly(ControlFlowOnly), PrintAsmDiffs(PrintAsmDiffs),
               PrintCallStacks(PrintCallStacks) {}
 

@@ -22,7 +22,7 @@ def add_suffix(file, suffix):
 
 
 def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
-               cache_dir=None, pattern_config=None, control_flow_only=False,
+               cache_dir=None, custom_pattern_config=None, control_flow_only=False,
                output_llvm_ir=False, print_asm_diffs=False, verbosity=0,
                use_ffi=False, module_cache=None, modules_to_cache=None):
     """
@@ -54,13 +54,13 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
         output = ffi.new("char [1000000]")
         cache_dir = ffi.new("char []", cache_dir.encode("ascii") if cache_dir
                             else b"")
-        patterns = ffi.new("char []", pattern_config.path.encode("ascii")
-                           if pattern_config else b"")
+        custom_patterns = ffi.new("char []", custom_pattern_config.path.encode("ascii")
+                           if custom_pattern_config else b"")
         variable = ffi.new("char []", var.encode("ascii") if var else b"")
 
         conf_struct = ffi.new("struct config *")
         conf_struct.CacheDir = cache_dir
-        conf_struct.Patterns = patterns
+        conf_struct.CustomPatterns = custom_patterns
         conf_struct.ControlFlowOnly = control_flow_only
         conf_struct.OutputLlvmIR = output_llvm_ir
         conf_struct.PrintAsmDiffs = print_asm_diffs
@@ -138,9 +138,9 @@ def run_simpll(first, second, fun_first, fun_second, var, suffix=None,
             if cache_dir:
                 simpll_command.extend(["--cache-dir", cache_dir])
             # Difference pattern configuration path
-            if pattern_config:
-                simpll_command.extend(["--pattern-config",
-                                       pattern_config.path])
+            if custom_pattern_config:
+                simpll_command.extend(["--custom-pattern-config",
+                                       custom_pattern_config.path])
 
             if control_flow_only:
                 simpll_command.append("--control-flow")

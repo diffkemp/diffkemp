@@ -5,15 +5,15 @@ import os
 import yaml
 
 
-class UnsupportedPatternError(ValueError):
+class UnsupportedCustomPatternError(ValueError):
     """Indicates that a pattern file uses an unsupported format."""
     pass
 
 
-class PatternConfig:
+class CustomPatternConfig:
     """
-    Configuration file containing difference code patterns and global pattern
-    comparison settings.
+    Configuration file containing custom difference code patterns
+    and global pattern comparison settings.
     Difference patterns can be used during module comparison to prevent
     the reporting of known and desired semantic differences.
     """
@@ -41,11 +41,11 @@ class PatternConfig:
         file or a configuration YAML.
         :param path: Path to the file to load.
         """
-        PatternConfig.raise_for_invalid_file(path)
+        CustomPatternConfig.raise_for_invalid_file(path)
         config = cls(path, patterns_path)
 
         # Process the configuration file based on its extension.
-        if PatternConfig.get_extension(path) not in ("ll"):
+        if CustomPatternConfig.get_extension(path) not in ("ll"):
             config._load_yaml()
         else:
             config.add_pattern(path)
@@ -81,8 +81,8 @@ class PatternConfig:
         else:
             full_path = path
 
-        PatternConfig.raise_for_invalid_file(full_path)
-        filetype = PatternConfig.get_extension(full_path)
+        CustomPatternConfig.raise_for_invalid_file(full_path)
+        filetype = CustomPatternConfig.get_extension(full_path)
 
         # Convert all supported pattern types to LLVM IR.
         # Currently, only LLVM IR patterns are supported.
@@ -136,6 +136,6 @@ class PatternConfig:
         :param message: Message for the user.
         """
         if self.settings["on_parse_failure"] == "ERROR":
-            raise UnsupportedPatternError(message)
+            raise UnsupportedCustomPatternError(message)
         elif self.settings["on_parse_failure"] == "WARN":
             print(message)

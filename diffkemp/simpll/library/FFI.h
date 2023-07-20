@@ -22,7 +22,7 @@ extern "C" {
 
 struct config {
     const char *CacheDir;
-    const char *Patterns;
+    const char *CustomPatterns;
     const char *Variable;
     int OutputLlvmIR;
     int ControlFlowOnly;

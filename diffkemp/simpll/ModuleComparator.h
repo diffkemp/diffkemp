@@ -16,8 +16,8 @@
 #define DIFFKEMP_SIMPLL_MODULECOMPARATOR_H
 
 #include "Config.h"
+#include "CustomPatternSet.h"
 #include "DebugInfo.h"
-#include "PatternSet.h"
 #include "Result.h"
 #include "ResultsCache.h"
 #include "SourceCodeUtils.h"
@@ -56,7 +56,7 @@ class ModuleComparator {
     ResultsCache ResCache;
 
     /// Set of valid difference patterns for ignoring known code fragments.
-    PatternSet Patterns;
+    CustomPatternSet CustomPatterns;
 
     /// Analysis of differences in macros
     MacroDiffAnalysis MacroDiffs;
@@ -72,8 +72,8 @@ class ModuleComparator {
             : First(First), Second(Second), config(config),
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
               StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR), DI(DI),
-              ResCache(config.CacheDir), Patterns(config.PatternConfigPath),
-              MacroDiffs() {}
+              ResCache(config.CacheDir),
+              CustomPatterns(config.CustomPatternConfigPath), MacroDiffs() {}
 
     /// Semantically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.

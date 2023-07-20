@@ -108,8 +108,8 @@ def make_argument_parser():
                             help="specify root dirs for the compared projects")
     compare_ap.add_argument("--function", "-f",
                             help="compare only selected function")
-    compare_ap.add_argument("--patterns", "-p",
-                            help="difference pattern file or configuration")
+    compare_ap.add_argument("--custom-patterns", "-p",
+                            help="custom pattern file or configuration")
     compare_ap.add_argument("--output-llvm-ir",
                             help="output each simplified module to a file",
                             action="store_true")

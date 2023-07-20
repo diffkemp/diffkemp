@@ -13,7 +13,7 @@
 
 #include "Utils.h"
 #include "Config.h"
-#include "PatternSet.h"
+#include "CustomPatternSet.h"
 #include <algorithm>
 #include <iostream>
 #include <llvm/BinaryFormat/Dwarf.h>
@@ -775,12 +775,14 @@ bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
 
     // If no prefix is present, the names are not equal.
     StringRef NameRRef = NameR;
-    if (!NameRRef.startswith(PatternSet::DefaultPrefix))
+    if (!NameRRef.startswith(CustomPatternSet::DefaultPrefix))
         return false;
 
     // Remove all prefixes.
-    auto PrefixR = IsLeftSide ? PatternSet::PrefixL : PatternSet::PrefixR;
-    StringRef RealNameRRef = NameRRef.substr(PatternSet::DefaultPrefix.size());
+    auto PrefixR =
+            IsLeftSide ? CustomPatternSet::PrefixL : CustomPatternSet::PrefixR;
+    StringRef RealNameRRef =
+            NameRRef.substr(CustomPatternSet::DefaultPrefix.size());
 
     if (RealNameRRef.startswith(PrefixR))
         RealNameRRef = RealNameRRef.substr(PrefixR.size());

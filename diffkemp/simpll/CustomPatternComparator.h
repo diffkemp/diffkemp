@@ -1,4 +1,4 @@
-//===------------- PatternComparator.h - Code pattern finder --------------===//
+//===---------- CustomPatternComparator.h - Code pattern finder -----------===//
 //
 //       SimpLL - Program simplifier for analysis of semantic difference      //
 //
@@ -13,11 +13,11 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H
-#define DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H
+#ifndef DIFFKEMP_SIMPLL_CUSTOMPATTERNCOMPARATOR_H
+#define DIFFKEMP_SIMPLL_CUSTOMPATTERNCOMPARATOR_H
 
+#include "CustomPatternSet.h"
 #include "InstPatternComparator.h"
-#include "PatternSet.h"
 #include "ValuePatternComparator.h"
 #include <llvm/IR/Instructions.h>
 #include <unordered_map>
@@ -35,12 +35,13 @@ using namespace llvm;
 ///     original and the modified value are described strictly through return
 ///     instructions.
 /// Concrete examples of difference patterns can be seen in regression tests.
-class PatternComparator {
+class CustomPatternComparator {
   public:
-    PatternComparator(const PatternSet *Patterns,
-                      const DifferentialFunctionComparator *DiffFunctionComp,
-                      const Function *FnL,
-                      const Function *FnR)
+    CustomPatternComparator(
+            const CustomPatternSet *Patterns,
+            const DifferentialFunctionComparator *DiffFunctionComp,
+            const Function *FnL,
+            const Function *FnR)
             : DiffFunctionComp(DiffFunctionComp) {
         // Populate both pattern function comparator maps.
         for (auto &InstPattern : Patterns->InstPatterns) {
@@ -129,4 +130,4 @@ class PatternComparator {
                              const InstPatternComparatorPair *PatternComps);
 };
 
-#endif // DIFFKEMP_SIMPLL_PATTERNCOMPARATOR_H
+#endif // DIFFKEMP_SIMPLL_CUSTOMPATTERNCOMPARATOR_H

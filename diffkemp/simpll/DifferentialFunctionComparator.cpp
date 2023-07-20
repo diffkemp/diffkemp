@@ -688,7 +688,7 @@ const Value *DifferentialFunctionComparator::getReplacementValue(
 
 /// Creates new value mappings according to the current pattern match.
 void DifferentialFunctionComparator::createPatternMapping() const {
-    for (auto &&MappedInstPair : PatternComp.InstMappings) {
+    for (auto &&MappedInstPair : CustomPatternComp.InstMappings) {
         // If the instructions are already mapped, do not map them again.
         if (sn_mapL.find(MappedInstPair.first) != sn_mapL.end()
             || sn_mapR.find(MappedInstPair.second) != sn_mapR.end())
@@ -705,8 +705,8 @@ void DifferentialFunctionComparator::createPatternMapping() const {
 /// therefore, does not need to be analyzed nor mapped again.
 bool DifferentialFunctionComparator::isPartOfPattern(
         const Instruction *Inst) const {
-    return PatternComp.AllInstMatches.find(Inst)
-           != PatternComp.AllInstMatches.end();
+    return CustomPatternComp.AllInstMatches.find(Inst)
+           != CustomPatternComp.AllInstMatches.end();
 }
 
 /// Undo the changes made to synchronisation maps during the last
@@ -938,7 +938,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // The difference cannot be skipped. Try to match it to one of the
             // loaded difference patterns. Continue the comparison if a suitable
             // starting pattern match gets found.
-            if (PatternComp.matchPattern(&*InstL, &*InstR)) {
+            if (CustomPatternComp.matchPattern(&*InstL, &*InstR)) {
                 undoLastInstCompare(InstL, InstR);
                 createPatternMapping();
                 if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR))
@@ -1361,7 +1361,7 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             }
             RETURN_WITH_LOG_NEQ(0);
         }
-        if (PatternComp.matchValues(L, R)) {
+        if (CustomPatternComp.matchValues(L, R)) {
             // If the values correspond to a value pattern, consider them equal.
             RETURN_WITH_LOG_NEQ(0);
         }

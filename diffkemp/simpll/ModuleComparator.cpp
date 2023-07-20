@@ -101,7 +101,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
     // Comparing functions with bodies using custom FunctionComparator.
     DifferentialFunctionComparator fComp(
-            FirstFun, SecondFun, config, DI, &Patterns, this);
+            FirstFun, SecondFun, config, DI, &CustomPatterns, this);
     int result = fComp.compare();
 
     LOG_UNINDENT();
@@ -151,7 +151,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
             // Re-run the comparison
             DifferentialFunctionComparator fCompSecond(
-                    FirstFun, SecondFun, config, DI, &Patterns, this);
+                    FirstFun, SecondFun, config, DI, &CustomPatterns, this);
             result = fCompSecond.compare();
 
             // If the functions are equal after the inlining and there is a
