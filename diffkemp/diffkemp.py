@@ -497,8 +497,8 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
     old_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_old), "")
     new_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_new), "")
 
-    any_diff = any([x.diff for x in fun_result.inner.values()])
-    if fun_result.kind == Result.Kind.NOT_EQUAL or (full_diff and any_diff):
+    if fun_result.kind == Result.Kind.NOT_EQUAL or (
+            full_diff and any([x.diff for x in fun_result.inner.values()])):
         if output_dir:
             output = open(os.path.join(output_dir, "{}.diff".format(fun)), "w")
             output.write(
