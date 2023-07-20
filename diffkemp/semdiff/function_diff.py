@@ -309,6 +309,11 @@ def functions_diff(mod_first, mod_second,
                             "warning: unknown diff kind: {}\n".format(
                                 fun_result.first.diff_kind))
                         fun_result.diff = "unknown\n"
+                # Do not save the result if there is neither syntactic nor
+                # semantic difference.
+                if (fun_result.kind != Result.Kind.NOT_EQUAL and
+                        fun_result.diff == ""):
+                    continue
                 result.add_inner(fun_result)
     except ValueError:
         result.kind = Result.Kind.ERROR
