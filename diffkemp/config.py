@@ -1,10 +1,7 @@
 """Configuration of the tool."""
 from diffkemp.semdiff.pattern_config import PatternConfig
 from diffkemp.snapshot import Snapshot
-from diffkemp.utils import get_llvm_version
 import os
-import sys
-import errno
 
 
 class ConfigException(Exception):
@@ -71,28 +68,6 @@ class Config:
         # Parse both the new and the old snapshot.
         snapshot_first = Snapshot.load_from_dir(args.snapshot_dir_old)
         snapshot_second = Snapshot.load_from_dir(args.snapshot_dir_new)
-
-        # Check if snapshot LLVM versions are compatible with
-        # the current version.
-        llvm_version = get_llvm_version()
-
-        if llvm_version != snapshot_first.llvm_version:
-            sys.stderr.write(
-                "Error: old snapshot was built with LLVM {}, "
-                "current version is LLVM {}.\n".format(
-                    snapshot_first.llvm_version, llvm_version
-                )
-            )
-            sys.exit(errno.EINVAL)
-
-        if llvm_version != snapshot_second.llvm_version:
-            sys.stderr.write(
-                "Error: new snapshot was built with LLVM {}, "
-                "current version is LLVM {}.\n".format(
-                    snapshot_second.llvm_version, llvm_version
-                )
-            )
-            sys.exit(errno.EINVAL)
 
         if args.function:
             snapshot_first.filter([args.function])

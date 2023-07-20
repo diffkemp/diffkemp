@@ -15,6 +15,7 @@ import pkg_resources
 import shutil
 import sys
 import yaml
+import errno
 
 
 class Snapshot:
@@ -96,6 +97,17 @@ class Snapshot:
         with open(os.path.join(snapshot_dir, config_file), "r") as \
                 snapshot_yaml:
             loaded_snapshot._from_yaml(snapshot_yaml.read())
+
+        # Check if the snapshot LLVM version is compatible with
+        # the current version.
+        llvm_version = get_llvm_version()
+        if llvm_version != loaded_snapshot.llvm_version:
+            sys.stderr.write(
+                f"Error: The snapshot {snapshot_dir} was built with LLVM"
+                f"{loaded_snapshot.llvm_version}, "
+                f"the current version is {llvm_version}.\n"
+            )
+            sys.exit(errno.EINVAL)
 
         return loaded_snapshot
 
