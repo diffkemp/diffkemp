@@ -114,7 +114,7 @@ class Config:
             control_flow_only=args.control_flow_only,
             output_llvm_ir=args.output_llvm_ir,
             print_asm_diffs=args.print_asm_diffs,
-            verbosity=args.verbosity,
-            use_ffi=args.use_ffi,
+            verbosity=args.verbose,
+            use_ffi=not args.disable_simpll_ffi,
             semdiff_tool=args.semdiff_tool,
         )
