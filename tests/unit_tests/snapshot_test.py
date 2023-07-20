@@ -4,6 +4,7 @@ from diffkemp.snapshot import Snapshot
 from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
+from diffkemp.utils import get_llvm_version
 from tempfile import NamedTemporaryFile
 from tempfile import TemporaryDirectory
 import datetime
@@ -61,8 +62,8 @@ def test_load_snapshot_from_dir_functions():
             kind: kernel_with_builder
             path: null
           source_dir: /diffkemp/kernel/linux-3.10.0-957.el7
-          llvm_version: 13
-        """)
+          llvm_version: {}
+        """.format(get_llvm_version()))
 
         # Load the temporary snapshot configuration file.
         config_file.seek(0)
@@ -124,8 +125,8 @@ def test_load_snapshot_from_dir_sysctls():
             kind: kernel_with_builder
             path: null
           source_dir: /diffkemp/kernel/linux-3.10.0-957.el7
-          llvm_version: 13
-        """)
+          llvm_version: {}
+        """.format(get_llvm_version()))
 
         # Load the temporary sysctl snapshot configuration file.
         config_file.seek(0)
