@@ -259,7 +259,9 @@ def functions_diff(mod_first, mod_second,
                                                  Result.Kind.ASSUMED_EQUAL]])
 
         objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
-            curr_result_graph.graph_to_fun_pair_list(fun_first, fun_second)
+            curr_result_graph.graph_to_fun_pair_list(fun_first,
+                                                     fun_second,
+                                                     config.full_diff)
 
         mod_first.restore_unlinked_llvm()
         mod_second.restore_unlinked_llvm()
@@ -282,7 +284,8 @@ def functions_diff(mod_first, mod_second,
                     fun_result = Result(fun_pair[2], fun_first, fun_second)
                 fun_result.first = fun_pair[0]
                 fun_result.second = fun_pair[1]
-                if fun_result.kind == Result.Kind.NOT_EQUAL:
+                if fun_result.kind == Result.Kind.NOT_EQUAL or \
+                   config.full_diff:
                     if fun_result.first.diff_kind in ["function", "type"]:
                         # Get the syntactic diff of functions or types
                         fun_result.diff = syntax_diff(
@@ -303,6 +306,11 @@ def functions_diff(mod_first, mod_second,
                             "warning: unknown diff kind: {}\n".format(
                                 fun_result.first.diff_kind))
                         fun_result.diff = "unknown\n"
+                # Do not save the result if there is neither syntactic nor
+                # semantic difference.
+                if (fun_result.kind != Result.Kind.NOT_EQUAL and
+                        fun_result.diff == ""):
+                    continue
                 result.add_inner(fun_result)
     except ValueError:
         result.kind = Result.Kind.ERROR

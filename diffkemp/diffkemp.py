@@ -9,12 +9,10 @@ from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
 from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.semdiff.caching import SimpLLCache
-from diffkemp.semdiff.pattern_config import PatternConfig
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from diffkemp.output import YamlOutput
 from subprocess import check_call, CalledProcessError
-from diffkemp.utils import get_llvm_version
 from tempfile import mkdtemp
 from timeit import default_timer
 import errno
@@ -321,27 +319,6 @@ def compare(args):
     Compare the generated snapshots. Runs the semantic comparison and shows
     information about the compared functions that are semantically different.
     """
-    # Parse both the new and the old snapshot.
-    old_snapshot = Snapshot.load_from_dir(args.snapshot_dir_old)
-    new_snapshot = Snapshot.load_from_dir(args.snapshot_dir_new)
-
-    # Check if snapshot LLVM versions are compatible with the current version
-    llvm_version = get_llvm_version()
-
-    if llvm_version != old_snapshot.llvm_version:
-        sys.stderr.write(
-            "Error: old snapshot was built with LLVM {}, "
-            "current version is LLVM {}.\n".format(
-                old_snapshot.llvm_version, llvm_version))
-        sys.exit(errno.EINVAL)
-
-    if llvm_version != new_snapshot.llvm_version:
-        sys.stderr.write(
-            "Error: new snapshot was built with LLVM {}, "
-            "current version is LLVM {}.\n".format(
-                new_snapshot.llvm_version, llvm_version))
-        sys.exit(errno.EINVAL)
-
     # Set the output directory
     if not args.stdout:
         if args.output_dir:
@@ -355,25 +332,11 @@ def compare(args):
     else:
         output_dir = None
 
-    if args.function:
-        old_snapshot.filter([args.function])
-        new_snapshot.filter([args.function])
-
-    # Transform difference pattern files into an LLVM IR based configuration.
-    if args.patterns:
-        pattern_config = PatternConfig.create_from_file(args.patterns)
-    else:
-        pattern_config = None
-
-    config = Config(old_snapshot, new_snapshot, args.show_diff,
-                    args.output_llvm_ir, pattern_config,
-                    args.control_flow_only, args.print_asm_diffs,
-                    args.verbose, not args.disable_simpll_ffi,
-                    args.semdiff_tool)
+    config = Config.from_args(args)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
                     args.snapshot_dir_old, start_time=default_timer())
 
-    for group_name, group in sorted(old_snapshot.fun_groups.items()):
+    for group_name, group in sorted(config.snapshot_first.fun_groups.items()):
         group_printed = False
 
         # Set the group directory
@@ -389,14 +352,14 @@ def compare(args):
         if args.enable_module_cache:
             modules_to_cache = _get_modules_to_cache(group.functions.items(),
                                                      group_name,
-                                                     new_snapshot,
+                                                     config.snapshot_second,
                                                      2)
         else:
             modules_to_cache = set()
 
         for fun, old_fun_desc in sorted(group.functions.items()):
             # Check if the function exists in the other snapshot
-            new_fun_desc = new_snapshot.get_by_name(fun, group_name)
+            new_fun_desc = config.snapshot_second.get_by_name(fun, group_name)
             if not new_fun_desc:
                 continue
 
@@ -436,8 +399,10 @@ def compare(args):
 
                 # Printing information about failures and non-equal functions.
                 if fun_result.kind in [Result.Kind.NOT_EQUAL,
-                                       Result.Kind.ERROR, Result.Kind.UNKNOWN]:
-                    if fun_result.kind == Result.Kind.NOT_EQUAL:
+                                       Result.Kind.UNKNOWN,
+                                       Result.Kind.ERROR] or config.full_diff:
+                    if fun_result.kind == Result.Kind.NOT_EQUAL or \
+                       config.full_diff:
                         # Create the output directory if needed
                         if output_dir is not None:
                             if not os.path.isdir(output_dir):
@@ -457,7 +422,8 @@ def compare(args):
                             fun_result=fun_result,
                             fun_tag=old_fun_desc.tag,
                             output_dir=group_dir if group_dir else output_dir,
-                            show_diff=args.show_diff,
+                            show_diff=config.show_diff,
+                            full_diff=config.full_diff,
                             initial_indent=2 if (group_name is not None and
                                                  group_dir is None) else 0)
                     else:
@@ -478,8 +444,8 @@ def compare(args):
         yaml_output = YamlOutput(snapshot_dir_old=old_dir_abs,
                                  snapshot_dir_new=new_dir_abs, result=result)
         yaml_output.save(output_dir=output_dir, file_name="diffkemp-out.yaml")
-    old_snapshot.finalize()
-    new_snapshot.finalize()
+    config.snapshot_first.finalize()
+    config.snapshot_second.finalize()
 
     if output_dir is not None and os.path.isdir(output_dir):
         print("Differences stored in {}/".format(output_dir))
@@ -509,7 +475,8 @@ def default_output_dir(src_snapshot, dest_snapshot):
 
 
 def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
-                      fun_tag, output_dir, show_diff, initial_indent):
+                      fun_tag, output_dir, show_diff, full_diff,
+                      initial_indent):
     """
     Log syntax diff of 2 functions. If log_files is set, the output is printed
     into a separate file, otherwise it goes to stdout.
@@ -520,6 +487,7 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
     :param fun_result: Result of the analysis
     :param output_dir: True if the output is to be written into a file
     :param show_diff: Print syntax diffs.
+    :param full_diff: Print semantics-preserving syntax diffs too.
     :param initial_indent: Initial indentation of printed messages
     """
     def text_indent(text, width):
@@ -529,7 +497,8 @@ def print_syntax_diff(snapshot_dir_old, snapshot_dir_new, fun, fun_result,
     old_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_old), "")
     new_dir_abs_path = os.path.join(os.path.abspath(snapshot_dir_new), "")
 
-    if fun_result.kind == Result.Kind.NOT_EQUAL:
+    if fun_result.kind == Result.Kind.NOT_EQUAL or (
+            full_diff and any([x.diff for x in fun_result.inner.values()])):
         if output_dir:
             output = open(os.path.join(output_dir, "{}.diff".format(fun)), "w")
             output.write(

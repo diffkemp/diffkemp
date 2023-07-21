@@ -49,16 +49,16 @@ class TaskSpec:
                 config_filename = spec["pattern_config"]["opaque"]
             else:
                 config_filename = spec["pattern_config"]["explicit"]
-            self.pattern_config = PatternConfig.create_from_file(
+            pattern_config = PatternConfig.create_from_file(
                 path=os.path.join(patterns_path, config_filename),
                 patterns_path=base_path
             )
         else:
-            self.pattern_config = None
+            pattern_config = None
         if "control_flow_only" in spec:
-            self.control_flow_only = spec["control_flow_only"]
+            control_flow_only = spec["control_flow_only"]
         else:
-            self.control_flow_only = False
+            control_flow_only = False
 
         # Create LLVM sources and configuration
         self.old_kernel = KernelSourceTree(
@@ -67,10 +67,10 @@ class TaskSpec:
             self.new_kernel_dir, KernelLlvmSourceBuilder(self.new_kernel_dir))
         self.old_snapshot = Snapshot(self.old_kernel, self.old_kernel)
         self.new_snapshot = Snapshot(self.new_kernel, self.new_kernel)
-        self.config = Config(self.old_snapshot, self.new_snapshot, False,
-                             False, self.pattern_config,
-                             self.control_flow_only, False, False, False, None)
-
+        self.config = Config(snapshot_first=self.old_snapshot,
+                             snapshot_second=self.new_snapshot,
+                             pattern_config=pattern_config,
+                             control_flow_only=control_flow_only)
         self.functions = dict()
 
     def finalize(self):

@@ -22,8 +22,8 @@ def syntax_diff(first_file, second_file, name, kind, first_line, second_line):
     # the lines on which the function starts in each file to extract both
     # functions into temporary files
     for filename in [first_file, second_file]:
-        tmp_file = "1" if filename == first_file else "2"
-        start = first_line if filename == first_file else second_line
+        tmp_file = "1" if filename is first_file else "2"
+        start = first_line if filename is first_file else second_line
 
         try:
             end = get_end_line(filename, start, kind)
