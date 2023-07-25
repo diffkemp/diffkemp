@@ -65,7 +65,7 @@ describe('testing a differing function visualisation', () => {
   const newStart = 746;
   const oldEnd = 775;
   const newEnd = 757;
-
+  /* eslint-disable no-tabs */
   const diff = `--- /tmp/tmp47pt0hsi/1	2023-03-16 17:36:00.611068650 +0100
 +++ /tmp/tmp47pt0hsi/2	2023-03-16 17:36:00.611068650 +0100
 @@ -770,4 +750,6 @@
@@ -76,7 +76,9 @@ describe('testing a differing function visualisation', () => {
 +		psi_dequeue(p, flags & DEQUEUE_SLEEP);
 +	}
 `;
+  /* eslint-enable no-tabs */
 
+  /* eslint-disable no-tabs */
   const oldCode = `${'\n'.repeat(oldStart - 1)
   }static inline void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
 {
@@ -88,7 +90,9 @@ describe('testing a differing function visualisation', () => {
 
 	p->sched_class->dequeue_task(rq, p, flags);
 }`;
+  /* eslint-enable no-tabs */
 
+  /* eslint-disable no-tabs */
   const newCode = `${'\n'.repeat(newStart - 1)
   }static inline void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
 {
@@ -102,6 +106,7 @@ describe('testing a differing function visualisation', () => {
 
 	p->sched_class->dequeue_task(rq, p, flags);
 }`;
+  /* eslint-enable no-tabs */
 
   const setup = () => {
     render(
@@ -149,23 +154,27 @@ describe('testing a differing function visualisation', () => {
     expect(
       screen.getByText((content, element) => (
         element.tagName === 'TD'
+          /* eslint-disable-next-line no-tabs */
           && element.textContent === '	if (!(flags & DEQUEUE_SAVE))'
       )),
     ).toHaveClass('diff-code-delete');
     expect(
       screen.getByText((content, element) => (
         element.tagName === 'TD'
+          /* eslint-disable-next-line no-tabs */
           && element.textContent === '	if (!(flags & DEQUEUE_SAVE)) {'
       )),
     ).toHaveClass('diff-code-insert');
     expect(
       screen.getByText((content, element) => (
         element.tagName === 'TD'
+          /* eslint-disable-next-line no-tabs */
           && element.textContent === '		psi_dequeue(p, flags & DEQUEUE_SLEEP);'
       )),
     ).toHaveClass('diff-code-insert');
     expect(
       screen.getByText((content, element) => element.tagName === 'TD'
+        /* eslint-disable-next-line no-tabs */
         && element.textContent === '	}'),
     ).toHaveClass('diff-code-insert');
   });
@@ -188,6 +197,7 @@ describe('testing a differing function visualisation', () => {
     // clicking on expand buttons one by one
     while (btns.length > 0) {
       loop += 1;
+      // eslint-disable-next-line no-await-in-loop
       await userEvent.click(btns[0]);
       // endless loop/buttons check
       if (loop > LOOP_LIMIT) {
@@ -225,6 +235,7 @@ describe('testing a caller function visualisation', () => {
 
   const diff = '';
 
+  /* eslint-disable no-tabs */
   const oldCode = `${'\n'.repeat(oldStart - 1)
   }static void call_usermodehelper_exec_work(struct work_struct *work)
 {
@@ -248,7 +259,9 @@ describe('testing a caller function visualisation', () => {
 		}
 	}
 }`;
+  /* eslint-enable no-tabs */
 
+  /* eslint-disable no-tabs */
   const newCode = `${'\n'.repeat(newStart - 1)
   }static void call_usermodehelper_exec_work(struct work_struct *work)
 {
@@ -272,6 +285,7 @@ describe('testing a caller function visualisation', () => {
 		}
 	}
 }`;
+  /* eslint-enable no-tabs */
 
   const setup = () => {
     render(
@@ -290,6 +304,7 @@ describe('testing a caller function visualisation', () => {
     setup();
     const callingLines = screen.getAllByText((content, element) => (
       element.tagName === 'TD'
+        /* eslint-disable-next-line no-tabs */
         && element.textContent === '		pid = kernel_thread(call_usermodehelper_exec_async, sub_info,'
     ));
 
