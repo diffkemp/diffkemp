@@ -27,7 +27,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "prod": "serve -s build"
+    "prod": "serve -s build",
+    "lint": "eslint --ext .jsx,.js src",
+    "lint:fix": "eslint --ext .jsx,.js --fix src"
   },
   "browserslist": {
     "production": [
@@ -40,5 +42,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "eslint-config-airbnb": "^19.0.4"
   }
 }
