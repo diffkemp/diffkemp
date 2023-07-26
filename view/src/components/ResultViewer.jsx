@@ -2,6 +2,7 @@
 // Author: Lukas Petr
 
 import { useEffect, useState } from 'react';
+import { PropTypes } from 'prop-types';
 import { load } from 'js-yaml';
 import path from 'path-browserify';
 
@@ -108,3 +109,7 @@ export default function ResultViewer({ getFile }) {
     </>
   );
 }
+
+ResultViewer.propTypes = {
+  getFile: PropTypes.func.isRequired,
+};

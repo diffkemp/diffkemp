@@ -2,6 +2,7 @@
 // Author: Lukas Petr
 
 import { useState } from 'react';
+import { PropTypes } from 'prop-types';
 
 import Container from 'react-bootstrap/Container';
 import Col from 'react-bootstrap/Col';
@@ -10,6 +11,7 @@ import Alert from 'react-bootstrap/Alert';
 
 import Callstack from './Callstack';
 import Code from './Code';
+import { DefinitionsPropTypes, DiffPropTypes } from '../PropTypesValues';
 
 /**
  * @param {Object} props
@@ -126,3 +128,12 @@ export default function Difference({
     </Container>
   );
 }
+
+Difference.propTypes = {
+  compare: PropTypes.string.isRequired,
+  diff: DiffPropTypes.isRequired,
+  oldFolder: PropTypes.string.isRequired,
+  newFolder: PropTypes.string.isRequired,
+  definitions: DefinitionsPropTypes.isRequired,
+  getFile: PropTypes.func.isRequired,
+};

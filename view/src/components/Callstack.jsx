@@ -2,6 +2,8 @@
 // Author: Lukas Petr
 
 import ListGroup from 'react-bootstrap/ListGroup';
+import { PropTypes } from 'prop-types';
+import { CallstackPropTypes, DefinitionsPropTypes } from '../PropTypesValues';
 
 /**
  * Component for visualisation of call stack.
@@ -127,6 +129,15 @@ export default function Callstack({
   );
 }
 
+Callstack.propTypes = {
+  compFunName: PropTypes.string.isRequired,
+  oldCallStack: CallstackPropTypes.isRequired,
+  newCallStack: CallstackPropTypes.isRequired,
+  selectedFunction: PropTypes.string,
+  onSelect: PropTypes.func.isRequired,
+  definitions: DefinitionsPropTypes.isRequired,
+};
+
 /**
  * Component for visualisation of pair of calls which belongs together.
  * @param {Object} props
@@ -161,6 +172,13 @@ function SingleCall({
     />
   );
 }
+
+SingleCall.propTypes = {
+  oldName: PropTypes.string.isRequired,
+  newName: PropTypes.string,
+  selectedFunction: PropTypes.string,
+  onSelect: PropTypes.func.isRequired,
+};
 
 /**
  * Component for visualisation of multiple calls from call stack
@@ -204,6 +222,13 @@ function Calls({
   );
 }
 
+Calls.propTypes = {
+  oldCalls: CallstackPropTypes.isRequired,
+  newCalls: CallstackPropTypes,
+  selectedFunction: PropTypes.string,
+  onSelect: PropTypes.func.isRequired,
+};
+
 /**
  * Component for visualisation of call from call stack.
  * @param {Object} props
@@ -228,3 +253,9 @@ function Call({ name, selectedFunction, onSelect }) {
     />
   );
 }
+
+Call.propTypes = {
+  name: PropTypes.string.isRequired,
+  selectedFunction: PropTypes.string,
+  onSelect: PropTypes.func.isRequired,
+};

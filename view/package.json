@@ -12,6 +12,7 @@
     "path-browserify": "^1.0.1",
     "prism-color-variables": "^1.0.1",
     "prismjs": "^1.29.0",
+    "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.2",
     "react-diff-view": "^2.4.10",

@@ -20,7 +20,7 @@ describe('simple callstack visualisation test', () => {
         compFunName={compFunName}
         oldCallStack={oldCallStack}
         newCallStack={newCallStack}
-        definitions={[]}
+        definitions={{}}
         onSelect={onSelect}
       />,
     );
@@ -69,7 +69,8 @@ describe('complex callstack visualisation test', () => {
         compFunName={compFunName}
         oldCallStack={oldCallStack}
         newCallStack={newCallStack}
-        definitions={[]}
+        definitions={{}}
+        onSelect={() => {}}
       />,
     );
     expect(screen.getByText(compFunName)).toBeVisible();
@@ -92,7 +93,8 @@ describe("callstack with 'different' differing functions", () => {
         compFunName={compFunName}
         oldCallStack={oldCallStack}
         newCallStack={newCallStack}
-        definitions={[]}
+        definitions={{}}
+        onSelect={() => {}}
       />,
     );
     expect(screen.getByText('down_write')).toBeVisible();
@@ -118,6 +120,7 @@ describe('callstack with renamed function', () => {
         oldCallStack={oldCallStack}
         newCallStack={newCallStack}
         definitions={definitions}
+        onSelect={() => {}}
       />,
     );
     expect(screen.getByText('old_name')).toBeVisible();
