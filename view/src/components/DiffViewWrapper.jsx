@@ -4,6 +4,7 @@
 import {
   useCallback, useEffect, useMemo, useState,
 } from 'react';
+import { PropTypes } from 'prop-types';
 import {
   Diff,
   Hunk,
@@ -217,3 +218,13 @@ export default function DiffViewWrapper({
     </Diff>
   );
 }
+
+DiffViewWrapper.propTypes = {
+  oldCode: PropTypes.string.isRequired,
+  diff: PropTypes.string.isRequired,
+  oldStart: PropTypes.number.isRequired,
+  newStart: PropTypes.number.isRequired,
+  oldEnd: PropTypes.number.isRequired,
+  showDiff: PropTypes.bool,
+  linesToShow: PropTypes.arrayOf(PropTypes.number),
+};

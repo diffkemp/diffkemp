@@ -1,6 +1,8 @@
 // Listing of functions.
 // Author: Lukas Petr
 
+import { PropTypes } from 'prop-types';
+
 import Stack from 'react-bootstrap/Stack';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
@@ -75,3 +77,9 @@ export default function FunctionListing({
     </Container>
   );
 }
+
+FunctionListing.propTypes = {
+  headline: PropTypes.string.isRequired,
+  functions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onFunctionSelect: PropTypes.func.isRequired,
+};

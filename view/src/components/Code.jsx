@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import path from 'path-browserify';
+import { PropTypes } from 'prop-types';
 
 import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
@@ -111,3 +112,18 @@ export default function Code({
     </div>
   );
 }
+
+Code.propTypes = {
+  specification: PropTypes.shape({
+    oldSrc: PropTypes.string.isRequired,
+    newSrc: PropTypes.string.isRequired,
+    diff: PropTypes.string,
+    oldStart: PropTypes.number.isRequired,
+    newStart: PropTypes.number.isRequired,
+    oldEnd: PropTypes.number.isRequired,
+    calling: PropTypes.arrayOf(PropTypes.number),
+  }).isRequired,
+  oldFolder: PropTypes.string.isRequired,
+  newFolder: PropTypes.string.isRequired,
+  getFile: PropTypes.func.isRequired,
+};

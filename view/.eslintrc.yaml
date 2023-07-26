@@ -6,4 +6,4 @@ extends:
   # From React 17 importing React is not necessary for JSX
   - plugin:react/jsx-runtime
 rules:
-  react/prop-types: off
+  react/require-default-props: off

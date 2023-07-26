@@ -2,9 +2,12 @@
 // Author: Lukas Petr
 
 import { useCallback } from 'react';
+import { PropTypes } from 'prop-types';
+
 import Breadcrumb from 'react-bootstrap/Breadcrumb';
 import Container from 'react-bootstrap/Container';
 import NavigationArrows from './NavigationArrows';
+import Result from '../Result';
 
 /**
  * @param {Object} props
@@ -129,3 +132,11 @@ export default function ResultNavigation({
     </Container>
   );
 }
+
+ResultNavigation.propTypes = {
+  comparedFunction: PropTypes.string,
+  diffFunction: PropTypes.string,
+  setComparedFunction: PropTypes.func.isRequired,
+  setDiffFunction: PropTypes.func.isRequired,
+  result: PropTypes.instanceOf(Result).isRequired,
+};

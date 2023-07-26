@@ -1,6 +1,8 @@
 // Arrows for navigating to next/previous difference, ...
 // Author: Lukas Petr
 
+import { PropTypes } from 'prop-types';
+
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Button from 'react-bootstrap/Button';
 
@@ -38,3 +40,13 @@ export default function NavigationArrows({
     </ButtonGroup>
   );
 }
+
+NavigationArrows.propTypes = {
+  onPrevClick: PropTypes.func.isRequired,
+  onNextClick: PropTypes.func.isRequired,
+  nextText: PropTypes.string.isRequired,
+  prevText: PropTypes.string.isRequired,
+  disablePrev: PropTypes.bool.isRequired,
+  disableNext: PropTypes.bool.isRequired,
+  className: PropTypes.string,
+};
