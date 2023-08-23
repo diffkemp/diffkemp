@@ -183,5 +183,7 @@ jobs:
       run: npm ci --prefix view
     - name: Run tests
       run: npm test --prefix view
-    - name: Create build with ESLint checks
+    - name: Check coding style with ESLint
+      run: npm run lint --prefix view
+    - name: Create build
       run: CI=false npm run build --prefix view
