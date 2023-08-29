@@ -6,5 +6,8 @@ extends:
   # From React 17 importing React is not necessary for JSX
   - plugin:react/jsx-runtime
   - plugin:cypress/recommended
+ignorePatterns:
+  - public/
+  - build/
 rules:
   react/require-default-props: off
