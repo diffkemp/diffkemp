@@ -179,8 +179,11 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node }}
-    - name: Install packages
-      run: npm ci --prefix view
+    - name: Install dependencies and cache them
+      uses: cypress-io/github-action@v5
+      with:
+        runTests: false
+        working-directory: view
     - name: Run RTL tests
       run: npm test --prefix view
     - name: Run Cypress tests
