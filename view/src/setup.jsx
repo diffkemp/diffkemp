@@ -1,4 +1,4 @@
-// Setup used in application
+// Setup used in application and Cypress tests
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-diff-view/style/index.css';
