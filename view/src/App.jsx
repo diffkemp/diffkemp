@@ -15,13 +15,6 @@
 //         - `DiffViewWrapper`: The visualisation of the selected function
 //                              made possible by react-diff-view package.
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'react-diff-view/style/index.css';
-import 'prismjs/themes/prism.min.css';
-import 'prism-color-variables/variables.css';
-import 'prism-color-variables/themes/visual-studio.css';
-import './style.css';
-
 import ResultViewer from './components/ResultViewer';
 
 /**
