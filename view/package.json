@@ -30,7 +30,9 @@
     "eject": "react-scripts eject",
     "prod": "serve -s build",
     "lint": "eslint --ext .jsx,.js src",
-    "lint:fix": "eslint --ext .jsx,.js --fix src"
+    "lint:fix": "eslint --ext .jsx,.js --fix src",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run --component"
   },
   "browserslist": {
     "production": [
@@ -45,6 +47,8 @@
     ]
   },
   "devDependencies": {
-    "eslint-config-airbnb": "^19.0.4"
+    "cypress": "^12.17.4",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-plugin-cypress": "^2.14.0"
   }
 }
