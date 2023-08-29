@@ -29,8 +29,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "prod": "serve -s build",
-    "lint": "eslint --ext .jsx,.js src",
-    "lint:fix": "eslint --ext .jsx,.js --fix src",
+    "lint": "eslint --ext .jsx,.js .",
+    "lint:fix": "eslint --ext .jsx,.js --fix .",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --component"
   },
