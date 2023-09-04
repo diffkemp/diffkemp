@@ -1,7 +1,7 @@
 cmake_policy(SET CMP0048 NEW)
 cmake_minimum_required(VERSION 3.5)
 project(diffkemp
-    VERSION 0.4.0)
+    VERSION 0.5.0)
 
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")

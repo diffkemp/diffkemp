@@ -1,5 +1,5 @@
 Name:           diffkemp
-Version:        0.4.0
+Version:        0.5.0
 Release:        1%{?dist}
 Summary:        A tool for analyzing semantic differences in C projects
 
@@ -18,7 +18,6 @@ Requires:       cscope
 Requires:       clang llvm-devel
 Requires:       make
 Requires:       diffutils
-Requires:       python3-setuptools
 
 %{?python_enable_dependency_generator}
 
@@ -38,14 +37,14 @@ PYTHONPATH=$PWD/rpython-0.2.1:$PWD/py-1.11.0:$PYTHONPATH
 export PYTHONPATH
 mkdir build
 # SimpLL (C++ part)
-%cmake -S . -B build -GNinja
+%cmake -S . -B build -GNinja -DBUILD_VIEWER=On
 %ninja_build -C build
 # Python part
 %py3_build
 
 
 %install
-# SimpLL (C++ part)
+# SimpLL (C++ part) + Viewer
 %ninja_install -C build
 mkdir -p %{buildroot}/%{_bindir}
 install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
@@ -70,9 +69,18 @@ tests/unit_tests/simpll/runTests
 # SimpLL (C++ part)
 %{_bindir}/%{name}
 %{_libdir}/libsimpll-lib.so
+# Viewer
+%{_sharedstatedir}/diffkemp/view/
 
 
 %changelog
+* Mon Sep 04 2023 Viktor Malik <vmalik@redhat.com> - 0.5.0-1
+- New web-based viewer of found differences
+- CLI options for built-in patterns
+- Improved logging and debugging
+- Support for LLVM 16
+- Move to C++17
+
 * Wed Nov 23 2022 Viktor Malik <vmalik@redhat.com> - 0.4.0-1
 - Reworked CLI interface (generate split into multiple commands)
 - New command for analysing any Makefile-based projects
