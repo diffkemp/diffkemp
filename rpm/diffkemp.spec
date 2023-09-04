@@ -14,6 +14,7 @@ BuildRequires:  llvm-devel
 BuildRequires:  python3-devel python3-pip python3-setuptools python2
 BuildRequires:  git
 BuildRequires:  /usr/bin/pathfix.py
+BuildRequires:  npm
 Requires:       cscope
 Requires:       clang llvm-devel
 Requires:       make
