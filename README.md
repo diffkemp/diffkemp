@@ -238,6 +238,7 @@ order:
 - Tomáš Vojnar
 - Petr Šilling
 - Pavol Žáčik
+- Lukáš Petr
 - Tatiana Malecová
 - Jakub Rozek
 
