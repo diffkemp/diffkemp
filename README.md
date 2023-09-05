@@ -91,6 +91,9 @@ DiffKemp runs in two phases:
     also has additional options to configure the project build, see `diffkemp
     build --help` for the complete list.
 
+    The command can be also used to generate a snapshot from a single C file.
+    In this case, the path to the file should be given in place of `PROJ_DIR`.
+
   - ```
     diffkemp build-kernel KERNEL_DIR SNAPSHOT_DIR SYMBOL_LIST
     ```

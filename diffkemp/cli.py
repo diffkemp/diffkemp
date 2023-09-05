@@ -17,9 +17,11 @@ def make_argument_parser():
 
     # "build" sub-command
     build_ap = sub_ap.add_parser("build",
-                                 help="build snapshot from Makefile project")
+                                 help="build snapshot from Makefile project "
+                                 "or from a single C file")
     build_ap.add_argument("source_dir",
-                          help="project's root directory")
+                          help="project's root directory "
+                          "or a path to a single C file")
     build_ap.add_argument("output_dir",
                           help="output directory of the snapshot")
     build_ap.add_argument("symbol_list", nargs='?',

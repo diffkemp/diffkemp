@@ -8,6 +8,7 @@ from diffkemp.llvm_ir.source_tree import SourceTree, SourceNotFoundException
 from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
 from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
+from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
@@ -37,6 +38,20 @@ def run_from_cli():
 
 
 def build(args):
+    # build snapshot from make-based c project
+    if os.path.isdir(args.source_dir):
+        build_c_project(args)
+    # make snapshot from single c file
+    elif os.path.isfile(args.source_dir) and args.source_dir.endswith(".c"):
+        build_c_file(args)
+    else:
+        sys.stderr.write(
+            "Error: the specified source_dir is not a directory nor a C file\n"
+        )
+        sys.exit(errno.EINVAL)
+
+
+def build_c_project(args):
     # Generate wrapper for C/C++ compiler
     cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
 
@@ -121,6 +136,30 @@ def build(args):
     generate_from_function_list(snapshot, symbol_list)
 
     # Create the snapshot directory containing the YAML description file
+    snapshot.generate_snapshot_dir()
+    snapshot.finalize()
+
+
+def build_c_file(args):
+    # It ignores following args: build-program, build-file, clang-drop,
+    #   llvm-link, llvm-dis, target, reconfigure, no-native-cc-wrapper.
+    source_file_name = os.path.basename(args.source_dir)
+    source_dir = os.path.dirname(args.source_dir)
+
+    clang_append = args.clang_append if args.clang_append is not None else []
+    # Create a new snapshot and generate its content.
+    source_finder = SingleCBuilder(source_dir, source_file_name,
+                                   clang=args.clang,
+                                   clang_append=clang_append)
+    source = SourceTree(source_dir, source_finder)
+    snapshot = Snapshot.create_from_source(source, args.output_dir, "function")
+    if args.symbol_list is None:
+        function_list = source_finder.get_function_list()
+    else:
+        function_list = read_symbol_list(args.symbol_list)
+    generate_from_function_list(snapshot, function_list)
+
+    # Create the snapshot directory containing the YAML description file.
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
 
