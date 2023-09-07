@@ -3,8 +3,8 @@ LLVM source finder for projects that are entirely compiled in build phase
 of DiffKemp using the compiler wrapper.
 """
 from diffkemp.llvm_ir.llvm_source_finder import LlvmSourceFinder
+from diffkemp.utils import get_functions_from_llvm
 import os
-import re
 
 
 class WrapperBuildFinder(LlvmSourceFinder):
@@ -35,19 +35,7 @@ class WrapperBuildFinder(LlvmSourceFinder):
                           for line in db_file.readlines()
                           if line.startswith("o:")]
 
-        # Read LLVM IR files, get all LLVM functions that satisfy C naming from
-        # there and save them into self.functions along with the files there
-        # were found in
-        function_regex = re.compile(r"^define.*@(\w+)\(", flags=re.MULTILINE)
-        for llvm_filename in llvm_files:
-            if not os.path.exists(llvm_filename):
-                # TODO: Print a warning here
-                continue
-            with open(llvm_filename, 'r') as llvm_file:
-                llvm_file_content = llvm_file.read()
-                matches = function_regex.findall(llvm_file_content)
-                for match in matches:
-                    self.functions[match] = llvm_filename
+        self.functions = get_functions_from_llvm(llvm_files)
 
         # Write out functions list into a file in the snapshot directory
         with open(os.path.join(self.source_dir,
