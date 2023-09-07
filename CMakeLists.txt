@@ -47,6 +47,22 @@ if (${BUILD_VIEWER})
     COMMAND ${NPM} run build
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/view
   )
+  install(DIRECTORY view/build DESTINATION /var/lib/diffkemp/view
+    # Setting 755 for files.
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                     GROUP_READ GROUP_EXECUTE
+                     WORLD_READ WORLD_EXECUTE
+    # Setting 777 for directories to make it possible to create
+    # `src` and `diffs` folder by user (`diffkemp view`).
+    DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                     GROUP_READ GROUP_WRITE GROUP_EXECUTE
+                     WORLD_READ WORLD_WRITE WORLD_EXECUTE
+    # Making it possible to remove `diffkemp-out.yaml`
+    # by a user (`diffkemp view`) if it existed during installation.
+    PATTERN "diffkemp-out.yaml"
+         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                     GROUP_READ GROUP_WRITE GROUP_EXECUTE
+                     WORLD_READ WORLD_WRITE WORLD_EXECUTE
+  ) # install
 endif ()
-
 add_subdirectory(tests/unit_tests/simpll)

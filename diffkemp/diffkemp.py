@@ -24,6 +24,8 @@ import sys
 import shutil
 import yaml
 
+VIEW_INSTALL_DIR = "/var/lib/diffkemp/view"
+
 
 def run_from_cli():
     """Main method to run the tool."""
@@ -579,13 +581,27 @@ def view(args):
     with open(yaml_path, "r") as file:
         yaml_result = yaml.safe_load(file)
 
-    # Path to folder with viewer
-    VIEW_DIRECTORY = os.path.join(os.path.dirname(__file__), "../view")
+    # Determine the view directory.
+    # The manually built one has priority over the installed one.
+    view_directory = os.path.join(os.path.dirname(__file__), "../view")
+    if not os.path.exists(view_directory):
+        if os.path.exists(VIEW_INSTALL_DIR):
+            view_directory = VIEW_INSTALL_DIR
+        else:
+            sys.stderr.write(
+                "Error: directory with the viewer was not found\n")
+            sys.exit(errno.ENOENT)
+
     # Path to folder which viewer can access
     if args.devel:
-        PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "public")
+        if view_directory == VIEW_INSTALL_DIR:
+            sys.stderr.write(
+                "Error: it is not possible to run the development server\n" +
+                "\tfor installed DiffKemp\n")
+            sys.exit(errno.EINVAL)
+        PUBLIC_DIRECTORY = os.path.join(view_directory, "public")
     else:
-        PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "build")
+        PUBLIC_DIRECTORY = os.path.join(view_directory, "build")
         if not os.path.isdir(PUBLIC_DIRECTORY):
             sys.stderr.write(
                 "Could not find production build of the viewer.\n" +
@@ -661,7 +677,7 @@ def view(args):
         yaml.dump(yaml_result, file, sort_keys=False)
 
     if args.devel:
-        os.chdir(VIEW_DIRECTORY)
+        os.chdir(view_directory)
         os.system("npm install")
         os.system("npm start")
     else:
