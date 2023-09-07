@@ -1,5 +1,8 @@
 import os
 import subprocess
+import re
+
+LLVM_FUNCTION_REGEX = re.compile(r"^define.*@(\w+)\(", flags=re.MULTILINE)
 
 
 def get_simpll_build_dir():
@@ -71,3 +74,25 @@ def get_end_line(filename, start, kind):
                 raise EndLineNotFound
             line = lines[line_number - 1]
         return line_number
+
+
+def get_functions_from_llvm(llvm_files):
+    """
+    Reads LLVM IR files, gets all LLVM functions that satisfy C naming from
+    there.
+    Returns dict with keys being names of found functions and values
+    files there were found in.
+    :param llvm_files: List of LLVM IR files.
+    """
+    functions = {}
+    for llvm_filename in llvm_files:
+        if not os.path.exists(llvm_filename):
+            os.stderr.write(
+                f"Warning: llvm file '{llvm_filename}' does not exist\n")
+            continue
+        with open(llvm_filename, 'r') as llvm_file:
+            llvm_file_content = llvm_file.read()
+            matches = LLVM_FUNCTION_REGEX.findall(llvm_file_content)
+            for match in matches:
+                functions[match] = llvm_filename
+    return functions
