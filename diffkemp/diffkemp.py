@@ -593,15 +593,15 @@ def view(args):
 
     # Determine the view_directory.
     # The manually built one has priority over the installed one.
-    # PUBLIC_DIRECTORY: Path to folder which viewer can access.
+    # public_directory: Path to folder which viewer can access.
     view_directory = os.path.join(os.path.dirname(__file__), "../view")
     # Manually build one
     if os.path.exists(view_directory):
         if args.devel:
-            PUBLIC_DIRECTORY = os.path.join(view_directory, "public")
+            public_directory = os.path.join(view_directory, "public")
         else:
-            PUBLIC_DIRECTORY = os.path.join(view_directory, "build")
-            if not os.path.isdir(PUBLIC_DIRECTORY):
+            public_directory = os.path.join(view_directory, "build")
+            if not os.path.isdir(public_directory):
                 sys.stderr.write(
                     "Could not find production build of the viewer.\n" +
                     "Use --devel to run a development server " +
@@ -610,7 +610,7 @@ def view(args):
     # Installed one
     elif os.path.exists(VIEW_INSTALL_DIR):
         view_directory = VIEW_INSTALL_DIR
-        PUBLIC_DIRECTORY = VIEW_INSTALL_DIR
+        public_directory = VIEW_INSTALL_DIR
         if args.devel:
             sys.stderr.write(
                 "Error: it is not possible to run the development server " +
@@ -623,13 +623,13 @@ def view(args):
         sys.exit(errno.ENOENT)
 
     # Preparing source directory
-    SOURCE_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "src")
-    if not os.path.exists(SOURCE_DIRECTORY):
-        os.mkdir(SOURCE_DIRECTORY)
+    source_directory = os.path.join(public_directory, "src")
+    if not os.path.exists(source_directory):
+        os.mkdir(source_directory)
     # Preparing diff directory
-    DIFF_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "diffs")
-    if not os.path.isdir(DIFF_DIRECTORY):
-        os.mkdir(DIFF_DIRECTORY)
+    diff_directory = os.path.join(public_directory, "diffs")
+    if not os.path.isdir(diff_directory):
+        os.mkdir(diff_directory)
 
     # Prepare source and diff files to view directory
     old_snapshot_dir = yaml_result["old-snapshot"]
@@ -657,7 +657,7 @@ def view(args):
         if old_file not in processed_files:
             processed_files.add(old_file)
 
-            output_file_path = os.path.join(SOURCE_DIRECTORY, old_file)
+            output_file_path = os.path.join(source_directory, old_file)
             output_dir_path = os.path.dirname(output_file_path)
             if not os.path.isdir(output_dir_path):
                 os.makedirs(output_dir_path)
@@ -677,14 +677,14 @@ def view(args):
                 definition["diff"] = False
             else:
                 definition["diff"] = True
-                diff_path = os.path.join(DIFF_DIRECTORY, name + ".diff")
+                diff_path = os.path.join(diff_directory, name + ".diff")
                 with open(diff_path, "w") as file:
                     file.write(diff)
         else:
             definition["diff"] = False
 
     # save YAML
-    with open(os.path.join(PUBLIC_DIRECTORY, YAML_FILE_NAME), "w") as file:
+    with open(os.path.join(public_directory, YAML_FILE_NAME), "w") as file:
         yaml.dump(yaml_result, file, sort_keys=False)
 
     if args.devel:
@@ -692,7 +692,7 @@ def view(args):
         os.system("npm install")
         os.system("npm start")
     else:
-        os.chdir(PUBLIC_DIRECTORY)
+        os.chdir(public_directory)
         handler = SimpleHTTPRequestHandler
         handler.log_message = lambda *_, **__: None
         with HTTPServer(("localhost", 3000), handler) as httpd:
@@ -703,8 +703,8 @@ def view(args):
             except KeyboardInterrupt:
                 httpd.shutdown()
     # Cleaning
-    rmtree_without_parent(SOURCE_DIRECTORY)
-    rmtree_without_parent(DIFF_DIRECTORY)
+    rmtree_without_parent(source_directory)
+    rmtree_without_parent(diff_directory)
     # Cleaning content of yaml file.
-    with open(os.path.join(PUBLIC_DIRECTORY, YAML_FILE_NAME), "w"):
+    with open(os.path.join(public_directory, YAML_FILE_NAME), "w"):
         pass
