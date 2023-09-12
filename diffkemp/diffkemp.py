@@ -571,6 +571,16 @@ def view(args):
     View the compare differences. Prepares files for the visualisation
     and runs viewer.
     """
+    def rmtree_without_parent(path):
+        """
+        Recursively removes files and dirs in `path` directory
+        without the parent dir.
+        """
+        for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+            for dirname in dirnames:
+                os.rmdir(os.path.join(dirpath, dirname))
+            for filename in filenames:
+                os.remove(os.path.join(dirpath, filename))
     # Load yaml describing results
     YAML_FILE_NAME = "diffkemp-out.yaml"
     yaml_path = os.path.join(args.compare_output_dir, YAML_FILE_NAME)
@@ -692,3 +702,9 @@ def view(args):
                 httpd.serve_forever()
             except KeyboardInterrupt:
                 httpd.shutdown()
+    # Cleaning
+    rmtree_without_parent(SOURCE_DIRECTORY)
+    rmtree_without_parent(DIFF_DIRECTORY)
+    # Cleaning content of yaml file.
+    with open(os.path.join(PUBLIC_DIRECTORY, YAML_FILE_NAME), "w"):
+        pass
