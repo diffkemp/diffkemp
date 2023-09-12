@@ -661,7 +661,9 @@ def view(args):
         yaml.dump(yaml_result, file, sort_keys=False)
 
     if args.devel:
-        os.system(f"cd {VIEW_DIRECTORY} && npm start")
+        os.chdir(VIEW_DIRECTORY)
+        os.system("npm install")
+        os.system("npm start")
     else:
         os.chdir(PUBLIC_DIRECTORY)
         handler = SimpleHTTPRequestHandler

@@ -60,9 +60,8 @@ For running the result viewer, it is necessary to have installed:
 * Node.js (>= 14.x)
 * npm (8)
 
-Manually building with `cmake` will automatically install necessary packages for
-the result viewer and build an optimized version of the result viewer.
-You can turn this off with the `-DBUILD_VIEWER=OFF` option when using `cmake`.
+When building with `cmake`, use `-DBUILD_VIEWER=On` to install necessary
+packages and build an optimized version of the result viewer.
 
 ### Install from RPM
 

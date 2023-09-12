@@ -33,7 +33,7 @@ execute_process(COMMAND
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/simpll_clean.sh
   ${CMAKE_CURRENT_SOURCE_DIR})
 
-option(BUILD_VIEWER "Install packages for result viewer and create production build" ON)
+option(BUILD_VIEWER "Install packages for result viewer and create production build" OFF)
 if (${BUILD_VIEWER})
   find_program(NODE node REQUIRED)
   message(STATUS "Found node ${NODE}")
