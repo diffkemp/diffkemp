@@ -13,6 +13,7 @@ from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from diffkemp.output import YamlOutput
 from diffkemp.syndiff.function_syntax_diff import unified_syntax_diff
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from subprocess import check_call, CalledProcessError
 from tempfile import mkdtemp
 from timeit import default_timer
@@ -585,6 +586,12 @@ def view(args):
         PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "public")
     else:
         PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "build")
+        if not os.path.isdir(PUBLIC_DIRECTORY):
+            sys.stderr.write(
+                "Could not find production build of the viewer.\n" +
+                "Use --devel to run a development server " +
+                "or execute CMake with -DBUILD_VIEWER=On.\n")
+            sys.exit(errno.ENOENT)
 
     # Preparing source directory
     SOURCE_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "src")
@@ -656,4 +663,13 @@ def view(args):
     if args.devel:
         os.system(f"cd {VIEW_DIRECTORY} && npm start")
     else:
-        os.system(f"cd {VIEW_DIRECTORY} && npm run prod")
+        os.chdir(PUBLIC_DIRECTORY)
+        handler = SimpleHTTPRequestHandler
+        handler.log_message = lambda *_, **__: None
+        with HTTPServer(("localhost", 3000), handler) as httpd:
+            print("Result viewer is available at http://localhost:3000")
+            print("Press Ctrl+C to exit")
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                httpd.shutdown()
