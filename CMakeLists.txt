@@ -57,12 +57,10 @@ if (${BUILD_VIEWER})
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                      GROUP_READ GROUP_WRITE GROUP_EXECUTE
                      WORLD_READ WORLD_WRITE WORLD_EXECUTE
-    # Making it possible to remove `diffkemp-out.yaml`
-    # by a user (`diffkemp view`) if it existed during installation.
-    PATTERN "diffkemp-out.yaml"
-         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                     GROUP_READ GROUP_WRITE GROUP_EXECUTE
-                     WORLD_READ WORLD_WRITE WORLD_EXECUTE
+    # Do not install files describing results of comparison.
+    PATTERN "diffkemp-out.yaml" EXCLUDE
+    PATTERN "src" EXCLUDE
+    PATTERN "diffs" EXCLUDE
   ) # install
 endif ()
 
