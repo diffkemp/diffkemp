@@ -581,33 +581,36 @@ def view(args):
     with open(yaml_path, "r") as file:
         yaml_result = yaml.safe_load(file)
 
-    # Determine the view directory.
+    # Determine the view_directory.
     # The manually built one has priority over the installed one.
+    # PUBLIC_DIRECTORY: Path to folder which viewer can access.
     view_directory = os.path.join(os.path.dirname(__file__), "../view")
-    if not os.path.exists(view_directory):
-        if os.path.exists(VIEW_INSTALL_DIR):
-            view_directory = VIEW_INSTALL_DIR
+    # Manually build one
+    if os.path.exists(view_directory):
+        if args.devel:
+            PUBLIC_DIRECTORY = os.path.join(view_directory, "public")
         else:
+            PUBLIC_DIRECTORY = os.path.join(view_directory, "build")
+            if not os.path.isdir(PUBLIC_DIRECTORY):
+                sys.stderr.write(
+                    "Could not find production build of the viewer.\n" +
+                    "Use --devel to run a development server " +
+                    "or execute CMake with -DBUILD_VIEWER=On.\n")
+                sys.exit(errno.ENOENT)
+    # Installed one
+    elif os.path.exists(VIEW_INSTALL_DIR):
+        view_directory = VIEW_INSTALL_DIR
+        PUBLIC_DIRECTORY = VIEW_INSTALL_DIR
+        if args.devel:
             sys.stderr.write(
-                "Error: directory with the viewer was not found\n")
-            sys.exit(errno.ENOENT)
-
-    # Path to folder which viewer can access
-    if args.devel:
-        if view_directory == VIEW_INSTALL_DIR:
-            sys.stderr.write(
-                "Error: it is not possible to run the development server\n" +
-                "\tfor installed DiffKemp\n")
+                "Error: it is not possible to run the development server " +
+                "for installed DiffKemp\n")
             sys.exit(errno.EINVAL)
-        PUBLIC_DIRECTORY = os.path.join(view_directory, "public")
+    # View directory does not exist
     else:
-        PUBLIC_DIRECTORY = os.path.join(view_directory, "build")
-        if not os.path.isdir(PUBLIC_DIRECTORY):
-            sys.stderr.write(
-                "Could not find production build of the viewer.\n" +
-                "Use --devel to run a development server " +
-                "or execute CMake with -DBUILD_VIEWER=On.\n")
-            sys.exit(errno.ENOENT)
+        sys.stderr.write(
+            "Error: directory with the viewer was not found\n")
+        sys.exit(errno.ENOENT)
 
     # Preparing source directory
     SOURCE_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "src")
