@@ -35,18 +35,16 @@ execute_process(COMMAND
 
 option(BUILD_VIEWER "Install packages for result viewer and create production build" OFF)
 if (${BUILD_VIEWER})
-  find_program(NODE node REQUIRED)
-  message(STATUS "Found node ${NODE}")
   find_program(NPM npm REQUIRED)
   message(STATUS "Found npm ${NPM}")
   message(STATUS "Installing packages for result viewer")
   execute_process(
-    COMMAND npm install
+    COMMAND ${NPM} install
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/view
   )
   message(STATUS "Creating production build of result viewer")
   execute_process(
-    COMMAND npm run build
+    COMMAND ${NPM} run build
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/view
   )
 endif ()
