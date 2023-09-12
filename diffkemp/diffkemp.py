@@ -614,14 +614,12 @@ def view(args):
 
     # Preparing source directory
     SOURCE_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "src")
-    if os.path.isdir(SOURCE_DIRECTORY):
-        shutil.rmtree(SOURCE_DIRECTORY)
-    os.mkdir(SOURCE_DIRECTORY)
+    if not os.path.exists(SOURCE_DIRECTORY):
+        os.mkdir(SOURCE_DIRECTORY)
     # Preparing diff directory
     DIFF_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "diffs")
-    if os.path.isdir(DIFF_DIRECTORY):
-        shutil.rmtree(DIFF_DIRECTORY)
-    os.mkdir(DIFF_DIRECTORY)
+    if not os.path.isdir(DIFF_DIRECTORY):
+        os.mkdir(DIFF_DIRECTORY)
 
     # Prepare source and diff files to view directory
     old_snapshot_dir = yaml_result["old-snapshot"]
