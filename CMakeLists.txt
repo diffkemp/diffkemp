@@ -47,6 +47,8 @@ if (${BUILD_VIEWER})
     COMMAND ${NPM} run build
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/view
   )
+endif () # ${BUILD_VIEWER}
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/view/build)
   install(DIRECTORY view/build/ DESTINATION /var/lib/diffkemp/view
     # Setting 644 for files.
     FILE_PERMISSIONS OWNER_READ OWNER_WRITE
@@ -82,6 +84,6 @@ if (${BUILD_VIEWER})
                                        GROUP_READ GROUP_WRITE
                                        WORLD_READ WORLD_WRITE
   )") # install - file chmod
-endif () # ${BUILD_VIEWER}
+endif () # if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/view/build)
 
 add_subdirectory(tests/unit_tests/simpll)
