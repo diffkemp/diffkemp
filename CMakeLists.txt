@@ -54,11 +54,11 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/view/build)
     FILE_PERMISSIONS OWNER_READ OWNER_WRITE
                      GROUP_READ
                      WORLD_READ
-    # Setting 711 for directories to make it possible 
+    # Setting 755 for directories to make it possible
     # to access files/folders in the directory. 
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                          GROUP_EXECUTE
-                          WORLD_EXECUTE
+                          GROUP_READ GROUP_EXECUTE
+                          WORLD_READ WORLD_EXECUTE
     # Do not install files describing results of comparison.
     PATTERN "diffkemp-out.yaml" EXCLUDE
     PATTERN "src" EXCLUDE
