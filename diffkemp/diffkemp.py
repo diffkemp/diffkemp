@@ -619,7 +619,8 @@ def view(args):
     # View directory does not exist
     else:
         sys.stderr.write(
-            "Error: directory with the viewer was not found\n")
+            "Error: the viewer was not found.\n" +
+            "The viewer was probably not installed.\n")
         sys.exit(errno.ENOENT)
 
     # Preparing source directory
