@@ -52,11 +52,11 @@ if (${BUILD_VIEWER})
     FILE_PERMISSIONS OWNER_READ OWNER_WRITE
                      GROUP_READ
                      WORLD_READ
-    # Setting 777 for directories to make it possible to create
-    # `src` and `diffs` folder by user (`diffkemp view`).
+    # Setting 711 for directories to make it possible 
+    # to access files/folders in the directory. 
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                     GROUP_READ GROUP_WRITE GROUP_EXECUTE
-                     WORLD_READ WORLD_WRITE WORLD_EXECUTE
+                          GROUP_EXECUTE
+                          WORLD_EXECUTE
     # Do not install files describing results of comparison.
     PATTERN "diffkemp-out.yaml" EXCLUDE
     PATTERN "src" EXCLUDE
