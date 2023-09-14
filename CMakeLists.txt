@@ -57,31 +57,16 @@ if (${BUILD_VIEWER})
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                           GROUP_READ GROUP_EXECUTE
                           WORLD_READ WORLD_EXECUTE
-    # Do not install files describing results of comparison.
-    PATTERN "diffkemp-out.yaml" EXCLUDE
-    PATTERN "src" EXCLUDE
-    PATTERN "diffs" EXCLUDE
+    # Do not install directory describing results of comparison.
+    PATTERN "data/" EXCLUDE
   ) # install - copy `build` dir
-  # Creating `src`, `diffs` directories
-  # and setting the permissions to 777 to make able to copy there files and remove them.
-  install(DIRECTORY DESTINATION /var/lib/diffkemp/view/src
+  # Creating `data` directory
+  # and setting the permissions to 777 to make able to create there files and remove them.
+  install(DIRECTORY DESTINATION /var/lib/diffkemp/view/data
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                           GROUP_READ GROUP_WRITE GROUP_EXECUTE
                           WORLD_READ WORLD_WRITE WORLD_EXECUTE
-  ) # install src dir
-  install(DIRECTORY DESTINATION /var/lib/diffkemp/view/diffs
-    DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                          GROUP_READ GROUP_WRITE GROUP_EXECUTE
-                          WORLD_READ WORLD_WRITE WORLD_EXECUTE
-  ) # install diffs dir
-  # Creating diffkemp-out.yaml
-  # and setting its permission to 666 to make able edit its content by `diffkemp view`.
-  install(CODE "file(TOUCH /var/lib/diffkemp/view/diffkemp-out.yaml)")
-  install(CODE "file(CHMOD /var/lib/diffkemp/view/diffkemp-out.yaml
-                           PERMISSIONS OWNER_READ OWNER_WRITE
-                                       GROUP_READ GROUP_WRITE
-                                       WORLD_READ WORLD_WRITE
-  )") # install - file chmod
+  ) # install `data` dir
 endif () # ${BUILD_VIEWER}
 
 add_subdirectory(tests/unit_tests/simpll)

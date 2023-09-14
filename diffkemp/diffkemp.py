@@ -571,16 +571,6 @@ def view(args):
     View the compare differences. Prepares files for the visualisation
     and runs viewer.
     """
-    def rmtree_without_parent(path):
-        """
-        Recursively removes files and dirs in `path` directory
-        without the parent dir.
-        """
-        for dirpath, dirnames, filenames in os.walk(path, topdown=False):
-            for dirname in dirnames:
-                os.rmdir(os.path.join(dirpath, dirname))
-            for filename in filenames:
-                os.remove(os.path.join(dirpath, filename))
     # Load yaml describing results
     YAML_FILE_NAME = "diffkemp-out.yaml"
     yaml_path = os.path.join(args.compare_output_dir, YAML_FILE_NAME)
@@ -623,13 +613,18 @@ def view(args):
             "The viewer was probably not installed.\n")
         sys.exit(errno.ENOENT)
 
+    # Dir for storing necessary data for a visualisation of a compared project.
+    data_directory = os.path.join(public_directory, "data")
+    if not os.path.exists(data_directory):
+        os.mkdir(data_directory)
+
     # Preparing source directory
-    source_directory = os.path.join(public_directory, "src")
+    source_directory = os.path.join(data_directory, "src")
     if not os.path.exists(source_directory):
         os.mkdir(source_directory)
     # Preparing diff directory
-    diff_directory = os.path.join(public_directory, "diffs")
-    if not os.path.isdir(diff_directory):
+    diff_directory = os.path.join(data_directory, "diffs")
+    if not os.path.exists(diff_directory):
         os.mkdir(diff_directory)
 
     # Prepare source and diff files to view directory
@@ -685,7 +680,7 @@ def view(args):
             definition["diff"] = False
 
     # save YAML
-    with open(os.path.join(public_directory, YAML_FILE_NAME), "w") as file:
+    with open(os.path.join(data_directory, YAML_FILE_NAME), "w") as file:
         yaml.dump(yaml_result, file, sort_keys=False)
 
     if args.devel:
@@ -704,8 +699,6 @@ def view(args):
             except KeyboardInterrupt:
                 httpd.shutdown()
     # Cleaning
-    rmtree_without_parent(source_directory)
-    rmtree_without_parent(diff_directory)
-    # Cleaning content of yaml file.
-    with open(os.path.join(public_directory, YAML_FILE_NAME), "w"):
-        pass
+    shutil.rmtree(source_directory)
+    shutil.rmtree(diff_directory)
+    os.remove(os.path.join(data_directory, YAML_FILE_NAME))
