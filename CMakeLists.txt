@@ -47,7 +47,9 @@ if (${BUILD_VIEWER})
     COMMAND ${NPM} run build
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/view
   )
-  install(DIRECTORY view/build/ DESTINATION /var/lib/diffkemp/view
+
+  set(VIEW_INSTALL_DIR /var/lib/diffkemp/view)
+  install(DIRECTORY view/build/ DESTINATION ${VIEW_INSTALL_DIR}
     # Setting 644 for files.
     FILE_PERMISSIONS OWNER_READ OWNER_WRITE
                      GROUP_READ
@@ -62,7 +64,7 @@ if (${BUILD_VIEWER})
   ) # install - copy `build` dir
   # Creating `data` directory
   # and setting the permissions to 777 to make able to create there files and remove them.
-  install(DIRECTORY DESTINATION /var/lib/diffkemp/view/data
+  install(DIRECTORY DESTINATION ${VIEW_INSTALL_DIR}/data
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                           GROUP_READ GROUP_WRITE GROUP_EXECUTE
                           WORLD_READ WORLD_WRITE WORLD_EXECUTE
