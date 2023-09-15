@@ -133,3 +133,6 @@ diff-*/
 
 # Debugger files
 .gdb_history
+
+# Nix
+result
