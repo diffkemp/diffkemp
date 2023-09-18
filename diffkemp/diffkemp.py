@@ -24,6 +24,8 @@ import sys
 import shutil
 import yaml
 
+VIEW_INSTALL_DIR = "/var/lib/diffkemp/view"
+
 
 def run_from_cli():
     """Main method to run the tool."""
@@ -579,30 +581,51 @@ def view(args):
     with open(yaml_path, "r") as file:
         yaml_result = yaml.safe_load(file)
 
-    # Path to folder with viewer
-    VIEW_DIRECTORY = os.path.join(os.path.dirname(__file__), "../view")
-    # Path to folder which viewer can access
-    if args.devel:
-        PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "public")
-    else:
-        PUBLIC_DIRECTORY = os.path.join(VIEW_DIRECTORY, "build")
-        if not os.path.isdir(PUBLIC_DIRECTORY):
+    # Determine the view_directory.
+    # The manually built one has priority over the installed one.
+    # public_directory: Path to folder which viewer can access.
+    view_directory = os.path.join(os.path.dirname(__file__), "../view")
+    # Manually build one
+    if os.path.exists(view_directory):
+        if args.devel:
+            public_directory = os.path.join(view_directory, "public")
+        else:
+            public_directory = os.path.join(view_directory, "build")
+            if not os.path.isdir(public_directory):
+                sys.stderr.write(
+                    "Could not find production build of the viewer.\n" +
+                    "Use --devel to run a development server " +
+                    "or execute CMake with -DBUILD_VIEWER=On.\n")
+                sys.exit(errno.ENOENT)
+    # Installed one
+    elif os.path.exists(VIEW_INSTALL_DIR):
+        view_directory = VIEW_INSTALL_DIR
+        public_directory = VIEW_INSTALL_DIR
+        if args.devel:
             sys.stderr.write(
-                "Could not find production build of the viewer.\n" +
-                "Use --devel to run a development server " +
-                "or execute CMake with -DBUILD_VIEWER=On.\n")
-            sys.exit(errno.ENOENT)
+                "Error: it is not possible to run the development server " +
+                "for installed DiffKemp\n")
+            sys.exit(errno.EINVAL)
+    # View directory does not exist
+    else:
+        sys.stderr.write(
+            "Error: the viewer was not found.\n" +
+            "The viewer was probably not installed.\n")
+        sys.exit(errno.ENOENT)
+
+    # Dir for storing necessary data for a visualisation of a compared project.
+    data_directory = os.path.join(public_directory, "data")
+    if not os.path.exists(data_directory):
+        os.mkdir(data_directory)
 
     # Preparing source directory
-    SOURCE_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "src")
-    if os.path.isdir(SOURCE_DIRECTORY):
-        shutil.rmtree(SOURCE_DIRECTORY)
-    os.mkdir(SOURCE_DIRECTORY)
+    source_directory = os.path.join(data_directory, "src")
+    if not os.path.exists(source_directory):
+        os.mkdir(source_directory)
     # Preparing diff directory
-    DIFF_DIRECTORY = os.path.join(PUBLIC_DIRECTORY, "diffs")
-    if os.path.isdir(DIFF_DIRECTORY):
-        shutil.rmtree(DIFF_DIRECTORY)
-    os.mkdir(DIFF_DIRECTORY)
+    diff_directory = os.path.join(data_directory, "diffs")
+    if not os.path.exists(diff_directory):
+        os.mkdir(diff_directory)
 
     # Prepare source and diff files to view directory
     old_snapshot_dir = yaml_result["old-snapshot"]
@@ -630,7 +653,7 @@ def view(args):
         if old_file not in processed_files:
             processed_files.add(old_file)
 
-            output_file_path = os.path.join(SOURCE_DIRECTORY, old_file)
+            output_file_path = os.path.join(source_directory, old_file)
             output_dir_path = os.path.dirname(output_file_path)
             if not os.path.isdir(output_dir_path):
                 os.makedirs(output_dir_path)
@@ -650,22 +673,22 @@ def view(args):
                 definition["diff"] = False
             else:
                 definition["diff"] = True
-                diff_path = os.path.join(DIFF_DIRECTORY, name + ".diff")
+                diff_path = os.path.join(diff_directory, name + ".diff")
                 with open(diff_path, "w") as file:
                     file.write(diff)
         else:
             definition["diff"] = False
 
     # save YAML
-    with open(os.path.join(PUBLIC_DIRECTORY, YAML_FILE_NAME), "w") as file:
+    with open(os.path.join(data_directory, YAML_FILE_NAME), "w") as file:
         yaml.dump(yaml_result, file, sort_keys=False)
 
     if args.devel:
-        os.chdir(VIEW_DIRECTORY)
+        os.chdir(view_directory)
         os.system("npm install")
         os.system("npm start")
     else:
-        os.chdir(PUBLIC_DIRECTORY)
+        os.chdir(public_directory)
         handler = SimpleHTTPRequestHandler
         handler.log_message = lambda *_, **__: None
         with HTTPServer(("localhost", 3000), handler) as httpd:
@@ -675,3 +698,7 @@ def view(args):
                 httpd.serve_forever()
             except KeyboardInterrupt:
                 httpd.shutdown()
+    # Cleaning
+    shutil.rmtree(source_directory)
+    shutil.rmtree(diff_directory)
+    os.remove(os.path.join(data_directory, YAML_FILE_NAME))
