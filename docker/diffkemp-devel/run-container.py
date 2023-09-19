@@ -2,6 +2,9 @@
 import subprocess
 import os
 import argparse
+import errno
+import shutil
+import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--llvm-version")
@@ -14,16 +17,13 @@ build_dir = os.path.abspath(args.build_dir)
 diffkemp_dir = os.path.abspath(args.diffkemp_dir)
 
 # Use podman if docker is not available
-check_docker = subprocess.run(
-    ["command", "-v", "docker"],
-    check=False,
-    text=True,
-    capture_output=True
-)
-if check_docker.returncode == 0 and os.access(check_docker.stdout, os.X_OK):
+if shutil.which("docker", os.X_OK):
     command = "docker"
-else:
+elif shutil.which("podman", os.X_OK):
     command = "podman"
+else:
+    sys.stderr.write("Error: You need to have docker or podman installed!\n")
+    sys.exit(errno.ENOPKG)
 
 cwd = os.getcwd()
 to_execute = [command, "run",
