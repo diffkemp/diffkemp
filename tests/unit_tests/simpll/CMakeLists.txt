@@ -1,3 +1,5 @@
+OPTION(VENDOR_GTEST "Vendor Google Test libraries" OFF)
+if (${VENDOR_GTEST})
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
@@ -10,6 +12,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build .
 add_subdirectory("${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
                  "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
                  EXCLUDE_FROM_ALL)
+ endif(${VENDOR_GTEST})
 
 # Disable RTTI to link with SimpLL correctly.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fvisibility=hidden")

@@ -120,7 +120,7 @@ jobs:
         env: ${{ matrix.env }}
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: cmake $GITHUB_WORKSPACE -GNinja -DSANITIZE_ADDRESS=${{ matrix.asan }}
+        run: cmake $GITHUB_WORKSPACE -GNinja -DSANITIZE_ADDRESS=${{ matrix.asan }} -DVENDOR_GTEST=On
 
       - name: Build
         env: ${{ matrix.env }}
