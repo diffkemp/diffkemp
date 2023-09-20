@@ -56,7 +56,7 @@ pathfix.py -pni "%{__python3} %{py3_shbang_opts}" %{buildroot}%{_bindir}/diffkem
 
 %check
 # Run SimpLL unit tests
-tests/unit_tests/simpll/runTests
+build/tests/unit_tests/simpll/runTests
 
 
 %files

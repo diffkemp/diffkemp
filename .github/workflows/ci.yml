@@ -135,7 +135,7 @@ jobs:
       - name: Run Unit Tests
         working-directory: ${{ github.workspace }}
         run: |
-          tests/unit_tests/simpll/runTests
+          build/tests/unit_tests/simpll/runTests
 
       - name: Run Regression Tests
         if: matrix.regression-tests
