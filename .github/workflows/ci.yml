@@ -43,7 +43,7 @@ jobs:
           git clone https://github.com/viktormalik/rhel-kernel-get.git
           pip3 install -r rhel-kernel-get/requirements.txt
           for k in $KERNELS; do
-            rhel-kernel-get/rhel-kernel-get.py $k --output-dir kernel
+            rhel-kernel-get/rhel-kernel-get $k --output-dir kernel
           done
 
   build-and-test:
