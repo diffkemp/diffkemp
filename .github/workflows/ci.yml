@@ -132,10 +132,9 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pip3 install -e .
 
-      - name: Run Unit Tests
+      - name: Run SimpLL Unit Tests
         working-directory: ${{ github.workspace }}
-        run: |
-          build/tests/unit_tests/simpll/runTests
+        run: ninja test -C build
 
       - name: Run Regression Tests
         if: matrix.regression-tests

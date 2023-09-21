@@ -38,3 +38,9 @@ target_link_libraries(runTests gtest simpll-lib ${llvm_libs})
 if (NOT ${system_libs} STREQUAL "")
 	target_link_libraries(runTests gtest ${system_libs})
 endif()
+
+include(GoogleTest)
+gtest_discover_tests(runTests)
+add_custom_target(test
+  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+  DEPENDS runTests)
