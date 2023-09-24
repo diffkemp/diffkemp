@@ -40,6 +40,7 @@ RUN apt-get update && \
       libgmp-dev \
       libssl-dev \
       libz3-dev \
+      libgtest-dev \
       flex \
       gcc-7 \
       g++-7 \
