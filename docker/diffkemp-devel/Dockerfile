@@ -68,6 +68,7 @@ RUN apt-get update && \
       python3.8-dev \
       python3.8-distutils \
       python3-setuptools \
+      python-is-python3 \
       rpm2cpio \
       vim \
       xz-utils \
