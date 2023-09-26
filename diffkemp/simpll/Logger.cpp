@@ -28,8 +28,8 @@ void Logger::prepLog(const char *label,
 void Logger::prepContext() { level++; }
 
 void Logger::log(bool keep, const char *force_keep_type) {
-    bool force_keep = force_keep_type != nullptr
-                      && ::llvm::isCurrentDebugType(force_keep_type);
+    bool force_keep =
+            force_keep_type != nullptr && isCurrentDebugType(force_keep_type);
     level--;
     if (force_keep) {
         for (auto iter = buffer.rbegin(); iter != buffer.rend(); iter++) {
