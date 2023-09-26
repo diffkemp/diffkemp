@@ -55,5 +55,45 @@
             install -m 0755 bin/diffkemp $out/bin/diffkemp
           '';
         };
+
+      devShells.${system} = {
+        default = with pkgs;
+          let
+            rhel_kernel_get = python3Packages.buildPythonApplication {
+              pname = "rhel-kernel-get";
+              version = "0.1";
+              src = fetchFromGitHub {
+                owner = "viktormalik";
+                repo = "rhel-kernel-get";
+                rev = "v0.1";
+                sha256 = "0ci5hdkzc2aq7s8grnkqc9ni7zajyndj7b9r5fqqxvbjqvm7lqi7";
+              };
+              propagatedBuildInputs = [ python3Packages.progressbar ];
+            };
+          in
+          mkShell {
+            inputsFrom = [ self.packages.${system}.default ];
+
+            buildInputs = [
+              bc
+              bison
+              bzip2
+              cpio
+              flex
+              gdb
+              gmp
+              kmod
+              openssl
+              rhel_kernel_get
+              rpm
+              xz
+            ];
+
+            propagatedBuildInputs = with python3Packages; [
+              pytest
+              pytest-mock
+            ];
+          };
+      };
     };
 }
