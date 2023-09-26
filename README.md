@@ -39,6 +39,8 @@ Currently, DiffKemp runs on Linux and needs the following software installed:
 * Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 * Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
 * CScope (when comparing versions of the Linux kernel)
+* GoogleTest (gtest) for running the C++ tests (can be vendored by using
+  `-DVENDOR_GTEST=On` in the `cmake` command)
 
 Additionally, to build manually, you need to install the following tools:
 * CMake
