@@ -95,5 +95,42 @@
             ];
           };
       };
+
+      # Environment for downloading and preparing test kernels (RHEL 7 and 8).
+      # Contains 2 changes from the default env necessary for RHEL 7:
+      #  - gcc 7
+      #  - make 3.81
+      # It should be sufficient to use this to download the kernels (with
+      # rhel-kernel-get) and the tests can be run in the default dev shell.
+      test-kernel-buildenv = with pkgs;
+        let
+          oldmake = import
+            (builtins.fetchTarball {
+              url = "https://github.com/NixOS/nixpkgs/archive/92487043aef07f620034af9caa566adecd4a252b.tar.gz";
+              sha256 = "00fgvpj0aqmq45xmmiqr2kvdir6zigyasx130rp96hf35mab1n8c";
+            })
+            { inherit system; };
+          gnumake381 = oldmake.gnumake381;
+
+          default = self.devShells.${system}.default;
+        in
+
+        gcc7Stdenv.mkDerivation {
+          # gcc7Stdenv provides GCC 7, however it doesn't provide the mkShell
+          # command so we need to use mkDerivation and clear phases (that's what
+          # mkShell does).
+          name = "test-kernel-buildenv";
+          phases = [ ];
+
+          nativeBuildInputs = lib.lists.remove gcc default.nativeBuildInputs;
+
+          buildInputs = lib.lists.remove gnumake default.buildInputs ++ [
+            gnumake381
+          ];
+
+          propagatedBuildInputs = default.propagatedBuildInputs;
+
+          dontUseSetuptoolsShellHook = true;
+        };
     };
 }
