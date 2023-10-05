@@ -345,7 +345,8 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         """
         output_file = None
         command = ["clang", "-S", "-emit-llvm", "-O1", "-Xclang",
-                   "-disable-llvm-passes", "-g", "-fdebug-macro"]
+                   "-disable-llvm-passes", "-g", "-fdebug-macro",
+                   "-Wno-format-security"]
         for param in gcc_command.split():
             if (param == "gcc" or
                     (param.startswith("-W") and "-MD" not in param) or
