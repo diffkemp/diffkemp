@@ -267,6 +267,13 @@ int DifferentialFunctionComparator::cmpOperations(
         const Instruction *L,
         const Instruction *R,
         bool &needToCmpOperands) const {
+    // Do not compare PHI nodes yet. They will be compared at the end,
+    // when all of their incoming values and blocks are already compared.
+    if (isa<PHINode>(L) && isa<PHINode>(R)) {
+        needToCmpOperands = false;
+        return 0;
+    }
+
     // Need to store comparing instructions in DifferingInstructions pair
     DifferingInstructions = {L, R};
 
@@ -331,15 +338,6 @@ int DifferentialFunctionComparator::cmpOperations(
                 return 0;
             }
         }
-    }
-
-    // If PHI nodes are compared, treat them as equal for now. They will be
-    // compared at the end, after all their incoming values have been compared
-    // and matched.
-    if (isa<PHINode>(L) && isa<PHINode>(R)) {
-        needToCmpOperands = false;
-        phisToCompare.emplace_back(dyn_cast<PHINode>(L), dyn_cast<PHINode>(R));
-        return 0;
     }
 
     if (Result) {
@@ -1376,8 +1374,17 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
             RETURN_WITH_LOG_NEQ(0);
         }
     } else if (oldSnMapSize == (sn_mapL.size() - 1)) {
-        // When the values are equal, remember their mapping.
+        // When the values have just been added to the serial number maps,
+        // remember their mapping.
         mappedValuesBySn[oldSnMapSize] = {L, R};
+        if (isa<PHINode>(L) && isa<PHINode>(R)) {
+            // Store PHI nodes for further comparison.
+            phisToCompare.emplace_back(dyn_cast<PHINode>(L),
+                                       dyn_cast<PHINode>(R));
+        } else if (isa<PHINode>(L) || isa<PHINode>(R)) {
+            // A PHI instruction cannot be equal to a non-PHI instruction.
+            result = 1;
+        }
     }
     RETURN_WITH_LOG_NEQ(result);
 }
