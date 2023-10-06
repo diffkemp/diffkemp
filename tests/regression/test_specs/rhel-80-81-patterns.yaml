@@ -8,10 +8,9 @@ custom_pattern_config:
 functions:
   ipmi_set_gets_events: equal
   vfree: equal
+  scnprintf: equal
 
 syntax_diffs:
-  - function: scnprintf
-    equal_symbol: NR_PAGEFLAGS
   - function: set_user_nice
     equal_symbol: dequeue_task
   - function: set_user_nice
