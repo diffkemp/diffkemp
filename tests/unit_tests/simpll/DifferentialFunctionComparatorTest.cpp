@@ -135,6 +135,12 @@ class TestComparator : public DifferentialFunctionComparator {
         return cmpFieldAccess(InstL, InstR);
     }
 
+    int testCmpPHIs(PHINode *PhiL, PHINode *PhiR, bool keepSN = false) {
+        if (!keepSN)
+            beginCompare();
+        return cmpPHIs(PhiL, PhiR);
+    }
+
     void setLeftSerialNumber(const Value *Val, int i) { sn_mapL[Val] = i; }
 
     void setRightSerialNumber(const Value *Val, int i) { sn_mapR[Val] = i; }
@@ -1834,4 +1840,89 @@ TEST_F(DifferentialFunctionComparatorTest, GetCSourceIdentifierType) {
     // Reference of a global variable, test correct type
     ResType = getCSourceIdentifierType("&GlobVar", AuxF, LocalVariableMap);
     ASSERT_EQ(ResType, DIPtrType);
+}
+
+TEST_F(DifferentialFunctionComparatorTest, CmpPHIs) {
+    // Define incoming values and blocks
+    BasicBlock *BBL1 = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBL2 = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR1 = BasicBlock::Create(CtxR, "", FR);
+    BasicBlock *BBR2 = BasicBlock::Create(CtxR, "", FR);
+    Constant *ConstL1 = ConstantInt::get(Type::getInt8Ty(CtxL), 0);
+    Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxL), 1);
+    Constant *ConstR1 = ConstantInt::get(Type::getInt8Ty(CtxR), 0);
+    Constant *ConstR2 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
+
+    // Match the blocks and values in the serial number maps
+    DiffComp->testCmpValues(BBL1, BBR1);
+    DiffComp->testCmpValues(BBL2, BBR2);
+    DiffComp->testCmpValues(ConstL1, ConstR1);
+    DiffComp->testCmpValues(ConstL2, ConstR2);
+
+    // PHI nodes to compare
+    PHINode *PHIL = PHINode::Create(Type::getInt8Ty(CtxL), 2, "", BBL1);
+    PHINode *PHIR = PHINode::Create(Type::getInt8Ty(CtxR), 2, "", BBR1);
+
+    // Lists elements in the same order
+    PHIL->addIncoming(ConstL1, BBL1);
+    PHIL->addIncoming(ConstL2, BBL2);
+    PHIR->addIncoming(ConstR1, BBR1);
+    PHIR->addIncoming(ConstR2, BBR2);
+    ASSERT_EQ(DiffComp->testCmpPHIs(PHIL, PHIR, true), 0);
+
+    // Lists elements in different order
+    PHIR->removeIncomingValue(BBR1);
+    PHIR->addIncoming(ConstR1, BBR1);
+    ASSERT_EQ(DiffComp->testCmpPHIs(PHIL, PHIR, true), 0);
+
+    // List elements do not match
+    PHIR->removeIncomingValue(BBR1);
+    PHIR->addIncoming(ConstR2, BBR2);
+    ASSERT_EQ(DiffComp->testCmpPHIs(PHIL, PHIR, true), 1);
+}
+
+TEST_F(DifferentialFunctionComparatorTest, ReorderedPHIs) {
+    // Create one basic block for each function
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Prepare the values incoming to PHI nodes
+    Constant *ConstL1 = ConstantInt::get(Type::getInt8Ty(CtxL), 0);
+    Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxL), 1);
+    Constant *ConstR1 = ConstantInt::get(Type::getInt8Ty(CtxR), 0);
+    Constant *ConstR2 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
+
+    // Create the PHI nodes in the basic blocks, but add them in different order
+    PHINode *PHIL1 = PHINode::Create(Type::getInt8Ty(CtxL), 1, "PHI1", BBL);
+    PHINode *PHIL2 = PHINode::Create(Type::getInt8Ty(CtxL), 1, "PHI2", BBL);
+    PHINode *PHIR2 = PHINode::Create(Type::getInt8Ty(CtxR), 1, "PHI2", BBR);
+    PHINode *PHIR1 = PHINode::Create(Type::getInt8Ty(CtxR), 1, "PHI1", BBR);
+
+    // Fill the incoming values and blocks in the PHI nodes
+    PHIL1->addIncoming(ConstL1, BBL);
+    PHIL2->addIncoming(ConstL2, BBL);
+    PHIR1->addIncoming(ConstR1, BBR);
+    PHIR2->addIncoming(ConstR2, BBR);
+
+    // Create instructions which use the PHI nodes in equal order
+    // (i.e. the use of "PHI1" precedes the use of "PHI2")
+    auto ResL =
+            BinaryOperator::Create(BinaryOperator::Sub, PHIL1, PHIL2, "", BBL);
+    auto ResR =
+            BinaryOperator::Create(BinaryOperator::Sub, PHIR1, PHIR2, "", BBR);
+
+    // Terminate the basic blocks
+    ReturnInst::Create(CtxL, ResL, BBL);
+    ReturnInst::Create(CtxR, ResR, BBR);
+
+    // The functions should be equal even with reordered PHI nodes
+    ASSERT_EQ(DiffComp->compare(), 0);
+
+    // Sanity check: "PHI1" and "PHI2" are not equal
+    BBL->getTerminator()->eraseFromParent();
+    ResL->eraseFromParent();
+    auto AltResL =
+            BinaryOperator::Create(BinaryOperator::Sub, PHIL2, PHIL1, "", BBL);
+    ReturnInst::Create(CtxL, AltResL, BBL);
+    ASSERT_EQ(DiffComp->compare(), 1);
 }
