@@ -8,6 +8,7 @@ from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
+from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.utils import get_llvm_version
 import datetime
 import os
@@ -193,11 +194,17 @@ class Snapshot:
         # Override the default source finder when the snapshot was originally
         # built with a special one. This is useful for snapshots in which
         # it is possible to look for additional symbol defs during comparison.
-        # This is now done for snapshots built with KernelLlvmSourceBuilder.
+        # This is now done for snapshots built with KernelLlvmSourceBuilder
+        # and WrapperBuildFinder.
         if yaml_dict["llvm_source_finder"]["kind"] == "kernel_with_builder":
             source_dir = self.snapshot_tree.source_dir
             source_finder = KernelLlvmSourceBuilder(source_dir)
             self.snapshot_tree = KernelSourceTree(source_dir, source_finder)
+        elif yaml_dict["llvm_source_finder"]["kind"] == "wrapper_build_tree":
+            source_dir = self.snapshot_tree.source_dir
+            source_finder = WrapperBuildFinder(
+                source_dir, os.path.join(source_dir, "diffkemp-wdb"))
+            self.snapshot_tree = SourceTree(source_dir, source_finder)
 
         # Add source tree if present
         if "source_dir" in yaml_dict and \
