@@ -129,6 +129,9 @@ def build_c_project(args):
     snapshot = Snapshot.create_from_source(source, args.output_dir,
                                            "function")
 
+    # Copy the database file into the snapshot directory
+    shutil.copyfile(db_filename, os.path.join(args.output_dir, "diffkemp-wdb"))
+
     # Build sources for symbols from the list into LLVM IR
     if args.symbol_list is None:
         args.symbol_list = os.path.join(args.source_dir, "function_list")
