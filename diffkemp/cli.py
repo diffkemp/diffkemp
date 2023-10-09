@@ -151,7 +151,8 @@ def make_argument_parser():
                         "relocations",
                         "type-casts",
                         "control-flow-only",
-                        "inverse-conditions"]
+                        "inverse-conditions",
+                        "reordered-bin-ops"]
 
     # Semantic patterns options.
     compare_ap.add_argument("--enable-pattern",

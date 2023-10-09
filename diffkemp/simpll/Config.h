@@ -37,6 +37,7 @@ struct BuiltinPatterns {
     bool TypeCasts = false;
     bool ControlFlowOnly = false;
     bool InverseConditions = true;
+    bool ReorderedBinOps = true;
 };
 
 /// Tool configuration parsed from CLI options.

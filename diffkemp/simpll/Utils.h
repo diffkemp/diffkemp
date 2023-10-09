@@ -106,6 +106,11 @@ bool isZeroGEP(const Value *Val);
 /// Returns true if the given instruction is a boolean negation operation
 bool isLogicalNot(const Instruction *Inst);
 
+/// Returns true if the given instruction is a reorderable binary operation,
+/// i.e., it is commutative and associative. Note that IEEE 754 floating-point
+/// addition/multiplication is NOT associative.
+bool isReorderableBinaryOp(const Instruction *Inst);
+
 /// Run simplification passes on the function
 ///  - simplify CFG
 ///  - dead code elimination

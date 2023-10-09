@@ -22,6 +22,7 @@ class BuiltinPatterns:
         type_casts=False,
         control_flow_only=False,
         inverse_conditions=True,
+        reordered_bin_ops=True,
     ):
         """
         Create a configuration of built-in patterns.
@@ -39,6 +40,7 @@ class BuiltinPatterns:
         :param type_casts: Changes in type casts.
         :param control_flow_only: Consider control-flow changes only.
         :param inverse_conditions: Inverted branch conditions.
+        :param reordered_bin_ops: Match reordered binary operations.
         """
         self.settings = {
             "struct-alignment": struct_alignment,
@@ -51,6 +53,7 @@ class BuiltinPatterns:
             "type-casts": type_casts,
             "control-flow-only": control_flow_only,
             "inverse-conditions": inverse_conditions,
+            "reordered-bin-ops": reordered_bin_ops,
         }
         self.resolve_dependencies()
 
@@ -97,6 +100,7 @@ class BuiltinPatterns:
         ffi_struct.TypeCasts = self.settings["type-casts"]
         ffi_struct.ControlFlowOnly = self.settings["control-flow-only"]
         ffi_struct.InverseConditions = self.settings["inverse-conditions"]
+        ffi_struct.ReorderedBinOps = self.settings["reordered-bin-ops"]
         return ffi_struct
 
 

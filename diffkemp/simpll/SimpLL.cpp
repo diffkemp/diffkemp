@@ -111,6 +111,10 @@ cl::opt<bool>
         InverseConditionsOpt("inverse-conditions",
                              cl::desc("Enable inverse conditions pattern."),
                              cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> ReorderedBinOpsOpt(
+        "reordered-bin-ops",
+        cl::desc("Enable reordered binary operations pattern."),
+        cl::cat(BuiltinPatternsCategory));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -157,7 +161,8 @@ int main(int argc, const char **argv) {
                              .Relocations = RelocationsOpt,
                              .TypeCasts = TypeCastsOpt,
                              .ControlFlowOnly = ControlFlowOnlyOpt,
-                             .InverseConditions = InverseConditionsOpt};
+                             .InverseConditions = InverseConditionsOpt,
+                             .ReorderedBinOps = ReorderedBinOpsOpt};
 
     // Parse --fun option
     auto FunName = parseFunOption();

@@ -72,6 +72,7 @@ BuiltinPatterns BuiltinPatternsFromC(builtin_patterns PatternsC) {
             .TypeCasts = (bool)PatternsC.TypeCasts,
             .ControlFlowOnly = (bool)PatternsC.ControlFlowOnly,
             .InverseConditions = (bool)PatternsC.InverseConditions,
+            .ReorderedBinOps = (bool)PatternsC.ReorderedBinOps,
     };
 }
 

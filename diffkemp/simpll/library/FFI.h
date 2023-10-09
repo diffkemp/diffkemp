@@ -34,6 +34,7 @@ struct builtin_patterns {
     int TypeCasts;
     int ControlFlowOnly;
     int InverseConditions;
+    int ReorderedBinOps;
 };
 
 struct config {

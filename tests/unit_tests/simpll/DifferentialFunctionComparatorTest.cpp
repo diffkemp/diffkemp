@@ -1926,3 +1926,123 @@ TEST_F(DifferentialFunctionComparatorTest, ReorderedPHIs) {
     ReturnInst::Create(CtxL, AltResL, BBL);
     ASSERT_EQ(DiffComp->compare(), 1);
 }
+
+TEST_F(DifferentialFunctionComparatorTest, ReorderedBinaryOperationSimple) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Operands for the binary operation
+    Constant *ConstL1 = ConstantInt::get(Type::getInt8Ty(CtxL), 0);
+    Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxL), 1);
+    Constant *ConstR1 = ConstantInt::get(Type::getInt8Ty(CtxR), 0);
+    Constant *ConstR2 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
+
+    // Commutative binary operations with reversed operands
+    auto ResL = BinaryOperator::Create(
+            BinaryOperator::Add, ConstL1, ConstL2, "", BBL);
+    auto ResR = BinaryOperator::Create(
+            BinaryOperator::Add, ConstR2, ConstR1, "", BBR);
+
+    // Return the result of the operation
+    auto RetL = ReturnInst::Create(CtxL, ResL, BBL);
+    auto RetR = ReturnInst::Create(CtxR, ResR, BBR);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+
+    RetL->eraseFromParent();
+    RetR->eraseFromParent();
+    ResL->eraseFromParent();
+    ResR->eraseFromParent();
+
+    // Not a commutative operation
+    ResL = BinaryOperator::Create(
+            BinaryOperator::Sub, ConstL1, ConstL2, "", BBL);
+    ResR = BinaryOperator::Create(
+            BinaryOperator::Sub, ConstR2, ConstR1, "", BBR);
+
+    RetL = ReturnInst::Create(CtxL, ResL, BBL);
+    RetR = ReturnInst::Create(CtxR, ResR, BBR);
+
+    ASSERT_EQ(DiffComp->compare(), 1);
+
+    RetL->eraseFromParent();
+    RetR->eraseFromParent();
+    ResL->eraseFromParent();
+    ResR->eraseFromParent();
+
+    // Different operands
+    ResL = BinaryOperator::Create(
+            BinaryOperator::Add, ConstL1, ConstL1, "", BBL);
+    ResR = BinaryOperator::Create(
+            BinaryOperator::Add, ConstR2, ConstR1, "", BBR);
+
+    RetL = ReturnInst::Create(CtxL, ResL, BBL);
+    RetR = ReturnInst::Create(CtxR, ResR, BBR);
+
+    ASSERT_EQ(DiffComp->compare(), 1);
+}
+
+TEST_F(DifferentialFunctionComparatorTest, ReorderedBinaryOperationComplex) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    Constant *ConstL1 = ConstantInt::get(Type::getInt8Ty(CtxL), 1);
+    Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxL), 2);
+    auto VarL = new AllocaInst(Type::getInt8Ty(CtxL), 0, "var", BBL);
+    auto LoadL = new LoadInst(Type::getInt8Ty(CtxL), VarL, "load", BBL);
+
+    Constant *ConstR1 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
+    Constant *ConstR2 = ConstantInt::get(Type::getInt8Ty(CtxR), 2);
+    auto VarR = new AllocaInst(Type::getInt8Ty(CtxR), 0, "var", BBR);
+    auto LoadR = new LoadInst(Type::getInt8Ty(CtxR), VarR, "load", BBR);
+
+    // This operation should be skipped, and the operands collected later
+    auto FirstOpL = BinaryOperator::Create(
+            BinaryOperator::Add, ConstL1, ConstL2, "", BBL);
+    auto FirstOpR = BinaryOperator::Create(
+            BinaryOperator::Add, ConstR1, LoadR, "", BBR);
+
+    // Here, the operands should be collected and matched
+    auto ResL = BinaryOperator::Create(
+            BinaryOperator::Add, FirstOpL, LoadL, "", BBL);
+    auto ResR = BinaryOperator::Create(
+            BinaryOperator::Add, FirstOpR, ConstR2, "", BBR);
+
+    auto RetL = ReturnInst::Create(CtxL, ResL, BBL);
+    auto RetR = ReturnInst::Create(CtxR, ResR, BBR);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DifferentialFunctionComparatorTest, ReorderedBinaryOperationNeedLeaf) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    Constant *ConstL1 = ConstantInt::get(Type::getInt8Ty(CtxL), 1);
+    Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxL), 2);
+    Constant *ConstR1 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
+    Constant *ConstR2 = ConstantInt::get(Type::getInt8Ty(CtxR), 2);
+
+    // Equal operations, should not be skipped
+    auto FirstOpL = BinaryOperator::Create(
+            BinaryOperator::Add, ConstL1, ConstL2, "", BBL);
+    auto FirstOpR = BinaryOperator::Create(
+            BinaryOperator::Add, ConstR1, ConstR2, "", BBR);
+
+    // Same as before, but only on one side - should be skipped
+    auto SameOpL = BinaryOperator::Create(
+            BinaryOperator::Add, ConstL1, ConstL2, "", BBL);
+
+    // These equal, but they do not use the synchronized operands,
+    // we must check the leafs
+    auto ResL = BinaryOperator::Create(
+            BinaryOperator::Add, SameOpL, ConstL1, "", BBL);
+    auto ResR = BinaryOperator::Create(
+            BinaryOperator::Add, FirstOpR, ConstR1, "", BBR);
+
+    // Return the result of the operation
+    auto RetL = ReturnInst::Create(CtxL, ResL, BBL);
+    auto RetR = ReturnInst::Create(CtxR, ResR, BBR);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
