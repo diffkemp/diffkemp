@@ -19,6 +19,7 @@
 #include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/DebugInfo.h>
+#include <llvm/IR/Instruction.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
@@ -248,11 +249,28 @@ bool isLogicalNot(const Instruction *Inst) {
         return false;
 
     if (auto *BinOp = dyn_cast<BinaryOperator>(Inst)) {
-        if (BinOp->getOpcode() != llvm::Instruction::Xor)
+        if (BinOp->getOpcode() != Instruction::Xor)
             return false;
 
         if (auto constOp = dyn_cast<Constant>(BinOp->getOperand(1)))
             return constOp->isAllOnesValue();
+    }
+    return false;
+}
+
+/// Returns true if the given instruction is a reorderable binary operation,
+/// i.e., it is commutative and associative. Note that IEEE 754 floating-point
+/// addition/multiplication is NOT associative.
+bool isReorderableBinaryOp(const Instruction *Inst) {
+    if (auto *BinOp = dyn_cast<BinaryOperator>(Inst)) {
+        static std::set<Instruction::BinaryOps> ReorderableOps = {
+                Instruction::Xor,
+                Instruction::Add,
+                Instruction::And,
+                Instruction::Or,
+                Instruction::Mul,
+        };
+        return (ReorderableOps.count(BinOp->getOpcode()) != 0);
     }
     return false;
 }

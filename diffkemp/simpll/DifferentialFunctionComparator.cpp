@@ -505,6 +505,11 @@ bool DifferentialFunctionComparator::maySkipInstruction(
         ignoredInstructions.insert(Inst);
         return true;
     }
+    if (config.Patterns.ReorderedBinOps && isReorderableBinaryOp(Inst)
+        && maySkipReorderableBinaryOp(Inst)) {
+        ignoredInstructions.insert(Inst);
+        return true;
+    }
     if (isCast(Inst)) {
         if (config.Patterns.TypeCasts) {
             replacedInstructions.insert({Inst, Inst->getOperand(0)});
@@ -658,6 +663,17 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
         return true;
     }
     return false;
+}
+
+/// Check whether the given reorderable binary operator can be skipped.
+/// It can only be skipped if all its users are binary operations
+/// of the same kind.
+bool DifferentialFunctionComparator::maySkipReorderableBinaryOp(
+        const Instruction *Op) const {
+    return std::all_of(Op->user_begin(), Op->user_end(), [Op](auto user) {
+        auto userOp = dyn_cast<BinaryOperator>(user);
+        return userOp && userOp->getOpcode() == Op->getOpcode();
+    });
 }
 
 bool mayIgnoreMacro(std::string macro) {
@@ -894,6 +910,30 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 if (MaySkipR)
                     InstR++;
                 continue;
+            }
+
+            // If both instructions are reorderable binary operators, they may
+            // have skipped operands. Try to recursively collect all operands
+            // and compare their sets.
+            if (config.Patterns.ReorderedBinOps
+                && isReorderableBinaryOp(&*InstL)
+                && isReorderableBinaryOp(&*InstR)) {
+                Instruction::BinaryOps OpcodeL =
+                        dyn_cast<BinaryOperator>(&*InstL)->getOpcode();
+                Instruction::BinaryOps OpcodeR =
+                        dyn_cast<BinaryOperator>(&*InstR)->getOpcode();
+                std::multiset<int> SnSetL, SnSetR;
+                std::multiset<int64_t> ConstantsSetL, ConstantsSetR;
+                if (OpcodeL == OpcodeR
+                    && collectBinaryOperands(
+                            &*InstL, OpcodeL, SnSetL, ConstantsSetL, sn_mapL)
+                    && collectBinaryOperands(
+                            &*InstR, OpcodeR, SnSetR, ConstantsSetR, sn_mapR)
+                    && SnSetL == SnSetR && ConstantsSetL == ConstantsSetR) {
+                    InstL++;
+                    InstR++;
+                    continue;
+                }
             }
 
             // If one of the instructions is a logical not, it is possible that
@@ -1872,5 +1912,50 @@ bool DifferentialFunctionComparator::isDependingOnReloc(
         RelocInst++;
     } while (RelocInst != Reloc.end);
 
+    return false;
+}
+
+/// Recursively collect operands of reorderable binary operators.
+/// Leafs must be constants or already synchronized values.
+/// Return false if a non-synchronized non-constant leaf is found.
+bool DifferentialFunctionComparator::collectBinaryOperands(
+        const Value *Val,
+        Instruction::BinaryOps Opcode,
+        std::multiset<int> &SNs,
+        std::multiset<int64_t> &Constants,
+        DenseMap<const Value *, int> &sn_map) const {
+    // Substitute an ignored value with its replacement when necessary
+    auto replacementIt = replacedInstructions.find(Val);
+    const Value *newVal = replacementIt == replacedInstructions.end()
+                                  ? Val
+                                  : replacementIt->second;
+    // Constant leaf
+    if (auto Const = dyn_cast<ConstantInt>(newVal)) {
+        Constants.insert(Const->getSExtValue());
+        return true;
+    }
+    // Non-leaf; try to collect its operands recursively
+    auto BinOp = dyn_cast<BinaryOperator>(newVal);
+    if (BinOp && BinOp->getOpcode() == Opcode) {
+        std::multiset<int> tmpSNs;
+        std::multiset<int64_t> tmpConstants;
+        bool leftSuccess = collectBinaryOperands(
+                BinOp->getOperand(0), Opcode, tmpSNs, tmpConstants, sn_map);
+        bool rightSuccess = collectBinaryOperands(
+                BinOp->getOperand(1), Opcode, tmpSNs, tmpConstants, sn_map);
+        if (leftSuccess && rightSuccess) {
+            SNs.merge(tmpSNs);
+            Constants.merge(tmpConstants);
+            return true;
+        }
+    }
+    // Already synchronized leaf; do not match if it is the last value inserted
+    // into the synchronization map - it has just been compared as not equal
+    auto snMapIt = sn_map.find(newVal);
+    if (snMapIt != sn_map.end()
+        && (unsigned)snMapIt->second != sn_map.size() - 1) {
+        SNs.insert(snMapIt->second);
+        return true;
+    }
     return false;
 }

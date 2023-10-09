@@ -230,6 +230,11 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// ignorable loads are stored inside the ignored instructions map.
     bool maySkipLoad(const LoadInst *Load) const;
 
+    /// Check whether the given reorderable binary operator can be skipped.
+    /// It can only be skipped if all its users are binary operations
+    /// of the same kind.
+    bool maySkipReorderableBinaryOp(const Instruction *Op) const;
+
     /// Retrive the replacement for the given value from the ignored
     /// instructions map. Try to generate the replacement if a bitcast is given.
     const Value *
@@ -265,6 +270,15 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// (any instruction within it) access the same pointer and one of the
     /// accesses is a store and the other one is a load.
     bool isDependingOnReloc(const Instruction &Inst) const;
+
+    /// Recursively collect operands of reorderable binary operators.
+    /// Leafs must be constants or already synchronized values.
+    /// Return false if a non-synchronized non-constant leaf is found.
+    bool collectBinaryOperands(const Value *Val,
+                               Instruction::BinaryOps Opcode,
+                               std::multiset<int> &SNs,
+                               std::multiset<int64_t> &Constants,
+                               DenseMap<const Value *, int> &sn_map) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
