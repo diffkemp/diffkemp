@@ -724,6 +724,8 @@ void DifferentialFunctionComparator::undoLastInstCompare(
     sn_mapL.erase(&*InstL);
     sn_mapR.erase(&*InstR);
     mappedValuesBySn.erase(sn_mapL.size());
+    ComparedInstL--;
+    ComparedInstR--;
 }
 
 /// Does additional comparisons based on the C source to determine whether two
@@ -835,10 +837,14 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
         // been analyzed by the pattern function comparator and have already
         // been mapped according to the pattern.
         if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR)) {
-            while (InstL != InstLE && isPartOfPattern(&*InstL))
+            while (InstL != InstLE && isPartOfPattern(&*InstL)) {
                 InstL++;
-            while (InstR != InstRE && isPartOfPattern(&*InstR))
+                ComparedInstL++;
+            }
+            while (InstR != InstRE && isPartOfPattern(&*InstR)) {
                 InstR++;
+                ComparedInstR++;
+            }
             continue;
         }
 
@@ -963,6 +969,8 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             if (Res)
                 return Res;
         } else {
+            InstEqual++;
+
             if (Reloc.status == RelocationInfo::Stored) {
                 // If there is a dependency between the skipped instruction and
                 // the relocated code, fail the comparison
@@ -1605,6 +1613,9 @@ int DifferentialFunctionComparator::cmpPHIs(const PHINode *PhiL,
 int DifferentialFunctionComparator::cmpOperationsWithOperands(
         const Instruction *L, const Instruction *R) const {
     PREP_LOG("instruction", L, R);
+
+    ComparedInstR++;
+    ComparedInstL++;
 
     // Contains code copied out of the original cmpBasicBlocks since it is more
     // convenient to have the code in a separate function.

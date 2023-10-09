@@ -495,12 +495,12 @@ def compare(args):
     if output_dir is not None and os.path.isdir(output_dir):
         print("Differences stored in {}/".format(output_dir))
 
-    if args.report_stat:
+    if args.report_stat or args.extended_stat:
         print("")
         print("Statistics")
         print("----------")
         result.stop_time = default_timer()
-        result.report_stat(args.show_errors)
+        result.report_stat(args.show_errors, args.extended_stat)
     return 0
 
 

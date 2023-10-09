@@ -22,6 +22,15 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
+/// Updates the statistics based on the results of function comparison.
+void ModuleComparator::updateStats(
+        Result &result, const DifferentialFunctionComparator &fComp) {
+    result.First.stats.instCnt = fComp.ComparedInstL;
+    result.First.stats.instEqualCnt = fComp.InstEqual;
+    result.Second.stats.instCnt = fComp.ComparedInstR;
+    result.Second.stats.instEqualCnt = fComp.InstEqual;
+}
+
 /// Semantic comparison of functions.
 /// Function declarations are equal if they have the same name.
 /// Functions with body are compared using custom FunctionComparator that
@@ -104,6 +113,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
     DifferentialFunctionComparator fComp(
             FirstFun, SecondFun, config, DI, &CustomPatterns, this);
     int result = fComp.compare();
+    updateStats(ComparedFuns.at({FirstFun, SecondFun}), fComp);
 
     LOG_UNINDENT();
     if (result == 0) {
@@ -160,6 +170,7 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             DifferentialFunctionComparator fCompSecond(
                     FirstFun, SecondFun, config, DI, &CustomPatterns, this);
             result = fCompSecond.compare();
+            updateStats(ComparedFuns.at({FirstFun, SecondFun}), fCompSecond);
 
             // If the functions are equal after the inlining and there is a
             // call to the inlined function, mark it as weak.

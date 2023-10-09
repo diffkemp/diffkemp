@@ -56,6 +56,12 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Storing pointers to instructions in which functions started to differ.
     mutable std::pair<const Instruction *, const Instruction *>
             DifferingInstructions;
+    /// The number of instructions compared in F1.
+    mutable unsigned ComparedInstL = 0;
+    /// The number of instructions compared in F2.
+    mutable unsigned ComparedInstR = 0;
+    /// The number of instruction matching 1:1 when comparing F1 and F2.
+    mutable unsigned InstEqual = 0;
 
   protected:
     /// Initialize relocation info
