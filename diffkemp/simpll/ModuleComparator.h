@@ -93,6 +93,9 @@ class ModuleComparator {
     InliningResult tryToInline(CallInst *InlinedCall,
                                Program program,
                                bool FunctionSplitsEnabled) const;
+
+    static void updateStats(Result &result,
+                            const DifferentialFunctionComparator &fComp);
 };
 
 #endif // DIFFKEMP_SIMPLL_MODULECOMPARATOR_H

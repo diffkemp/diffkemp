@@ -44,6 +44,19 @@ class ComparisonGraph:
             else:
                 return ComparisonGraph.DependencyKind.STRONG
 
+    class FunctionStats:
+        """Contains statistics about analysis of a single function."""
+        def __init__(self, left, right):
+            self.inst_cnt = (left.get("inst-cnt", 0), right.get("inst-cnt", 0))
+            self.inst_equal_cnt = (left.get("inst-equal-cnt", 0),
+                                   right.get("inst-equal-cnt", 0))
+
+        def compared_inst_cnt(self):
+            return self.inst_cnt[0] + self.inst_cnt[1]
+
+        def compared_inst_equal_cnt(self):
+            return self.inst_equal_cnt[0] + self.inst_equal_cnt[1]
+
     class Vertex:
         """
         Vertex in the comparison graph.
@@ -55,13 +68,14 @@ class ComparisonGraph:
         Note: names, files and lines are tuples containing the values for both
         modules.
         """
-        def __init__(self, names, result, files=None, lines=None):
+        def __init__(self, names, result, files=None, lines=None, stats=None):
             self.names = names
             self.result = result
             self.nonfun_diffs = []
             self.successors = ([], [])
             self.files = files
             self.lines = lines
+            self.stats = stats
             # Vertices are by default cachable, but there are some cases when
             # it is necessary to run the comparison again.
             self.cachable = True
@@ -90,10 +104,10 @@ class ComparisonGraph:
             vertex = cls(
                 (res_left["function"], res_right["function"]),
                 Result.Kind.from_string(fun_result["result"]),
-                (res_left["file"] if "file" in res_left else None,
-                 res_right["file"] if "file" in res_right else None),
-                (res_left["line"] if "line" in res_left else None,
-                 res_right["line"] if "line" in res_right else None)
+                (res_left.get("file", None), res_right.get("file", None)),
+                (res_left.get("line", None), res_right.get("line", None)),
+                ComparisonGraph.FunctionStats(
+                    res_left.get("stats", {}), res_right.get("stats", {}))
             )
             if "calls" in res_left:
                 for res, side in [(res_left,

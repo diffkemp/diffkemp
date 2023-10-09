@@ -241,6 +241,14 @@ class Result:
 
         # Generate counts
         compared = len(self.graph.vertices)
+        compared_instructions = sum([v.stats.compared_inst_cnt() for v in
+                                     self.graph.vertices.values()])
+        equal_instructions = sum([v.stats.compared_inst_equal_cnt() for v
+                                  in self.graph.vertices.values()])
+        if compared_instructions > 0:
+            equal_percent = equal_instructions / compared_instructions * 100
+        else:
+            equal_percent = float('nan')
         total = len(unique_diffs)
         functions = len([r for r in unique_diffs
                          if r.res.first.diff_kind == "function"])
@@ -259,6 +267,10 @@ class Result:
             print("Elapsed time:            {:.2f} s".format(
                 self.stop_time - self.start_time))
         print("Functions compared:      {}".format(compared))
+        print("Instructions compared:   {}".format(compared_instructions))
+        print("1:1 equal instructions:  {0} ({1:.0f}%)".format(
+            equal_instructions, equal_percent))
+        print("")
         print("Total differences:       {}".format(total))
         if total == 0:
             return
@@ -273,8 +285,9 @@ class Result:
         print("Empty diffs:             {0} ({1:.0f}%)".format(empty,
               empty / total * 100))
 
-    def report_stat(self, show_errors=False):
+    def report_stat(self, show_errors=False, extended_stat=False):
         """Reports all statistics."""
         self.report_symbol_stat(show_errors)
-        print("")
-        self.report_object_stat()
+        if extended_stat:
+            print("")
+            self.report_object_stat()

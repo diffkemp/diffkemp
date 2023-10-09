@@ -105,6 +105,10 @@ def make_argument_parser():
     compare_ap.add_argument("--report-stat",
                             help="report statistics of the analysis",
                             action="store_true")
+    compare_ap.add_argument("--extended-stat",
+                            help="report detailed statistics about the "
+                                 "analysis (may be more expensive to compute)",
+                            action="store_true")
     compare_ap.add_argument("--source-dirs",
                             nargs=2,
                             help="specify root dirs for the compared projects")

@@ -36,6 +36,18 @@ template <> struct MappingTraits<CallInfo> {
 // callees).
 LLVM_YAML_IS_SEQUENCE_VECTOR(CallInfo)
 
+// FunctionStats to YAML
+namespace llvm {
+namespace yaml {
+template <> struct MappingTraits<FunctionStats> {
+    static void mapping(IO &io, FunctionStats &functionStats) {
+        io.mapOptional("inst-cnt", functionStats.instCnt, 0);
+        io.mapOptional("inst-equal-cnt", functionStats.instEqualCnt, 0);
+    }
+};
+} // namespace yaml
+} // namespace llvm
+
 // FunctionInfo to YAML
 namespace llvm {
 namespace yaml {
@@ -45,6 +57,7 @@ template <> struct MappingTraits<FunctionInfo> {
         io.mapRequired("function", name);
         io.mapOptional("file", info.file);
         io.mapOptional("line", info.line, 0);
+        io.mapOptional("stats", info.stats);
         auto calls =
                 std::vector<CallInfo>(info.calls.begin(), info.calls.end());
         io.mapOptional("calls", calls);

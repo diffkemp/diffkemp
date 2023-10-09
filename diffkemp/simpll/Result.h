@@ -24,6 +24,15 @@
 
 using namespace llvm;
 
+/// Encapsulates statistics about analysis of a single function.
+struct FunctionStats {
+    unsigned instCnt = 0;
+    unsigned instEqualCnt = 0;
+
+    // Default constructor needed for YAML serialisation.
+    FunctionStats() {}
+};
+
 /// Type for function call information: contains the called function and its
 /// call location (file and line).
 struct CallInfo {
@@ -49,6 +58,7 @@ struct FunctionInfo {
     std::string name;
     std::string file;
     int line;
+    FunctionStats stats;
     std::set<CallInfo> calls;
 
     // Default constructor is needed for YAML serialisation so that the struct
