@@ -260,7 +260,9 @@ bool isLogicalNot(const Instruction *Inst) {
 /// Get value of the given constant as a string
 std::string valueAsString(const Constant *Val) {
     if (auto *IntVal = dyn_cast<ConstantInt>(Val)) {
-        return std::to_string(IntVal->getSExtValue());
+        SmallString<16> StrVal;
+        IntVal->getValue().toString(StrVal, 10, true);
+        return StrVal.str().str();
     }
     return "";
 }
