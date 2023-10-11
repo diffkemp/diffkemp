@@ -56,9 +56,17 @@ def test_find_llvm_with_symbol_use(builder):
 def test_build_cscope_database(builder):
     """Test building CScope database."""
     builder._build_cscope_database()
-    for file in ["cscope.files", "cscope.in.out", "cscope.out",
-                 "cscope.po.out"]:
-        assert os.path.isfile(os.path.join(builder.source_dir, file))
+    # Some files have alternative namings so check that at least one file in
+    # each group exists.
+    expected_files = [
+        ["cscope.files"],
+        ["cscope.out"],
+        ["cscope.in.out", "cscope.out.in"],
+        ["cscope.po.out", "cscope.out.po"]
+    ]
+    for files in expected_files:
+        assert any([os.path.isfile(os.path.join(builder.source_dir, file)) for
+                    file in files])
 
 
 @pytest.mark.parametrize("builder", versions, indirect=True)
