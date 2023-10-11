@@ -27,9 +27,19 @@ jobs:
           key: kernels-${{ env.KERNELS }}
           lookup-only: true
 
+      - name: Delete unused software
+        if: steps.kernel-cache.outputs.cache-hit != 'true'
+        # This is necessary for running CScope database build as it takes
+        # a lot of disk space and the runners die silently when out of space.
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+
       - name: Install Dependencies
         if: steps.kernel-cache.outputs.cache-hit != 'true'
-        run: sudo apt-get install gcc-7 libelf-dev
+        run: sudo apt-get install gcc-7 libelf-dev cscope
 
       - name: Set GCC Version for Kernel Builds
         if: steps.kernel-cache.outputs.cache-hit != 'true'
@@ -45,6 +55,7 @@ jobs:
           pip3 install -r rhel-kernel-get/requirements.txt
           for k in $KERNELS; do
             rhel-kernel-get/rhel-kernel-get $k --output-dir kernel
+            make -C kernel/linux-$k cscope
           done
 
   build-and-test:
@@ -78,6 +89,8 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Delete unused software
+        # This is necessary for running CScope database build as it takes
+        # a lot of disk space and the runners die silently when out of space.
         run: |
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /usr/share/dotnet
