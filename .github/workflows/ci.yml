@@ -41,6 +41,7 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/kernel
           git clone https://github.com/viktormalik/rhel-kernel-get.git
+          git -C rhel-kernel-get/ checkout v0.1
           pip3 install -r rhel-kernel-get/requirements.txt
           for k in $KERNELS; do
             rhel-kernel-get/rhel-kernel-get $k --output-dir kernel
