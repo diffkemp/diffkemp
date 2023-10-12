@@ -17,8 +17,12 @@ env:
 
 jobs:
   cache-kernels:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@v4
+      - uses: DeterminateSystems/magic-nix-cache-action@v2
+
       - name: Cache Linux Kernels
         id: kernel-cache
         uses: actions/cache@v3
@@ -37,30 +41,20 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
 
-      - name: Install Dependencies
-        if: steps.kernel-cache.outputs.cache-hit != 'true'
-        run: sudo apt-get install gcc-7 libelf-dev cscope
-
-      - name: Set GCC Version for Kernel Builds
-        if: steps.kernel-cache.outputs.cache-hit != 'true'
-        run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100
-
-      - name: Obtain Linux Kernels
+      - name: Get Linux Kernels
         if: steps.kernel-cache.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}
         run: |
-          mkdir -p ${{ github.workspace }}/kernel
-          git clone https://github.com/viktormalik/rhel-kernel-get.git
-          git -C rhel-kernel-get/ checkout v0.1
-          pip3 install -r rhel-kernel-get/requirements.txt
+          mkdir kernel
           for k in $KERNELS; do
-            rhel-kernel-get/rhel-kernel-get $k --output-dir kernel
-            make -C kernel/linux-$k cscope
+            nix develop .#test-kernel-buildenv --command bash -c \
+              "rhel-kernel-get $k --output-dir kernel && \
+               make -C kernel/linux-$k cscope"
           done
 
   build-and-test:
     needs: cache-kernels
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         llvm: [9, 10, 11, 12, 13, 14, 15, 16]
@@ -87,6 +81,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@v4
+      - uses: DeterminateSystems/magic-nix-cache-action@v2
 
       - name: Delete unused software
         # This is necessary for running CScope database build as it takes
@@ -96,27 +92,6 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-
-      - name: Install Dependencies
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          sudo apt-get install bc cscope libelf-dev ninja-build
-          pip install -r requirements.txt
-
-      - name: Install LLVM
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.llvm }} main"
-          sudo apt-get update
-          sudo apt-get install llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
-          sudo ln -s /usr/lib/llvm-${{ matrix.llvm }} /usr/local/lib/llvm
-          echo "/usr/lib/llvm-${{ matrix.llvm }}/bin" >> $GITHUB_PATH
 
       - name: Restore Kernels
         uses: actions/cache/restore@v3
@@ -130,31 +105,24 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/build
 
-      - name: CMake
+      - name: Configure and Build
         env: ${{ matrix.env }}
-        working-directory: ${{ github.workspace }}/build
-        shell: bash
-        run: cmake $GITHUB_WORKSPACE -GNinja -DSANITIZE_ADDRESS=${{ matrix.asan }} -DVENDOR_GTEST=On
-
-      - name: Build
-        env: ${{ matrix.env }}
-        working-directory: ${{ github.workspace }}/build
-        run: ninja
-
-      - name: Install
-        env: ${{ matrix.env }}
-        working-directory: ${{ github.workspace }}
-        run: pip3 install -e .
+        run: >
+          nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
+          "cmake -B build ${{ github.workspace }} -GNinja -DSANITIZE_ADDRESS=${{ matrix.asan }} &&
+           ninja -C build"
 
       - name: Run SimpLL Unit Tests
-        working-directory: ${{ github.workspace }}
-        run: ninja test -C build
+        run: >
+          nix develop .#diffkemp-llvm${{ matrix.llvm }} --command
+          ninja test -C build
 
-      - name: Run Regression Tests
+      - name: Run Tests
         if: matrix.regression-tests
-        working-directory: ${{ github.workspace }}
-        run: |
-          pytest tests
+        shell: bash
+        run: >
+          nix develop .#diffkemp-llvm${{ matrix.llvm }} --command
+          pytest tests -v
 
   code-style:
     runs-on: ubuntu-latest
