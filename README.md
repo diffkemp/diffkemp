@@ -176,6 +176,8 @@ simplicity. SimpLL performs several important steps:
 
 ## Development
 
+### Docker
+
 For a better developer experience, there is a development container image
 prepared that can be retrieved from DockerHub:
 [https://hub.docker.com/r/viktormalik/diffkemp-devel/](https://hub.docker.com/r/viktormalik/diffkemp-devel/)
@@ -200,6 +202,44 @@ directory, you need to specify where DiffKemp is located using the
 
 By default, the DockerHub image is used, but a custom image may be set using
 the `--image` option.
+
+### Nix
+
+In addition to container environment, we provide [Nix
+flakes](https://nixos.wiki/wiki/Flakes) for building and testing DiffKemp.
+
+First, it is necessary to [install Nix](https://nixos.org/download.html) and
+enable flakes:
+```
+$ mkdir -p ~/.config/nix
+$ echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+```
+
+Then, building DiffKemp is as simple as running one of the following commands:
+```
+$ nix build                    # <- uses latest LLVM
+$ nix build .#diffkemp-llvm14
+```
+This will create a new folder `result/` containing the pre-built DiffKemp which
+can be then executed by:
+```
+$ result/bin/diffkemp ...
+```
+
+Similarly, it is also possible to use Nix as a development environment:
+```
+$ nix develop                   # <- uses latest LLVM
+$ nix develop .#diffkemp-llvm14
+```
+This will enter a development shell with all DiffKemp dependencies
+pre-installed. You can then follow the [standard build
+instructions](#install-from-source) to build and install DiffKemp. The only
+difference is that it is not possible to run `pip install` inside Nix shell
+(because of the way Nix works) and it is necessary to use the built-in
+`setuptoolsShellHook` function instead.
+
+We also provide a special Nix environment for retrieving and preparing kernel
+versions necessary for running regression tests (see below for details).
 
 ### Tests
 
@@ -228,6 +268,14 @@ The required configuration of each kernel can be done by running:
     
 The [rhel-kernel-get](https://github.com/viktormalik/rhel-kernel-get) script can also be used
 to download and configure the aforementioned kernels.
+
+Since CentOS 7 kernels require a rather old GCC 7, the most convenient way to
+download the kernels is to use the prepared Nix environment by running
+```
+$ nix develop .#test-kernel-buildenv
+```
+and using `rhel-kernel-get` inside the environment to retrieve the above
+kernels.
 
 The result viewer contains unit tests and integration tests
 which can be run by:
