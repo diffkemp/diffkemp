@@ -44,6 +44,7 @@ struct config {
     int OutputLlvmIR;
     int PrintAsmDiffs;
     int PrintCallStacks;
+    int ExtendedStat;
     int Verbosity;
 };
 

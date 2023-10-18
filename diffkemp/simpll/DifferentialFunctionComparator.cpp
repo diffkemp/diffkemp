@@ -856,6 +856,16 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             CurrentLocR = &InstR->getDebugLoc();
         else
             CurrentLocR = nullptr;
+        if (config.ExtendedStat) {
+            if (CurrentLocL && InstL->getDebugLoc().get())
+                ComparedLinesL.emplace(
+                        InstL->getDebugLoc()->getFilename().str(),
+                        InstL->getDebugLoc().getLine());
+            if (CurrentLocR && InstR->getDebugLoc().get())
+                ComparedLinesR.emplace(
+                        InstR->getDebugLoc()->getFilename().str(),
+                        InstR->getDebugLoc()->getLine());
+        }
 
         if (int Res = cmpOperationsWithOperands(&*InstL, &*InstR)) {
             // Detect a difference caused by a field access change that does

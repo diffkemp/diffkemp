@@ -50,12 +50,17 @@ class ComparisonGraph:
             self.inst_cnt = (left.get("inst-cnt", 0), right.get("inst-cnt", 0))
             self.inst_equal_cnt = (left.get("inst-equal-cnt", 0),
                                    right.get("inst-equal-cnt", 0))
+            self.lines_cnt = (left.get("lines-cnt", 0),
+                              right.get("lines-cnt", 0))
 
         def compared_inst_cnt(self):
             return self.inst_cnt[0] + self.inst_cnt[1]
 
         def compared_inst_equal_cnt(self):
             return self.inst_equal_cnt[0] + self.inst_equal_cnt[1]
+
+        def compared_lines_cnt(self):
+            return self.lines_cnt[0] + self.lines_cnt[1]
 
     class Vertex:
         """

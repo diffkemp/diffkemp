@@ -243,6 +243,8 @@ class Result:
         compared = len(self.graph.vertices)
         compared_instructions = sum([v.stats.compared_inst_cnt() for v in
                                      self.graph.vertices.values()])
+        compared_lines = sum([v.stats.compared_lines_cnt() for v in
+                              self.graph.vertices.values()])
         equal_instructions = sum([v.stats.compared_inst_equal_cnt() for v
                                   in self.graph.vertices.values()])
         if compared_instructions > 0:
@@ -267,6 +269,7 @@ class Result:
             print("Elapsed time:            {:.2f} s".format(
                 self.stop_time - self.start_time))
         print("Functions compared:      {}".format(compared))
+        print("Lines compared:          {}".format(compared_lines))
         print("Instructions compared:   {}".format(compared_instructions))
         print("1:1 equal instructions:  {0} ({1:.0f}%)".format(
             equal_instructions, equal_percent))

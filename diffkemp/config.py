@@ -111,6 +111,7 @@ class Config:
         custom_pattern_config=None,
         builtin_patterns=BuiltinPatterns(),
         print_asm_diffs=False,
+        extended_stat=False,
         verbosity=0,
         use_ffi=False,
         semdiff_tool=None,
@@ -125,6 +126,7 @@ class Config:
         :param custom_pattern_config: Valid custom pattern configuration.
         :param builtin_patterns: Configuration of built-in patterns.
         :param print_asm_diffs: Print assembly differences.
+        :param extended_stat: Gather extended statistics.
         :param verbosity: Verbosity level (currently boolean).
         :param use_ffi: Use Python FFI to call SimpLL.
         :param semdiff_tool: Tool to use for semantic diff.
@@ -138,6 +140,7 @@ class Config:
         self.custom_pattern_config = custom_pattern_config
         self.builtin_patterns = builtin_patterns
         self.print_asm_diffs = print_asm_diffs
+        self.extended_stat = extended_stat
         self.verbosity = verbosity
         self.use_ffi = use_ffi
 
@@ -187,6 +190,7 @@ class Config:
             builtin_patterns=builtin_patterns,
             output_llvm_ir=args.output_llvm_ir,
             print_asm_diffs=args.print_asm_diffs,
+            extended_stat=args.extended_stat,
             verbosity=args.verbose,
             use_ffi=not args.disable_simpll_ffi,
             semdiff_tool=args.semdiff_tool,

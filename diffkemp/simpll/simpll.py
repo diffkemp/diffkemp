@@ -67,6 +67,7 @@ def run_simpll(first, second, fun_first, fun_second, var, config, suffix=None,
         conf_struct.BuiltinPatterns = builtin_patterns[0]
         conf_struct.OutputLlvmIR = config.output_llvm_ir
         conf_struct.PrintAsmDiffs = config.print_asm_diffs
+        conf_struct.ExtendedStat = config.extended_stat
         conf_struct.PrintCallStacks = True
         conf_struct.Verbosity = config.verbosity
         conf_struct.Variable = variable
@@ -154,6 +155,9 @@ def run_simpll(first, second, fun_first, fun_second, var, config, suffix=None,
 
             if config.print_asm_diffs:
                 simpll_command.append("--print-asm-diffs")
+
+            if config.extended_stat:
+                simpll_command.append("--extended-stat")
 
             if config.verbosity > 0:
                 simpll_command.extend(["--verbosity", str(config.verbosity)])

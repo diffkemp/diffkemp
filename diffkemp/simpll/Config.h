@@ -77,6 +77,8 @@ class Config {
     bool PrintAsmDiffs;
     // Show call stacks for non-equal functions
     bool PrintCallStacks;
+    // Track more advanced statistics (e.g. line count)
+    bool ExtendedStat;
 
     Config(std::string FirstFunName,
            std::string SecondFunName,
@@ -91,6 +93,7 @@ class Config {
            bool OutputLlvmIR = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
+           bool ExtendedStat = false,
            int Verbosity = 0);
 
     // Constructor without module loading (for tests).

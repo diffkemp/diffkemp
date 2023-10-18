@@ -254,6 +254,7 @@ void runSimpLL(void *ModL,
                   Conf.OutputLlvmIR,
                   Conf.PrintAsmDiffs,
                   Conf.PrintCallStacks,
+                  Conf.ExtendedStat,
                   Conf.Verbosity);
 
     OverallResult Result;

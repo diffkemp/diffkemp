@@ -28,6 +28,7 @@ using namespace llvm;
 struct FunctionStats {
     unsigned instCnt = 0;
     unsigned instEqualCnt = 0;
+    unsigned linesCnt = 0;
 
     // Default constructor needed for YAML serialisation.
     FunctionStats() {}
