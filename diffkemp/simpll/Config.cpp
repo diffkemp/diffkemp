@@ -44,13 +44,14 @@ Config::Config(std::string FirstFunName,
                bool OutputLlvmIR,
                bool PrintAsmDiffs,
                bool PrintCallStacks,
+               bool ExtendedStat,
                int Verbosity)
         : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
           First(FirstModule), Second(SecondModule), FirstOutFile(FirstOutFile),
           SecondOutFile(SecondOutFile), CacheDir(CacheDir),
           CustomPatternConfigPath(CustomPatternConfigPath), Patterns(Patterns),
           OutputLlvmIR(OutputLlvmIR), PrintAsmDiffs(PrintAsmDiffs),
-          PrintCallStacks(PrintCallStacks) {
+          PrintCallStacks(PrintCallStacks), ExtendedStat(ExtendedStat) {
     refreshFunctions();
 
     if (!Variable.empty()) {

@@ -71,6 +71,10 @@ cl::opt<bool> PrintAsmDiffsOpt(
         cl::desc("Print raw differences in inline assembly code "
                  "(does not apply to macros)."),
         cl::cat(SimpLLCategory));
+cl::opt<bool> ExtendedStats("extended-stat",
+                            cl::desc("Track extended statistics "
+                                     "(may be more expensive to compute)."),
+                            cl::cat(SimpLLCategory));
 
 cl::OptionCategory BuiltinPatternsCategory("SimpLL pattern options",
                                            "Options for configuring built-in "
@@ -178,6 +182,7 @@ int main(int argc, const char **argv) {
                   OutputLlvmIROpt,
                   PrintAsmDiffsOpt,
                   PrintCallstacksOpt,
+                  ExtendedStats,
                   VerbosityOpt);
 
     // Run transformations and the comparison.

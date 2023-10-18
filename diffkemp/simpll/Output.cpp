@@ -43,6 +43,7 @@ template <> struct MappingTraits<FunctionStats> {
     static void mapping(IO &io, FunctionStats &functionStats) {
         io.mapOptional("inst-cnt", functionStats.instCnt, 0);
         io.mapOptional("inst-equal-cnt", functionStats.instEqualCnt, 0);
+        io.mapOptional("lines-cnt", functionStats.linesCnt, 0);
     }
 };
 } // namespace yaml

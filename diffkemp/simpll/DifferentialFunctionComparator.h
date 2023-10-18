@@ -62,6 +62,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable unsigned ComparedInstR = 0;
     /// The number of instruction matching 1:1 when comparing F1 and F2.
     mutable unsigned InstEqual = 0;
+    /// A set containing pairs of (file, line number) that were compared in F1.
+    mutable std::set<std::pair<std::string, unsigned>> ComparedLinesL;
+    /// A set containing pairs of (file, line number) that were compared in F2.
+    mutable std::set<std::pair<std::string, unsigned>> ComparedLinesR;
 
   protected:
     /// Initialize relocation info

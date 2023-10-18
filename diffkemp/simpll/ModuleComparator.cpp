@@ -27,8 +27,11 @@ void ModuleComparator::updateStats(
         Result &result, const DifferentialFunctionComparator &fComp) {
     result.First.stats.instCnt = fComp.ComparedInstL;
     result.First.stats.instEqualCnt = fComp.InstEqual;
+    result.First.stats.linesCnt = fComp.ComparedLinesL.size();
+
     result.Second.stats.instCnt = fComp.ComparedInstR;
     result.Second.stats.instEqualCnt = fComp.InstEqual;
+    result.Second.stats.linesCnt = fComp.ComparedLinesR.size();
 }
 
 /// Semantic comparison of functions.
