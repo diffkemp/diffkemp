@@ -148,7 +148,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::vector<std::pair<const PHINode *, const PHINode *>>
             phisToCompare;
     mutable std::unordered_map<const Value *, const Value *>
-            ignoredInstructions;
+            replacedInstructions;
+    mutable std::unordered_set<const Value *> ignoredInstructions;
+
     /// Contains pairs of values mapped by synchronisation maps. Enables
     /// retrieval of mapped values based on assigned numbers.
     mutable std::unordered_map<int, std::pair<const Value *, const Value *>>

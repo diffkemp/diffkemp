@@ -502,18 +502,18 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
 bool DifferentialFunctionComparator::maySkipInstruction(
         const Instruction *Inst) const {
     if (isa<AllocaInst>(Inst)) {
-        // Ignore AllocaInsts with no specific replacement.
+        ignoredInstructions.insert(Inst);
         return true;
     }
     if (isCast(Inst)) {
         if (config.Patterns.TypeCasts) {
-            ignoredInstructions.insert({Inst, Inst->getOperand(0)});
+            replacedInstructions.insert({Inst, Inst->getOperand(0)});
             return true;
         }
         return maySkipCast(Inst);
     }
     if (isZeroGEP(Inst)) {
-        ignoredInstructions.insert({Inst, Inst->getOperand(0)});
+        replacedInstructions.insert({Inst, Inst->getOperand(0)});
         return true;
     }
     if (auto Load = dyn_cast<LoadInst>(Inst)) {
@@ -536,7 +536,7 @@ bool DifferentialFunctionComparator::maySkipCast(const User *Cast) const {
             // replacement of a simple type with a union, the
             // comparator would detect a difference when the value is
             // used, since it would have a different type.
-            ignoredInstructions.insert({Cast, Cast->getOperand(0)});
+            replacedInstructions.insert({Cast, Cast->getOperand(0)});
             return true;
         }
     }
@@ -545,7 +545,7 @@ bool DifferentialFunctionComparator::maySkipCast(const User *Cast) const {
         // an instruction affected by this (i.e. a store, load or GEP),
         // there would be an additional difference that will be detected
         // later.
-        ignoredInstructions.insert({Cast, Cast->getOperand(0)});
+        replacedInstructions.insert({Cast, Cast->getOperand(0)});
         return true;
     }
     if (SrcTy->isIntegerTy() && DestTy->isIntegerTy()) {
@@ -576,7 +576,7 @@ bool DifferentialFunctionComparator::maySkipCast(const User *Cast) const {
                         UserStack.push_back(UU);
                 }
             }
-            ignoredInstructions.insert({Cast, Cast->getOperand(0)});
+            replacedInstructions.insert({Cast, Cast->getOperand(0)});
             return true;
         }
     }
@@ -654,7 +654,7 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
     // If the load is repeated without stores in between, skip it because
     // the load is redundant and its removal will cause no semantic difference.
     if (PreviousLoad) {
-        ignoredInstructions.insert({Load, PreviousLoad});
+        replacedInstructions.insert({Load, PreviousLoad});
         return true;
     }
     return false;
@@ -669,8 +669,8 @@ bool mayIgnoreMacro(std::string macro) {
 const Value *DifferentialFunctionComparator::getReplacementValue(
         const Value *Replaced, DenseMap<const Value *, int> &sn_map) const {
     // Find the replacement value.
-    auto replacementIt = ignoredInstructions.find(Replaced);
-    if (replacementIt == ignoredInstructions.end()) {
+    auto replacementIt = replacedInstructions.find(Replaced);
+    if (replacementIt == replacedInstructions.end()) {
         // Before failing, check whether the replaced value is an ignorable
         // bitcast or zero GEP operator. If so, return its operand. Note that if
         // the replacing operand is an instruction, it must already have been
@@ -908,12 +908,12 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 if (isLogicalNot(&*InstL)) {
                     matchingPair = {&*InstL,
                                     getMappedValue(InstL->getOperand(0), true)};
-                    ignoredInstructions.emplace(&*InstL, InstL->getOperand(0));
+                    replacedInstructions.emplace(&*InstL, InstL->getOperand(0));
                     InstL++;
                 } else {
                     matchingPair = {getMappedValue(InstR->getOperand(0), false),
                                     &*InstR};
-                    ignoredInstructions.emplace(&*InstR, InstR->getOperand(0));
+                    replacedInstructions.emplace(&*InstR, InstR->getOperand(0));
                     InstR++;
                 }
 
@@ -1352,7 +1352,15 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
                                               const Value *R) const {
     PREP_LOG("value", L, R);
 
-    // Use replacement references for ignored values.
+    // Instructions that were ignored without replacement must never be compared
+    // as values. Two such instructions would always synchronize (even if not
+    // equal). Comparing with an already synchronized value would pollute the
+    // SN maps and complicate eventual undo.
+    if (ignoredInstructions.count(L) || ignoredInstructions.count(R)) {
+        RETURN_WITH_LOG_NEQ(1);
+    }
+
+    // Use replacements for other ignored values, bitcasts, and zero GEPs.
     auto replaceL = getReplacementValue(L, sn_mapL);
     auto replaceR = getReplacementValue(R, sn_mapR);
     if (replaceL || replaceR) {
