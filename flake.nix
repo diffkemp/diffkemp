@@ -94,6 +94,19 @@
               pytest
               pytest-mock
             ];
+
+            # Running setuptoolsShellHook by default is confusing because it
+            # will fail if SimpLL hasn't been built before.
+            dontUseSetuptoolsShellHook = true;
+
+            # On the other hand, we want to allow running it from CLI using
+            # `nix develop --command bash -c setuptoolsShellHook` inside CI.
+            # This is normally not possible (as setuptoolsShellHook is a Bash
+            # function) so we workaround this with the below hack which exports
+            # the function (and all functions it uses) as commands.
+            shellHook = ''
+              export -f setuptoolsShellHook runHook _eval _callImplicitHook
+            '';
           };
     in
     {

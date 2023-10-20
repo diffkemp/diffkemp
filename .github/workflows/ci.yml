@@ -121,8 +121,9 @@ jobs:
         if: matrix.regression-tests
         shell: bash
         run: >
-          nix develop .#diffkemp-llvm${{ matrix.llvm }} --command
-          pytest tests -v
+          nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
+          "setuptoolsShellHook &&
+           pytest tests -v"
 
   code-style:
     runs-on: ubuntu-latest
