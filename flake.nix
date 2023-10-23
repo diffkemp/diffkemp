@@ -33,6 +33,8 @@
               setuptools
             ];
 
+            WITHOUT_RPYTHON = true;
+
             # Including cmake in nativeBuildInputs automatically runs it during
             # configurePhase so we just need to set correct flags.
             cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" "-GNinja" ];
@@ -94,6 +96,8 @@
               pytest
               pytest-mock
             ];
+
+            WITHOUT_RPYTHON = true;
 
             # Running setuptoolsShellHook by default is confusing because it
             # will fail if SimpLL hasn't been built before.
@@ -169,6 +173,8 @@
             ];
 
             propagatedBuildInputs = default.propagatedBuildInputs;
+
+            WITHOUT_RPYTHON = true;
 
             dontUseSetuptoolsShellHook = true;
           };
