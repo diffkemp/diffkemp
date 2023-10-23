@@ -8,6 +8,10 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
 
+      llvmVersionMin = 9;
+      llvmVersionMax = 16;
+      llvmVersions = pkgs.lib.lists.range llvmVersionMin llvmVersionMax;
+
       mkDiffkemp =
         llvmPackages:
           with pkgs;
@@ -116,30 +120,26 @@
     {
       formatter.${system} = pkgs.nixpkgs-fmt;
 
-      packages.${system} = rec {
-        default = diffkemp-llvm16;
-
-        diffkemp-llvm16 = mkDiffkemp pkgs.llvmPackages_16;
-        diffkemp-llvm15 = mkDiffkemp pkgs.llvmPackages_15;
-        diffkemp-llvm14 = mkDiffkemp pkgs.llvmPackages_14;
-        diffkemp-llvm13 = mkDiffkemp pkgs.llvmPackages_13;
-        diffkemp-llvm12 = mkDiffkemp pkgs.llvmPackages_12;
-        diffkemp-llvm11 = mkDiffkemp pkgs.llvmPackages_11;
-        diffkemp-llvm10 = mkDiffkemp pkgs.llvmPackages_10;
-        diffkemp-llvm9 = mkDiffkemp pkgs.llvmPackages_9;
+      # Create a package for each supported LLVM.
+      # The default is always the latest LLVM.
+      packages.${system} = (builtins.listToAttrs (map
+        (ver: {
+          name = "diffkemp-llvm${ver}";
+          value = mkDiffkemp pkgs."llvmPackages_${ver}";
+        })
+        (map toString llvmVersions))) // {
+        default = mkDiffkemp pkgs."llvmPackages_${toString llvmVersionMax}";
       };
 
-      devShells.${system} = rec {
-        default = diffkemp-llvm16;
-
-        diffkemp-llvm16 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm16;
-        diffkemp-llvm15 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm15;
-        diffkemp-llvm14 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm14;
-        diffkemp-llvm13 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm13;
-        diffkemp-llvm12 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm12;
-        diffkemp-llvm11 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm11;
-        diffkemp-llvm10 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm10;
-        diffkemp-llvm9 = mkDiffkempDevShell self.packages.${system}.diffkemp-llvm9;
+      # Create a dev shell for each supported LLVM.
+      # The default is always the latest LLVM.
+      devShells.${system} = (builtins.listToAttrs (map
+        (ver: {
+          name = "diffkemp-llvm${ver}";
+          value = mkDiffkempDevShell self.packages.${system}."diffkemp-llvm${ver}";
+        })
+        (map toString llvmVersions))) // rec {
+        default = mkDiffkempDevShell self.packages.${system}."diffkemp-llvm${toString llvmVersionMax}";
 
         # Environment for downloading and preparing test kernels (RHEL 7 and 8).
         # Contains 2 changes from the default env necessary for RHEL 7:
