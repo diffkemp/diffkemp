@@ -21,7 +21,13 @@
 
             src = self;
 
-            nativeBuildInputs = with llvmPackages; [ cmake gcc libllvm ninja ];
+            nativeBuildInputs = with llvmPackages; [
+              cmake
+              gcc
+              libllvm
+              ninja
+              nodejs_20
+            ];
 
             buildInputs = with llvmPackages; [
               clangNoLibcxx
