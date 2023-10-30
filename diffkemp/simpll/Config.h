@@ -102,13 +102,14 @@ class Config {
            std::string CacheDir,
            std::string CustomPatternConfigPath,
            bool PrintAsmDiffs = true,
-           bool PrintCallStacks = true)
+           bool PrintCallStacks = true,
+           bool ExtendedStat = false)
             : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
               First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
               CustomPatternConfigPath(CustomPatternConfigPath),
               OutputLlvmIR(false), PrintAsmDiffs(PrintAsmDiffs),
-              PrintCallStacks(PrintCallStacks) {}
+              PrintCallStacks(PrintCallStacks), ExtendedStat(ExtendedStat) {}
 
     /// Sets debug types specified in the vector.
     void setDebugTypes(std::vector<std::string> &debugTypes);
