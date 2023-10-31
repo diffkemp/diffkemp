@@ -263,6 +263,8 @@ int InstPatternComparator::cmpBasicBlocks(const BasicBlock *ModBB,
     jumpToInst(ModInst, ModPosition);
     jumpToInst(PatInst, PatPosition);
 
+    auto FirstModInst = ModInst;
+
     while (ModInst != ModInstE && PatInst != PatInstE) {
         ModPosition = &*ModInst;
         PatPosition = &*PatInst;
@@ -294,8 +296,10 @@ int InstPatternComparator::cmpBasicBlocks(const BasicBlock *ModBB,
             eraseNewlyMapped();
 
             // When in an instruction group, do not allow module instruction
-            // skipping.
-            if (GroupDepth > 0)
+            // skipping. Also do not skip the initial module instruction; we
+            // want a pattern match that starts with it. Any patterns starting
+            // with later instructions will be matched later if necessary.
+            if (GroupDepth > 0 || ModInst == FirstModInst)
                 return Res;
 
             // Skip the module instruction.

@@ -1040,8 +1040,7 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             if (CustomPatternComp.matchPattern(&*InstL, &*InstR)) {
                 undoLastInstCompare(InstL, InstR);
                 createPatternMapping();
-                if (isPartOfPattern(&*InstL) || isPartOfPattern(&*InstR))
-                    continue;
+                continue;
             }
 
             // Try to find a match by moving one of the instruction iterators
