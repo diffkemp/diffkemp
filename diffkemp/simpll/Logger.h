@@ -90,6 +90,7 @@
  *      - details about index alignment in debug information analysis
  *      - details about replacements in passes
  *      - details about dependency slicing pass
+ *      - details about inverse conditions pattern
  */
 
 #ifndef DIFFKEMP_SIMPLL_LOGGER_H
