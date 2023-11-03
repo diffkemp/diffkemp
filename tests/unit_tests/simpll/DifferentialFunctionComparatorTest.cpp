@@ -1548,6 +1548,85 @@ TEST_F(DifferentialFunctionComparatorTest, CmpInverseBranchesNegation) {
     ASSERT_EQ(DiffComp->compare(), 0);
 }
 
+// Check that the combined condition (which for individual conditions
+// looks like an inverse condition) is not compared as equal, because it is
+// not an inverse condition when the individual conditions are combined.
+TEST_F(DifferentialFunctionComparatorTest, CombinedCondNotInverseBranches) {
+    // old version:
+    // void f() {
+    //     if (5 == 5 || 10 == 10) {
+    //         return true;
+    //     }
+    //     else return false
+
+    // new version:
+    // void f() {
+    //     if (5 != 5 || 10 != 10) {
+    //         return true;
+    //     }
+    //     else return false
+
+    // Main function basic block
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // If basic blocks
+    BasicBlock *BBLIf = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRIf = BasicBlock::Create(CtxR, "", FR);
+
+    // Else basic blocks
+    BasicBlock *BBLElse = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRElse = BasicBlock::Create(CtxR, "", FR);
+
+    // L: cmp 5==5 x R: cmp 5!=5
+    auto condLFiveEqFive = ICmpInst::Create(
+            Instruction::ICmp,
+            CmpInst::ICMP_EQ,
+            ConstantInt::get(IntegerType::get(CtxL, 8), 5, true),
+            ConstantInt::get(IntegerType::get(CtxL, 8), 5, true),
+            "",
+            BBL);
+    auto condRFiveNeqFive = ICmpInst::Create(
+            Instruction::ICmp,
+            CmpInst::ICMP_NE,
+            ConstantInt::get(IntegerType::get(CtxR, 8), 5, true),
+            ConstantInt::get(IntegerType::get(CtxR, 8), 5, true),
+            "",
+            BBR);
+    // L: cmp 10==10 x R: cmp 10!=10
+    auto condLTenEqTen = ICmpInst::Create(
+            Instruction::ICmp,
+            CmpInst::ICMP_EQ,
+            ConstantInt::get(IntegerType::get(CtxL, 8), 10, true),
+            ConstantInt::get(IntegerType::get(CtxL, 8), 10, true),
+            "",
+            BBL);
+    auto condRTenNeqTen = ICmpInst::Create(
+            Instruction::ICmp,
+            CmpInst::ICMP_NE,
+            ConstantInt::get(IntegerType::get(CtxR, 8), 10, true),
+            ConstantInt::get(IntegerType::get(CtxR, 8), 10, true),
+            "",
+            BBR);
+    // L: or (5 == 5), (10 == 10) x R: or (5 != 5), (10 != 10)
+    auto orL = BinaryOperator::Create(
+            Instruction::Or, condLFiveEqFive, condLTenEqTen, "", BBL);
+    auto orR = BinaryOperator::Create(
+            Instruction::Or, condRFiveNeqFive, condRTenNeqTen, "", BBR);
+    // branching -- br BB{L,R}If, BB{L,R}Else
+    BranchInst::Create(BBLIf, BBLElse, orL, BBL);
+    BranchInst::Create(BBRIf, BBRElse, orR, BBR);
+    // if branch -- return true
+    ReturnInst::Create(CtxL, ConstantInt::getTrue(CtxL), BBLIf);
+    ReturnInst::Create(CtxR, ConstantInt::getTrue(CtxR), BBRIf);
+    // else branch -- return false
+    ReturnInst::Create(CtxL, ConstantInt::getFalse(CtxL), BBLElse);
+    ReturnInst::Create(CtxR, ConstantInt::getFalse(CtxR), BBRElse);
+
+    // diffkemp compare
+    ASSERT_NE(DiffComp->compare(), 0);
+} // TEST_F -- CombinedCondNotInverseBranches
+
 /// Check detection of code relocation.
 TEST_F(DifferentialFunctionComparatorTest, CodeRelocation) {
     // Left function:
