@@ -331,6 +331,8 @@ int DifferentialFunctionComparator::cmpOperations(
                                         BranchR->getCondition());
             if (inverseConditions.find(conds) != inverseConditions.end()) {
                 // Swap successors of one of the branches
+                PREP_LOG("swap-branches", L, R);
+                LOG_KEEP_FORCE(0);
                 BranchInst *BranchNew = const_cast<BranchInst *>(BranchR);
                 auto *tmpSucc = BranchNew->getSuccessor(0);
                 BranchNew->setSuccessor(0, BranchNew->getSuccessor(1));
@@ -378,6 +380,9 @@ int DifferentialFunctionComparator::cmpOperations(
             // operands are compared in cmpBasicBlocks.
             if (CmpL->getPredicate() == CmpR->getInversePredicate()) {
                 if (checkInverseCondUsers(L) && checkInverseCondUsers(R)) {
+                    PREP_LOG("inv-cond-add", L, R);
+                    LOG_KEEP_FORCE(0);
+
                     inverseConditions.emplace(L, R);
                     return 0;
                 }
@@ -986,6 +991,15 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 size_t erased = inverseConditions.erase(prevCondPair);
                 if (!erased)
                     inverseConditions.insert(condPair);
+
+                LOG_VERBOSE_EXTRA((erased ? "Removed" : " Added")
+                                  << " inverse condition\n");
+                auto &pairToLog = (erased) ? prevCondPair : condPair;
+                LOG_INDENT();
+                LOG_VERBOSE_EXTRA("L: " << (*(pairToLog.first)) << "\n");
+                LOG_VERBOSE_EXTRA("R: " << (*(pairToLog.second)) << "\n");
+                LOG_UNINDENT();
+
                 continue;
             }
 
