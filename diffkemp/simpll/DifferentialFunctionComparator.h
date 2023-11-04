@@ -279,6 +279,13 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                std::multiset<int> &SNs,
                                std::multiset<int64_t> &Constants,
                                DenseMap<const Value *, int> &sn_map) const;
+
+    /// Recursively check if users of the instruction with an inverse condition
+    /// are only branch or not instructions.
+    /// This is done to prevent false negatives.
+    /// Return true if the users are acceptable for inverse conditions pattern,
+    /// false otherwise.
+    bool checkInverseCondUsers(const Instruction *inst) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H
