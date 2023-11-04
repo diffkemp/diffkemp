@@ -377,8 +377,10 @@ int DifferentialFunctionComparator::cmpOperations(
             // It is sufficient to compare the predicates here since the
             // operands are compared in cmpBasicBlocks.
             if (CmpL->getPredicate() == CmpR->getInversePredicate()) {
-                inverseConditions.emplace(L, R);
-                return 0;
+                if (checkInverseCondUsers(L) && checkInverseCondUsers(R)) {
+                    inverseConditions.emplace(L, R);
+                    return 0;
+                }
             }
         }
     }
@@ -940,7 +942,10 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // it will be used in an inverse condition. Hence, we skip it here
             // and mark that it may be inverse-matching the condition that
             // has been originally mapped to the operand of the not operation.
-            if (isLogicalNot(&*InstL) || isLogicalNot(&*InstR)) {
+            if (config.Patterns.InverseConditions
+                && ((isLogicalNot(&*InstL) && checkInverseCondUsers(&*InstL))
+                    || (isLogicalNot(&*InstR)
+                        && checkInverseCondUsers(&*InstR)))) {
                 sn_mapL.erase(&*InstL);
                 sn_mapR.erase(&*InstR);
 
@@ -1958,4 +1963,24 @@ bool DifferentialFunctionComparator::collectBinaryOperands(
         return true;
     }
     return false;
+}
+
+/// Recursively check if users of the instruction with an inverse condition
+/// are only branch or not instructions.
+/// This is done to prevent false negatives.
+/// Return true if the users are acceptable for inverse conditions pattern,
+/// false otherwise.
+bool DifferentialFunctionComparator::checkInverseCondUsers(
+        const Instruction *inst) const {
+    for (auto user : inst->users()) {
+        auto userInstruction = dyn_cast<Instruction>(user);
+        bool isNotInstruction = isLogicalNot(userInstruction);
+        if (!isNotInstruction && !isa<BranchInst>(userInstruction)) {
+            return false;
+        } else if (isNotInstruction
+                   && !checkInverseCondUsers(userInstruction)) {
+            return false;
+        }
+    }
+    return true;
 }
