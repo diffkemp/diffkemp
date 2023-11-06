@@ -1548,6 +1548,56 @@ TEST_F(DifferentialFunctionComparatorTest, CmpInverseBranchesNegation) {
     ASSERT_EQ(DiffComp->compare(), 0);
 }
 
+/// Check that branching with one version of a function containing
+/// an inverse condition followed by negation is compared as equal.
+TEST_F(DifferentialFunctionComparatorTest, CmpInverseBranchesNegation2) {
+    // Main blocks with corresponding branches
+    // %1 = icmp eq true, false
+    // br %1, %T, %F
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    // %1 = icmp ne true, false
+    // %2 = xor %1, true
+    // br %2, %T, %F
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Same in both versions:
+    // %T:
+    //   ret true
+    BasicBlock *BBLT = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRT = BasicBlock::Create(CtxR, "", FR);
+    // Same in both versions:
+    // %F:
+    //   ret false
+    BasicBlock *BBLF = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBRF = BasicBlock::Create(CtxR, "", FR);
+
+    // Main blocks
+    auto CondL = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_EQ,
+                                  ConstantInt::getTrue(CtxL),
+                                  ConstantInt::getFalse(CtxL),
+                                  "",
+                                  BBL);
+    auto CondR = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_NE,
+                                  ConstantInt::getTrue(CtxR),
+                                  ConstantInt::getFalse(CtxR),
+                                  "",
+                                  BBR);
+    auto CondNegR = BinaryOperator::Create(
+            llvm::Instruction::Xor, CondR, ConstantInt::getTrue(CtxR), "", BBR);
+    BranchInst::Create(BBLT, BBLF, CondL, BBL);
+    BranchInst::Create(BBRT, BBRF, CondNegR, BBR);
+
+    // True/false blocks
+    ReturnInst::Create(CtxL, ConstantInt::getTrue(CtxL), BBLT);
+    ReturnInst::Create(CtxL, ConstantInt::getFalse(CtxL), BBLF);
+    ReturnInst::Create(CtxR, ConstantInt::getTrue(CtxR), BBRT);
+    ReturnInst::Create(CtxR, ConstantInt::getFalse(CtxR), BBRF);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
 // Check that the combined condition (which for individual conditions
 // looks like an inverse condition) is not compared as equal, because it is
 // not an inverse condition when the individual conditions are combined.

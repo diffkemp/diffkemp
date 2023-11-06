@@ -941,32 +941,51 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // If one of the instructions is a logical not, it is possible that
             // it will be used in an inverse condition. Hence, we skip it here
             // and mark that it may be inverse-matching the condition that
-            // has been originally mapped to the operand of the not operation.
+            // has been previously mapped to the operand of the not operation.
             if (config.Patterns.InverseConditions
                 && ((isLogicalNot(&*InstL) && checkInverseCondUsers(&*InstL))
                     || (isLogicalNot(&*InstR)
                         && checkInverseCondUsers(&*InstR)))) {
-                sn_mapL.erase(&*InstL);
-                sn_mapR.erase(&*InstR);
+                // Note: This does not handle cases with a lot of `not`:
+                // %1 = cmp true, false | %1 = cmp true, false
+                //                      | %2 = not %1 (%2 = xor %1, true)
+                //                      | %3 = not %2 (%3 = xor %2, true)
+                //                      | %4 = not %3 (%4 = xor %3, true)
+                // br %1, l %T, l %F    | br %4, l %F, l %T
 
-                std::pair<const Value *, const Value *> matchingPair;
+                undoLastInstCompare(InstL, InstR);
+                // Pair of left and right instructions which could be
+                // potentionally used for branching in program.
+                // The pair could look like this: L cmp ... | R 'not' ...
+                std::pair<const Value *, const Value *> condPair;
+                // Previous pair of instructions which was believed to be
+                // used for branching. One of the current instructions
+                // (the not/xor instruction) uses one of the instruction
+                // from the prevCondPair.
+                std::pair<const Value *, const Value *> prevCondPair;
                 if (isLogicalNot(&*InstL)) {
-                    matchingPair = {&*InstL,
+                    condPair = {&*InstL,
+                                getMappedValue(InstL->getOperand(0), true)};
+                    prevCondPair = {InstL->getOperand(0),
                                     getMappedValue(InstL->getOperand(0), true)};
                     replacedInstructions.emplace(&*InstL, InstL->getOperand(0));
                     InstL++;
+                    ComparedInstL++;
                 } else {
-                    matchingPair = {getMappedValue(InstR->getOperand(0), false),
-                                    &*InstR};
+                    condPair = {getMappedValue(InstR->getOperand(0), false),
+                                &*InstR};
+                    prevCondPair = {getMappedValue(InstR->getOperand(0), false),
+                                    InstR->getOperand(0)};
                     replacedInstructions.emplace(&*InstR, InstR->getOperand(0));
                     InstR++;
+                    ComparedInstR++;
                 }
 
-                // If the conditions are already inverse, remove them from the
-                // list. Otherwise, add them.
-                size_t erased = inverseConditions.erase(matchingPair);
+                // If the previous pair already had inverse instructions,
+                // remove it from the set. Otherwise, add the current pair.
+                size_t erased = inverseConditions.erase(prevCondPair);
                 if (!erased)
-                    inverseConditions.insert(matchingPair);
+                    inverseConditions.insert(condPair);
                 continue;
             }
 
