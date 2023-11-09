@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <Config.h>
+#include <CustomPatternSet.h>
 #include <DebugInfo.h>
 #include <DifferentialFunctionComparator.h>
 #include <ModuleComparator.h>
@@ -2177,6 +2178,102 @@ TEST_F(DifferentialFunctionComparatorTest, ReorderedBinaryOperationNeedLeaf) {
     // Return the result of the operation
     auto RetL = ReturnInst::Create(CtxL, ResL, BBL);
     auto RetR = ReturnInst::Create(CtxR, ResR, BBR);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DifferentialFunctionComparatorTest, CustomPatternSkippingInstruction) {
+    // Test custom pattern matching and skipping of instructions therein.
+    //
+    // ; Old side of the pattern:
+    // define i8 @diffkemp.old.pattern() {
+    //     %1 = sub i8 0, 1
+    //     ret %1
+    // }
+    //
+    // ; New side of the pattern:
+    // define i8 @diffkemp.new.pattern() {
+    //     %1 = sub i8 1, 0
+    //     %2 = sdiv i8 %1, %1
+    //     ret %3
+    // }
+    //
+    // ; Old compared function:
+    // define i8 @old.function() {
+    //     %1 = sub i8 0, 1        ; matched
+    //     call void @old.function ; skipped
+    //     ret %1
+    // }
+    //
+    // ; New compared function:
+    // define i8 @new.function() {
+    //     %1 = sub i8 1, 0        ; matched
+    //     call void @new.function ; skipped
+    //     %3 = sdiv i8 %1, %1     ; matched
+    //     ret %3
+    // }
+
+    // Initialize a module that will define the pattern
+    LLVMContext PatCtx;
+    auto PatMod = std::make_unique<Module>("PatternMod", PatCtx);
+
+    auto PatFL = Function::Create(
+            FunctionType::get(Type::getInt8Ty(PatCtx), {}, false),
+            GlobalValue::ExternalLinkage,
+            "diffkemp.old.pattern",
+            PatMod.get());
+    auto PatFR = Function::Create(
+            FunctionType::get(Type::getInt8Ty(PatCtx), {}, false),
+            GlobalValue::ExternalLinkage,
+            "diffkemp.new.pattern",
+            PatMod.get());
+
+    BasicBlock *PatBBL = BasicBlock::Create(PatCtx, "", PatFL);
+    BasicBlock *PatBBR = BasicBlock::Create(PatCtx, "", PatFR);
+
+    Constant *PatConstL1 = ConstantInt::get(Type::getInt8Ty(PatCtx), 0);
+    Constant *PatConstL2 = ConstantInt::get(Type::getInt8Ty(PatCtx), 1);
+    Constant *PatConstR1 = ConstantInt::get(Type::getInt8Ty(PatCtx), 0);
+    Constant *PatConstR2 = ConstantInt::get(Type::getInt8Ty(PatCtx), 1);
+
+    auto PatSubL = BinaryOperator::Create(
+            BinaryOperator::Sub, PatConstL1, PatConstL2, "", PatBBL);
+    auto PatSubR = BinaryOperator::Create(
+            BinaryOperator::Sub, PatConstR2, PatConstR1, "", PatBBR);
+
+    auto PatDivR = BinaryOperator::Create(
+            BinaryOperator::SDiv, PatSubR, PatSubR, "", PatBBR);
+
+    ReturnInst::Create(PatCtx, PatSubL, PatBBL);
+    ReturnInst::Create(PatCtx, PatDivR, PatBBR);
+
+    // Fill in the functions to compare
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    Constant *ConstL1 = ConstantInt::get(Type::getInt8Ty(CtxL), 0);
+    Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxL), 1);
+    Constant *ConstR1 = ConstantInt::get(Type::getInt8Ty(CtxR), 0);
+    Constant *ConstR2 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
+
+    auto SubL = BinaryOperator::Create(
+            BinaryOperator::Sub, ConstL1, ConstL2, "", BBL);
+    auto SubR = BinaryOperator::Create(
+            BinaryOperator::Sub, ConstR2, ConstR1, "", BBR);
+
+    CallInst::Create(FL->getFunctionType(), FL, "", BBL);
+    CallInst::Create(FR->getFunctionType(), FR, "", BBR);
+
+    auto DivR =
+            BinaryOperator::Create(BinaryOperator::SDiv, SubR, SubR, "", BBR);
+
+    ReturnInst::Create(CtxL, SubL, BBL);
+    ReturnInst::Create(CtxR, DivR, BBR);
+
+    // Create a pattern set with the pattern module and add it to the comparator
+    CustomPatternSet PatSet;
+    PatSet.addPatternFromModule(std::move(PatMod));
+    DiffComp->addCustomPatternSet(&PatSet);
 
     ASSERT_EQ(DiffComp->compare(), 0);
 }
