@@ -236,3 +236,43 @@ void CustomPatternComparator::processPatternMatch(
         AllInstMatches.insert(InstPair.second);
     }
 }
+
+/// Populate the comparator maps with a given set of patterns.
+void CustomPatternComparator::addPatternSet(const CustomPatternSet *PatternSet,
+                                            const llvm::Function *FnL,
+                                            const llvm::Function *FnR) {
+    for (auto &InstPattern : PatternSet->InstPatterns) {
+        addInstPattern(InstPattern, FnL, FnR);
+    }
+    for (auto &ValuePattern : PatternSet->ValuePatterns) {
+        addValuePattern(ValuePattern, FnL, FnR);
+    }
+}
+
+/// Add an instruction pattern to the instruction pattern comparator map.
+void CustomPatternComparator::addInstPattern(const InstPattern &Pattern,
+                                             const Function *FnL,
+                                             const Function *FnR) {
+    auto PatternFunCompL = std::make_unique<InstPatternComparator>(
+            FnL, Pattern.PatternL, &Pattern);
+    auto PatternFunCompR = std::make_unique<InstPatternComparator>(
+            FnR, Pattern.PatternR, &Pattern);
+
+    InstPatternComps.try_emplace(&Pattern,
+                                 std::make_pair(std::move(PatternFunCompL),
+                                                std::move(PatternFunCompR)));
+}
+
+/// Add a value pattern to the value pattern comparator map.
+void CustomPatternComparator::addValuePattern(const ValuePattern &Pattern,
+                                              const Function *FnL,
+                                              const Function *FnR) {
+    auto PatternFunCompL = std::make_unique<ValuePatternComparator>(
+            FnL, Pattern.PatternL, &Pattern);
+    auto PatternFunCompR = std::make_unique<ValuePatternComparator>(
+            FnR, Pattern.PatternR, &Pattern);
+
+    ValuePatternComps.try_emplace(&Pattern,
+                                  std::make_pair(std::move(PatternFunCompL),
+                                                 std::move(PatternFunCompR)));
+}

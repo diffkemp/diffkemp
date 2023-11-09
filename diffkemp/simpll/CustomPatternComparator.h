@@ -43,29 +43,7 @@ class CustomPatternComparator {
             const Function *FnL,
             const Function *FnR)
             : DiffFunctionComp(DiffFunctionComp) {
-        // Populate both pattern function comparator maps.
-        for (auto &InstPattern : Patterns->InstPatterns) {
-            auto PatternFunCompL = std::make_unique<InstPatternComparator>(
-                    FnL, InstPattern.PatternL, &InstPattern);
-            auto PatternFunCompR = std::make_unique<InstPatternComparator>(
-                    FnR, InstPattern.PatternR, &InstPattern);
-
-            InstPatternComps.try_emplace(
-                    &InstPattern,
-                    std::make_pair(std::move(PatternFunCompL),
-                                   std::move(PatternFunCompR)));
-        }
-        for (auto &ValuePattern : Patterns->ValuePatterns) {
-            auto PatternFunCompL = std::make_unique<ValuePatternComparator>(
-                    FnL, ValuePattern.PatternL, &ValuePattern);
-            auto PatternFunCompR = std::make_unique<ValuePatternComparator>(
-                    FnR, ValuePattern.PatternR, &ValuePattern);
-
-            ValuePatternComps.try_emplace(
-                    &ValuePattern,
-                    std::make_pair(std::move(PatternFunCompL),
-                                   std::move(PatternFunCompR)));
-        }
+        addPatternSet(Patterns, FnL, FnR);
     };
 
     /// Individual matched instructions, combined for all matched patterns.
@@ -83,6 +61,11 @@ class CustomPatternComparator {
     /// Tries to match a pair of values to a value pattern. Returns true if a
     /// valid match is found.
     bool matchValues(const Value *L, const Value *R);
+
+    /// Populate the comparator maps with a given set of patterns.
+    void addPatternSet(const CustomPatternSet *PatternSet,
+                       const Function *FnL,
+                       const Function *FnR);
 
   private:
     /// Pair of corresponding instruction pattern function comparators.
@@ -103,6 +86,16 @@ class CustomPatternComparator {
     /// patterns and the currently compared functions.
     DenseMap<const ValuePattern *, ValuePatternComparatorPair>
             ValuePatternComps;
+
+    /// Add an instruction pattern to the instruction pattern comparator map.
+    void addInstPattern(const InstPattern &Pattern,
+                        const Function *FnL,
+                        const Function *FnR);
+
+    /// Add a value pattern to the value pattern comparator map.
+    void addValuePattern(const ValuePattern &Pattern,
+                         const Function *FnL,
+                         const Function *FnR);
 
     /// Tries to match one of the loaded instruction patterns. Returns true
     /// if a valid match is found.
