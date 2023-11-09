@@ -174,11 +174,22 @@ class CustomPatternSet {
     /// Set of loaded value difference patterns.
     std::unordered_set<ValuePattern> ValuePatterns;
 
-    CustomPatternSet(std::string ConfigPath);
+    /// Create a new pattern set based on the given configuration, which can be
+    /// either a YAML config file or a single LLVM IR file.
+    CustomPatternSet(std::string ConfigPath = "");
 
     /// Retrieves pattern metadata attached to the given instruction.
     std::optional<CustomPatternMetadata>
             getPatternMetadata(const Instruction &Inst) const;
+
+    /// Load the given LLVM IR based difference pattern YAML configuration.
+    void addPatternsFromConfig(std::string &ConfigPath);
+
+    /// Load a pattern from the given LLVM IR module file.
+    void addPatternFromFile(std::string &Path);
+
+    /// Load a pattern from an LLVM module.
+    void addPatternFromModule(std::unique_ptr<Module> PatternModule);
 
   private:
     /// Basic information about the output instruction mapping present on one
@@ -191,12 +202,6 @@ class CustomPatternSet {
     LLVMContext PatternContext;
     /// Vector of loaded pattern modules.
     std::vector<std::unique_ptr<Module>> PatternModules;
-
-    /// Load the given configuration file.
-    void loadConfig(std::string &ConfigPath);
-
-    /// Add a new difference pattern.
-    void addPattern(std::string &Path);
 
     /// Finds the pattern type associated with the given pattern functions.
     CustomPatternType getPatternType(const Function *FnL, const Function *FnR);

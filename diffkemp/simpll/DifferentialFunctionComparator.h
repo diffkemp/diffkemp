@@ -37,11 +37,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                    const DebugInfo *DI,
                                    const CustomPatternSet *PS,
                                    ModuleComparator *MC)
-            : FunctionComparator(F1, F2, nullptr), config(config), DI(DI),
-              LayoutL(F1->getParent()->getDataLayout()),
-              LayoutR(F2->getParent()->getDataLayout()),
+            : FunctionComparator(F1, F2, nullptr),
               CustomPatternComp(CustomPatternComparator(PS, this, F1, F2)),
-              ModComparator(MC) {}
+              config(config), DI(DI), LayoutL(F1->getParent()->getDataLayout()),
+              LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
 
     int compare() override;
     /// Compares values by their synchronisation. The comparison is unsuccessful
@@ -134,6 +133,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
                                   BasicBlock::const_iterator &InstR,
                                   Program prog_to_search) const;
 
+    mutable CustomPatternComparator CustomPatternComp;
+
   private:
     friend class CustomPatternComparator;
 
@@ -178,7 +179,6 @@ class DifferentialFunctionComparator : public FunctionComparator {
     };
     mutable RelocationInfo Reloc;
 
-    mutable CustomPatternComparator CustomPatternComp;
     ModuleComparator *ModComparator;
 
     /// Try to find a syntax difference that could be causing the semantic

@@ -70,7 +70,8 @@ const std::string CustomPatternSet::OutputMappingFunName =
 const std::string CustomPatternSet::MetadataName =
         CustomPatternSet::DefaultPrefix + "pattern";
 
-/// Create a new pattern set based on the given configuration.
+/// Create a new pattern set based on the given configuration, which can be
+/// either a YAML config file or a single LLVM IR file.
 CustomPatternSet::CustomPatternSet(std::string ConfigPath) {
     if (ConfigPath.empty()) {
         return;
@@ -78,9 +79,9 @@ CustomPatternSet::CustomPatternSet(std::string ConfigPath) {
 
     // If a pattern is used as a configuration file, only load the pattern.
     if (extension(ConfigPath) == ".ll") {
-        addPattern(ConfigPath);
+        addPatternFromFile(ConfigPath);
     } else {
-        loadConfig(ConfigPath);
+        addPatternsFromConfig(ConfigPath);
     }
 }
 
@@ -138,7 +139,7 @@ std::optional<CustomPatternMetadata>
 }
 
 /// Load the given LLVM IR based difference pattern YAML configuration.
-void CustomPatternSet::loadConfig(std::string &ConfigPath) {
+void CustomPatternSet::addPatternsFromConfig(std::string &ConfigPath) {
     auto ConfigFile = MemoryBuffer::getFile(ConfigPath);
     if (std::error_code EC = ConfigFile.getError()) {
         LOG("Failed to open difference "
@@ -159,21 +160,28 @@ void CustomPatternSet::loadConfig(std::string &ConfigPath) {
 
     // Load all pattern files included in the configuration.
     for (auto &PatternFile : Config.PatternFiles) {
-        addPattern(PatternFile);
+        addPatternFromFile(PatternFile);
     }
 }
 
-/// Add a new LLVM IR difference pattern file.
-void CustomPatternSet::addPattern(std::string &Path) {
+/// Load a pattern from the given LLVM IR module file.
+void CustomPatternSet::addPatternFromFile(std::string &Path) {
     // Try to load the pattern module.
     SMDiagnostic err;
     auto PatternModule = parseIRFile(Path, err, PatternContext);
     if (!PatternModule) {
-        LOG("Failed to parse difference pattern "
-            << "module " << Path << ".\n");
+        LOG("Failed to parse difference pattern module " << Path << ".\n");
         return;
     }
+    LOG("Loading difference patterns from module " << Path << ".\n");
+    LOG_INDENT();
+    addPatternFromModule(std::move(PatternModule));
+    LOG_UNINDENT();
+}
 
+/// Load a pattern from an LLVM module.
+void CustomPatternSet::addPatternFromModule(
+        std::unique_ptr<Module> PatternModule) {
     for (auto &Function : PatternModule->getFunctionList()) {
         // Select only defined functions that start with the left prefix.
         if (Function.isDeclaration()
@@ -187,8 +195,7 @@ void CustomPatternSet::addPattern(std::string &Path) {
         auto FunctionR = PatternModule->getFunction(NameR);
         if (!FunctionR)
             continue;
-        LOG("Loading a new difference pattern " << Name << " from module "
-                                                << Path << ".\n");
+        LOG("Loading the difference pattern " << Name << ".\n");
 
         switch (getPatternType(&Function, FunctionR)) {
         case CustomPatternType::INST: {

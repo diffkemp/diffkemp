@@ -147,6 +147,11 @@ class TestComparator : public DifferentialFunctionComparator {
 
     size_t getLeftSnMapSize() { return sn_mapL.size(); }
     size_t getRightSnMapSize() { return sn_mapR.size(); }
+
+    /// Extend the set of custom patterns.
+    void addCustomPatternSet(const CustomPatternSet *PatternSet) {
+        CustomPatternComp.addPatternSet(PatternSet, FnL, FnR);
+    }
 };
 
 /// Test fixture providing contexts, modules, functions, a Config object,
