@@ -14,6 +14,7 @@
 
 #include "DifferentialFunctionComparator.h"
 #include "Config.h"
+#include "DebugInfo.h"
 #include "FieldAccessUtils.h"
 #include "Logger.h"
 #include "SourceCodeUtils.h"
@@ -603,10 +604,10 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
     if (!BB) {
         return false;
     }
-    // Check if all predecessor blocks have a path to a load from the same
-    // pointer with no store in between. Note that pointer aliasing is not
-    // taken into account. Therefore, even stores unrelated to the given load
-    // break the search to prevent errors.
+
+    // Check if all backward paths in the CFG graph lead to a single load from
+    // the same pointer as the one we want to skip. There must be no stores
+    // or function calls on any of the paths.
     bool first = true;
     const LoadInst *PreviousLoad = nullptr;
     std::deque<const BasicBlock *> blockQueue = {BB};
@@ -615,7 +616,9 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
         BB = blockQueue.front();
         blockQueue.pop_front();
 
-        bool searchPredecessors = true;
+        // Look for the load instruction in the current block. If it's not
+        // here, we will have to check that all predecessors have it.
+        bool checkPredecessors = true;
         for (auto it = BB->rbegin(); it != BB->rend(); ++it) {
             // Skip all instructions before the compared load
             // when in the first block.
@@ -626,38 +629,37 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
                 continue;
             }
 
-            if (auto OrigLoad = dyn_cast<LoadInst>(&*it)) {
-                // Try to find a previous load corresponding to the same
-                // pointer. When found, end the seach for the current
-                // control flow branch.
+            if (auto Candidate = dyn_cast<LoadInst>(&*it)) {
+                // Found a candidate load; check whether the pointer matches.
                 if (Load->getPointerOperand()
-                    == OrigLoad->getPointerOperand()) {
-                    PreviousLoad = OrigLoad;
-                    searchPredecessors = false;
+                    == Candidate->getPointerOperand()) {
+                    if (PreviousLoad) {
+                        // If another suitable load has been found previously
+                        // in a different CFG path, fail. We need a single one.
+                        return false;
+                    }
+                    // Otherwise remember this load.
+                    PreviousLoad = Candidate;
+                    checkPredecessors = false;
                     break;
                 }
-            } else if (isa<StoreInst>(&*it)) {
-                // Check whether a possibly conflicting store instruction
-                // is present. If found, end the search with a failure.
-                PreviousLoad = nullptr;
-                searchPredecessors = false;
-                blockQueue.clear();
-                break;
+            } else if (isa<StoreInst>(&*it)
+                       || (isa<CallInst>(&*it) && !isDebugInfo(*it))) {
+                // Fail if a possibly conflicting store or call is found.
+                return false;
             }
         }
 
-        if (searchPredecessors) {
+        if (checkPredecessors) {
             auto BBPredecessors = predecessors(BB);
             if (BBPredecessors.begin() == BBPredecessors.end()) {
-                // If there are no more predecessors available,
-                // end the analysis with a failure.
-                PreviousLoad = nullptr;
-                break;
+                // Fail if no more predecessors are available.
+                return false;
             }
             // Queue up all unvisited predecessors.
             for (auto PredBB : BBPredecessors) {
                 if (visitedBlocks.find(PredBB) == visitedBlocks.end()) {
-                    visitedBlocks.insert(BB);
+                    visitedBlocks.insert(PredBB);
                     blockQueue.push_back(PredBB);
                 }
             }
