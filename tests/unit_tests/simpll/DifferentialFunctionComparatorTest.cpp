@@ -2274,6 +2274,76 @@ TEST_F(DifferentialFunctionComparatorTest, CustomPatternSkippingInstruction) {
     CustomPatternSet PatSet;
     PatSet.addPatternFromModule(std::move(PatMod));
     DiffComp->addCustomPatternSet(&PatSet);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DifferentialFunctionComparatorTest, SkipRepetitiveLoad) {
+    // Left function:
+    // 0:
+    //   %1 = alloca i32
+    //   %2 = load i32, ptr %1
+    //   %3 = icmp ne i32 %2, 0
+    //   br i1 %3, label %4, label %5
+    // 4:
+    //   br label %6
+    // 5:
+    //   br label %6
+    // 6:
+    //   ret i32 %2
+    //
+    // Right function:
+    // 0:
+    //   %1 = alloca i32
+    //   %2 = load i32, ptr %1
+    //   %3 = icmp ne i32 %2, 0
+    //   br i1 %3, label %4, label %5
+    // 4:
+    //   br label %6
+    // 5:
+    //   br label %6
+    // 6:
+    //   %7 = load i32, ptr %1
+    //   ret i32 %7
+
+    BasicBlock *BBL0 = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR0 = BasicBlock::Create(CtxR, "", FR);
+    BasicBlock *BBL4 = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR4 = BasicBlock::Create(CtxR, "", FR);
+    BasicBlock *BBL5 = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR5 = BasicBlock::Create(CtxR, "", FR);
+    BasicBlock *BBL6 = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR6 = BasicBlock::Create(CtxR, "", FR);
+
+    auto AllocaL = new AllocaInst(Type::getInt32Ty(CtxL), 0, "", BBL0);
+    auto AllocaR = new AllocaInst(Type::getInt32Ty(CtxR), 0, "", BBR0);
+
+    auto Load2L = new LoadInst(Type::getInt32Ty(CtxL), AllocaL, "", BBL0);
+    auto Load2R = new LoadInst(Type::getInt32Ty(CtxR), AllocaR, "", BBR0);
+
+    auto ICmpL = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_NE,
+                                  Load2L,
+                                  ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+                                  "",
+                                  BBL0);
+    auto ICmpR = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_NE,
+                                  Load2R,
+                                  ConstantInt::get(Type::getInt32Ty(CtxR), 0),
+                                  "",
+                                  BBR0);
+
+    BranchInst::Create(BBL4, BBL5, ICmpL, BBL0);
+    BranchInst::Create(BBR4, BBR5, ICmpR, BBR0);
+
+    BranchInst::Create(BBL6, BBL4);
+    BranchInst::Create(BBR6, BBR4);
+    BranchInst::Create(BBL6, BBL5);
+    BranchInst::Create(BBR6, BBR5);
+
+    ReturnInst::Create(CtxL, Load2L, BBL6);
+    auto Load7R = new LoadInst(Type::getInt32Ty(CtxR), AllocaR, "", BBR6);
+    ReturnInst::Create(CtxR, Load7R, BBR6);
 
     ASSERT_EQ(DiffComp->compare(), 0);
 }
