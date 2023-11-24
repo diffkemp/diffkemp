@@ -26,6 +26,7 @@ CalledFunctionsAnalysis::Result CalledFunctionsAnalysis::run(
         Function *Main) {
     Result result;
     collectCalled(Main, result);
+    ProcessedValues.clear();
     return result;
 }
 
@@ -34,10 +35,8 @@ CalledFunctionsAnalysis::Result CalledFunctionsAnalysis::run(
 /// operands to some instructions in Fun are collected.
 void CalledFunctionsAnalysis::collectCalled(const Function *Fun,
                                             Result &Called) {
-    if (Called.find(Fun) != Called.end())
+    if (!Called.insert(Fun).second)
         return;
-
-    Called.insert(Fun);
 
     for (auto &BB : *Fun) {
         for (auto &Inst : BB) {
@@ -56,6 +55,9 @@ void CalledFunctionsAnalysis::collectCalled(const Function *Fun,
 /// Looks for functions in a value (either a function itself, or a composite
 /// type constant).
 void CalledFunctionsAnalysis::processValue(const Value *Val, Result &Called) {
+    if (!ProcessedValues.insert(Val).second)
+        return;
+
     if (auto Fun = valueToFunction(Val))
         collectCalled(Fun, Called);
     else if (auto GV = dyn_cast<GlobalVariable>(Val)) {

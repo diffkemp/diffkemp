@@ -1180,6 +1180,10 @@ std::vector<std::unique_ptr<SyntaxDifference>>
 int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
                                                     GlobalValue *R) const {
     PREP_LOG("global value", L, R);
+    // We got here from a GV initializer list of this variable, skip the
+    // comparison.
+    if (assumedEqual.count(std::make_pair(L, R)))
+        return 0;
 
     auto GVarL = dyn_cast<GlobalVariable>(L);
     auto GVarR = dyn_cast<GlobalVariable>(R);
@@ -1187,8 +1191,13 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
     if (GVarL && GVarR && GVarL->hasInitializer() && GVarR->hasInitializer()
         && GVarL->isConstant() && GVarR->isConstant()) {
         // Constant global variables are compared using their initializers.
-        RETURN_WITH_LOG_NEQ(
-                cmpConstants(GVarL->getInitializer(), GVarR->getInitializer()));
+        // Some initializers may refer back to the global variables, therefore
+        // we have to assume equality of the global variable to prevent infinite
+        // recursion.
+        assumedEqual.insert(std::make_pair(L, R));
+        int r = cmpConstants(GVarL->getInitializer(), GVarR->getInitializer());
+        assumedEqual.erase(std::make_pair(L, R));
+        RETURN_WITH_LOG_NEQ(r);
     } else if (L->hasName() && R->hasName()) {
         // Both values are named, compare them by names
         auto NameL = L->getName();
