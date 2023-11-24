@@ -79,6 +79,8 @@ class YamlOutput:
         self._create_type_defs()
 
     def _create_function_defs(self):
+        if self.result.graph is None:
+            return
         definitions = {}
         for name in self.function_names:
             if name not in self.result.graph.vertices:
@@ -102,11 +104,12 @@ class YamlOutput:
         self.output["definitions"].update(definitions)
 
     def _create_type_defs(self):
-        definitions = {}
         """Returns definitions of types.
         :param type_names: Set of tuples (type name, parent name),
                            parent name - name of function in which type is used
         """
+        if self.result.graph is None:
+            return
         definitions = {}
         for type_name, parent_name in self.type_names:
             if parent_name not in self.result.graph.vertices:
