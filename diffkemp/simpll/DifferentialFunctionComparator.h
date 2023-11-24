@@ -157,6 +157,10 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::unordered_map<int, std::pair<const Value *, const Value *>>
             mappedValuesBySn;
 
+    /// A set of value pairs that are assumed to be equal during recursive
+    /// value comparison to prevent infinite recursion.
+    mutable std::set<std::pair<const Value *, const Value *>> assumedEqual;
+
     /// Relocation information type. Supports relocation of a sequential block
     /// of code.
     struct RelocationInfo {

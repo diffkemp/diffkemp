@@ -43,6 +43,9 @@ class CalledFunctionsAnalysis
   private:
     friend AnalysisInfoMixin<CalledFunctionsAnalysis>;
     static AnalysisKey Key;
+    /// The set of values that were already processed in the current run.
+    /// Prevents infinite recursion when processing instruction operands.
+    std::set<const Value *> ProcessedValues;
 };
 
 #endif // DIFFKEMP_SIMPLL_CALLEDFUNCTIONSANALYSIS_H
