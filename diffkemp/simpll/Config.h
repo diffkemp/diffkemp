@@ -68,6 +68,8 @@ class Config {
     std::string CacheDir;
     // Path to custom LLVM IR differential pattern configuration.
     std::string CustomPatternConfigPath;
+    // Use SMT-based checking for short snippets.
+    bool UseSmt;
 
     // The following structure specifies which built-in patterns
     // should be treated as semantically equal.
@@ -91,6 +93,7 @@ class Config {
            std::string CacheDir,
            std::string CustomPatternConfigPath,
            BuiltinPatterns Patterns,
+           bool UseSmt,
            std::string Variable = "",
            bool OutputLlvmIR = false,
            bool PrintAsmDiffs = true,
@@ -103,13 +106,14 @@ class Config {
            std::string SecondFunName,
            std::string CacheDir,
            std::string CustomPatternConfigPath,
+           bool UseSmt = false,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
            bool ExtendedStat = false)
             : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
               First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
-              CustomPatternConfigPath(CustomPatternConfigPath),
+              CustomPatternConfigPath(CustomPatternConfigPath), UseSmt(UseSmt),
               OutputLlvmIR(false), PrintAsmDiffs(PrintAsmDiffs),
               PrintCallStacks(PrintCallStacks), ExtendedStat(ExtendedStat) {}
 

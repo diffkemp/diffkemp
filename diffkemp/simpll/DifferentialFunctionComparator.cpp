@@ -1163,6 +1163,9 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
                 LOG_UNINDENT();
             }
 
+            if (Res && config.UseSmt)
+                Res = SmtComparator->compare(InstL, InstR);
+
             if (Res)
                 return Res;
         } else {

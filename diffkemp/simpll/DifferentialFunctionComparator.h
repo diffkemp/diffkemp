@@ -21,9 +21,12 @@
 #include "FunctionComparator.h"
 #include "Logger.h"
 #include "ModuleComparator.h"
+#include "SmtBlockComparator.h"
 #include "Utils.h"
 
 using namespace llvm;
+
+class SmtBlockComparator;
 
 /// Extension of FunctionComparator from LLVM designed to compare functions in
 /// different modules (original FunctionComparator assumes that both functions
@@ -40,7 +43,9 @@ class DifferentialFunctionComparator : public FunctionComparator {
             : FunctionComparator(F1, F2, nullptr),
               CustomPatternComp(CustomPatternComparator(PS, this, F1, F2)),
               config(config), DI(DI), LayoutL(F1->getParent()->getDataLayout()),
-              LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC) {}
+              LayoutR(F2->getParent()->getDataLayout()), ModComparator(MC),
+              SmtComparator(
+                      std::make_unique<SmtBlockComparator>(config, this)) {}
 
     int compare() override;
     /// Compares values by their synchronisation. The comparison is unsuccessful
@@ -150,6 +155,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
 
   private:
     friend class CustomPatternComparator;
+    friend class SmtBlockComparator;
 
     const Config &config;
     const DebugInfo *DI;
@@ -206,6 +212,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable RelocationInfo Reloc;
 
     ModuleComparator *ModComparator;
+    std::unique_ptr<SmtBlockComparator> SmtComparator;
 
     /// Try to find a syntax difference that could be causing the semantic
     /// difference that was found. Looks for differences that cannot be detected
