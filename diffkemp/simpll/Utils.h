@@ -203,4 +203,26 @@ StructType *getTypeByName(const Module &Mod, StringRef Name);
 /// Retrieve information about a structured type being pointed to by a value
 TypeInfo getPointeeStructTypeInfo(const Value *Val, const DataLayout *Layout);
 
+/// Given an instruction and a pointer value, try to determine whether the
+/// instruction may store to the memory pointed to by the pointer. This is
+/// currently implemented only as a set of heuristics - if they do not suffice,
+/// we return true.
+bool mayStoreTo(const Instruction *Inst, const Value *Ptr);
+
+/// Given two pointer values, try do determine whether they may alias. The
+/// function currently supports only simple aliasing of local memory.
+bool mayAlias(const Value *PtrL, const Value *PtrR);
+
+/// Given a pointer value, return the instruction which allocated the memory
+/// where the pointer points. Return a null pointer if the alloca is not found.
+const AllocaInst *getAllocaFromPtr(const Value *Ptr);
+
+/// Return the alloca instruction that was used to allocate the variable into
+/// which the pointer operand of the given instruction (e.g., load) points.
+/// If such an alloca cannot be found, return nullptr.
+template <typename InstType>
+const AllocaInst *getAllocaOp(const InstType *Inst) {
+    return getAllocaFromPtr(Inst->getPointerOperand());
+}
+
 #endif // DIFFKEMP_SIMPLL_UTILS_H

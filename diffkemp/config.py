@@ -23,6 +23,7 @@ class BuiltinPatterns:
         control_flow_only=False,
         inverse_conditions=True,
         reordered_bin_ops=True,
+        group_vars=True,
     ):
         """
         Create a configuration of built-in patterns.
@@ -41,6 +42,7 @@ class BuiltinPatterns:
         :param control_flow_only: Consider control-flow changes only.
         :param inverse_conditions: Inverted branch conditions.
         :param reordered_bin_ops: Match reordered binary operations.
+        :param group_vars: Grouping of local variables.
         """
         self.settings = {
             "struct-alignment": struct_alignment,
@@ -54,6 +56,7 @@ class BuiltinPatterns:
             "control-flow-only": control_flow_only,
             "inverse-conditions": inverse_conditions,
             "reordered-bin-ops": reordered_bin_ops,
+            "group-vars": group_vars,
         }
         self.resolve_dependencies()
 
@@ -101,6 +104,7 @@ class BuiltinPatterns:
         ffi_struct.ControlFlowOnly = self.settings["control-flow-only"]
         ffi_struct.InverseConditions = self.settings["inverse-conditions"]
         ffi_struct.ReorderedBinOps = self.settings["reordered-bin-ops"]
+        ffi_struct.GroupVars = self.settings["group-vars"]
         return ffi_struct
 
 

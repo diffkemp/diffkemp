@@ -38,6 +38,7 @@ struct BuiltinPatterns {
     bool ControlFlowOnly = false;
     bool InverseConditions = true;
     bool ReorderedBinOps = true;
+    bool GroupVars = true;
 };
 
 /// Tool configuration parsed from CLI options.

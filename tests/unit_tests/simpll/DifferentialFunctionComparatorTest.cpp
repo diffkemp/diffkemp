@@ -2347,3 +2347,69 @@ TEST_F(DifferentialFunctionComparatorTest, SkipRepetitiveLoad) {
 
     ASSERT_EQ(DiffComp->compare(), 0);
 }
+
+TEST_F(DifferentialFunctionComparatorTest, ReorganizedLocalVariables) {
+    // Left function:
+    // %1 = add i8 1, 2
+    // %2 = add i8 %1, %1
+    // ret i8 %2
+    //
+    // Right function:
+    // %1 = alloca %struct ; %struct.struct = type { i8, i8 }
+    // %2 = add i8 1, 2
+    // %3 = getelementptr inbounds ptr, ptr %1, i32 0
+    // %4 = getelementptr inbounds ptr, ptr %1, i32 1
+    // store i8 %2, ptr %3
+    // store i8 %2, ptr %4
+    // %5 = load i8, ptr %3
+    // %6 = load i8, ptr %4
+    // %7 = add i8 %5, %6
+    // ret i8 %7
+
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    auto STyR =
+            StructType::create({Type::getInt8Ty(CtxR), Type::getInt8Ty(CtxR)});
+    STyR->setName("struct");
+    auto AllocaR = new AllocaInst(STyR, 0, "", BBR);
+
+    Constant *ConstL1 = ConstantInt::get(Type::getInt8Ty(CtxL), 1);
+    Constant *ConstL2 = ConstantInt::get(Type::getInt8Ty(CtxL), 2);
+    Constant *ConstR1 = ConstantInt::get(Type::getInt8Ty(CtxR), 1);
+    Constant *ConstR2 = ConstantInt::get(Type::getInt8Ty(CtxR), 2);
+
+    auto AddL = BinaryOperator::Create(
+            BinaryOperator::Add, ConstL1, ConstL2, "", BBL);
+    auto AddR = BinaryOperator::Create(
+            BinaryOperator::Add, ConstR1, ConstR2, "", BBR);
+
+    auto GEPR1 = GetElementPtrInst::Create(
+            STyR,
+            AllocaR,
+            {ConstantInt::get(Type::getInt32Ty(CtxR), 0)},
+            "",
+            BBR);
+    auto GEPR2 = GetElementPtrInst::Create(
+            STyR,
+            AllocaR,
+            {ConstantInt::get(Type::getInt32Ty(CtxR), 1)},
+            "",
+            BBR);
+
+    new StoreInst(AddR, GEPR1, BBR);
+    new StoreInst(AddR, GEPR2, BBR);
+
+    auto LoadR1 = new LoadInst(Type::getInt8Ty(CtxR), GEPR1, "", BBR);
+    auto LoadR2 = new LoadInst(Type::getInt8Ty(CtxR), GEPR2, "", BBR);
+
+    auto ResL =
+            BinaryOperator::Create(BinaryOperator::Add, AddL, AddL, "", BBL);
+    auto ResR = BinaryOperator::Create(
+            BinaryOperator::Add, LoadR1, LoadR2, "", BBR);
+
+    ReturnInst::Create(CtxL, ResL, BBL);
+    ReturnInst::Create(CtxR, ResR, BBR);
+
+    ASSERT_EQ(DiffComp->compare(), 0);
+}

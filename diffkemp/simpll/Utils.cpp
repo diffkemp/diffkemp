@@ -14,6 +14,7 @@
 #include "Utils.h"
 #include "Config.h"
 #include "CustomPatternSet.h"
+#include "DebugInfo.h"
 #include <algorithm>
 #include <iostream>
 #include <llvm/BinaryFormat/Dwarf.h>
@@ -873,4 +874,68 @@ StructType *getTypeByName(const Module &Mod, StringRef Name) {
 #else
     return Mod.getTypeByName(Name);
 #endif
+}
+
+/// Given an instruction and a pointer value, try to determine whether the
+/// instruction may store to the memory pointed to by the pointer. This can
+/// happen only if the instruction is a store or a function call.
+bool mayStoreTo(const Instruction *Inst, const Value *Ptr) {
+    if (auto Store = dyn_cast<StoreInst>(Inst)) {
+        // If the instruction is a store, we check whether its pointer operand
+        // may alias the given pointer.
+        return mayAlias(Store->getPointerOperand(), Ptr);
+    }
+    if (auto Call = dyn_cast<CallInst>(Inst)) {
+        // If the instruction is a call, we preventively return true
+        // unless it is a debug call.
+        return !isDebugInfo(*Call);
+    }
+    return false;
+}
+
+/// Given two pointer values, try do determine whether they may alias. The
+/// function currently supports only simple aliasing of local memory.
+bool mayAlias(const Value *PtrL, const Value *PtrR) {
+    auto AllocaL = getAllocaFromPtr(PtrL);
+    auto AllocaR = getAllocaFromPtr(PtrR);
+    if (!AllocaL || !AllocaR)
+        // If any of the two pointers does not directly point to local memory,
+        // do not continue; more advanced alias analysis would be necessary.
+        return true;
+    if (AllocaL != AllocaR)
+        // If the underlying allocas are different, the pointers cannot alias.
+        return false;
+    auto GEPL = dyn_cast<GetElementPtrInst>(PtrL);
+    auto GEPR = dyn_cast<GetElementPtrInst>(PtrR);
+    if (!GEPL || !GEPR)
+        // At this point, we know that the pointers point to the same alloca.
+        // If any of the pointers is the alloca itself, the pointers alias.
+        return true;
+    auto GEPLIdxIt = GEPL->idx_begin(), GEPLIdxE = GEPL->idx_end();
+    auto GEPRIdxIt = GEPR->idx_begin(), GEPRIdxE = GEPR->idx_end();
+    // Go through the indices of both GEPs in parallel. If they diverge at some
+    // point, the pointers do not alias.
+    while (GEPLIdxIt != GEPLIdxE && GEPRIdxIt != GEPRIdxE) {
+        auto ConstantIdxL = dyn_cast<ConstantInt>(GEPLIdxIt->get());
+        auto ConstantIdxR = dyn_cast<ConstantInt>(GEPRIdxIt->get());
+        if (ConstantIdxL && ConstantIdxR
+            && ConstantIdxL->getSExtValue() != ConstantIdxR->getSExtValue())
+            return false;
+        GEPLIdxIt++;
+        GEPRIdxIt++;
+    }
+    return true;
+}
+
+/// Given a pointer value, return the instruction which allocated the memory
+/// where the pointer points. Return a null pointer if an alloca is not found,
+/// e.g. because the pointer is a function parameter.
+const AllocaInst *getAllocaFromPtr(const Value *Ptr) {
+    if (auto Alloca = dyn_cast<AllocaInst>(Ptr)) {
+        return Alloca;
+    }
+    if (auto GEP = dyn_cast<GetElementPtrInst>(Ptr)) {
+        return getAllocaFromPtr(GEP->getPointerOperand());
+    }
+    return nullptr;
 }

@@ -152,7 +152,8 @@ def make_argument_parser():
                         "type-casts",
                         "control-flow-only",
                         "inverse-conditions",
-                        "reordered-bin-ops"]
+                        "reordered-bin-ops",
+                        "group-vars"]
 
     # Semantic patterns options.
     compare_ap.add_argument("--enable-pattern",

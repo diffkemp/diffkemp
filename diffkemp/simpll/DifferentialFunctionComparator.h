@@ -157,8 +157,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// be synchronized later if a matching instruction is found.
     mutable std::unordered_set<const Value *> skippedInstructions;
 
-    /// Set of irreversibly ignored instructions. Matching these could
-    /// result in false negatives.
+    /// Set of irreversibly ignored instructions. These should never be directly
+    /// compared to other instructions.
     mutable std::unordered_set<const Value *> ignoredInstructions;
 
     /// Contains pairs of values mapped by synchronisation maps. Enables
@@ -239,10 +239,15 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// replacements inside the replaced instructions map.
     bool maySkipCast(const User *Cast) const;
 
-    /// Check whether the given instruction is a repetitive variant of
-    /// a previous load with no store instructions in between.
-    /// Load replacements are stored inside the replaced instructions map.
+    /// Check whether the given load may be skipped, i.e., it is either
+    /// a repetitive variant of a previous load, or a load from an ignored
+    /// local variable. Load replacements are stored inside the replaced
+    /// instructions map.
     bool maySkipLoad(const LoadInst *Load) const;
+
+    /// Check whether the given store can be skipped because it stores to
+    /// an ignored local variable and the stored value will be compared later.
+    bool maySkipStore(const StoreInst *Store) const;
 
     /// Check whether the given reorderable binary operator can be skipped.
     /// It can only be skipped if all its users are binary operations
@@ -300,6 +305,15 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Return true if the users are acceptable for inverse conditions pattern,
     /// false otherwise.
     bool checkInverseCondUsers(const Instruction *inst) const;
+
+    /// Check whether all uses of the provided instruction are extra memory
+    /// instructions, i.e. loads from or stores to ignored memory.
+    bool allUsersAreExtraMemInsts(const Instruction *Inst) const;
+
+    /// Check whether the pointer operand of the given instruction (e.g., load)
+    /// is a previously ignored alloca or a GEP pointing to one.
+    template <typename InstType>
+    bool hasIgnoredAllocaOp(const InstType *Inst) const;
 };
 
 #endif // DIFFKEMP_SIMPLL_DIFFERENTIALFUNCTIONCOMPARATOR_H

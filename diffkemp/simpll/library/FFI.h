@@ -35,6 +35,7 @@ struct builtin_patterns {
     int ControlFlowOnly;
     int InverseConditions;
     int ReorderedBinOps;
+    int GroupVars;
 };
 
 struct config {
