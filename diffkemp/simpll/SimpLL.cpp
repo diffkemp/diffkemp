@@ -115,6 +115,9 @@ cl::opt<bool> ReorderedBinOpsOpt(
         "reordered-bin-ops",
         cl::desc("Enable reordered binary operations pattern."),
         cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> GroupVarsOpt("group-vars",
+                           cl::desc("Enable variable grouping pattern."),
+                           cl::cat(BuiltinPatternsCategory));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -162,7 +165,8 @@ int main(int argc, const char **argv) {
                              .TypeCasts = TypeCastsOpt,
                              .ControlFlowOnly = ControlFlowOnlyOpt,
                              .InverseConditions = InverseConditionsOpt,
-                             .ReorderedBinOps = ReorderedBinOpsOpt};
+                             .ReorderedBinOps = ReorderedBinOpsOpt,
+                             .GroupVars = GroupVarsOpt};
 
     // Parse --fun option
     auto FunName = parseFunOption();

@@ -516,6 +516,15 @@ bool DifferentialFunctionComparator::maySkipInstruction(
         skippedInstructions.insert(Inst);
         return true;
     }
+    if (config.Patterns.GroupVars && Inst->isSafeToRemove()
+        && allUsersAreExtraMemInsts(Inst)) {
+        // If this is a safe instruction (not a store, call, or a terminator),
+        // it can be ignored if its users are extra memory instructions, i.e.,
+        // stores to or loads from ignored local variables. This is useful for
+        // skipping GEPs that return pointers to such variables.
+        ignoredInstructions.insert(Inst);
+        return true;
+    }
     if (config.Patterns.ReorderedBinOps && isReorderableBinaryOp(Inst)
         && maySkipReorderableBinaryOp(Inst)) {
         ignoredInstructions.insert(Inst);
@@ -531,6 +540,9 @@ bool DifferentialFunctionComparator::maySkipInstruction(
     if (isZeroGEP(Inst)) {
         replacedInstructions.insert({Inst, Inst->getOperand(0)});
         return true;
+    }
+    if (auto Store = dyn_cast<StoreInst>(Inst)) {
+        return maySkipStore(Store);
     }
     if (auto Load = dyn_cast<LoadInst>(Inst)) {
         return maySkipLoad(Load);
@@ -599,32 +611,34 @@ bool DifferentialFunctionComparator::maySkipCast(const User *Cast) const {
     return false;
 }
 
-/// Check whether the given instruction is a repetitive variant of
-/// a previous load with no store instructions in between.
-/// Load replacements are stored inside the replaced instructions map.
+/// Check whether the given load may be skipped, i.e., it is either
+/// a repetitive variant of a previous load, or a load from an ignored
+/// local variable. Load replacements are stored inside the replaced
+/// instructions map.
 bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
     auto BB = Load->getParent();
     if (!BB) {
         return false;
     }
 
-    // Check if all backward paths in the CFG graph lead to a single load from
-    // the same pointer as the one we want to skip. There must be no stores
-    // or function calls on any of the paths.
+    // Check if all backward CFG paths starting in the load lead to either:
+    // - a single load from the same pointer,
+    // - a single ignored store to the same pointer.
+    // There must be no conflicting stores or calls on any of the paths.
     bool first = true;
-    const LoadInst *PreviousLoad = nullptr;
+    const Value *Replacement = nullptr;
     std::deque<const BasicBlock *> blockQueue = {BB};
     std::unordered_set<const BasicBlock *> visitedBlocks = {BB};
     while (!blockQueue.empty()) {
         BB = blockQueue.front();
         blockQueue.pop_front();
 
-        // Look for the load instruction in the current block. If it's not
-        // here, we will have to check that all predecessors have it.
+        // Look for a suitable load or store in the current block. If it's not
+        // here, we will have to check all predecessors.
         bool checkPredecessors = true;
         for (auto it = BB->rbegin(); it != BB->rend(); ++it) {
-            // Skip all instructions before the compared load
-            // when in the first block.
+            // Skip all instructions before the compared load when in the first
+            // block (note that we are iterating in reverse).
             if (first) {
                 if (&*it == Load) {
                     first = false;
@@ -632,22 +646,32 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
                 continue;
             }
 
-            if (auto Candidate = dyn_cast<LoadInst>(&*it)) {
-                // Found a candidate load; check whether the pointer matches.
+            const Value *ReplacementCandidate = nullptr;
+            if (auto PreviousLoad = dyn_cast<LoadInst>(&*it)) {
                 if (Load->getPointerOperand()
-                    == Candidate->getPointerOperand()) {
-                    if (PreviousLoad) {
-                        // If another suitable load has been found previously
-                        // in a different CFG path, fail. We need a single one.
-                        return false;
-                    }
-                    // Otherwise remember this load.
-                    PreviousLoad = Candidate;
-                    checkPredecessors = false;
-                    break;
+                    == PreviousLoad->getPointerOperand()) {
+                    // Found an identical load, save the candidate.
+                    ReplacementCandidate = PreviousLoad;
                 }
-            } else if (isa<StoreInst>(&*it)
-                       || (isa<CallInst>(&*it) && !isDebugInfo(*it))) {
+            } else if (auto Store = dyn_cast<StoreInst>(&*it)) {
+                if (ignoredInstructions.count(Store)
+                    && Store->getPointerOperand()
+                               == Load->getPointerOperand()) {
+                    // Found a previously ignored store, save the candidate.
+                    ReplacementCandidate = Store->getValueOperand();
+                }
+            }
+            if (ReplacementCandidate) {
+                if (Replacement) {
+                    // If another suitable replacement has been found previously
+                    // in a different CFG path, fail. We need a single one.
+                    return false;
+                }
+                // Otherwise remember this replacement.
+                Replacement = ReplacementCandidate;
+                checkPredecessors = false;
+                break;
+            } else if (mayStoreTo(&*it, Load->getPointerOperand())) {
                 // Fail if a possibly conflicting store or call is found.
                 return false;
             }
@@ -656,7 +680,9 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
         if (checkPredecessors) {
             auto BBPredecessors = predecessors(BB);
             if (BBPredecessors.begin() == BBPredecessors.end()) {
-                // Fail if no more predecessors are available.
+                // Fail if no more predecessors are available. This means that
+                // we've reached the top of the function, and we haven't found
+                // a suitable replacement, so we cannot skip the load.
                 return false;
             }
             // Queue up all unvisited predecessors.
@@ -668,10 +694,41 @@ bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
             }
         }
     }
-    // If the load is repeated without stores in between, skip it because
-    // the load is redundant and its removal will cause no semantic difference.
-    if (PreviousLoad) {
-        replacedInstructions.insert({Load, PreviousLoad});
+    // Successfully found a replacement,
+    if (Replacement) {
+        replacedInstructions.insert({Load, Replacement});
+        return true;
+    }
+    return false;
+}
+
+/// Check whether the given store can be skipped because it stores to
+/// an ignored local variable and the stored value will be compared later.
+bool DifferentialFunctionComparator::maySkipStore(
+        const StoreInst *Store) const {
+    if (!config.Patterns.GroupVars) {
+        return false;
+    }
+    // We can skip a store if it stores to a skipped/ignored local variable.
+    // This is allowed because any load from the same variable will
+    // also fail, and will have to be skipped and replaced with the
+    // stored value. As a result, the corresponding alloca cannot be
+    // directly compared as an operand from this point onward, because
+    // its contents may differ from now. Hence, we move it from
+    // skippedInstructions to ignoredInstructions.
+    auto Alloca = getAllocaOp(Store);
+    if (!Alloca) {
+        return false;
+    }
+    auto SkippedIt = skippedInstructions.find(Alloca);
+    if (SkippedIt != skippedInstructions.end()) {
+        skippedInstructions.erase(SkippedIt);
+        ignoredInstructions.insert(Alloca);
+        ignoredInstructions.insert(Store);
+        return true;
+    }
+    if (ignoredInstructions.count(Alloca)) {
+        ignoredInstructions.insert(Store);
         return true;
     }
     return false;
@@ -2053,4 +2110,29 @@ bool DifferentialFunctionComparator::checkInverseCondUsers(
         }
     }
     return true;
+}
+
+/// Check whether the pointer operand of the given instruction (e.g., load)
+/// points into local memory allocated by an ignored alloca.
+template <typename InstType>
+bool DifferentialFunctionComparator::hasIgnoredAllocaOp(
+        const InstType *Inst) const {
+    if (auto Alloca = getAllocaOp(Inst))
+        return ignoredInstructions.count(Alloca)
+               || skippedInstructions.count(Alloca);
+    return false;
+}
+
+/// Check whether all uses of the provided value are extra memory instructions,
+/// i.e. loads from or stores to ignored memory.
+bool DifferentialFunctionComparator::allUsersAreExtraMemInsts(
+        const Instruction *Inst) const {
+    return std::all_of(
+            Inst->user_begin(), Inst->user_end(), [&](const User *user) {
+                if (auto store = dyn_cast<StoreInst>(user))
+                    return hasIgnoredAllocaOp(store);
+                if (auto load = dyn_cast<LoadInst>(user))
+                    return hasIgnoredAllocaOp(load);
+                return false;
+            });
 }
