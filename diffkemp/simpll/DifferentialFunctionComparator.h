@@ -148,8 +148,17 @@ class DifferentialFunctionComparator : public FunctionComparator {
     mutable std::set<std::pair<const Value *, const Value *>> inverseConditions;
     mutable std::vector<std::pair<const PHINode *, const PHINode *>>
             phisToCompare;
+
+    /// Map of skipped instructions with replacements.
     mutable std::unordered_map<const Value *, const Value *>
             replacedInstructions;
+
+    /// Set of skipped instructions that are ignored for now, but can
+    /// be synchronized later if a matching instruction is found.
+    mutable std::unordered_set<const Value *> skippedInstructions;
+
+    /// Set of irreversibly ignored instructions. Matching these could
+    /// result in false negatives.
     mutable std::unordered_set<const Value *> ignoredInstructions;
 
     /// Contains pairs of values mapped by synchronisation maps. Enables
@@ -219,19 +228,20 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// constant (if not, it returns false).
     bool accumulateAllOffsets(const BasicBlock &BB, uint64_t &Offset) const;
 
-    /// Check if the given instruction can be ignored (it does not affect
-    /// semantics). Replacements of ignorable instructions are stored
-    /// inside the ignored instructions map.
+    /// Check if the given instruction can be skipped because it does not
+    /// affect semantics or can be handled later. If yes, the instruction
+    /// is stored within the set/map of ignored, skipped or replaced
+    /// instructions (depending on the context).
     bool maySkipInstruction(const Instruction *Inst) const;
 
     /// Check whether the given cast can be ignored (it does not affect
     /// semantics. First operands of ignorable casts are stored as their
-    /// replacements inside the ignored instructions map.
+    /// replacements inside the replaced instructions map.
     bool maySkipCast(const User *Cast) const;
 
-    /// Check whether the given instruction is a repetitive variant of a
-    /// previous load with no store instructions in between. Replacements of
-    /// ignorable loads are stored inside the ignored instructions map.
+    /// Check whether the given instruction is a repetitive variant of
+    /// a previous load with no store instructions in between.
+    /// Load replacements are stored inside the replaced instructions map.
     bool maySkipLoad(const LoadInst *Load) const;
 
     /// Check whether the given reorderable binary operator can be skipped.
@@ -239,7 +249,7 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// of the same kind.
     bool maySkipReorderableBinaryOp(const Instruction *Op) const;
 
-    /// Retrive the replacement for the given value from the ignored
+    /// Retrieve the replacement for the given value from the replaced
     /// instructions map. Try to generate the replacement if a bitcast is given.
     const Value *
             getReplacementValue(const Value *Replaced,

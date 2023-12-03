@@ -504,13 +504,16 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
                     || cmpIntWithConstant(TypeInfoR.Size, CR->getOperand(0)));
 }
 
-/// Check if the given instruction can be ignored (it does not affect
-/// semantics). Replacements of ignorable instructions are stored
-/// inside the ignored instructions map.
+/// Check if the given instruction can be skipped because it does not
+/// affect semantics or can be handled later. If yes, the instruction
+/// is stored within the set/map of ignored, skipped or replaced
+/// instructions (depending on the context).
 bool DifferentialFunctionComparator::maySkipInstruction(
         const Instruction *Inst) const {
     if (isa<AllocaInst>(Inst)) {
-        ignoredInstructions.insert(Inst);
+        // An alloca can always be skipped without any replacement.
+        // It can later be synchronized if used as an operand.
+        skippedInstructions.insert(Inst);
         return true;
     }
     if (config.Patterns.ReorderedBinOps && isReorderableBinaryOp(Inst)
@@ -537,7 +540,7 @@ bool DifferentialFunctionComparator::maySkipInstruction(
 
 /// Check whether the given cast can be ignored (it does not affect
 /// semantics. First operands of ignorable casts are stored as their
-/// replacements inside the ignored instructions map.
+/// replacements inside the replaced instructions map.
 bool DifferentialFunctionComparator::maySkipCast(const User *Cast) const {
     auto SrcTy = Cast->getOperand(0)->getType();
     auto DestTy = Cast->getType();
@@ -596,9 +599,9 @@ bool DifferentialFunctionComparator::maySkipCast(const User *Cast) const {
     return false;
 }
 
-/// Check whether the given instruction is a repetitive variant of a previous
-/// load with no store instructions in between. Replacements of ignorable loads
-/// are stored inside the ignored instructions map.
+/// Check whether the given instruction is a repetitive variant of
+/// a previous load with no store instructions in between.
+/// Load replacements are stored inside the replaced instructions map.
 bool DifferentialFunctionComparator::maySkipLoad(const LoadInst *Load) const {
     auto BB = Load->getParent();
     if (!BB) {
@@ -689,7 +692,7 @@ bool mayIgnoreMacro(std::string macro) {
     return ignoredMacroList.find(macro) != ignoredMacroList.end();
 }
 
-/// Retrive the replacement for the given value from the ignored instructions
+/// Retrieve the replacement for the given value from the replaced instructions
 /// map. Try to generate the replacement if a bitcast is given.
 const Value *DifferentialFunctionComparator::getReplacementValue(
         const Value *Replaced, DenseMap<const Value *, int> &sn_map) const {
@@ -1440,11 +1443,35 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
                                               const Value *R) const {
     PREP_LOG("value", L, R);
 
-    // Instructions that were ignored without replacement must never be compared
-    // as values. Two such instructions would always synchronize (even if not
-    // equal). Comparing with an already synchronized value would pollute the
-    // SN maps and complicate eventual undo.
-    if (ignoredInstructions.count(L) || ignoredInstructions.count(R)) {
+    // If both values are reversibly skipped, we can try to compare them
+    // fully - as instructions. This can help match reordered allocas.
+    auto SkippedEnd = skippedInstructions.end();
+    auto SkippedItL = skippedInstructions.find(L);
+    auto SkippedItR = skippedInstructions.find(R);
+    if (SkippedItL != SkippedEnd && SkippedItR != SkippedEnd) {
+        auto InstL = dyn_cast<Instruction>(*SkippedItL);
+        auto InstR = dyn_cast<Instruction>(*SkippedItR);
+        // The instructions must not be marked as skipped now, because
+        // comparison of operations calls cmpValues immediately again.
+        skippedInstructions.erase(SkippedItL);
+        skippedInstructions.erase(SkippedItR);
+        if (!cmpOperationsWithOperands(InstL, InstR)) {
+            RETURN_WITH_LOG_NEQ(0);
+        }
+        // If the comparison failed, restore the ignored instructions map
+        // and synchronization maps, which are polluted.
+        skippedInstructions.insert(InstL);
+        skippedInstructions.insert(InstR);
+        sn_mapL.erase(InstL);
+        sn_mapR.erase(InstR);
+        mappedValuesBySn.erase(sn_mapL.size());
+        RETURN_WITH_LOG_NEQ(1);
+    }
+
+    // If either of the values is irreversibly ignored, or if only one of
+    // the instructions is skipped, fail.
+    if (ignoredInstructions.count(L) || ignoredInstructions.count(R)
+        || SkippedItL != SkippedEnd || SkippedItR != SkippedEnd) {
         RETURN_WITH_LOG_NEQ(1);
     }
 
