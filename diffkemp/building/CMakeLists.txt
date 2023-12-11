@@ -20,9 +20,13 @@ if (NOT DEFINED ENV{WITHOUT_RPYTHON})
   else ()
     set(CC_WRAPPER "${CMAKE_BINARY_DIR}/cc_wrapper-c")
     add_custom_target(cc-wrapper ALL DEPENDS ${CC_WRAPPER})
+    # Note: Setting PYTHONPATH to be able to use diffkemp modules
+    # and also external modules (in case we decide to use them) from the wrapper.
+    set(PYTHONPATH "$ENV{PYTHONPATH}")
     add_custom_command(OUTPUT ${CC_WRAPPER}
                        DEPENDS ${CC_WRAPPER_SOURCE}
-                       COMMAND ${RPYTHON} ${CC_WRAPPER_SOURCE} "--output=${CC_WRAPPER}"
+                       COMMAND "PYTHONPATH=${CMAKE_SOURCE_DIR}:${PYTHONPATH}"
+                         ${RPYTHON} ${CC_WRAPPER_SOURCE} "--output=${CC_WRAPPER}"
                        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
     install(PROGRAMS ${CC_WRAPPER} RENAME diffkemp-cc-wrapper DESTINATION ${CMAKE_INSTALL_BINDIR})
   endif ()
