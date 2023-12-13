@@ -517,6 +517,7 @@ bool DifferentialFunctionComparator::maySkipInstruction(
         return true;
     }
     if (config.Patterns.GroupVars && Inst->isSafeToRemove()
+        && Inst->user_begin() != Inst->user_end()
         && allUsersAreExtraMemInsts(Inst)) {
         // If this is a safe instruction (not a store, call, or a terminator),
         // it can be ignored if its users are extra memory instructions, i.e.,
