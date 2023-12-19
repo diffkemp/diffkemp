@@ -298,6 +298,12 @@ std::vector<std::unique_ptr<SyntaxDifference>>
                                               << elem.file << " on line "
                                               << elem.line << "\n");
             };
+            // Copying info about differing macros definition for the 'user' so
+            // he knows where the difference was found (eg. for showing diff).
+            auto diffDefL =
+                    std::make_unique<CodeLocation>(*MacroUseL.second.def);
+            auto diffDefR =
+                    std::make_unique<CodeLocation>(*MacroUseR->second.def);
 
             result.push_back(std::make_unique<SyntaxDifference>(
                     SyntaxDifference::Kind::MACRO,
@@ -306,7 +312,9 @@ std::vector<std::unique_ptr<SyntaxDifference>>
                     MacroUseR->second.def->body.str(),
                     StackL,
                     StackR,
-                    L->getFunction()->getName().str()));
+                    L->getFunction()->getName().str(),
+                    std::move(diffDefL),
+                    std::move(diffDefR)));
         }
     }
 

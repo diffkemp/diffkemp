@@ -20,7 +20,7 @@ def test_callstack_from_simpll_yaml(graph):
     """Tests creation of Callstack from representation used in non-fun diffs.
     """
     macro = [nonfun_diff for nonfun_diff in graph["do_check"].nonfun_diffs
-             if nonfun_diff.name == "MACRO"][0]
+             if nonfun_diff.name == "___MACRO"][0]
     callstack = Result.Callstack.from_simpll_yaml(
         macro.callstack[ComparisonGraph.Side.LEFT])
     assert callstack.calls == [
@@ -145,7 +145,7 @@ def test_yaml_output(result, mocker):
     assert len(main_function_result["diffs"]) == 3
     for diff in main_function_result["diffs"]:
         expected_callstack = []
-        if diff["function"] == "MACRO":
+        if diff["function"] == "___MACRO":
             expected_callstack = [
                 {"name": "do_check", "file": "app/main.c", "line": 58},
                 {"name": "_MACRO (macro)", "file": "test.c", "line": 1},

@@ -67,6 +67,20 @@ template <> struct MappingTraits<FunctionInfo> {
 } // namespace yaml
 } // namespace llvm
 
+// Information about code location (stored in unique_ptr) of an 'object'
+// (eg. definition of macro in SyntaxDifference) to YAML.
+namespace llvm {
+namespace yaml {
+template <> struct MappingTraits<std::unique_ptr<CodeLocation>> {
+    static void mapping(IO &io, std::unique_ptr<CodeLocation> &loc) {
+        io.mapRequired("name", loc->name);
+        io.mapRequired("file", loc->sourceFile);
+        io.mapRequired("line", loc->line);
+    }
+};
+} // namespace yaml
+} // namespace llvm
+
 // SyntaxDifference::SyntaxKind to YAML
 namespace llvm {
 namespace yaml {
@@ -98,6 +112,11 @@ template <> struct MappingTraits<std::unique_ptr<NonFunctionDifference>> {
             io.mapOptional("kind", syntaxDiff->syntaxKind);
             io.mapOptional("body-first", syntaxDiff->BodyL);
             io.mapOptional("body-second", syntaxDiff->BodyR);
+            if (syntaxDiff->diffDefL && syntaxDiff->diffDefR) {
+                // Information about definitions of differing 'objects'.
+                io.mapOptional("diff-def-first", syntaxDiff->diffDefL);
+                io.mapOptional("diff-def-second", syntaxDiff->diffDefR);
+            }
         } else if (auto typeDiff = unique_dyn_cast<TypeDifference>(diff)) {
             io.mapOptional("file-first", typeDiff->FileL);
             io.mapOptional("file-second", typeDiff->FileR);

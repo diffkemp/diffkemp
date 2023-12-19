@@ -127,6 +127,10 @@ struct SyntaxDifference : public NonFunctionDifference {
     Kind syntaxKind;
     /// The difference.
     std::string BodyL, BodyR;
+    // Information about definitions of differing 'object'.
+    // For now it is only used in macro differences, for other differences it is
+    // null.
+    std::unique_ptr<CodeLocation> diffDefL, diffDefR;
     SyntaxDifference()
             : NonFunctionDifference(SynDiff), syntaxKind(Kind::UNKNOWN){};
     SyntaxDifference(Kind syntaxKind,
@@ -135,9 +139,12 @@ struct SyntaxDifference : public NonFunctionDifference {
                      std::string BodyR,
                      CallStack StackL,
                      CallStack StackR,
-                     std::string function)
+                     std::string function,
+                     std::unique_ptr<CodeLocation> diffDefL,
+                     std::unique_ptr<CodeLocation> diffDefR)
             : NonFunctionDifference(name, StackL, StackR, function, SynDiff),
-              syntaxKind(syntaxKind), BodyL(BodyL), BodyR(BodyR) {}
+              syntaxKind(syntaxKind), BodyL(BodyL), BodyR(BodyR),
+              diffDefL(std::move(diffDefL)), diffDefR(std::move(diffDefR)) {}
     static bool classof(const NonFunctionDifference *Diff) {
         return Diff->getKind() == SynDiff;
     }
