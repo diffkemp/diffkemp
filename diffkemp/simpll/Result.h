@@ -120,19 +120,26 @@ struct NonFunctionDifference {
 
 /// Syntactic difference between objects that cannot be found in the original
 /// source files.
-/// Note: this can be either a macro difference or inline assembly difference.
+/// There are multiple kinds of the differences: a macro diff,
+/// inline assembly diff, function-macro diff or macro-function diff.
 struct SyntaxDifference : public NonFunctionDifference {
     /// The difference.
     std::string BodyL, BodyR;
+    // Informations about definitions of last 'object' (macro) in call stack.
+    // For now it is only used in macro differences.
+    std::unique_ptr<Definition> lastDefL, lastDefR;
     SyntaxDifference() : NonFunctionDifference(SynDiff){};
     SyntaxDifference(std::string name,
                      std::string BodyL,
                      std::string BodyR,
                      CallStack StackL,
                      CallStack StackR,
-                     std::string function)
+                     std::string function,
+                     std::unique_ptr<Definition> lastDefL,
+                     std::unique_ptr<Definition> lastDefR)
             : NonFunctionDifference(name, StackL, StackR, function, SynDiff),
-              BodyL(BodyL), BodyR(BodyR) {}
+              BodyL(BodyL), BodyR(BodyR), lastDefL(std::move(lastDefL)),
+              lastDefR(std::move(lastDefR)) {}
     static bool classof(const NonFunctionDifference *Diff) {
         return Diff->getKind() == SynDiff;
     }

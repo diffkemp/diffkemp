@@ -67,6 +67,19 @@ template <> struct MappingTraits<FunctionInfo> {
 } // namespace yaml
 } // namespace llvm
 
+// Definition (stored in unique_ptr) to YAML
+namespace llvm {
+namespace yaml {
+template <> struct MappingTraits<std::unique_ptr<Definition>> {
+    static void mapping(IO &io, std::unique_ptr<Definition> &def) {
+        io.mapRequired("name", def->name);
+        io.mapRequired("file", def->sourceFile);
+        io.mapRequired("line", def->line);
+    }
+};
+} // namespace yaml
+} // namespace llvm
+
 // NonFunctionDifference (stored in unique_ptr) to YAML
 namespace llvm {
 namespace yaml {
@@ -80,6 +93,11 @@ template <> struct MappingTraits<std::unique_ptr<NonFunctionDifference>> {
         if (auto syntaxDiff = unique_dyn_cast<SyntaxDifference>(diff)) {
             io.mapOptional("body-first", syntaxDiff->BodyL);
             io.mapOptional("body-second", syntaxDiff->BodyR);
+            if (syntaxDiff->lastDefL && syntaxDiff->lastDefR) {
+                // information about definitions of last 'objects' (macros).
+                io.mapOptional("last-def-first", syntaxDiff->lastDefL);
+                io.mapOptional("last-def-second", syntaxDiff->lastDefR);
+            }
         } else if (auto typeDiff = unique_dyn_cast<TypeDifference>(diff)) {
             io.mapOptional("file-first", typeDiff->FileL);
             io.mapOptional("file-second", typeDiff->FileR);
