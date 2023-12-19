@@ -225,23 +225,34 @@ class ComparisonGraph:
             but the line where the definition of the caller starts.
         :param body: A tuple containing the body of the 'object' for both
             modules.
+        :param diff_def: Tuple (first, second), for macro difference contains
+            information about definition (name, file, line) of the differing
+            macros, otherwise contains None.
         """
-        def __init__(self, kind, name, parent_fun, callstack, body):
+        def __init__(self, kind, name, parent_fun, callstack, body,
+                     diff_def=None):
             self.kind = kind
             self.name = name
             self.parent_fun = parent_fun
             self.callstack = callstack
             self.body = body
+            self.diff_def = diff_def
 
         @classmethod
         def from_yaml(cls, nonfun_diff):
             """Generates a SyntaxDiff object from YAML returned by SimpLL."""
+            diff_def = None
+            if ("diff-def-first" in nonfun_diff and
+                    "diff-def-second" in nonfun_diff):
+                diff_def = (nonfun_diff["diff-def-first"],
+                            nonfun_diff["diff-def-second"])
             return cls(
                 nonfun_diff["kind"],
                 nonfun_diff["name"],
                 nonfun_diff["function"],
                 (nonfun_diff["stack-first"], nonfun_diff["stack-second"]),
-                (nonfun_diff["body-first"], nonfun_diff["body-second"])
+                (nonfun_diff["body-first"], nonfun_diff["body-second"]),
+                diff_def
             )
 
     class TypeDiff(NonFunDiff):
