@@ -81,6 +81,27 @@ class Result:
                      "line": call["line"]}
                     for call in self.calls]
 
+        @staticmethod
+        def get_name_and_kind(call):
+            """Returns tuple (name, kind) for a call."""
+            name = call["name"]
+            kind = "function"
+            if " " in name:
+                name, kind = name.split(" ")
+                # kind looks like this "(kind)", extracting it from brackets
+                kind = kind[1:-1]
+            return (name, kind)
+
+        def get_parent_call_name(self, index, compared_fun):
+            """Returns name of the parrent call (calling function/macro)-
+            :param index: Index to callstack containing current call.
+            :param compared_fun: Name of compared function.
+            """
+            parent_name = (self.calls[index - 1]["name"]
+                           if index >= 1
+                           else compared_fun)
+            return parent_name
+
         def get_symbol_names(self, compared_fun):
             """
             Returns a tuple containing three sets of symbol names which appear
@@ -89,30 +110,24 @@ class Result:
             - macro names (set of strings)
             - type names (set of string pairs)
                 (type name, name of function in which the type is used)
-
             :param compared_fun: Name of compared function.
             """
             function_names = set()
             macro_names = set()
             type_names = set()
-            if self.calls:
-                for index, call in enumerate(self.calls):
-                    # getting symbol name
-                    name = call["name"]
-                    kind = "function"
-                    if " " in name:
-                        name, kind = name.split(" ")
-                    if kind == "function":
-                        function_names.add(name)
-                    elif kind == "(macro)":
-                        macro_names.add(name)
-                    elif kind == "(type)":
-                        # name of type and name of function
-                        # in which it is used
-                        parent_name = (self.calls[index - 1]["name"]
-                                       if index >= 1
-                                       else compared_fun)
-                        type_names.add((name, parent_name))
+            if not self.calls:
+                return function_names, macro_names, type_names
+            for index, call in enumerate(self.calls):
+                name, kind = self.get_name_and_kind(call)
+                if kind == "function":
+                    function_names.add(name)
+                elif kind == "macro":
+                    macro_names.add(name)
+                elif kind == "type":
+                    # name of type and name of function in which it is used
+                    parent_name = self.get_parent_call_name(index,
+                                                            compared_fun)
+                    type_names.add((name, parent_name))
             return function_names, macro_names, type_names
 
         def __str__(self):
