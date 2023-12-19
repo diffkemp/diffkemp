@@ -120,11 +120,13 @@ test('first shown function should be differing function', async () => {
   await waitFor(() => {
     expect(mockPropsDiffViewWrapper).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        oldCode: 'src/include/linux/sched.h',
+        oldCode: 'old-src/include/linux/sched.h',
+        newCode: 'new-src/include/linux/sched.h',
         diff: 'diffs/task_struct.diff',
         oldStart: 594,
         newStart: 594,
         oldEnd: 1217,
+        newEnd: 1261,
         showDiff: true,
         linesToShow: null,
       }),
@@ -152,11 +154,13 @@ describe('after click on function in callstack', () => {
     await waitFor(() => {
       expect(mockPropsDiffViewWrapper).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          oldCode: 'src/kernel/pid.c',
+          oldCode: 'old-src/kernel/pid.c',
+          newCode: 'new-src/kernel/pid.c',
           diff: '',
           oldStart: 438,
           newStart: 443,
           oldEnd: 441,
+          newEnd: 446,
           showDiff: false,
           linesToShow: [440, 445],
         }),
