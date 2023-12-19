@@ -130,6 +130,46 @@ class Result:
                     type_names.add((name, parent_name))
             return function_names, macro_names, type_names
 
+        def get_macro_defs(self, compared_fun):
+            """
+            Returns a tuple:
+            - list of macro definitions (except last macro in the callstack)
+              = list of dicts (`file`, `name`, `line`),
+            - (vertex name, last macro name) for retrieving info
+              about last macro defintion from the ComparisonGraph.
+            In case the call stack does not includes macros, the list
+            with definitions is empty and instead of the (vertex, macro) tuple
+            it contains None.
+            :param compared_fun: Name of compared function.
+            """
+            macro_defs = []
+            # For getting last macro deffinition
+            last_macro_name = None
+            last_function_name = compared_fun
+            if self.calls:
+                for index, call in enumerate(self.calls):
+                    name, kind = self.get_name_and_kind(call)
+                    if kind != "macro":
+                        last_function_name = name
+                        continue
+                    # last call in callstack
+                    if index + 1 == len(self.calls):
+                        last_macro_name = name
+                    else:
+                        # The call contains a macro name, a file from which
+                        # the macro was 'called' and a line where starts
+                        # the macro body/def in which the call was called from.
+                        # To get information about a current macro file and
+                        # line, we have to look on a call below.
+                        macro_defs.append({
+                            "name": call["name"],
+                            "file": self.calls[index + 1]["file"],
+                            "line": self.calls[index + 1]["line"]
+                        })
+            last_macro_info = (last_function_name, last_macro_name) \
+                if last_macro_name is not None else None
+            return macro_defs, last_macro_info
+
         def __str__(self):
             """Converts a callstack to a string representation."""
             if self.calls is None:
