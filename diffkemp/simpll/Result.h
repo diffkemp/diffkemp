@@ -79,6 +79,20 @@ struct FunctionInfo {
     }
 };
 
+/// Type for storing informations about definition of an analysed
+// 'object' (eg. macro).
+struct Definition {
+    // Name of the 'object'.
+    std::string name;
+    // Line in the sourceFile on which is located definition of the 'object'.
+    int line;
+    // A C source file name in which is located the 'object' definition.
+    std::string sourceFile;
+    Definition() = default;
+    Definition(std::string name, int line, std::string sourceFile)
+            : name(name), line(line), sourceFile(sourceFile) {}
+};
+
 /// Generic type for non-function differences.
 struct NonFunctionDifference {
     /// Discriminator for LLVM-style RTTI (dyn_cast<> et al.)
