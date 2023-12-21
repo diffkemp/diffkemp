@@ -79,6 +79,20 @@ struct FunctionInfo {
     }
 };
 
+/// Type for storing information about code location of an 'object'
+/// (eg. location of macro definition).
+struct CodeLocation {
+    // Name of the 'object'.
+    std::string name;
+    // Line in the sourceFile.
+    unsigned line;
+    // A C source file name.
+    std::string sourceFile;
+    CodeLocation() = default;
+    CodeLocation(std::string name, unsigned line, std::string sourceFile)
+            : name(name), line(line), sourceFile(sourceFile) {}
+};
+
 /// Generic type for non-function differences.
 struct NonFunctionDifference {
     /// Discriminator for LLVM-style RTTI (dyn_cast<> et al.)

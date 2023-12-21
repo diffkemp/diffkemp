@@ -26,19 +26,14 @@
 
 using namespace llvm;
 
-/// Macro definition containing name, body, location, and parameters
-struct MacroDef {
-    // The macro name is shortened, therefore it has to be stored as the whole
-    // string, not as a StringRef (otherwise the content would be dropped after
-    // the block in which the shortening is done).
-    std::string name;
+/// Specialisation of CodeLocation from "Result.h", contains more information
+/// about macro definition (body, parameters, ...) which are used for finding
+/// macro difference.
+struct MacroDef : public CodeLocation {
     // Full macro name (including parameters).
     std::string fullName;
     // The body is in DebugInfo therefore it can be stored by reference.
     StringRef body;
-    // Location of the macro definition in C source.
-    int line;
-    std::string sourceFile;
     // List of the macro parameters.
     std::vector<std::string> params;
 };
