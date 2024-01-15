@@ -209,6 +209,8 @@ class ComparisonGraph:
     class SyntaxDiff(NonFunDiff):
         """
         A syntax difference.
+        :param kind: The kind of difference: 'macro', 'assembly',
+            'function-macro', 'macro-function', ('unknown').
         :param name: Name of an 'object' (eg. macro) in the first module in
             which was found difference. In case of inline assembly difference
             the name starts with "assembly code " followed by a number.
@@ -225,7 +227,9 @@ class ComparisonGraph:
             information about definition (name, file, line) of the differing
             macros, otherwise contains None.
         """
-        def __init__(self, name, parent_fun, callstack, body, last_def=None):
+        def __init__(self, kind, name, parent_fun, callstack, body,
+                     last_def=None):
+            self.kind = kind
             self.name = name
             self.parent_fun = parent_fun
             self.callstack = callstack
@@ -241,6 +245,7 @@ class ComparisonGraph:
                 last_def = (nonfun_diff["last-def-first"],
                             nonfun_diff["last-def-second"])
             return cls(
+                nonfun_diff["kind"],
                 nonfun_diff["name"],
                 nonfun_diff["function"],
                 (nonfun_diff["stack-first"], nonfun_diff["stack-second"]),

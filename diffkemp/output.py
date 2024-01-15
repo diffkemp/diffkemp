@@ -171,9 +171,11 @@ class YamlOutput:
                         isinstance(non_fun, ComparisonGraph.SyntaxDiff):
                     if non_fun.last_def:
                         self._yaml_def_from_macro(non_fun.last_def[0],
-                                                  self.old_dir, "old")
+                                                  self.old_dir, "old",
+                                                  non_fun.kind)
                         self._yaml_def_from_macro(non_fun.last_def[1],
-                                                  self.new_dir, "new")
+                                                  self.new_dir, "new",
+                                                  non_fun.kind)
                     break
         self.output["definitions"].update(definitions)
 
@@ -188,7 +190,7 @@ class YamlOutput:
         for macro_def in macro_defs:
             self._yaml_def_from_macro(macro_def, base_dir, version)
 
-    def _yaml_def_from_macro(self, macro_def, base_dir, version):
+    def _yaml_def_from_macro(self, macro_def, base_dir, version, kind="macro"):
         """
         :param macro_def: Dict with keys name, line, file.
         :param base_dir: Path to snapshot directory.
@@ -196,9 +198,15 @@ class YamlOutput:
         name = macro_def["name"].split()[0]
         file = os.path.join(base_dir, macro_def["file"])
         line = macro_def["line"]
+        version_kind = kind
+        # Note: kind can be macro-function, function-macro.
+        if "-" in kind:
+            version_kind = kind.split("-")
+            version_kind = version_kind[0] if version == "old" \
+                else version_kind[1]
         definition = {
-            "kind": "macro",
-            version: self._create_def_info(line, file, base_dir, "macro")
+            "kind": kind,
+            version: self._create_def_info(line, file, base_dir, version_kind)
         }
         if name not in self.output["definitions"]:
             self.output["definitions"][name] = definition
@@ -212,6 +220,6 @@ class YamlOutput:
         }
         try:
             info["end-line"] = get_end_line(file, line, kind)
-        except (UnicodeDecodeError, EndLineNotFound):
+        except (UnicodeDecodeError, EndLineNotFound, ValueError):
             pass
         return info
