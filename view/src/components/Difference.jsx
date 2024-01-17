@@ -62,6 +62,9 @@ export default function Difference({
     // If there is no called function for both functions (it is differing fun)
     // returns undefined.
     const getCallingLine = () => {
+      // Note: If there will be cases of calls with different names and we will
+      // want to show their code at the same time and the calls will be
+      // calling other functions, then this will need to be reworked.
       let oldLine = -1;
       let newLine = -1;
       if (functionToShow.name === compare

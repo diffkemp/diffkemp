@@ -180,6 +180,7 @@ function SingleCall({
   }
   return (
     <Calls
+      type={CallType.Both}
       oldCalls={[{ name: oldName }]}
       newCalls={[{ name: newName }]}
       onSelect={onSelect}
@@ -207,7 +208,7 @@ SingleCall.propTypes = {
  * @returns
  */
 function Calls({
-  oldCalls, newCalls, selectedFunction, onSelect,
+  oldCalls, newCalls, selectedFunction, onSelect, type = null,
 }) {
   return (
     <ListGroup horizontal as="ul" className="callstack-call-group">
@@ -219,7 +220,7 @@ function Calls({
             name={call.name}
             onSelect={onSelect}
             selectedFunction={selectedFunction}
-            type={CallType.Old}
+            type={type || CallType.Old}
           />
         ))}
       </ListGroup>
@@ -231,7 +232,7 @@ function Calls({
             name={call.name}
             onSelect={onSelect}
             selectedFunction={selectedFunction}
-            type={CallType.New}
+            type={type || CallType.New}
           />
         ))}
       </ListGroup>
@@ -240,6 +241,7 @@ function Calls({
 }
 
 Calls.propTypes = {
+  type: PropTypes.string,
   oldCalls: CallstackPropTypes.isRequired,
   newCalls: CallstackPropTypes,
   selectedFunction: SelectedFunPropType,
@@ -264,6 +266,11 @@ function Call({
 }) {
   // putting information about type/macro under the name of function
   const nameWrap = name.replace(' ', '<br/>');
+  // Note: Currently checking if the function should be active only based on the name
+  // (kind is omitted). This solves special cases of function-macro/macro-function differences
+  // when we want to show their code at the same time.
+  // If there will be other situations when we want to show code of functions with different
+  // names simultaneously, then this needs to be reworked.
   return (
     <ListGroup.Item
       as="li"
@@ -271,7 +278,8 @@ function Call({
       action
       className="callstack-call"
       onClick={() => onSelect({ name, type })}
-      active={name === selectedFunction?.name && type === selectedFunction?.type}
+      active={name.split(' ')[0] === selectedFunction?.name.split(' ')[0]
+        && type === selectedFunction?.type}
       dangerouslySetInnerHTML={{ __html: nameWrap }}
     />
   );
