@@ -186,3 +186,12 @@ def make_argument_parser():
                          server")
     view_ap.set_defaults(func=diffkemp.diffkemp.view)
     return ap
+
+
+def run_from_cli():
+    """Main method to run the tool."""
+    ap = make_argument_parser()
+    args = ap.parse_args()
+    if args.verbose or args.debug:
+        args.verbose = 1 + args.debug
+    args.func(args)

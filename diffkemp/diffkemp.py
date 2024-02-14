@@ -1,5 +1,4 @@
 from diffkemp.building.cc_wrapper import get_cc_wrapper_path, wrapper_env_vars
-from diffkemp.cli import make_argument_parser
 from diffkemp.config import Config
 from diffkemp.snapshot import Snapshot
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
@@ -26,15 +25,6 @@ import shutil
 import yaml
 
 VIEW_INSTALL_DIR = "/var/lib/diffkemp/view"
-
-
-def run_from_cli():
-    """Main method to run the tool."""
-    ap = make_argument_parser()
-    args = ap.parse_args()
-    if args.verbose or args.debug:
-        args.verbose = 1 + args.debug
-    args.func(args)
 
 
 def build(args):
