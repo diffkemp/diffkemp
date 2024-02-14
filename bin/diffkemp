@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-from diffkemp import diffkemp
+from diffkemp.cli import run_from_cli
 
 if __name__ == "__main__":
-    diffkemp.run_from_cli()
+    run_from_cli()
