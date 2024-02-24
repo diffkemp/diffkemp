@@ -14,6 +14,7 @@
 
 #include "FFI.h"
 #include "Config.h"
+#include "CustomPatternSet.h"
 #include "ModuleAnalysis.h"
 #include "Output.h"
 #include "library/DiffKempUtils.h"
@@ -319,6 +320,12 @@ void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC) {
     Module *LLVMMod = (Module *)Mod;
     BuiltinPatterns Patterns = BuiltinPatternsFromC(PatternsC);
     preprocessModule(*LLVMMod, nullptr, nullptr, Patterns);
+}
+
+/// Runs custom pattern preprocessing passes on the given pattern and marks it
+/// as being preprocessed.
+void preprocessPattern(const char *PatternPath) {
+    CustomPatternSet CustomPatterns(PatternPath);
 }
 
 void shutdownSimpLL() { llvm_shutdown(); }

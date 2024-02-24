@@ -184,7 +184,8 @@ class Config:
         # based configuration.
         if args.custom_patterns:
             custom_pattern_config = CustomPatternConfig.create_from_file(
-                args.custom_patterns
+                args.custom_patterns, clang_append=args.c_pattern_append,
+                kernel_path=args.c_pattern_kernel_path
             )
         else:
             custom_pattern_config = None

@@ -209,3 +209,29 @@ def run_simpll(first, second, fun_first, fun_second, var, config, suffix=None,
         pass
 
     return first_out, second_out, result_graph, missing_defs
+
+
+def preprocess_pattern(pattern_path, use_ffi=True, verbosity=0):
+    """
+    Preprocess custom pattern file compiled to LLVM with SimpLL.
+    """
+    if use_ffi:
+        pattern_path = ffi.new("char []", pattern_path.encode("ascii"))
+        lib.preprocessPattern(pattern_path)
+    else:
+        try:
+            simpll_bin = "{}/diffkemp/simpll/diffkemp-simpll".format(
+                get_simpll_build_dir())
+            if not os.path.isfile(simpll_bin):
+                simpll_bin = "diffkemp-simpll"
+
+            # SimpLL command
+            simpll_command = [simpll_bin, "", "",
+                              "--preprocess-pattern-only", pattern_path]
+            if verbosity > 0:
+                simpll_command.extend(["--verbosity", str(verbosity)])
+                print(" ".join(simpll_command))
+
+            check_output(simpll_command)
+        except CalledProcessError:
+            raise SimpLLException("Preprocessing module failed")

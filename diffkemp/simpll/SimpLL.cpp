@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Config.h"
+#include "CustomPatternSet.h"
 #include "ModuleAnalysis.h"
 #include "ModuleComparator.h"
 #include "Output.h"
@@ -75,6 +76,11 @@ cl::opt<bool> ExtendedStats("extended-stat",
                             cl::desc("Track extended statistics "
                                      "(may be more expensive to compute)."),
                             cl::cat(SimpLLCategory));
+cl::opt<std::string> PreprocessPatternOnlyOpt(
+        "preprocess-pattern-only",
+        cl::desc("Only preprocess the given pattern, without performing any "
+                 "comparison"),
+        cl::cat(SimpLLCategory));
 
 cl::OptionCategory BuiltinPatternsCategory("SimpLL pattern options",
                                            "Options for configuring built-in "
@@ -154,6 +160,10 @@ int main(int argc, const char **argv) {
     // Parse CLI options
     cl::HideUnrelatedOptions({&SimpLLCategory, &BuiltinPatternsCategory});
     cl::ParseCommandLineOptions(argc, argv);
+    if (!PreprocessPatternOnlyOpt.empty()) {
+        CustomPatternSet CustomPatterns(PreprocessPatternOnlyOpt);
+        return 0;
+    }
 
     BuiltinPatterns Patterns{.StructAlignment = StructAlignmentOpt,
                              .FunctionSplits = FunctionSplitsOpt,

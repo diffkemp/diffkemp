@@ -21,6 +21,7 @@
 #include "Config.h"
 #include "Logger.h"
 #include "ModuleAnalysis.h"
+#include "diffkemp_patterns.h"
 #include <algorithm>
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/Path.h>
@@ -29,15 +30,33 @@
 using namespace llvm::yaml;
 using namespace llvm::sys::path;
 
-// YAML to PatternConfiguration mapping
+// YAML mappings
 namespace llvm {
 namespace yaml {
+
+/// YAML to unordered_map mapping.
+template <typename K, typename V>
+struct MappingTraits<std::unordered_map<K, V>> {
+    static void mapping(IO &IO, std::unordered_map<K, V> &Map) {
+        std::vector<K> *Keys = static_cast<std::vector<K> *>(IO.getContext());
+        if (Keys) {
+            for (auto &Key : *Keys) {
+                IO.mapOptional(Key.c_str(), Map[Key]);
+            }
+        }
+    }
+};
+
+/// YAML to PatternConfiguration mapping.
 template <> struct MappingTraits<PatternConfiguration> {
     static void mapping(IO &IO, PatternConfiguration &Config) {
         IO.mapOptional("on_parse_failure", Config.OnParseFailure);
         IO.mapOptional("patterns", Config.PatternFiles);
+        IO.setContext(&Config.PatternFiles);
+        IO.mapOptional("clang_append", Config.ClangAppend);
     }
 };
+
 } // namespace yaml
 } // namespace llvm
 
@@ -78,7 +97,7 @@ CustomPatternSet::CustomPatternSet(std::string ConfigPath) {
     }
 
     // If a pattern is used as a configuration file, only load the pattern.
-    if (extension(ConfigPath) == ".ll") {
+    if (extension(ConfigPath) == ".ll" || extension(ConfigPath) == ".c") {
         addPatternFromFile(ConfigPath);
     } else {
         addPatternsFromConfig(ConfigPath);
@@ -166,12 +185,23 @@ void CustomPatternSet::addPatternsFromConfig(std::string &ConfigPath) {
 
 /// Load a pattern from the given LLVM IR module file.
 void CustomPatternSet::addPatternFromFile(std::string &Path) {
+    if (extension(Path) == ".c") {
+        Path.pop_back(); // remove the 'c'
+        Path += "ll";
+    }
     // Try to load the pattern module.
     SMDiagnostic err;
     auto PatternModule = parseIRFile(Path, err, PatternContext);
     if (!PatternModule) {
         LOG("Failed to parse difference pattern module " << Path << ".\n");
         return;
+    }
+    if (PatternModule->getNamedValue(CPATTERN_INDICATOR)) {
+        LOG("Preprocessing custom C pattern module " << Path << ".\n");
+        CPass.run(PatternModule.get());
+        std::error_code EC;
+        raw_fd_ostream output{Path, EC};
+        PatternModule->print(output, nullptr);
     }
     LOG("Loading difference patterns from module " << Path << ".\n");
     LOG_INDENT();
