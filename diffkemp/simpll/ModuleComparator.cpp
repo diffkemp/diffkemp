@@ -212,6 +212,9 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             }
         }
     }
+
+    ComparedFuns.at({FirstFun, SecondFun}).DifferingInstructions =
+            fComp.DifferingInstructions;
 }
 
 /// Try to inline a function call.

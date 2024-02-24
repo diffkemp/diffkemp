@@ -25,6 +25,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/IR/PassManager.h>
+#include <llvm/IR/ValueSymbolTable.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/LineIterator.h>
 #include <llvm/Support/MemoryBuffer.h>
@@ -925,6 +926,65 @@ bool mayAlias(const Value *PtrL, const Value *PtrR) {
         GEPRIdxIt++;
     }
     return true;
+}
+
+/// Given an instruction, append metadata with the given kind and value. If the
+/// given metadata kind already exists, the value is appended to the existing
+/// metadata node.
+void appendMetadata(Instruction *Inst, StringRef kind, StringRef value) {
+    LLVMContext &C = Inst->getContext();
+    MDNode *N = Inst->getMetadata(kind);
+    std::vector<Metadata *> Operands;
+    if (N) {
+        for (unsigned i = 0; i < N->getNumOperands(); i++) {
+            Operands.push_back(N->getOperand(i));
+        }
+    }
+    Operands.push_back(MDString::get(C, value));
+    N = MDNode::get(C, Operands);
+    Inst->setMetadata(kind, N);
+}
+
+/// Given a module, its clone, and a function, replace the function in the
+/// module by its version in the clone.
+void replaceFunctionWithClone(Module *Mod,
+                              Module *ModClone,
+                              const StringRef FunName) {
+    auto *Fun = Mod->getFunction(FunName);
+    auto *FunClone = ModClone->getFunction(FunName);
+
+    // Erase the original body
+    while (!Fun->empty()) {
+        Fun->begin()->removeFromParent();
+    }
+
+    // Map arguments and globals
+    ValueToValueMapTy VMap;
+    for (auto Arg = Fun->arg_begin(), ArgClone = FunClone->arg_begin();
+         Arg != Fun->arg_end();
+         ++ArgClone, ++Arg) {
+        VMap.insert({&*ArgClone, &*Arg});
+    }
+    ValueSymbolTable Values = ModClone->getValueSymbolTable();
+    for (auto ValClone = Values.begin(); ValClone != Values.end(); ValClone++) {
+        if (ValClone->second->hasName()) {
+            auto *Val = Mod->getNamedValue(ValClone->second->getName());
+            if (Val) {
+                VMap.insert({&*ValClone->second, Val});
+            }
+        }
+    }
+
+    SmallVector<ReturnInst *, 8> Returns;
+    CloneFunctionInto(Fun,
+                      FunClone,
+                      VMap,
+#if LLVM_VERSION_MAJOR >= 13
+                      CloneFunctionChangeType::DifferentModule,
+#else
+                      true,
+#endif
+                      Returns);
 }
 
 /// Given a pointer value, return the instruction which allocated the memory

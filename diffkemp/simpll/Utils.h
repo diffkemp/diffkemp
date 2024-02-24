@@ -213,6 +213,19 @@ bool mayStoreTo(const Instruction *Inst, const Value *Ptr);
 /// function currently supports only simple aliasing of local memory.
 bool mayAlias(const Value *PtrL, const Value *PtrR);
 
+/// Given an instruction, append metadata with the given kind and value. If the
+/// given metadata kind already exists, the value is appended to the existing
+/// metadata node.
+void appendMetadata(Instruction *Inst,
+                    const StringRef kind,
+                    const StringRef value);
+
+/// Given a module, its clone, and a function, replace the function in the
+/// module by its version in the clone.
+void replaceFunctionWithClone(Module *Mod,
+                              Module *ModClone,
+                              const StringRef FunName);
+
 /// Given a pointer value, return the instruction which allocated the memory
 /// where the pointer points. Return a null pointer if the alloca is not found.
 const AllocaInst *getAllocaFromPtr(const Value *Ptr);
