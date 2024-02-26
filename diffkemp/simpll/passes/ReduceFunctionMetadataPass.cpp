@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "ReduceFunctionMetadataPass.h"
+#include <llvm/IR/Instructions.h>
 
 /// Remove custom sections from functions (used when comparing the control flow
 /// only)
@@ -26,6 +27,15 @@ PreservedAnalyses
     // Distinguishing linkage type is pointless, because it would only cause
     // function inlining, discarding the attribute.
     Fun.setLinkage(GlobalValue::LinkageTypes::ExternalLinkage);
+
+    // Removing tail signifier from function calls
+    for (auto &BB : Fun) {
+        for (auto &Instr : BB) {
+            if (auto Call = dyn_cast<CallInst>(&Instr)) {
+                Call->setTailCall(false);
+            }
+        }
+    }
 
     return PreservedAnalyses::all();
 }
