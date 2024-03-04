@@ -90,7 +90,12 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &out,
         out << *(value.type);
         break;
     case value.llvmValue:
-        out << *(value.value);
+        // In case the value is a function, log its name instead of its body.
+        if (auto *fun = dyn_cast<Function>(value.value)) {
+            out << fun->getName();
+        } else {
+            out << *(value.value);
+        }
         break;
     }
     return out;
