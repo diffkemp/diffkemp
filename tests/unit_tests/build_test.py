@@ -3,6 +3,7 @@ from diffkemp.diffkemp import build
 from diffkemp.utils import get_functions_from_llvm
 import os
 import pytest
+import re
 import yaml
 
 SINGLE_C_FILE = os.path.abspath("tests/testing_projects/make_based/file.c")
@@ -13,9 +14,11 @@ BUILD_DB_FILE_NAME = "diffkemp-wdb"
 
 class Arguments:
     """Class for creating args for testing of build function."""
-    def __init__(self, source_dir, output_dir, target=[]):
+    def __init__(self, source_dir, output_dir, target=[],
+                 no_opt_override=False):
         self.source_dir = source_dir
         self.output_dir = output_dir
+        self.no_opt_override = no_opt_override
         # Required/used by build_c_project
         self.symbol_list = None
         self.build_program = "make"
@@ -34,6 +37,15 @@ def get_db_file_content(snapshot_dir):
     db_file_path = os.path.join(snapshot_dir, BUILD_DB_FILE_NAME)
     with open(db_file_path) as db_file:
         return db_file.read()
+
+
+def get_llvm_fun_body(llvm_file, fun_name):
+    """Returns body of fun_name function from llvm_file."""
+    with open(llvm_file, "r") as file:
+        content = file.read()
+        match = re.search(r"define.*@" + re.escape(fun_name) + r"[ (][^}]*",
+                          content, re.MULTILINE)
+        return match.group(0)
 
 
 @pytest.mark.parametrize("source",
@@ -56,6 +68,11 @@ def test_build_command(source, tmp_path):
     llvm_fun_list = get_functions_from_llvm([llvm_file_path])
     assert "add" in llvm_fun_list
     assert "mul" in llvm_fun_list
+
+    # By default functions should not be inlined in LLVM IR,
+    # the call of `add` function should be left in the `mul` function.
+    body = get_llvm_fun_body(llvm_file_path, "mul")
+    assert re.search(r"call.*@add", body) is not None
 
     # Function names should be in snapshot.yaml
     snapshot_yaml_path = os.path.join(output_dir, "snapshot.yaml")
@@ -94,3 +111,17 @@ def test_make_based_with_linking(tmp_path):
     assert "file.so.llw" in os.listdir(MAKE_BASED_PROJECT_DIR)
     db_file_content = get_db_file_content(output_dir)
     assert "file.so.llw" in db_file_content
+
+
+def test_build_no_opt_override(tmp_path):
+    """Testing 'build' --no-opt-override argument."""
+    output_dir = tmp_path
+    args = Arguments(MAKE_BASED_PROJECT_DIR, output_dir, no_opt_override=True)
+    build(args)
+
+    # With --no-opt-override the optimization level which is written
+    # in Makefile should be used, because it is -O2 the `add` function
+    # should not be called from the `mul` function` (should be "inlined").
+    llvm_file_path = os.path.join(output_dir, "file.ll")
+    body = get_llvm_fun_body(llvm_file_path, "mul")
+    assert re.search(r"call.*@add", body) is None
