@@ -122,6 +122,14 @@ class TestComparator : public DifferentialFunctionComparator {
         return cmpOperations(L, R, needToCmpOperands);
     }
 
+    int testCmpOperationsWithOperands(const Instruction *L,
+                                      const Instruction *R,
+                                      bool keepSN = false) {
+        if (!keepSN)
+            beginCompare();
+        return cmpOperationsWithOperands(L, R);
+    }
+
     int testCmpTypes(Type *TyL, Type *TyR, bool keepSN = false) {
         if (!keepSN)
             beginCompare();
@@ -502,6 +510,35 @@ TEST_F(DifferentialFunctionComparatorTest, CmpOperationsICmp) {
 
     ICmpL->eraseFromParent();
     ICmpR->eraseFromParent();
+}
+
+// Tests that an inverse icmp instruction is only considered inverse when
+// the types match.
+TEST_F(DifferentialFunctionComparatorTest, CmpOperationsWithOpDiffTypes) {
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    auto ConstL = ConstantInt::get(Type::getInt32Ty(CtxL), 2);
+    auto AddL = BinaryOperator::Create(
+            BinaryOperator::Add, ConstL, ConstL, "", BBL);
+    auto CondL = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_EQ,
+                                  AddL,
+                                  AddL,
+                                  "",
+                                  BBL);
+
+    auto ConstR = ConstantInt::get(Type::getInt64Ty(CtxR), 2);
+    auto AddR = BinaryOperator::Create(
+            BinaryOperator::Add, ConstR, ConstR, "", BBR);
+    auto CondR = ICmpInst::Create(llvm::Instruction::ICmp,
+                                  llvm::CmpInst::ICMP_NE,
+                                  AddR,
+                                  AddR,
+                                  "",
+                                  BBR);
+
+    ASSERT_NE(DiffComp->testCmpOperationsWithOperands(CondL, CondR), 0);
 }
 
 /// Tests specific comparison of allocas of a structure type whose layout
