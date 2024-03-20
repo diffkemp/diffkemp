@@ -377,9 +377,13 @@ int DifferentialFunctionComparator::cmpOperations(
             auto CmpL = dyn_cast<CmpInst>(L);
             auto CmpR = dyn_cast<CmpInst>(R);
 
+            // Only apply inverse condition pattern if the operands are of the
+            // same type, i.e. cmpOperations returned non-0 because of the
+            // values rather than the types.
             // It is sufficient to compare the predicates here since the
-            // operands are compared in cmpBasicBlocks.
-            if (CmpL->getPredicate() == CmpR->getInversePredicate()) {
+            // values of operands are compared in cmpBasicBlocks.
+            if (cmpOperandTypes(CmpL, CmpR) == 0
+                && CmpL->getPredicate() == CmpR->getInversePredicate()) {
                 if (checkInverseCondUsers(L) && checkInverseCondUsers(R)) {
                     PREP_LOG("inv-cond-add", L, R);
                     LOG_KEEP_FORCE(0);
@@ -1851,6 +1855,18 @@ int DifferentialFunctionComparator::cmpOperationsWithOperands(
         }
     }
     RETURN_WITH_LOG(0);
+}
+
+int DifferentialFunctionComparator::cmpOperandTypes(
+        const llvm::Instruction *L, const llvm::Instruction *R) const {
+    if (int Res = cmpNumbers(L->getNumOperands(), R->getNumOperands()))
+        return Res;
+    for (unsigned i = 0, e = L->getNumOperands(); i != e; ++i) {
+        if (int Res = cmpTypes(L->getOperand(i)->getType(),
+                               R->getOperand(i)->getType()))
+            return Res;
+    }
+    return 0;
 }
 
 /// Try to find a syntax difference that could be causing the semantic
