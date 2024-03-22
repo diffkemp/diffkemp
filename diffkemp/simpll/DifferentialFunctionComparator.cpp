@@ -1991,14 +1991,13 @@ bool DifferentialFunctionComparator::findMatchingOpWithOffset(
             while (isDebugInfo(*end))
                 end--;
             Reloc.end = end;
-            Reloc.status = RelocationInfo::Stored;
-            Reloc.prog = prog_to_search;
-            Reloc.tryInlineBackup = tryInlineBackup;
-
             // Make sure that the first equal instruction is not depending on
             // the relocation
             if (isDependingOnReloc(*MovedInst))
                 return false;
+            Reloc.status = RelocationInfo::Stored;
+            Reloc.prog = prog_to_search;
+            Reloc.tryInlineBackup = tryInlineBackup;
 
             LOG("Possible relocation found:\n"
                 << "    from: " << *Reloc.begin << "\n"
