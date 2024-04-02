@@ -131,6 +131,8 @@ def build_c_project(args):
     # Create the snapshot directory containing the YAML description file
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
+    # Removing the tmp dir with diffkemp-wdb file
+    shutil.rmtree(tmpdir)
 
 
 def build_c_file(args):
