@@ -119,12 +119,15 @@ def wrapper(argv):
     linking_with_sources = False
     output_file = None
     linking = "-c" not in argv
+    # Check if arguments contains C source file
+    contains_source = False
     for index, arg in enumerate(argv):
         if arg in drop:
             continue
         is_object_file = (arg.endswith(".o") or arg.endswith(".lo") or
                           arg.endswith(".ko"))
         is_source_file = arg.endswith(".c")
+        contains_source = contains_source or is_source_file
         if index > 1 and argv[index - 1] == "-o":
             if is_object_file and not linking:
                 # Compiling to object file: swap .o with .ll
@@ -156,6 +159,10 @@ def wrapper(argv):
 
     # Do not run clang on conftest files
     if output_file in ["conftest.ll", "conftest.llw"] or "conftest.c" in argv:
+        return 0
+
+    # Not compiling C source file
+    if not linking and not contains_source:
         return 0
 
     # Record file in database
