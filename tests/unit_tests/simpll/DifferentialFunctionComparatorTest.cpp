@@ -23,6 +23,7 @@
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/IntrinsicInst.h>
+#include <memory>
 #include <passes/StructureDebugInfoAnalysis.h>
 #include <passes/StructureSizeAnalysis.h>
 
@@ -170,8 +171,8 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
   public:
     // Modules used for testing.
     LLVMContext CtxL, CtxR;
-    Module ModL{"left", CtxL};
-    Module ModR{"right", CtxR};
+    std::unique_ptr<Module> ModL = std::make_unique<Module>("left", CtxL);
+    std::unique_ptr<Module> ModR = std::make_unique<Module>("right", CtxR);
 
     // Functions to be tested.
     Function *FL, *FR;
@@ -203,20 +204,20 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
                 FunctionType::get(Type::getVoidTy(CtxL), {}, false),
                 GlobalValue::ExternalLinkage,
                 "F",
-                &ModL);
+                ModL.get());
         FR = Function::Create(
                 FunctionType::get(Type::getVoidTy(CtxR), {}, false),
                 GlobalValue::ExternalLinkage,
                 "F",
-                &ModR);
+                ModR.get());
 
         // Create the DebugInfo object and a ModuleComparator.
         // Note: DifferentialFunctionComparator cannot function without
         // ModuleComparator and DebugInfo.
         DbgInfo = std::make_unique<DebugInfo>(
-                ModL, ModR, FL, FR, CalledFirst, CalledSecond, Conf.Patterns);
-        ModComp = std::make_unique<ModuleComparator>(ModL,
-                                                     ModR,
+                *ModL, *ModR, FL, FR, CalledFirst, CalledSecond, Conf.Patterns);
+        ModComp = std::make_unique<ModuleComparator>(*ModL,
+                                                     *ModR,
                                                      Conf,
                                                      DbgInfo.get(),
                                                      StructSizeMapL,
@@ -248,7 +249,7 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
                                DIMacroNodeArray DMacArrL = {},
                                DIMacroNodeArray DMacArrR = {}) {
 
-        DIBuilder builderL(ModL);
+        DIBuilder builderL(*ModL);
         DIFile *DScoL = builderL.createFile("test", "test");
         DICompileUnit *DCUL =
                 builderL.createCompileUnit(0, DScoL, "test", false, "", 0);
@@ -256,7 +257,7 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
                 DCUL, "test", "test", DScoL, 1, nullptr, 1);
         builderL.finalizeSubprogram(DSubL);
 
-        DIBuilder builderR(ModR);
+        DIBuilder builderR(*ModR);
         DIFile *DScoR = builderR.createFile("test", "test");
         DICompileUnit *DCUR =
                 builderR.createCompileUnit(0, DScoR, "test", false, "", 0);
@@ -276,10 +277,10 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
         // comparison is done.
         // To ensure this a pair of auxilliary functions containing a call to
         // the functions is added, along with their locations.
-        if (auto OldFun = ModL.getFunction(auxFunName)) {
+        if (auto OldFun = ModL->getFunction(auxFunName)) {
             OldFun->eraseFromParent();
         }
-        if (auto OldFun = ModR.getFunction(auxFunName)) {
+        if (auto OldFun = ModR->getFunction(auxFunName)) {
             OldFun->eraseFromParent();
         }
 
@@ -287,12 +288,12 @@ class DifferentialFunctionComparatorTest : public ::testing::Test {
                 FunctionType::get(Type::getVoidTy(CtxL), {}, false),
                 GlobalValue::ExternalLinkage,
                 auxFunName,
-                &ModL);
+                ModL.get());
         Function *AuxFR = Function::Create(
                 FunctionType::get(Type::getVoidTy(CtxR), {}, false),
                 GlobalValue::ExternalLinkage,
                 auxFunName,
-                &ModR);
+                ModR.get());
         BasicBlock *BBL = BasicBlock::Create(CtxL, "", AuxFL);
         BasicBlock *BBR = BasicBlock::Create(CtxR, "", AuxFR);
 
@@ -487,13 +488,13 @@ TEST_F(DifferentialFunctionComparatorTest, CmpOperationsICmp) {
     BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
 
     GlobalVariable *GVL =
-            new GlobalVariable(ModL,
+            new GlobalVariable(*ModL,
                                Type::getInt8Ty(CtxL),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxL), 6));
     GlobalVariable *GVR =
-            new GlobalVariable(ModR,
+            new GlobalVariable(*ModR,
                                Type::getInt8Ty(CtxR),
                                true,
                                GlobalValue::ExternalLinkage,
@@ -573,14 +574,14 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
                               false),
             GlobalValue::ExternalLinkage,
             "AuxFL",
-            &ModL);
+            ModL.get());
     Function *AuxFR = Function::Create(
             FunctionType::get(PointerType::get(Type::getVoidTy(CtxR), 0),
                               {Type::getInt32Ty(CtxR)},
                               false),
             GlobalValue::ExternalLinkage,
             "AuxFR",
-            &ModR);
+            ModR.get());
 
     BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
     BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
@@ -600,8 +601,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
                              BBR);
 
     // Create calls to llvm.dbg.value with type metadata.
-    DIBuilder builderL(ModL);
-    DIBuilder builderR(ModR);
+    DIBuilder builderL(*ModL);
+    DIBuilder builderR(*ModR);
     DIFile *UnitL = builderL.createFile("foo", "bar");
     DIFile *UnitR = builderL.createFile("foo", "bar");
     DIBasicType *PointeeTypeL = builderL.createNullPtrType();
@@ -630,8 +631,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
                                            Type::getInt8Ty(CtxR),
                                            Type::getInt8Ty(CtxR)});
     STyR->setName("struct.test");
-    uint64_t STyLSize = ModL.getDataLayout().getTypeStoreSize(STyL);
-    uint64_t STyRSize = ModR.getDataLayout().getTypeStoreSize(STyR);
+    uint64_t STyLSize = ModL->getDataLayout().getTypeStoreSize(STyL);
+    uint64_t STyRSize = ModR->getDataLayout().getTypeStoreSize(STyR);
     CL = CallInst::Create(AuxFL->getFunctionType(),
                           AuxFL,
                           {ConstantInt::get(Type::getInt32Ty(CtxL), STyLSize)},
@@ -691,7 +692,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
                                             Type::getInt8Ty(CtxR),
                                             Type::getInt8Ty(CtxR)});
     STyR2->setName("struct.test2");
-    uint64_t STyR2Size = ModR.getDataLayout().getTypeStoreSize(STyR2);
+    uint64_t STyR2Size = ModR->getDataLayout().getTypeStoreSize(STyR2);
     CR = CallInst::Create(AuxFR->getFunctionType(),
                           AuxFR,
                           {ConstantInt::get(Type::getInt32Ty(CtxR), STyR2Size)},
@@ -729,7 +730,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
                               false),
             GlobalValue::ExternalLinkage,
             "AuxFL",
-            &ModL);
+            ModL.get());
     Function *AuxFR = Function::Create(
             FunctionType::get(PointerType::get(Type::getVoidTy(CtxR), 0),
                               {PointerType::get(Type::getVoidTy(CtxR), 0),
@@ -738,7 +739,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
                               false),
             GlobalValue::ExternalLinkage,
             "AuxFR",
-            &ModR);
+            ModR.get());
 
     BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
     BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
@@ -751,8 +752,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
                                            Type::getInt8Ty(CtxR),
                                            Type::getInt8Ty(CtxR)});
     STyR->setName("struct.test");
-    uint64_t STyLSize = ModL.getDataLayout().getTypeStoreSize(STyL);
-    uint64_t STyRSize = ModR.getDataLayout().getTypeStoreSize(STyR);
+    uint64_t STyLSize = ModL->getDataLayout().getTypeStoreSize(STyL);
+    uint64_t STyRSize = ModR->getDataLayout().getTypeStoreSize(STyR);
     AllocaInst *AllL = new AllocaInst(STyL, 0, "var", BBL);
     AllocaInst *AllR = new AllocaInst(STyR, 0, "var", BBR);
 
@@ -775,8 +776,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
             BBR);
 
     // Create calls to llvm.dbg.value with type metadata.
-    DIBuilder builderL(ModL);
-    DIBuilder builderR(ModR);
+    DIBuilder builderL(*ModL);
+    DIBuilder builderR(*ModR);
     DIFile *UnitL = builderL.createFile("foo", "bar");
     DIFile *UnitR = builderL.createFile("foo", "bar");
     auto Int8TypeL =
@@ -848,13 +849,13 @@ TEST_F(DifferentialFunctionComparatorTest, CmpCallsWithExtraArg) {
                               false),
             GlobalValue::ExternalLinkage,
             "AuxFL",
-            &ModL);
+            ModL.get());
     Function *AuxFR = Function::Create(
             FunctionType::get(
                     Type::getVoidTy(CtxR), {Type::getInt32Ty(CtxR)}, false),
             GlobalValue::ExternalLinkage,
             "AuxFR",
-            &ModR);
+            ModR.get());
 
     BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
     BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
@@ -951,13 +952,13 @@ TEST_F(DifferentialFunctionComparatorTest, CmpBasicBlocksInlining) {
                     Type::getVoidTy(CtxL), {Type::getInt32Ty(CtxR)}, false),
             GlobalValue::ExternalLinkage,
             "AuxFL",
-            &ModL);
+            ModL.get());
     Function *AuxFR = Function::Create(
             FunctionType::get(
                     Type::getVoidTy(CtxR), {Type::getInt32Ty(CtxR)}, false),
             GlobalValue::ExternalLinkage,
             "AuxFR",
-            &ModR);
+            ModR.get());
 
     // Test inlining on the left.
     CallInst *CL = CallInst::Create(AuxFL->getFunctionType(), AuxFL, "", RetL);
@@ -1021,19 +1022,19 @@ TEST_F(DifferentialFunctionComparatorTest, CmpBasicBlocksIgnore) {
 /// Tests the comparison of constant global variables using cmpGlobalValues.
 TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesConstGlobalVars) {
     GlobalVariable *GVL1 =
-            new GlobalVariable(ModL,
+            new GlobalVariable(*ModL,
                                Type::getInt8Ty(CtxL),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxL), 6));
     GlobalVariable *GVR1 =
-            new GlobalVariable(ModR,
+            new GlobalVariable(*ModR,
                                Type::getInt8Ty(CtxR),
                                true,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxR), 6));
     GlobalVariable *GVR2 =
-            new GlobalVariable(ModR,
+            new GlobalVariable(*ModR,
                                Type::getInt8Ty(CtxR),
                                true,
                                GlobalValue::ExternalLinkage,
@@ -1046,21 +1047,21 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesConstGlobalVars) {
 /// Tests the comparison of non-constant global variables using cmpGlobalValues.
 TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesNonConstGlobalVars) {
     GlobalVariable *GVL1 =
-            new GlobalVariable(ModL,
+            new GlobalVariable(*ModL,
                                Type::getInt8Ty(CtxL),
                                false,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxL), 6),
                                "test.0");
     GlobalVariable *GVR1 =
-            new GlobalVariable(ModR,
+            new GlobalVariable(*ModR,
                                Type::getInt8Ty(CtxR),
                                false,
                                GlobalValue::ExternalLinkage,
                                ConstantInt::get(Type::getInt32Ty(CtxR), 6),
                                "test.1");
     GlobalVariable *GVR2 =
-            new GlobalVariable(ModR,
+            new GlobalVariable(*ModR,
                                Type::getInt8Ty(CtxR),
                                false,
                                GlobalValue::ExternalLinkage,
@@ -1078,12 +1079,12 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFunctions) {
             FunctionType::get(Type::getVoidTy(CtxL), {}, false),
             GlobalValue::ExternalLinkage,
             "Aux",
-            &ModL);
+            ModL.get());
     Function *AuxFR = Function::Create(
             FunctionType::get(Type::getVoidTy(CtxR), {}, false),
             GlobalValue::ExternalLinkage,
             "Aux",
-            &ModR);
+            ModR.get());
     ASSERT_EQ(testFunctionComparison(AuxFL, AuxFR), 0);
     ASSERT_NE(ModComp->ComparedFuns.find({AuxFL, AuxFR}),
               ModComp->ComparedFuns.end());
@@ -1094,12 +1095,12 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFunctions) {
             FunctionType::get(Type::getVoidTy(CtxL), {}, false),
             GlobalValue::ExternalLinkage,
             "printk",
-            &ModL);
+            ModL.get());
     AuxFR = Function::Create(
             FunctionType::get(Type::getVoidTy(CtxR), {}, false),
             GlobalValue::ExternalLinkage,
             "printk",
-            &ModR);
+            ModR.get());
     ASSERT_EQ(testFunctionComparison(AuxFL, AuxFR), 0);
     ASSERT_EQ(ModComp->ComparedFuns.find({AuxFL, AuxFR}),
               ModComp->ComparedFuns.end());
@@ -1109,13 +1110,13 @@ TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesFunctions) {
 /// using cmpGlobalValues (they should be added to the list of missing
 /// definitions).
 TEST_F(DifferentialFunctionComparatorTest, CmpGlobalValuesMissingDefs) {
-    GlobalVariable *GVL1 = new GlobalVariable(ModL,
+    GlobalVariable *GVL1 = new GlobalVariable(*ModL,
                                               Type::getInt8Ty(CtxL),
                                               true,
                                               GlobalValue::ExternalLinkage,
                                               nullptr);
     GVL1->setName("missing");
-    GlobalVariable *GVR1 = new GlobalVariable(ModR,
+    GlobalVariable *GVR1 = new GlobalVariable(*ModR,
                                               Type::getInt8Ty(CtxR),
                                               true,
                                               GlobalValue::ExternalLinkage,
@@ -1970,9 +1971,9 @@ TEST_F(DifferentialFunctionComparatorTest, GetCSourceIdentifierType) {
             FunctionType::get(Type::getVoidTy(CtxL), {}, false),
             GlobalValue::ExternalLinkage,
             "Aux",
-            &ModL);
+            ModL.get());
     Constant *Val = ConstantInt::get(Type::getInt16Ty(CtxL), 0);
-    DIBuilder Builder(ModL);
+    DIBuilder Builder(*ModL);
     DIBasicType *BasicType =
             Builder.createBasicType("int16_t", 16, dwarf::DW_ATE_signed);
 
@@ -1983,7 +1984,7 @@ TEST_F(DifferentialFunctionComparatorTest, GetCSourceIdentifierType) {
     ASSERT_EQ(ResType, BasicType);
 
     // Global variable, test correct type and debuginfo type
-    GlobalVariable *GVar = new GlobalVariable(ModL,
+    GlobalVariable *GVar = new GlobalVariable(*ModL,
                                               Val->getType(),
                                               true,
                                               GlobalValue::ExternalLinkage,
@@ -1997,7 +1998,7 @@ TEST_F(DifferentialFunctionComparatorTest, GetCSourceIdentifierType) {
 
     // Dereference of a global variable, test correct debuginfo type
     PointerType *PtrType = PointerType::get(Val->getType(), 0);
-    GlobalVariable *GVarPtr = new GlobalVariable(ModL,
+    GlobalVariable *GVarPtr = new GlobalVariable(*ModL,
                                                  PtrType,
                                                  true,
                                                  GlobalValue::ExternalLinkage,
