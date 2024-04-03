@@ -602,14 +602,16 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     // Create calls to llvm.dbg.value with type metadata.
     DIBuilder builderL(ModL);
     DIBuilder builderR(ModR);
+    DIFile *UnitL = builderL.createFile("foo", "bar");
+    DIFile *UnitR = builderL.createFile("foo", "bar");
     DIBasicType *PointeeTypeL = builderL.createNullPtrType();
     DIBasicType *PointeeTypeR = builderR.createNullPtrType();
     DIDerivedType *PointerTypeL = builderL.createPointerType(PointeeTypeL, 64);
     DIDerivedType *PointerTypeR = builderR.createPointerType(PointeeTypeR, 64);
-    DILocalVariable *varL = builderL.createAutoVariable(
-            nullptr, "var", nullptr, 0, PointerTypeL);
-    DILocalVariable *varR = builderR.createAutoVariable(
-            nullptr, "var", nullptr, 0, PointerTypeR);
+    DILocalVariable *varL =
+            builderL.createAutoVariable(UnitL, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR =
+            builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
     DIExpression *exprL = builderL.createExpression();
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
@@ -674,10 +676,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     // Create calls to llvm.dbg.value with type metadata.
     PointerTypeL = builderL.createPointerType(StructTypeL, 64);
     PointerTypeR = builderR.createPointerType(StructTypeR, 64);
-    varL = builderL.createAutoVariable(
-            nullptr, "var", nullptr, 0, PointerTypeL);
-    varR = builderR.createAutoVariable(
-            nullptr, "var", nullptr, 0, PointerTypeR);
+    varL = builderL.createAutoVariable(UnitL, "var", nullptr, 0, PointerTypeL);
+    varR = builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
     exprL = builderL.createExpression();
     exprR = builderR.createExpression();
     locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
@@ -713,8 +713,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
             nullptr,
             builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
     PointerTypeR = builderR.createPointerType(StructTypeR, 64);
-    varR = builderR.createAutoVariable(
-            nullptr, "var", nullptr, 0, PointerTypeR);
+    varR = builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
     builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 1);
 }
@@ -778,6 +777,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
     // Create calls to llvm.dbg.value with type metadata.
     DIBuilder builderL(ModL);
     DIBuilder builderR(ModR);
+    DIFile *UnitL = builderL.createFile("foo", "bar");
+    DIFile *UnitR = builderL.createFile("foo", "bar");
     auto Int8TypeL =
             builderL.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
     auto Int8TypeR =
@@ -804,10 +805,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
             builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
     auto PointerTypeL = builderL.createPointerType(StructTypeL, 64);
     auto PointerTypeR = builderR.createPointerType(StructTypeR, 64);
-    DILocalVariable *varL = builderL.createAutoVariable(
-            nullptr, "var", nullptr, 0, PointerTypeL);
-    DILocalVariable *varR = builderR.createAutoVariable(
-            nullptr, "var", nullptr, 0, PointerTypeR);
+    DILocalVariable *varL =
+            builderL.createAutoVariable(UnitL, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR =
+            builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
     DIExpression *exprL = builderL.createExpression();
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
