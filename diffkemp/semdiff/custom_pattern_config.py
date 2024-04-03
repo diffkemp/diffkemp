@@ -122,7 +122,7 @@ class CustomPatternConfig:
             # files with opaque pointers are not accepted when using
             # LLVM 15 without manually enabling opaque pointers.
             call_opt = get_opt_command([("verify", "module")], path, False)
-            if get_llvm_version() >= 15:
+            if 17 > get_llvm_version() >= 15:
                 call_opt.append("-opaque-pointers=1")
             check_call(call_opt, stdout=DEVNULL)
         except CalledProcessError:
