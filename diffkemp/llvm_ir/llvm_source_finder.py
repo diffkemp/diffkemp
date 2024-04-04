@@ -18,6 +18,7 @@ class LlvmSourceFinder(ABC):
     Abstract class for finding LLVM files in a source tree.
     Defines methods that each LLVM source finder must implement.
     """
+
     def __init__(self, source_dir):
         self.source_dir = os.path.abspath(source_dir)
 

@@ -13,6 +13,7 @@ class KernelSourceTree(SourceTree):
     by implementing methods to get LLVM modules containing definitions of
     sysctl options or kernel modules.
     """
+
     def __init__(self, source_dir, source_finder):
         SourceTree.__init__(self, source_dir, source_finder)
 

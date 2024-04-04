@@ -130,6 +130,7 @@ class Result:
         or a parameter.
         If it is a function, it contains the file of the function.
         """
+
         def __init__(self, name, filename=None, line=None, callstack=None,
                      diff_kind="function", covered=False):
             self.name = name

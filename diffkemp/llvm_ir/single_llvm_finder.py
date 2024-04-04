@@ -12,6 +12,7 @@ class SingleLlvmFinder(LlvmSourceFinder):
     LLVM IR file.
     Extends the LlvmSourceFinder class by always returning the single IR file.
     """
+
     def __init__(self, source_dir, llvm_file_name):
         LlvmSourceFinder.__init__(self, source_dir)
         self.llvm_file_name = llvm_file_name

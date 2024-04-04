@@ -30,6 +30,7 @@ def _stringarray_to_list(ptrarray):
 
 class SimpLLModule:
     """Represents a Module class in LLVM."""
+
     def __init__(self, path):
         self.pointer = lib.loadModule(ffi.new("char []", path.encode("ascii")))
         if self.pointer == ffi.NULL:
@@ -86,6 +87,7 @@ class SimpLLModule:
 
 class SimpLLFunction:
     """Represents a Function class in LLVM."""
+
     def __init__(self, module, pointer):
         self.module = module
         self.pointer = pointer

@@ -34,6 +34,7 @@ class LlvmParam:
     The indices correspond to the indices used in LLVM GEP instruction to get
     the address of the particular element within the given variable.
     """
+
     def __init__(self, name, indices=None):
         self.name = name
         self.indices = indices
@@ -46,6 +47,7 @@ class LlvmModule:
     """
     Representation of a module in LLVM IR
     """
+
     def __init__(self, llvm_file, source_file=None):
         self.llvm = llvm_file
         self.source = source_file
