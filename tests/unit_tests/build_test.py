@@ -7,11 +7,13 @@ import yaml
 
 SINGLE_C_FILE = os.path.abspath("tests/testing_projects/make_based/file.c")
 MAKE_BASED_PROJECT_DIR = os.path.abspath("tests/testing_projects/make_based")
+# File which build of make based project uses to save names of compiled files.
+BUILD_DB_FILE_NAME = "diffkemp-wdb"
 
 
 class Arguments:
     """Class for creating args for testing of build function."""
-    def __init__(self, source_dir, output_dir):
+    def __init__(self, source_dir, output_dir, target=[]):
         self.source_dir = source_dir
         self.output_dir = output_dir
         # Required/used by build_c_project
@@ -22,9 +24,16 @@ class Arguments:
         self.clang_append = []
         self.clang_drop = []
         self.llvm_link = "llvm-link"
-        self.target = []
+        self.target = target
         self.reconfigure = False
         self.no_native_cc_wrapper = False
+
+
+def get_db_file_content(snapshot_dir):
+    """Return content of db file from snapshot_dir."""
+    db_file_path = os.path.join(snapshot_dir, BUILD_DB_FILE_NAME)
+    with open(db_file_path) as db_file:
+        return db_file.read()
 
 
 @pytest.mark.parametrize("source",
@@ -55,3 +64,19 @@ def test_build_command(source, tmp_path):
     function_list = [function["name"] for function in snapshot_yaml[0]["list"]]
     assert "add" in function_list
     assert "mul" in function_list
+
+
+def test_make_based_with_assembly(tmp_path):
+    """Testing behaviour of cc_wrapper for assembly files."""
+    output_dir = str(tmp_path)
+    args = Arguments(MAKE_BASED_PROJECT_DIR, output_dir,
+                     target=["with-assembly"])
+    build(args)
+    # .s, .S files should not be compiled to .ll
+    src_dir_files = os.listdir(MAKE_BASED_PROJECT_DIR)
+    assert "mod.ll" not in src_dir_files
+    assert "sub.ll" not in src_dir_files
+    # and they should not be added to db file
+    db_file_content = get_db_file_content(output_dir)
+    assert "mod.ll" not in db_file_content
+    assert "sub.ll" not in db_file_content
