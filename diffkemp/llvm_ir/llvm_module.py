@@ -61,7 +61,7 @@ class LlvmModule:
     def clean_module(self):
         """Free the parsed LLVM module."""
         if self.llvm_module is not None:
-            del self.llvm_module
+            self.llvm_module = None
 
     @staticmethod
     def clean_all():
