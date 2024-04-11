@@ -1,0 +1,10 @@
+on_parse_failure: ERROR
+patterns:
+ - tests/regression/custom_patterns/c/rhel-81-82/__alloc_pages_nodemask.pattern.c
+ - tests/regression/custom_patterns/c/rhel-81-82/__put_task_struct.pattern.c
+ - tests/regression/custom_patterns/c/rhel-81-82/__stack_chk_fail.pattern.c
+ - tests/regression/custom_patterns/c/rhel-81-82/blk_mq_end_request.pattern.c
+ - tests/regression/custom_patterns/c/rhel-81-82/down_read.pattern.c
+clang_append:
+  tests/regression/custom_patterns/c/rhel-81-82/blk_mq_end_request.pattern.c:
+    - -O0

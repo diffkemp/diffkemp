@@ -115,6 +115,9 @@ kernel/
 # Difference patterns directories
 custom_patterns/
 !tests/regression/custom_patterns**
+tests/regression/custom_patterns/c**/*.ll
+tests/regression/custom_patterns/c**/*.old
+tests/regression/custom_patterns/c**/*.new
 
 # LLReve tool
 llreve/

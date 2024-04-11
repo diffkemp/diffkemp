@@ -1,0 +1,7 @@
+#include <linux/sched/jobctl.h>
+
+#define JOBCTL_PENDING_MASK_82 (JOBCTL_STOP_PENDING | JOBCTL_TRAP_MASK)
+
+VALUE_PATTERN(jobctl_stop_pending,
+              JOBCTL_PENDING_MASK_82 | JOBCTL_TRAP_FREEZE,
+              JOBCTL_PENDING_MASK | JOBCTL_TRAP_FREEZE);

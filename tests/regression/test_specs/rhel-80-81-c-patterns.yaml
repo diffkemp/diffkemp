@@ -1,0 +1,19 @@
+old_kernel: kernel/linux-4.18.0-80.el8
+new_kernel: kernel/linux-4.18.0-147.el8
+
+custom_pattern_config:
+  explicit: rhel-80-81-config-c.yaml
+  opaque: rhel-80-81-config-c.yaml
+
+functions:
+  ipmi_set_gets_events: equal
+  vfree: equal
+  scnprintf: equal
+
+syntax_diffs:
+  - function: set_user_nice
+    equal_symbol: dequeue_task
+  - function: set_user_nice
+    equal_symbol: enqueue_task
+  - function: zap_vma_ptes
+    equal_symbol: SWP_OFFSET_MASK
