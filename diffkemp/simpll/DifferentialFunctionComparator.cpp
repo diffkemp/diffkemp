@@ -1662,6 +1662,13 @@ int DifferentialFunctionComparator::cmpCallsWithExtraArg(
     return 1;
 }
 
+bool DifferentialFunctionComparator::isUnionTy(const Type *Ty) {
+    if (auto StrTy = dyn_cast<StructType>(Ty)) {
+        return StrTy->getStructName().startswith("union");
+    }
+    return false;
+}
+
 /// Specific comparison of unions, integer, and array types when specific
 /// semantic patterns are allowed.
 int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
@@ -1671,12 +1678,11 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
     // size.
     // Note: a union type is represented in Clang-generated LLVM IR by a
     // structure type.
-    if (config.Patterns.StructAlignment
-        && (L->isStructTy() || R->isStructTy())) {
+    if (config.Patterns.StructAlignment && (isUnionTy(L) || isUnionTy(R))) {
         Type *Ty;
         StructType *StrTy;
         const DataLayout *TyLayout, *StrTyLayout;
-        if (L->isStructTy()) {
+        if (isUnionTy(L)) {
             StrTy = dyn_cast<StructType>(L);
             Ty = R;
             StrTyLayout = &LayoutL;
@@ -1688,9 +1694,8 @@ int DifferentialFunctionComparator::cmpTypes(Type *L, Type *R) const {
             TyLayout = &LayoutL;
         }
 
-        if (StrTy->getStructName().startswith("union")
-            && (StrTyLayout->getTypeAllocSize(StrTy)
-                >= TyLayout->getTypeAllocSize(Ty))) {
+        if ((StrTyLayout->getTypeAllocSize(StrTy)
+             >= TyLayout->getTypeAllocSize(Ty))) {
             RETURN_WITH_LOG_NEQ(0);
         }
     }
