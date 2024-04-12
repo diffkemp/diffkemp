@@ -88,6 +88,8 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Such calls are compared as equal if they only differ in the last
     /// argument which is 0 or NULL.
     int cmpCallsWithExtraArg(const CallInst *CL, const CallInst *CR) const;
+    /// Checks whether the given type is a union.
+    static bool isUnionTy(const Type *Ty);
     /// Compares array types with equivalent element types and all integer types
     /// as equal when comparing the control flow only.
     int cmpTypes(Type *L, Type *R) const override;
