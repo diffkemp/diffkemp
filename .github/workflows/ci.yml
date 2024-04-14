@@ -19,13 +19,13 @@ jobs:
   cache-kernels:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: DeterminateSystems/nix-installer-action@v4
-      - uses: DeterminateSystems/magic-nix-cache-action@v2
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v10
+      - uses: DeterminateSystems/magic-nix-cache-action@v4
 
       - name: Cache Linux Kernels
         id: kernel-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/kernel
           key: kernels-${{ env.KERNELS }}
@@ -54,9 +54,9 @@ jobs:
   nix-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: DeterminateSystems/nix-installer-action@v4
-      - uses: DeterminateSystems/magic-nix-cache-action@v2
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v10
+      - uses: DeterminateSystems/magic-nix-cache-action@v4
       - name: Build using nix
         run: nix build
       - name: Run built Diffkemp
@@ -91,9 +91,9 @@ jobs:
             regression-tests: false
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: DeterminateSystems/nix-installer-action@v4
-      - uses: DeterminateSystems/magic-nix-cache-action@v2
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v10
+      - uses: DeterminateSystems/magic-nix-cache-action@v4
 
       - name: Delete unused software
         # This is necessary for running CScope database build as it takes
@@ -105,7 +105,7 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL
 
       - name: Restore Kernels
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         if: matrix.regression-tests
         with:
           path: ${{ github.workspace }}/kernel
@@ -139,7 +139,7 @@ jobs:
   cc-wrapper-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Pip3 backup
         run: python3 -m pip install pip -U
       - name: RPython installation
@@ -152,10 +152,10 @@ jobs:
   code-style:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
@@ -180,20 +180,20 @@ jobs:
       matrix:
         node: [14.x, 16.x, 18.x, 20.x]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup Node ${{ matrix.node }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node }}
     - name: Install dependencies and cache them
-      uses: cypress-io/github-action@v5
+      uses: cypress-io/github-action@v6
       with:
         runTests: false
         working-directory: view
     - name: Run RTL tests
       run: npm test --prefix view
     - name: Run Cypress tests
-      uses: cypress-io/github-action@v5
+      uses: cypress-io/github-action@v6
       with:
         install: false
         component: true
