@@ -158,14 +158,11 @@ int InstPatternComparator::cmpInputValues(const Value *ModVal,
     return 0;
 }
 
-#if LLVM_VERSION_MAJOR >= 13
-/// Always compare attributes as equal when using LLVM 13 (necessary due to a
-/// probable bug in LLVM 13).
+/// Always compare attributes as equal.
 int InstPatternComparator::cmpAttrs(const AttributeList /* ModAttrs */,
                                     const AttributeList /* PatAttrs */) const {
     return 0;
 }
-#endif
 
 /// Compare a module GEP operation with a pattern GEP operation. The
 /// implementation is extended to support a name-based comparison of structure

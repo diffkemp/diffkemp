@@ -8,7 +8,7 @@ custom_pattern_config:
 functions:
   __stack_chk_fail: equal
   blk_mq_end_request: equal
-  # down_read: equal # currently not supported, requires SMT pattern matching
+  down_read: equal # currently not supported, requires SMT pattern matching
 
 syntax_diffs:
   - function: __alloc_pages_nodemask
