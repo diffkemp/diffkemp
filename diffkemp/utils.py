@@ -1,6 +1,7 @@
 import os
 import subprocess
 import re
+import sys
 
 LLVM_FUNCTION_REGEX = re.compile(r"^define.*@(\w+)\(", flags=re.MULTILINE)
 
@@ -87,7 +88,7 @@ def get_functions_from_llvm(llvm_files):
     functions = {}
     for llvm_filename in llvm_files:
         if not os.path.exists(llvm_filename):
-            os.stderr.write(
+            sys.stderr.write(
                 f"Warning: llvm file '{llvm_filename}' does not exist\n")
             continue
         with open(llvm_filename, 'r') as llvm_file:
