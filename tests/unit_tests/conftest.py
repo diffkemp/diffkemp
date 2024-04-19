@@ -39,7 +39,7 @@ def graph():
     )
     # Non-function differences
     g["do_check"].nonfun_diffs.append(ComparisonGraph.SyntaxDiff(
-        "MACRO", "do_check",
+        "macro", "MACRO", "do_check",
         dup([
             {"function": "_MACRO (macro)", "file": "test.c", "line": 1},
             {"function": "__MACRO (macro)", "file": "test.c", "line": 2},

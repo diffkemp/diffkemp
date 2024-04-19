@@ -67,6 +67,23 @@ template <> struct MappingTraits<FunctionInfo> {
 } // namespace yaml
 } // namespace llvm
 
+// SyntaxDifference::SyntaxKind to YAML
+namespace llvm {
+namespace yaml {
+template <> struct ScalarEnumerationTraits<SyntaxDifference::Kind> {
+    static void enumeration(IO &io, SyntaxDifference::Kind &kind) {
+        io.enumCase(kind, "macro", SyntaxDifference::Kind::MACRO);
+        io.enumCase(
+                kind, "macro-function", SyntaxDifference::Kind::MACRO_FUNCTION);
+        io.enumCase(
+                kind, "function-macro", SyntaxDifference::Kind::FUNCTION_MACRO);
+        io.enumCase(kind, "assembly", SyntaxDifference::Kind::ASSEMBLY);
+        io.enumCase(kind, "unknown", SyntaxDifference::Kind::UNKNOWN);
+    }
+};
+} // namespace yaml
+} // namespace llvm
+
 // NonFunctionDifference (stored in unique_ptr) to YAML
 namespace llvm {
 namespace yaml {
@@ -78,6 +95,7 @@ template <> struct MappingTraits<std::unique_ptr<NonFunctionDifference>> {
         io.mapRequired("stack-second", diff->StackR);
 
         if (auto syntaxDiff = unique_dyn_cast<SyntaxDifference>(diff)) {
+            io.mapOptional("kind", syntaxDiff->syntaxKind);
             io.mapOptional("body-first", syntaxDiff->BodyL);
             io.mapOptional("body-second", syntaxDiff->BodyR);
         } else if (auto typeDiff = unique_dyn_cast<TypeDifference>(diff)) {

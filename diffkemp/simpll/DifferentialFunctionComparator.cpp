@@ -459,6 +459,9 @@ void DifferentialFunctionComparator::findMacroFunctionDifference(
 
         std::unique_ptr<SyntaxDifference> diff =
                 std::make_unique<SyntaxDifference>();
+        diff->syntaxKind = (NameL == trueName)
+                                   ? SyntaxDifference::Kind::FUNCTION_MACRO
+                                   : SyntaxDifference::Kind::MACRO_FUNCTION;
         diff->function = L->getFunction()->getName().str();
         diff->name = trueName;
         diff->BodyL = "[macro function difference]";
@@ -1232,6 +1235,7 @@ std::vector<std::unique_ptr<SyntaxDifference>>
     // Note: the call stack is left empty here, it will be added in reportOutput
     std::unique_ptr<SyntaxDifference> diff =
             std::make_unique<SyntaxDifference>();
+    diff->syntaxKind = SyntaxDifference::Kind::ASSEMBLY;
     diff->BodyL = AsmL.str() + " (args: " + argumentNamesL + ")";
     diff->BodyR = AsmR.str() + " (args: " + argumentNamesR + ")";
     diff->StackL = CallStack();
