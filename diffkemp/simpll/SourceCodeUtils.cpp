@@ -300,6 +300,7 @@ std::vector<std::unique_ptr<SyntaxDifference>>
             };
 
             result.push_back(std::make_unique<SyntaxDifference>(
+                    SyntaxDifference::Kind::MACRO,
                     MacroUseL.second.def->name,
                     MacroUseL.second.def->body.str(),
                     MacroUseR->second.def->body.str(),

@@ -209,10 +209,25 @@ class ComparisonGraph:
     class SyntaxDiff(NonFunDiff):
         """
         A syntax difference.
-
-        Note: body is a tuple containing the values for both modules.
+        :param kind: The kind of difference: 'macro', 'assembly',
+            'function-macro', 'macro-function', 'unknown'.
+        :param name: Name of an 'object' (eg. macro) in the first module in
+            which was found difference. In case of inline assembly difference
+            the name starts with "assembly code " followed by a number.
+        :param parent_fun: Name of vertex in which was the syntax diff found.
+        :param callstack: Tuple (call stack in first module, second one),
+            both call stacks are list containing calls, where each
+            call is dict with keys `file`, `line`, `weak`, `function`.
+            The `function` contains the name of called 'object',
+            in the case of macro it has extension " (macro)".
+            If the call is called from another macro then `line` does not
+            represent the line at which is the call called
+            but the line where the definition of the caller starts.
+        :param body: A tuple containing the body of the 'object' for both
+            modules.
         """
-        def __init__(self, name, parent_fun, callstack, body):
+        def __init__(self, kind, name, parent_fun, callstack, body):
+            self.kind = kind
             self.name = name
             self.parent_fun = parent_fun
             self.callstack = callstack
@@ -222,6 +237,7 @@ class ComparisonGraph:
         def from_yaml(cls, nonfun_diff):
             """Generates a SyntaxDiff object from YAML returned by SimpLL."""
             return cls(
+                nonfun_diff["kind"],
                 nonfun_diff["name"],
                 nonfun_diff["function"],
                 (nonfun_diff["stack-first"], nonfun_diff["stack-second"]),
