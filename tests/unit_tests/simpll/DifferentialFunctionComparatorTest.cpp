@@ -2697,6 +2697,8 @@ TEST_F(DifferentialFunctionComparatorSMTTest, SMTReorderedThreeInst) {
 TEST_F(DifferentialFunctionComparatorSMTTest, SMTFPSimple) {
     // Floating point SMT-solving suffers from exponential blow up, keep it
     // simple -- just do a redundant addition of 0.0
+    // Extend the timeout, this may take a longer than the other tests
+    Conf.SMTTimeout = 10000;
 
     // Left program:
     // %1 = fadd 2.0, 0.0
