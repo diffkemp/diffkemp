@@ -66,6 +66,19 @@
               pipInstallPhase
               install -m 0755 bin/diffkemp $out/bin/diffkemp
             '';
+
+            postFixup = ''
+              # Adding runtime dependencies to the PATH when running DiffKemp
+              wrapProgram $out/bin/diffkemp --prefix PATH : ${lib.makeBinPath [
+                llvmPackages.clangNoLibcxx
+                llvmPackages.libllvm.dev
+                llvmPackages.libllvm
+                diffutils
+                cscope
+                gnumake
+                gcc
+              ]}
+            '';
           };
 
       mkDiffkempDevShell =
