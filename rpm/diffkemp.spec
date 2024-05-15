@@ -1,5 +1,5 @@
 Name:           diffkemp
-Version:        0.5.0
+Version:        0.6.0
 Release:        1%{?dist}
 Summary:        A tool for analyzing semantic differences in C projects
 
@@ -75,6 +75,16 @@ pathfix.py -pni "%{__python3} %{py3_shbang_opts}" %{buildroot}%{_bindir}/diffkem
 
 
 %changelog
+* Wed May 15 2024 Viktor Malik <vmalik@redhat.com> - 0.6.0-1
+- Allow creating snapshots from a single C source file
+- Add extended analysis statistics
+- New pattern for matching reordered binary operations
+- New pattern for variable grouping
+- Nix flakes support for building and development
+- Unification of applied optimizations for various build commands
+- Fix comparison of PHI nodes and union types
+- Support for LLVM 17
+
 * Mon Sep 04 2023 Viktor Malik <vmalik@redhat.com> - 0.5.0-1
 - New web-based viewer of found differences
 - CLI options for built-in patterns
