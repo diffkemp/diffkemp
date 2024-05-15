@@ -17,7 +17,7 @@
           with pkgs;
           python3Packages.buildPythonPackage {
             pname = "diffkemp";
-            version = "0.5.0";
+            version = "0.6.0";
 
             src = self;
 
