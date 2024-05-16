@@ -77,6 +77,15 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// Specific comparison of attribute lists.
     /// Attributes that do not affect the semantics of functions are removed.
     int cmpAttrs(const AttributeList L, const AttributeList R) const override;
+    // Specific comparison of instruction metadata used for load instructions.
+    // Metadata should not have effect on instruction semantics so we ignore it.
+    // Older versions of LLVM only compared 'range' metadata.
+#if LLVM_VERSION_MAJOR >= 17
+    int cmpInstMetadata(Instruction const *L,
+                        Instruction const *R) const override;
+#else
+    int cmpRangeMetadata(const MDNode *L, const MDNode *R) const override;
+#endif
     /// Compare CallInsts using cmpAllocs.
     int cmpOperations(const Instruction *L,
                       const Instruction *R,
