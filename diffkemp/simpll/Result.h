@@ -24,6 +24,22 @@
 
 using namespace llvm;
 
+/// Type for storing information about code location of an 'object'
+/// (eg. location of a function or a macro definition).
+struct CodeLocation {
+    // Name of the 'object'.
+    std::string name;
+    // Line in the file.
+    unsigned line;
+    // A C source file name.
+    std::string file;
+    CodeLocation() = default;
+    CodeLocation(const std::string &name,
+                 unsigned line,
+                 const std::string &file)
+            : name(name), line(line), file(file) {}
+};
+
 /// Encapsulates statistics about analysis of a single function.
 struct FunctionStats {
     unsigned instCnt = 0;
@@ -55,10 +71,7 @@ typedef std::vector<CallInfo> CallStack;
 /// Type for information about a single function. Contains the function name,
 /// definition location (file and line), and a list of called functions (in the
 /// form of a set of CallInfo objects).
-struct FunctionInfo {
-    std::string name;
-    std::string file;
-    int line;
+struct FunctionInfo : public CodeLocation {
     FunctionStats stats;
     std::set<CallInfo> calls;
 
@@ -67,9 +80,9 @@ struct FunctionInfo {
     FunctionInfo() {}
     FunctionInfo(const std::string &name,
                  const std::string &file,
-                 int line,
+                 unsigned line,
                  std::set<CallInfo> calls = {})
-            : name(name), file(file), line(line), calls(std::move(calls)) {}
+            : CodeLocation(name, line, file), calls(std::move(calls)) {}
 
     /// Add a new function call.
     /// @param Callee Called function.
@@ -77,20 +90,6 @@ struct FunctionInfo {
     void addCall(const Function *Callee, int l) {
         calls.insert(CallInfo(Callee->getName().str(), file, l));
     }
-};
-
-/// Type for storing information about code location of an 'object'
-/// (eg. location of macro definition).
-struct CodeLocation {
-    // Name of the 'object'.
-    std::string name;
-    // Line in the sourceFile.
-    unsigned line;
-    // A C source file name.
-    std::string sourceFile;
-    CodeLocation() = default;
-    CodeLocation(std::string name, unsigned line, std::string sourceFile)
-            : name(name), line(line), sourceFile(sourceFile) {}
 };
 
 /// Generic type for non-function differences.

@@ -74,7 +74,7 @@ namespace yaml {
 template <> struct MappingTraits<std::unique_ptr<CodeLocation>> {
     static void mapping(IO &io, std::unique_ptr<CodeLocation> &loc) {
         io.mapRequired("name", loc->name);
-        io.mapRequired("file", loc->sourceFile);
+        io.mapRequired("file", loc->file);
         io.mapRequired("line", loc->line);
     }
 };
