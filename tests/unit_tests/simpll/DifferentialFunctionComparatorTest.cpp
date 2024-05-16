@@ -12,308 +12,266 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include <Config.h>
-#include <CustomPatternSet.h>
-#include <DebugInfo.h>
-#include <DifferentialFunctionComparator.h>
-#include <ModuleComparator.h>
-#include <ResultsCache.h>
-#include <Utils.h>
-#include <gtest/gtest.h>
+#include "DifferentialFunctionComparatorTest.h"
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/DebugInfoMetadata.h>
-#include <llvm/IR/IntrinsicInst.h>
-#include <memory>
-#include <passes/StructureDebugInfoAnalysis.h>
-#include <passes/StructureSizeAnalysis.h>
 
-/// This class is used to expose protected functions in
+/// Methods of TestComparator used to expose protected methods in
 /// DifferentialFunctionComparator.
-class TestComparator : public DifferentialFunctionComparator {
-  public:
-    TestComparator(const Function *F1,
-                   const Function *F2,
-                   const Config &config,
-                   const DebugInfo *DI,
-                   const CustomPatternSet *PS,
-                   ModuleComparator *MC)
-            : DifferentialFunctionComparator(F1, F2, config, DI, PS, MC) {}
-    int testCompareSignature(bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return compareSignature();
-    }
 
-    int testCmpAttrs(const AttributeList L,
-                     const AttributeList R,
-                     bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpAttrs(L, R);
-    }
+int TestComparator::testCompareSignature(bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return compareSignature();
+}
 
-    int testCmpAllocs(const CallInst *CL,
-                      const CallInst *CR,
-                      bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpAllocs(CL, CR);
-    }
+int TestComparator::testCmpAttrs(const AttributeList L,
+                                 const AttributeList R,
+                                 bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpAttrs(L, R);
+}
 
-    int testCmpConstants(const Constant *CL,
-                         const Constant *CR,
-                         bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpConstants(CL, CR);
-    }
+int TestComparator::testCmpAllocs(const CallInst *CL,
+                                  const CallInst *CR,
+                                  bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpAllocs(CL, CR);
+}
 
-    int testCmpMemset(const CallInst *CL,
-                      const CallInst *CR,
-                      bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpMemset(CL, CR);
-    }
+int TestComparator::testCmpConstants(const Constant *CL,
+                                     const Constant *CR,
+                                     bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpConstants(CL, CR);
+}
 
-    int testCmpCallsWithExtraArg(const CallInst *CL,
-                                 const CallInst *CR,
-                                 bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpCallsWithExtraArg(CL, CR);
-    }
+int TestComparator::testCmpMemset(const CallInst *CL,
+                                  const CallInst *CR,
+                                  bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpMemset(CL, CR);
+}
 
-    int testCmpBasicBlocks(BasicBlock *BBL,
-                           BasicBlock *BBR,
-                           bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpBasicBlocks(BBL, BBR);
-    }
+int TestComparator::testCmpCallsWithExtraArg(const CallInst *CL,
+                                             const CallInst *CR,
+                                             bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpCallsWithExtraArg(CL, CR);
+}
 
-    int testCmpGEPs(const GEPOperator *GEPL,
-                    const GEPOperator *GEPR,
-                    bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpGEPs(GEPL, GEPR);
-    }
+int TestComparator::testCmpBasicBlocks(BasicBlock *BBL,
+                                       BasicBlock *BBR,
+                                       bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpBasicBlocks(BBL, BBR);
+}
 
-    int testCmpGlobalValues(GlobalValue *L,
-                            GlobalValue *R,
-                            bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpGlobalValues(L, R);
-    }
+int TestComparator::testCmpGEPs(const GEPOperator *GEPL,
+                                const GEPOperator *GEPR,
+                                bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpGEPs(GEPL, GEPR);
+}
 
-    int testCmpValues(const Value *L, const Value *R, bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpValues(L, R);
-    }
+int TestComparator::testCmpGlobalValues(GlobalValue *L,
+                                        GlobalValue *R,
+                                        bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpGlobalValues(L, R);
+}
 
-    int testCmpOperations(const Instruction *L,
-                          const Instruction *R,
-                          bool &needToCmpOperands,
-                          bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpOperations(L, R, needToCmpOperands);
-    }
+int TestComparator::testCmpValues(const Value *L, const Value *R, bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpValues(L, R);
+}
 
-    int testCmpOperationsWithOperands(const Instruction *L,
+int TestComparator::testCmpOperations(const Instruction *L,
                                       const Instruction *R,
-                                      bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpOperationsWithOperands(L, R);
-    }
+                                      bool &needToCmpOperands,
+                                      bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpOperations(L, R, needToCmpOperands);
+}
 
-    int testCmpTypes(Type *TyL, Type *TyR, bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpTypes(TyL, TyR);
-    }
+int TestComparator::testCmpOperationsWithOperands(const Instruction *L,
+                                                  const Instruction *R,
+                                                  bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpOperationsWithOperands(L, R);
+}
 
-    int testCmpFieldAccess(BasicBlock::const_iterator &InstL,
-                           BasicBlock::const_iterator &InstR,
-                           bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpFieldAccess(InstL, InstR);
-    }
+int TestComparator::testCmpTypes(Type *TyL, Type *TyR, bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpTypes(TyL, TyR);
+}
 
-    int testCmpPHIs(PHINode *PhiL, PHINode *PhiR, bool keepSN = false) {
-        if (!keepSN)
-            beginCompare();
-        return cmpPHIs(PhiL, PhiR);
-    }
+int TestComparator::testCmpFieldAccess(BasicBlock::const_iterator &InstL,
+                                       BasicBlock::const_iterator &InstR,
+                                       bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpFieldAccess(InstL, InstR);
+}
 
-    void setLeftSerialNumber(const Value *Val, int i) { sn_mapL[Val] = i; }
+int TestComparator::testCmpPHIs(PHINode *PhiL, PHINode *PhiR, bool keepSN) {
+    if (!keepSN)
+        beginCompare();
+    return cmpPHIs(PhiL, PhiR);
+}
 
-    void setRightSerialNumber(const Value *Val, int i) { sn_mapR[Val] = i; }
+void TestComparator::setLeftSerialNumber(const Value *Val, int i) {
+    sn_mapL[Val] = i;
+}
 
-    size_t getLeftSnMapSize() { return sn_mapL.size(); }
-    size_t getRightSnMapSize() { return sn_mapR.size(); }
+void TestComparator::setRightSerialNumber(const Value *Val, int i) {
+    sn_mapR[Val] = i;
+}
 
-    /// Extend the set of custom patterns.
-    void addCustomPatternSet(const CustomPatternSet *PatternSet) {
-        CustomPatternComp.addPatternSet(PatternSet, FnL, FnR);
-    }
-};
+size_t TestComparator::getLeftSnMapSize() { return sn_mapL.size(); }
+size_t TestComparator::getRightSnMapSize() { return sn_mapR.size(); }
 
-/// Test fixture providing contexts, modules, functions, a Config object,
-/// a ModuleComparator, a TestComparator and debug metadata for the tests in
-/// this file.
-class DifferentialFunctionComparatorTest : public ::testing::Test {
-  public:
-    // Modules used for testing.
-    LLVMContext CtxL, CtxR;
-    std::unique_ptr<Module> ModL = std::make_unique<Module>("left", CtxL);
-    std::unique_ptr<Module> ModR = std::make_unique<Module>("right", CtxR);
+/// Extend the set of custom patterns.
+void TestComparator::addCustomPatternSet(const CustomPatternSet *PatternSet) {
+    CustomPatternComp.addPatternSet(PatternSet, FnL, FnR);
+}
 
-    // Functions to be tested.
-    Function *FL, *FR;
+/// Methods of DifferentialFunctionComparatorTest fixture used for setup of
+/// unit tests.
 
-    // Objects necessary to create a DifferentialFunctionComparator.
-    Config Conf{"F", "F", "", ""};
-    std::set<const Function *> CalledFirst;
-    std::set<const Function *> CalledSecond;
-    ResultsCache Cache{""};
-    StructureSizeAnalysis::Result StructSizeMapL;
-    StructureSizeAnalysis::Result StructSizeMapR;
-    StructureDebugInfoAnalysis::Result StructDIMapL;
-    StructureDebugInfoAnalysis::Result StructDIMapR;
-    // Note: DbgInfo depends on FL and FR, ModComp depends on DbgInfo; therefore
-    // both objects need to be created in the constructor;
-    std::unique_ptr<DebugInfo> DbgInfo;
-    std::unique_ptr<ModuleComparator> ModComp;
+/// Initialise functions to be tested (FL, FR)
+/// and prepares DifferentialFunctionComparator.
+DifferentialFunctionComparatorTest::DifferentialFunctionComparatorTest()
+        : ::testing::Test() {
+    // Create one function in each module for testing purposes.
+    FL = Function::Create(FunctionType::get(Type::getVoidTy(CtxL), {}, false),
+                          GlobalValue::ExternalLinkage,
+                          "F",
+                          ModL.get());
+    FR = Function::Create(FunctionType::get(Type::getVoidTy(CtxR), {}, false),
+                          GlobalValue::ExternalLinkage,
+                          "F",
+                          ModR.get());
+    prepareDFC();
+}
 
-    // TestComparator is used to expose otherwise protected functions.
-    std::unique_ptr<TestComparator> DiffComp;
-
-    // Debug metadata is used mainly for checking the detection of macros
-    // and types.
-    DISubprogram *DSubL, *DSubR;
-
-    DifferentialFunctionComparatorTest() : ::testing::Test() {
-        // Create one function in each module for testing purposes.
-        FL = Function::Create(
-                FunctionType::get(Type::getVoidTy(CtxL), {}, false),
-                GlobalValue::ExternalLinkage,
-                "F",
-                ModL.get());
-        FR = Function::Create(
-                FunctionType::get(Type::getVoidTy(CtxR), {}, false),
-                GlobalValue::ExternalLinkage,
-                "F",
-                ModR.get());
-
-        // Create the DebugInfo object and a ModuleComparator.
-        // Note: DifferentialFunctionComparator cannot function without
-        // ModuleComparator and DebugInfo.
-        DbgInfo = std::make_unique<DebugInfo>(
-                *ModL, *ModR, FL, FR, CalledFirst, CalledSecond, Conf.Patterns);
-        ModComp = std::make_unique<ModuleComparator>(*ModL,
-                                                     *ModR,
-                                                     Conf,
-                                                     DbgInfo.get(),
-                                                     StructSizeMapL,
-                                                     StructSizeMapR,
-                                                     StructDIMapL,
-                                                     StructDIMapR);
-        // Add function pair to ComparedFuns.
-        // Note: even though ModuleComparator is not tested here,
-        // DifferentialFunctionComparator expects the presence of the key in
-        // the map, therefore it is necessary to do this here.
-        ModComp->ComparedFuns.emplace(std::make_pair(FL, FR), Result{});
-
-        // Generate debug metadata.
-        generateDebugMetadata();
-
-        // Finally create the comparator.
-        DiffComp =
-                std::make_unique<TestComparator>(FL,
-                                                 FR,
+/// Prepares DifferentialFunctionComparator.
+void DifferentialFunctionComparatorTest::prepareDFC() {
+    // Create the DebugInfo object and a ModuleComparator.
+    // Note: DifferentialFunctionComparator cannot function without
+    // ModuleComparator and DebugInfo.
+    DbgInfo = std::make_unique<DebugInfo>(
+            *ModL, *ModR, FL, FR, CalledFirst, CalledSecond, Conf.Patterns);
+    ModComp = std::make_unique<ModuleComparator>(*ModL,
+                                                 *ModR,
                                                  Conf,
                                                  DbgInfo.get(),
-                                                 &ModComp.get()->CustomPatterns,
-                                                 ModComp.get());
+                                                 StructSizeMapL,
+                                                 StructSizeMapR,
+                                                 StructDIMapL,
+                                                 StructDIMapR);
+    // Add function pair to ComparedFuns.
+    // Note: even though ModuleComparator is not tested here,
+    // DifferentialFunctionComparator expects the presence of the key in
+    // the map, therefore it is necessary to do this here.
+    ModComp->ComparedFuns.emplace(std::make_pair(FL, FR), Result{});
+
+    // Generate debug metadata.
+    generateDebugMetadata();
+
+    // Finally create the comparator.
+    DiffComp = std::make_unique<TestComparator>(FL,
+                                                FR,
+                                                Conf,
+                                                DbgInfo.get(),
+                                                &ModComp.get()->CustomPatterns,
+                                                ModComp.get());
+}
+
+/// Generates a file, compile unit and subprogram for each module.
+void DifferentialFunctionComparatorTest::generateDebugMetadata(
+        DICompositeTypeArray DTyArrL,
+        DICompositeTypeArray DTyArrR,
+        DIMacroNodeArray DMacArrL,
+        DIMacroNodeArray DMacArrR) {
+
+    DIBuilder builderL(*ModL);
+    DIFile *DScoL = builderL.createFile("test", "test");
+    DICompileUnit *DCUL =
+            builderL.createCompileUnit(0, DScoL, "test", false, "", 0);
+    DSubL = builderL.createFunction(DCUL, "test", "test", DScoL, 1, nullptr, 1);
+    builderL.finalizeSubprogram(DSubL);
+
+    DIBuilder builderR(*ModR);
+    DIFile *DScoR = builderR.createFile("test", "test");
+    DICompileUnit *DCUR =
+            builderR.createCompileUnit(0, DScoR, "test", false, "", 0);
+    DSubR = builderR.createFunction(DCUR, "test", "test", DScoR, 1, nullptr, 1);
+    builderL.finalizeSubprogram(DSubR);
+}
+
+/// Compares two functions using cmpGlobalValues called through
+/// cmpBasicBlocks on a pair of auxilliary basic blocks containing calls
+/// to the functions.
+int DifferentialFunctionComparatorTest::testFunctionComparison(Function *FunL,
+                                                               Function *FunR) {
+    const std::string auxFunName = "AuxFunComp";
+
+    // Testing function comparison is a little bit tricky, because for the
+    // callee generation the call location must be set at the time the
+    // comparison is done.
+    // To ensure this a pair of auxilliary functions containing a call to
+    // the functions is added, along with their locations.
+    if (auto OldFun = ModL->getFunction(auxFunName)) {
+        OldFun->eraseFromParent();
+    }
+    if (auto OldFun = ModR->getFunction(auxFunName)) {
+        OldFun->eraseFromParent();
     }
 
-    /// Generates a file, compile unit and subprogram for each module.
-    void generateDebugMetadata(DICompositeTypeArray DTyArrL = {},
-                               DICompositeTypeArray DTyArrR = {},
-                               DIMacroNodeArray DMacArrL = {},
-                               DIMacroNodeArray DMacArrR = {}) {
+    Function *AuxFL = Function::Create(
+            FunctionType::get(Type::getVoidTy(CtxL), {}, false),
+            GlobalValue::ExternalLinkage,
+            auxFunName,
+            ModL.get());
+    Function *AuxFR = Function::Create(
+            FunctionType::get(Type::getVoidTy(CtxR), {}, false),
+            GlobalValue::ExternalLinkage,
+            auxFunName,
+            ModR.get());
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", AuxFL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", AuxFR);
 
-        DIBuilder builderL(*ModL);
-        DIFile *DScoL = builderL.createFile("test", "test");
-        DICompileUnit *DCUL =
-                builderL.createCompileUnit(0, DScoL, "test", false, "", 0);
-        DSubL = builderL.createFunction(
-                DCUL, "test", "test", DScoL, 1, nullptr, 1);
-        builderL.finalizeSubprogram(DSubL);
+    CallInst *CL = CallInst::Create(FunL->getFunctionType(), FunL, "", BBL);
+    CallInst *CR = CallInst::Create(FunR->getFunctionType(), FunR, "", BBR);
 
-        DIBuilder builderR(*ModR);
-        DIFile *DScoR = builderR.createFile("test", "test");
-        DICompileUnit *DCUR =
-                builderR.createCompileUnit(0, DScoR, "test", false, "", 0);
-        DSubR = builderR.createFunction(
-                DCUR, "test", "test", DScoR, 1, nullptr, 1);
-        builderL.finalizeSubprogram(DSubR);
-    }
+    // Add debug info.
+    DILocation *DLocL = DILocation::get(CtxL, 1, 1, DSubL);
+    DILocation *DLocR = DILocation::get(CtxR, 1, 1, DSubR);
+    CL->setDebugLoc(DebugLoc{DLocL});
+    CR->setDebugLoc(DebugLoc{DLocR});
 
-    /// Compares two functions using cmpGlobalValues called through
-    /// cmpBasicBlocks on a pair of auxilliary basic blocks containing calls
-    /// to the functions.
-    int testFunctionComparison(Function *FunL, Function *FunR) {
-        const std::string auxFunName = "AuxFunComp";
+    // Finish the basic blocks with return instructions and return the
+    // result of cmpBasicBlocks.
+    ReturnInst::Create(CtxL, BBL);
+    ReturnInst::Create(CtxR, BBR);
 
-        // Testing function comparison is a little bit tricky, because for the
-        // callee generation the call location must be set at the time the
-        // comparison is done.
-        // To ensure this a pair of auxilliary functions containing a call to
-        // the functions is added, along with their locations.
-        if (auto OldFun = ModL->getFunction(auxFunName)) {
-            OldFun->eraseFromParent();
-        }
-        if (auto OldFun = ModR->getFunction(auxFunName)) {
-            OldFun->eraseFromParent();
-        }
+    return DiffComp->testCmpBasicBlocks(BBL, BBR);
+}
 
-        Function *AuxFL = Function::Create(
-                FunctionType::get(Type::getVoidTy(CtxL), {}, false),
-                GlobalValue::ExternalLinkage,
-                auxFunName,
-                ModL.get());
-        Function *AuxFR = Function::Create(
-                FunctionType::get(Type::getVoidTy(CtxR), {}, false),
-                GlobalValue::ExternalLinkage,
-                auxFunName,
-                ModR.get());
-        BasicBlock *BBL = BasicBlock::Create(CtxL, "", AuxFL);
-        BasicBlock *BBR = BasicBlock::Create(CtxR, "", AuxFR);
-
-        CallInst *CL = CallInst::Create(FunL->getFunctionType(), FunL, "", BBL);
-        CallInst *CR = CallInst::Create(FunR->getFunctionType(), FunR, "", BBR);
-
-        // Add debug info.
-        DILocation *DLocL = DILocation::get(CtxL, 1, 1, DSubL);
-        DILocation *DLocR = DILocation::get(CtxR, 1, 1, DSubR);
-        CL->setDebugLoc(DebugLoc{DLocL});
-        CR->setDebugLoc(DebugLoc{DLocR});
-
-        // Finish the basic blocks with return instructions and return the
-        // result of cmpBasicBlocks.
-        ReturnInst::Create(CtxL, BBL);
-        ReturnInst::Create(CtxR, BBR);
-
-        return DiffComp->testCmpBasicBlocks(BBL, BBR);
-    }
-};
+/// Unit tests
 
 /// Tests a comparison of two GEPs of a structure type with indices compared by
 /// value.
