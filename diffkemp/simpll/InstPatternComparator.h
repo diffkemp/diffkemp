@@ -69,6 +69,16 @@ class InstPatternComparator : protected FunctionComparator {
                  const AttributeList PatAttrs) const override;
 #endif
 
+    // Specific comparison of instruction metadata used for load instructions.
+    // Metadata should not have effect on instruction semantics so we ignore it.
+    // Older versions of LLVM only compared 'range' metadata.
+#if LLVM_VERSION_MAJOR >= 17
+    int cmpInstMetadata(Instruction const *L,
+                        Instruction const *R) const override;
+#else
+    int cmpRangeMetadata(const MDNode *L, const MDNode *R) const override;
+#endif
+
     /// Compare a module GEP operation with a pattern GEP operation.
     int cmpGEPs(const GEPOperator *ModGEP,
                 const GEPOperator *PatGEP) const override;

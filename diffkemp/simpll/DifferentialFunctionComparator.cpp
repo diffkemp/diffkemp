@@ -224,6 +224,19 @@ int DifferentialFunctionComparator::cmpAttrs(const AttributeList /*L*/,
     return 0;
 }
 
+// Ignore differences in metadata
+#if LLVM_VERSION_MAJOR >= 17
+int DifferentialFunctionComparator::cmpInstMetadata(Instruction const *,
+                                                    Instruction const *) const {
+    return 0;
+}
+#else
+int DifferentialFunctionComparator::cmpRangeMetadata(const MDNode *,
+                                                     const MDNode *) const {
+    return 0;
+}
+#endif
+
 /// Does additional operations in cases when a difference between two CallInsts
 /// or their arguments is detected.
 /// This consists of four parts:

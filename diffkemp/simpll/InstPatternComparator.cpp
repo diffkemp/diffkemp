@@ -167,6 +167,19 @@ int InstPatternComparator::cmpAttrs(const AttributeList /* ModAttrs */,
 }
 #endif
 
+// Ignore differences in metadata
+#if LLVM_VERSION_MAJOR >= 17
+int InstPatternComparator::cmpInstMetadata(Instruction const *,
+                                           Instruction const *) const {
+    return 0;
+}
+#else
+int InstPatternComparator::cmpRangeMetadata(const MDNode *,
+                                            const MDNode *) const {
+    return 0;
+}
+#endif
+
 /// Compare a module GEP operation with a pattern GEP operation. The
 /// implementation is extended to support a name-based comparison of structure
 /// types.
