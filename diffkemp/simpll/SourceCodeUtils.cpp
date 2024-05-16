@@ -93,7 +93,7 @@ void MacroDiffAnalysis::collectMacroUsesAtLocation(
                                                ? parentMacroUse->def->line
                                                : Loc->getLine();
                     newMacroUse.sourceFile =
-                            parentMacroUse ? parentMacroUse->def->sourceFile
+                            parentMacroUse ? parentMacroUse->def->file
                                            : getSourceFilePath(Loc->getScope());
 
                     // Retrieve macro arguments
@@ -375,7 +375,7 @@ void MacroDiffAnalysis::collectMacroDefs(DICompileUnit *CompileUnit) {
                 element.name = macroName;
                 element.fullName = Macro->getName().str();
                 element.body = Macro->getValue();
-                element.sourceFile = MF->getFile()->getFilename().str();
+                element.file = MF->getFile()->getFilename().str();
                 element.line = Macro->getLine();
 
                 if (element.fullName.find('(') != std::string::npos) {
