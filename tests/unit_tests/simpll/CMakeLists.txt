@@ -28,7 +28,7 @@ include_directories(${CMAKE_SOURCE_DIR}/diffkemp/simpll)
 
 file(GLOB pass_tests passes/*.cpp)
 add_executable(runTests SimpLLTest.cpp DifferentialFunctionComparatorTest.cpp
-               FieldAccessUtilsTest.cpp ${pass_tests})
+               FieldAccessUtilsTest.cpp DFCLlvmIrTest.cpp ${pass_tests})
 
 exec_program(llvm-config ARGS --libs irreader passes support OUTPUT_VARIABLE llvm_libs)
 exec_program(llvm-config ARGS --system-libs OUTPUT_VARIABLE system_libs)
