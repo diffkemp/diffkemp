@@ -598,3 +598,480 @@ TEST_F(DFCLlvmIrTest, ReorganizedLocalVariables) {
     CREATE_FROM_LLVM(left, right);
     ASSERT_EQ(DiffComp->compare(), 0);
 }
+
+/// Tests a comparison of two GEPs of a structure type with indices compared by
+/// value.
+TEST_F(DFCLlvmIrTest, CmpGepsSimple) {
+    auto left = R"(
+        %struct.s = type { i8, i16 }
+        define void @f() {
+            %var = alloca %struct.s
+            %gep1 = getelementptr %struct.s, %struct.s* %var, i32 0, i32 0
+            %gep2 = getelementptr %struct.s, %struct.s* %var, i32 0, i32 0
+            ret void
+        }
+    )";
+    auto right = R"(
+        %struct.s = type { i8, i16 }
+        define void @f() {
+            %var = alloca %struct.s
+            ; same
+            %gep1 = getelementptr %struct.s, %struct.s* %var, i32 0, i32 0
+            ; different
+            %gep2 = getelementptr %struct.s, %struct.s* %var, i32 0, i32 1
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    ASSERT_EQ(testCmpGEPs("gep1"), 0);
+    ASSERT_EQ(testCmpGEPs("gep2"), 1);
+}
+
+/// Tests a comparison of two GEPs of different array types that don't go into
+/// its elements (therefore the type difference should be ignored).
+TEST_F(DFCLlvmIrTest, CmpGepsArray) {
+    auto left = R"(define void @f() {
+        %var = alloca [2 x i8]
+        %gep1 = getelementptr [2 x i8], [2 x i8]* %var, i32 0
+        %gep2 = getelementptr [2 x i8], [2 x i8]* %var, i32 0
+        ret void
+    })";
+    auto right = R"(define void @f() {
+        %var = alloca [3 x i16] ; different array type
+        %gep1 = getelementptr [3 x i16], [3 x i16]* %var, i32 0 ; same element
+        %gep2 = getelementptr [3 x i16], [3 x i16]* %var, i32 1 ; different
+        ret void
+    })";
+    CREATE_FROM_LLVM(left, right);
+
+    ASSERT_EQ(testCmpGEPs("gep1"), 0);
+    ASSERT_EQ(testCmpGEPs("gep2"), -1);
+}
+
+/// Tests specific comparison of intermediate comparison operations in cases
+/// when the signedness differs when ignoring type casts.
+TEST_F(DFCLlvmIrTest, CmpOperationsICmp) {
+    bool needToCmpOperands;
+    auto left = R"(
+        @gv = constant i8 6
+        define void @f() {
+            %1 = load i8, i8* @gv
+            %icmp = icmp ugt i8 %1, %1
+            ret void
+        }
+    )";
+    auto right = R"(
+        @gv = constant i8 6
+        define void @f() {
+            %1 = load i8, i8* @gv
+            %icmp = icmp sgt i8 %1, %1
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    ASSERT_EQ(testCmpOperations("icmp", needToCmpOperands), -1);
+    Conf.Patterns.TypeCasts = true;
+    ASSERT_EQ(testCmpOperations("icmp", needToCmpOperands), 0);
+}
+
+// Tests that an inverse icmp instruction is only considered inverse when
+// the types match.
+TEST_F(DFCLlvmIrTest, CmpOperationsWithOpDiffTypes) {
+    auto left = R"(define void @f() {
+        %1 = add i32 2, 2
+        %cond = icmp eq i32 %1, %1
+        ret void
+    })";
+    auto right = R"(define void @f() {
+        %1 = add i64 2, 2 ; <-- i64 instead of i32
+        %cond = icmp ne i64 %1, %1
+        ret void
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_NE(testCmpOperationsWithOperands("cond"), 0);
+}
+
+/// Tests specific comparison of allocas of a structure type whose layout
+/// changed.
+TEST_F(DFCLlvmIrTest, CmpOperationsAllocas) {
+    bool needToCmpOperands;
+    auto left = R"(
+        %struct.s = type { i8, i8 }
+        define void @f() {
+            %var = alloca %struct.s
+            ret void
+        }
+    )";
+    auto right = R"(
+        %struct.s = type { i8, i8, i8 } ; <-- added field
+        define void @f() {
+            %var = alloca %struct.s
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(testCmpOperations("var", needToCmpOperands), 0);
+}
+
+/// Tests comparing calls with an extra argument.
+TEST_F(DFCLlvmIrTest, CmpCallsWithExtraArg) {
+    auto left = R"(
+        declare i32 @aux(i32, i32) ; called function with extra argument
+        define void @f() {
+            %call1 = call i32 @aux(i32 5, i32 6) ; additional param is not zero
+            %call2 = call i32 @aux(i32 5, i32 0) ; additional param is zero
+            ret void
+        }
+    )";
+    auto right = R"(
+        declare i32 @aux(i32)
+        define void @f() {
+            %call1 = call i32 @aux(i32 5)
+            %call2 = call i32 @aux(i32 5)
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(testCmpCallsWithExtraArg("call1"), 1);
+    ASSERT_EQ(testCmpCallsWithExtraArg("call2"), 0);
+}
+
+/// Tests whether calls are properly marked for inlining while comparing
+/// basic blocks.
+TEST_F(DFCLlvmIrTest, CmpBasicBlocksInliningLeft) {
+    auto left = R"(
+        declare void @aux(i32) ; auxilary function for inlining
+        define void @f(){
+            call void @aux(i32 0)
+            ret void
+        }
+    )";
+    auto right = R"(
+        define void @f(){
+            %var = alloca i8
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    testCmpEntryBasicBlocks();
+    // aux function in the left module should be marked for inlining
+    auto tryInline = ModComp->tryInline;
+    ASSERT_EQ(tryInline.first->getCalledFunction()->getName(), "aux");
+    ASSERT_EQ(tryInline.second, nullptr);
+}
+
+TEST_F(DFCLlvmIrTest, CmpBasicBlocksInliningRight) {
+    auto left = R"(
+        define void @f(){
+            %var = alloca i8
+            ret void
+        }
+    )";
+    auto right = R"(
+        declare void @aux(i32) ; auxilary function for inlining
+        define void @f(){
+            call void @aux(i32 0)
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    testCmpEntryBasicBlocks();
+    // aux function in the right module should be marked for inlining
+    auto tryInline = ModComp->tryInline;
+    ASSERT_EQ(tryInline.first, nullptr);
+    ASSERT_EQ(tryInline.second->getCalledFunction()->getName(), "aux");
+}
+
+TEST_F(DFCLlvmIrTest, CmpBasicBlocksInliningBoth) {
+    auto left = R"(
+        declare void @aux(i32)
+        define void @f(){
+            call void @aux(i32 5)
+            ret void
+        }
+    )";
+    auto right = R"(
+        declare void @aux(i32)
+        define void @f(){
+            call void @aux(i32 6) ; calling function with a different argument
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    testCmpEntryBasicBlocks();
+    // aux function in both modules should be marked for inlining
+    auto tryInline = ModComp->tryInline;
+    ASSERT_EQ(tryInline.first->getCalledFunction()->getName(), "aux");
+    ASSERT_EQ(tryInline.second->getCalledFunction()->getName(), "aux");
+}
+
+/// Tests ignoring of instructions that don't cause a semantic difference in
+/// cmpBasicBlocks.
+/// Note: the functioning of mayIgnore is tested in the test for cmpValues.
+TEST_F(DFCLlvmIrTest, CmpBasicBlocksIgnore) {
+    auto left = R"(define void @f() {
+        %var = alloca i8
+        ret void
+    })";
+    auto right = R"(define void @f() {
+        %var1 = alloca i8
+        %var2 = alloca i8 ; <-- additional alloca instruction
+        ret void
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(testCmpEntryBasicBlocks(), 0);
+    // Swapped functions
+    CREATE_FROM_LLVM(right, left);
+    ASSERT_EQ(testCmpEntryBasicBlocks(), 0);
+}
+
+/// Tests ignoring of pointer casts using cmpBasicBlocks and cmpValues.
+TEST_F(DFCLlvmIrTest, CmpValuesPointerCastsLeft) {
+    auto left = R"(define void @f() {
+        %ptr = inttoptr i32 0 to i8*
+        %cast = bitcast i8* %ptr to i32*
+        ret void
+    })";
+    auto right = R"(define void @f() {
+        %ptr = inttoptr i32 0 to i8*
+        ret void
+    })";
+    CREATE_FROM_LLVM(left, right);
+
+    // First, cmpBasicBlocks must be run to identify instructions to ignore
+    // and then, cmpValues should ignore those instructions.
+    testCmpEntryBasicBlocks();
+    ASSERT_EQ(testCmpInstValues("ptr", "ptr", true), 0);
+    ASSERT_EQ(testCmpInstValues("cast", "ptr", true), 0);
+}
+
+TEST_F(DFCLlvmIrTest, CmpValuesPointerCastsRight) {
+    auto left = R"(define void @f() {
+        %ptr = inttoptr i32 0 to i8*
+        ret void
+    })";
+    auto right = R"(define void @f() {
+        %ptr = inttoptr i32 0 to i8*
+        %cast = bitcast i8* %ptr to i32*
+        ret void
+    })";
+    CREATE_FROM_LLVM(left, right);
+
+    // First, cmpBasicBlocks must be run to identify instructions to ignore
+    // and then, cmpValues should ignore those instructions.
+    testCmpEntryBasicBlocks();
+    ASSERT_EQ(testCmpInstValues("ptr", "ptr", true), 0);
+    ASSERT_EQ(testCmpInstValues("ptr", "cast", true), 0);
+}
+
+/// Tests comparison of field access operations with the same offset.
+TEST_F(DFCLlvmIrTest, CmpFieldAccessSameOffset) {
+    auto left = R"(
+        %struct.s2 = type { i8, %struct.s }
+        %struct.s = type { i8, i8 }
+        define void @f() {
+            %1 = alloca %struct.s2
+            ; getting the second field of struct.s
+            %2 = getelementptr inbounds %struct.s2, %struct.s2* %1, i32 0, i32 1
+            %3 = getelementptr inbounds %struct.s, %struct.s* %2, i32 0, i32 1
+            ret void
+        }
+    )";
+    auto right = R"(
+        %struct.s2 = type { i8, %struct.s }
+        %struct.s = type { i8, %union.u } ; <-- second field changed to union
+        %union.u = type { i8 }
+        define void @f() {
+            %1 = alloca %struct.s2
+            ; getting the second field of struct.s (it is union here)
+            %2 = getelementptr inbounds %struct.s2, %struct.s2* %1, i32 0, i32 1
+            %3 = getelementptr inbounds %struct.s, %struct.s* %2, i32 0, i32 1
+            %4 = bitcast %union.u* %3 to i8* ; casting union back to inner type
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    // Check if the field accesses are compared correctly and the instruction
+    // iterators are at the correct place.
+    BasicBlock::const_iterator InstL = FL->getEntryBlock().begin();
+    InstL++;
+    BasicBlock::const_iterator InstR = FR->getEntryBlock().begin();
+    InstR++;
+
+    ASSERT_EQ(DiffComp->testCmpFieldAccess(InstL, InstR), 0);
+    // The iterators should point to the instructions following the field access
+    // operations if they are equal (which is the terminator of the basic
+    // block).
+    ASSERT_EQ(&*InstL, FL->getEntryBlock().getTerminator());
+    ASSERT_EQ(&*InstR, FR->getEntryBlock().getTerminator());
+}
+
+/// Tests comparison of field access operations with a different offset.
+TEST_F(DFCLlvmIrTest, CmpFieldAccessDifferentOffset) {
+    auto left = R"(
+        %struct.s = type { i8, i8 }
+        define void @f() {
+            %alloca = alloca %struct.s
+            ; first field is accessed
+            %gep = getelementptr %struct.s, %struct.s* %alloca, i32 0, i32 0
+            ret void
+        }
+    )";
+    auto right = R"(
+        %struct.s = type { i8, %union.u } ; <-- second field changed to union
+        %union.u = type { i8 }
+        define void @f() {
+            %alloca = alloca %struct.s
+            ; second field is accessed
+            %gep = getelementptr %struct.s, %struct.s* %alloca, i32 0, i32 1
+            %cast = bitcast %union.u* %gep to i8*
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    // Check if the field accesses are compared correctly and the instruction
+    // iterators are at the correct place.
+    BasicBlock::const_iterator InstL = FL->getEntryBlock().begin();
+    InstL++;
+    BasicBlock::const_iterator InstR = FR->getEntryBlock().begin();
+    InstR++;
+
+    ASSERT_EQ(DiffComp->testCmpFieldAccess(InstL, InstR), 1);
+    // The iterators should point to the beginning of the field access
+    // operations if they are not equal.
+    ASSERT_EQ(&*InstL, getInstByName(*FL, "gep"));
+    ASSERT_EQ(&*InstR, getInstByName(*FR, "gep"));
+}
+
+/// Tests comparison of field access operations where one ends with a bitcast
+/// of a different value than the previous instruction.
+TEST_F(DFCLlvmIrTest, CmpFieldAccessBrokenChain) {
+    auto left = R"(
+        %struct.s = type { i8, i8 }
+        define void @f() {
+            %alloca = alloca %struct.s
+            %gep = getelementptr %struct.s, %struct.s* %alloca, i32 0, i32 1
+            ret void
+        }
+    )";
+    auto right = R"(
+        %struct.s = type { i8, %union.u } ; <-- second field changed to union
+        %union.u = type { i8 }
+        define void @f() {
+            %alloca = alloca %struct.s
+            %gep = getelementptr %struct.s, %struct.s* %alloca, i32 0, i32 1
+            ; bitcast of the alloca (not of the gep)
+            ; used to break the field access operation
+            %cast = bitcast %struct.s* %alloca to i8*
+            ret void
+        }
+    )";
+    CREATE_FROM_LLVM(left, right);
+
+    // Check if the field accesses are compared correctly and the instruction
+    // iterators are at the correct place.
+    BasicBlock::const_iterator InstL = FL->getEntryBlock().begin();
+    InstL++;
+    BasicBlock::const_iterator InstR = FR->getEntryBlock().begin();
+    InstR++;
+
+    ASSERT_EQ(DiffComp->testCmpFieldAccess(InstL, InstR), 0);
+    // The iterators should point to the end of the field access operations
+    // (i.e. to the return instruction in the left function and to the cast
+    // in the other one).
+    ASSERT_EQ(&*InstL, FL->getEntryBlock().getTerminator());
+    ASSERT_EQ(&*InstR, getInstByName(*FR, "cast"));
+}
+
+/// Check that skipping a bitcast instruction doesn't break sizes of
+/// synchronisation maps.
+TEST_F(DFCLlvmIrTest, CmpSkippedBitcast) {
+    auto left = R"(define i32 @f() {
+        %1 = alloca i32
+        %2 = bitcast i32* %1 to i8*
+        ret i32 0
+    })";
+    auto right = R"(define i32 @f() {
+        ret i32 0
+    })";
+    CREATE_FROM_LLVM(left, right);
+
+    ASSERT_EQ(testCmpEntryBasicBlocks(), 0);
+    ASSERT_EQ(DiffComp->getLeftSnMapSize(), DiffComp->getRightSnMapSize());
+}
+
+TEST_F(DFCLlvmIrTest, CmpPHIs) {
+    auto left = R"(define void @f() {
+            br i1 true, label %1, label %2
+        1:
+            br label %3
+        2:
+            br label %3
+        3:
+            %phi1 = phi i8 [ 0, %1 ], [ 1, %2 ]
+            %phi2 = phi i8 [ 0, %1 ], [ 1, %2 ]
+            %phi3 = phi i8 [ 0, %1 ], [ 1, %2 ]
+            ret void
+    })";
+    auto right = R"(define void @f() {
+            br i1 true, label %1, label %2
+        1:
+            br label %3
+        2:
+            br label %3
+        3:
+            %phi1 = phi i8 [ 0, %1 ], [ 1, %2 ]  ; same order (eq)
+            %phi2 = phi i8 [ 1, %2 ], [ 0, %1 ]  ; different order (eq)
+            %phi3 = phi i8 [ 1, %2 ], [ 1, %2 ]  ; not matching (neq)
+            ret void
+    })";
+    CREATE_FROM_LLVM(left, right);
+
+    ASSERT_EQ(testCmpPHIs("phi1"), 0); // same order (eq)
+    ASSERT_EQ(testCmpPHIs("phi2"), 0); // different order (eq)
+    ASSERT_EQ(testCmpPHIs("phi3"), 1); // not matching (neq)
+}
+
+TEST_F(DFCLlvmIrTest, CustomPatternSkippingInstruction) {
+    // Test custom pattern matching and skipping of instructions therein.
+    // Creating custom pattern
+    LLVMContext PatCtx;
+    auto pattern = R"(
+        define i8 @diffkemp.old.pattern() {
+            %1 = sub i8 0, 1
+            ret i8 %1
+        }
+        define i8 @diffkemp.new.pattern() {
+            %1 = sub i8 1, 0
+            %2 = sdiv i8 %1, %1
+            ret i8 %2
+        }
+    )";
+    auto PatMod = stringToModule(pattern, PatCtx);
+
+    auto left = R"(define i8 @f() {
+        %1 = sub i8 0, 1          ; matched
+        %2 = call i8 @f()         ; skipped
+        ret i8 %1
+    })";
+    auto right = R"(define i8 @f() {
+        %1 = sub i8 1, 0          ; matched
+        %2 = call i8 @f()         ; skipped
+        %3 = sdiv i8 %1, %1       ; matched
+        ret i8 %3
+    })";
+    CREATE_FROM_LLVM(left, right);
+
+    // Create a pattern set with the pattern module and add it to the comparator
+    CustomPatternSet PatSet;
+    PatSet.addPatternFromModule(std::move(PatMod));
+    DiffComp->addCustomPatternSet(&PatSet);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
