@@ -14,9 +14,19 @@
 
 #include "DFCLlvmIrTest.h"
 #include <gtest/gtest.h>
+#include <llvm/IR/ValueSymbolTable.h>
 
 /// Methods of test fixture for testing DifferentialFunctionComparator
 /// for tests written in LLVM IR.
+
+DFCLlvmIrTest::DFCLlvmIrTest() {
+    // Setting variables to nullptr, so we can later check if the LLVM IR
+    // was parsed.
+    ModL = nullptr;
+    ModR = nullptr;
+    FL = nullptr;
+    FR = nullptr;
+}
 
 /// Tries to parse LLVM IR from string and prepares DFC for testing,
 /// if parsing was unsuccessful returns false and error is printed.
@@ -63,6 +73,109 @@ std::unique_ptr<Module> DFCLlvmIrTest::stringToModule(const char *llvm,
         err.print("", errs());
     }
     return mod;
+}
+
+/// Returns instruction with the given name from the function
+/// or aborts program if the instruction with the name does not exist.
+Instruction *DFCLlvmIrTest::getInstByName(Function &fun, const char *name) {
+    auto value = fun.getValueSymbolTable()->lookup(name);
+    if (value) {
+        if (auto inst = dyn_cast<Instruction>(value)) {
+            return inst;
+        }
+    }
+    errs() << "Error: Instruction '" << std::string(name)
+           << "' does not exist in '" << fun.getName().str() << "' function!\n";
+    std::abort();
+}
+
+/// Methods for testing DifferentialFunctionComparator using the TestComparator
+/// class. The methods cannot be called before CREATE_FROM_LLVM macro!!!
+
+/// Compares GEP instructions specified by name using cmpGEPs method.
+int DFCLlvmIrTest::testCmpGEPs(const char *name) {
+    checkPrepared();
+    auto gepL = dyn_cast<GEPOperator>(getInstByName(*FL, name));
+    auto gepR = dyn_cast<GEPOperator>(getInstByName(*FR, name));
+    checkValue("GEP instruction", name, gepL, gepR);
+    return DiffComp->testCmpGEPs(gepL, gepR);
+}
+
+/// Compares instructions specified by name using cmpOperations method.
+int DFCLlvmIrTest::testCmpOperations(const char *name,
+                                     bool &needToCmpOperands,
+                                     bool keepSN) {
+    checkPrepared();
+    auto instL = getInstByName(*FL, name);
+    auto instR = getInstByName(*FR, name);
+    return DiffComp->testCmpOperations(instL, instR, needToCmpOperands, keepSN);
+}
+
+/// Compares instructions specified by name using cmpOperationsWithOperands
+/// method.
+int DFCLlvmIrTest::testCmpOperationsWithOperands(const char *name,
+                                                 bool keepSN) {
+    checkPrepared();
+    auto instL = getInstByName(*FL, name);
+    auto instR = getInstByName(*FR, name);
+    return DiffComp->testCmpOperationsWithOperands(instL, instR, keepSN);
+}
+
+/// Compares instructions specified by name using cmpCallsWithExtraArg method.
+int DFCLlvmIrTest::testCmpCallsWithExtraArg(const char *name, bool keepSN) {
+    checkPrepared();
+    auto instL = dyn_cast<CallInst>(getInstByName(*FL, name));
+    auto instR = dyn_cast<CallInst>(getInstByName(*FR, name));
+    checkValue("CALL instruction", name, instL, instR);
+    return DiffComp->testCmpCallsWithExtraArg(instL, instR, keepSN);
+}
+
+/// Compares entry basic blocks in functions using cmpBasicBlocks.
+int DFCLlvmIrTest::testCmpEntryBasicBlocks(bool keepSN) {
+    checkPrepared();
+    auto instL = &FL->getEntryBlock();
+    auto instR = &FR->getEntryBlock();
+    return DiffComp->testCmpBasicBlocks(instL, instR, keepSN);
+}
+
+/// Compares instructions specified by names using cmpValues method.
+int DFCLlvmIrTest::testCmpInstValues(const char *nameL,
+                                     const char *nameR,
+                                     bool keepSN) {
+    checkPrepared();
+    auto valueL = getInstByName(*FL, nameL);
+    auto valueR = getInstByName(*FR, nameR);
+    return DiffComp->testCmpValues(valueL, valueR, keepSN);
+}
+
+/// Compares instructions specified by name using cmpPHIs method.
+int DFCLlvmIrTest::testCmpPHIs(const char *name, bool keepSN) {
+    checkPrepared();
+    auto phiL = dyn_cast<PHINode>(getInstByName(*FL, name));
+    auto phiR = dyn_cast<PHINode>(getInstByName(*FR, name));
+    checkValue("PHI instruction", name, phiL, phiR);
+    return DiffComp->testCmpPHIs(phiL, phiR);
+}
+
+/// If the fixture is not prepared for testing it prints error and aborts
+/// the program.
+void DFCLlvmIrTest::checkPrepared() {
+    if (FL == nullptr || FR == nullptr) {
+        errs() << "Error: you forgot to call CREATE_FROM_LLVM!\n";
+        std::abort();
+    }
+}
+
+/// If a value is nullptr it prints error message and aborts the program.
+void DFCLlvmIrTest::checkValue(const char *type,
+                               const char *name,
+                               Value *L,
+                               Value *R) {
+    if (!L || !R) {
+        errs() << "Error: '" << name << "' is not " << type << " in "
+               << (!L ? "left" : "right") << " function";
+        std::abort();
+    }
 }
 
 /// Unit tests
