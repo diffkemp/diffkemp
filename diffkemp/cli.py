@@ -119,6 +119,13 @@ def make_argument_parser():
                             help="compare only selected function")
     compare_ap.add_argument("--custom-patterns", "-p",
                             help="custom pattern file or configuration")
+    compare_ap.add_argument("--c-pattern-append", help="option to append to \
+                            clang when compiling custom C pattern",
+                            action="append")
+    compare_ap.add_argument("--c-pattern-kernel-path",
+                            help="automatically use all necessary include \
+                                paths, incldues and definitions for compiling \
+                                kernel patterns, using the given kernel path")
     compare_ap.add_argument("--output-llvm-ir",
                             help="output each simplified module to a file",
                             action="store_true")
@@ -188,6 +195,31 @@ def make_argument_parser():
                          help="runs development server instead of production \
                          server")
     view_ap.set_defaults(func=diffkemp.diffkemp.view)
+
+    # "compile-pattern" sub-command
+    compile_pattern_ap = sub_ap.add_parser("compile-pattern",
+                                           help="compile a custom diffkemp \
+                                           pattern into valid form")
+    compile_pattern_ap.add_argument("pattern_file",
+                                    help="path to the custom pattern file")
+    compile_pattern_ap.add_argument("--c-pattern-append", help="option to \
+                                    append to clang when compiling custom C \
+                                    pattern",
+                                    action="append")
+    compile_pattern_ap.add_argument(
+        "--c-pattern-kernel-path", help="automatically use all necessary \
+        include paths, incldues and definitions for compiling kernel \
+        patterns, using the given kernel path")
+    compile_pattern_ap.add_argument("--disable-simpll-ffi",
+                                    help="call SimpLL through binary (for \
+                                        debugging)",
+                                    action="store_true")
+    compile_pattern_ap.add_argument("--disable-preprocessing",
+                                    help="only compile, do not preprocess \
+                                        pattern",
+                                    action="store_true")
+    compile_pattern_ap.set_defaults(func=diffkemp.diffkemp.compile_pattern)
+
     return ap
 
 

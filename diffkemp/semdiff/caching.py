@@ -46,6 +46,7 @@ class ComparisonGraph:
 
     class FunctionStats:
         """Contains statistics about analysis of a single function."""
+
         def __init__(self, left, right):
             self.inst_cnt = (left.get("inst-cnt", 0), right.get("inst-cnt", 0))
             self.inst_equal_cnt = (left.get("inst-equal-cnt", 0),
@@ -73,6 +74,7 @@ class ComparisonGraph:
         Note: names, files and lines are tuples containing the values for both
         modules.
         """
+
         def __init__(self, names, result, files=None, lines=None, stats=None):
             self.names = names
             self.result = result
@@ -176,6 +178,7 @@ class ComparisonGraph:
         (unlike in all other cases) because it doesn't have to be present when
         the edge object is generated.
         """
+
         def __init__(self, target_name, filename, line):
             self.parent_vertex = None
             self.target_name = target_name
@@ -201,6 +204,7 @@ class ComparisonGraph:
 
         Note: callstack is a tuple containing the values for both modules.
         """
+
         def __init__(self, name, parent_fun, callstack):
             self.name = name
             self.parent_fun = parent_fun
@@ -212,6 +216,7 @@ class ComparisonGraph:
 
         Note: body is a tuple containing the values for both modules.
         """
+
         def __init__(self, name, parent_fun, callstack, body):
             self.name = name
             self.parent_fun = parent_fun
@@ -234,6 +239,7 @@ class ComparisonGraph:
 
         Note: file and line are tuples containing the values for both modules.
         """
+
         def __init__(self, name, parent_fun, callstack, file, line):
             self.name = name
             self.parent_fun = parent_fun

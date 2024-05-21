@@ -51,7 +51,7 @@ class TaskSpec:
                 config_filename = spec["custom_pattern_config"]["explicit"]
             custom_pattern_config = CustomPatternConfig.create_from_file(
                 path=os.path.join(custom_patterns_path, config_filename),
-                patterns_path=base_path
+                patterns_path=base_path, kernel_path=self.new_kernel_dir
             )
         else:
             custom_pattern_config = None

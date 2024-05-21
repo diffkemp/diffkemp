@@ -14,6 +14,7 @@
 #ifndef DIFFKEMP_SIMPLL_CUSTOMPATTERNSET_H
 #define DIFFKEMP_SIMPLL_CUSTOMPATTERNSET_H
 
+#include "CPatternPass.h"
 #include "Utils.h"
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/SmallPtrSet.h>
@@ -58,6 +59,8 @@ struct PatternConfiguration {
     std::string OnParseFailure;
     /// Vector of paths to pattern files.
     std::vector<std::string> PatternFiles;
+    /// Map of patterns and Clang options to append to them.
+    std::unordered_map<std::string, std::vector<std::string>> ClangAppend;
 };
 
 /// Base pattern representation.
@@ -202,6 +205,8 @@ class CustomPatternSet {
     LLVMContext PatternContext;
     /// Vector of loaded pattern modules.
     std::vector<std::unique_ptr<Module>> PatternModules;
+    /// Pass for preprocessing C patterns.
+    CPatternPass CPass{};
 
     /// Finds the pattern type associated with the given pattern functions.
     CustomPatternType getPatternType(const Function *FnL, const Function *FnR);

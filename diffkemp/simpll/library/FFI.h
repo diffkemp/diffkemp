@@ -147,6 +147,10 @@ void parseAndRunSimpLL(const char *ModL,
 /// won't be run again when the module is compared.
 void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC);
 
+/// Runs custom pattern preprocessing passes on the given pattern and marks it
+/// as being preprocessed.
+void preprocessPattern(const char *PatternPath);
+
 void shutdownSimpLL();
 
 // CFFI_DECLARATIONS_END

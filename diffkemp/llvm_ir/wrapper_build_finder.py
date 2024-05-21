@@ -12,6 +12,7 @@ class WrapperBuildFinder(LlvmSourceFinder):
     LLVM source finder for projects that are entirely compiled in build phase
     of DiffKemp using the compiler wrapper.
     """
+
     def __init__(self, source_dir, wrapper_db_filename):
         LlvmSourceFinder.__init__(self, source_dir)
         self.wrapper_db_filename = wrapper_db_filename

@@ -17,6 +17,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
     it into LLVM IR.
     Extends the SourceFinder abstract class.
     """
+
     def __init__(self, source_dir):
         LlvmSourceFinder.__init__(self, source_dir)
         self.cscope_cache = dict()

@@ -10,8 +10,10 @@ from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
 from diffkemp.semdiff.caching import SimpLLCache
+from diffkemp.semdiff.custom_pattern_config import CustomPatternConfig
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
+from diffkemp.simpll.simpll import preprocess_pattern
 from diffkemp.output import YamlOutput
 from diffkemp.syndiff.function_syntax_diff import unified_syntax_diff
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -753,3 +755,18 @@ def view(args):
     shutil.rmtree(source_directory)
     shutil.rmtree(diff_directory)
     os.remove(os.path.join(data_directory, YAML_FILE_NAME))
+
+
+def compile_pattern(args):
+    """
+    Compile a pattern. Compiles a custom non-LLVM IR pattern into LLVM IR and
+    performs all necessary preprocessing.
+    """
+    CustomPatternConfig.create_from_file(
+        args.pattern_file,
+        clang_append=args.c_pattern_append,
+        kernel_path=args.c_pattern_kernel_path
+    )
+    if not args.disable_preprocessing:
+        preprocess_pattern(args.pattern_file,
+                           use_ffi=not args.disable_simpll_ffi)

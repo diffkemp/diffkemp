@@ -157,6 +157,7 @@ class Result {
     FunctionInfo Second;
 
     std::vector<std::unique_ptr<NonFunctionDifference>> DifferingObjects;
+    std::pair<const Instruction *, const Instruction *> DifferingInstructions;
 
     // Default constructor needed for YAML serialisation.
     Result() {}

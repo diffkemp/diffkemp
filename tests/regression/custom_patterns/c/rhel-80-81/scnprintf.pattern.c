@@ -1,0 +1,1 @@
+VALUE_PATTERN(NR_PAGEFLAGS, (1UL << 25) - 1, (1UL << 26) - 1)

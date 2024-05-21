@@ -14,6 +14,7 @@ class SingleCBuilder(SingleLlvmFinder):
     LLVM source builder for single C file.
     Extends the SingleLlvmFinder class by compiling C file to LLVM IR file.
     """
+
     def __init__(self, source_dir, c_file_name, clang="clang",
                  clang_append=[], default_optim=True):
         """

@@ -1,0 +1,1 @@
+VALUE_PATTERN(value, 0b110UL << 8, 0b101UL << 7);
