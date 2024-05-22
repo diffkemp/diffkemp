@@ -19,6 +19,7 @@ Requires:       cscope
 Requires:       clang llvm-devel
 Requires:       make
 Requires:       diffutils
+Requires:       python3-setuptools
 
 %{?python_enable_dependency_generator}
 
