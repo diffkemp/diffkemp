@@ -14,6 +14,7 @@ BuildRequires:  llvm-devel
 BuildRequires:  python3-devel python3-pip python3-setuptools python2
 BuildRequires:  git
 BuildRequires:  npm
+BuildRequires:  gtest-devel
 Requires:       cscope
 Requires:       clang llvm-devel
 Requires:       make
