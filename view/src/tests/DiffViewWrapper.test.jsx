@@ -8,6 +8,7 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
 import DiffViewWrapper from '../components/DiffViewWrapper';
+import Difference from '../components/Difference';
 
 /**
  * Helper function to test if shown line number and line of code match
@@ -231,6 +232,7 @@ describe('testing a caller function visualisation', () => {
   const oldStart = 176;
   const newStart = 180;
   const oldEnd = 197;
+  const newEnd = 201;
   const calling = [190, 194];
 
   const diff = '';
@@ -320,5 +322,107 @@ describe('testing a caller function visualisation', () => {
       () => {},
       () => {},
     );
+  });
+
+  // Integration testing from Difference component.
+  test('code of calls which are only on one side of call stack should be visualised correctly', async () => {
+    // Note: For these calls should be shown code of the function/macro and it should
+    // be shown on correct side (left/right), the other side should be left empty.
+
+    // Note: Reusing parts from previous test case.
+    const example = {
+      results: [{
+        // compared function
+        function: 'cmp_fun',
+        diffs: [{
+          // differing macro
+          function: 'diff',
+          'old-callstack': [
+            { name: 'left (macro)', line: 5, file: 'file1.c' },
+            { name: 'diff (macro)', line: oldStart, file: 'left_file.c' },
+          ],
+          'new-callstack': [
+            { name: 'right (macro)', line: 5, file: 'file1.c' },
+            { name: 'diff (macro)', line: newStart, file: 'right_file.c' },
+          ],
+        }],
+      }],
+      definitions: {
+        left: {
+          kind: 'macro',
+          old: { line: oldStart, file: 'left_file.c', 'end-line': oldEnd },
+          diff: false,
+        },
+        right: {
+          kind: 'macro',
+          new: { line: newStart, file: 'right_file.c', 'end-line': newEnd },
+          diff: false,
+        },
+      },
+    };
+
+    // Mocking getFile to return the content of the file.
+    const getFile = jest.fn(async (filePath) => {
+      let content = filePath;
+      if (filePath === 'src-old/left_file.c') {
+        content = oldCode;
+      } else if (filePath === 'src-new/right_file.c') {
+        content = newCode;
+      }
+      return content;
+    });
+
+    render(
+      <Difference
+        compare={example.results[0].function}
+        diff={example.results[0].diffs[0]}
+        definitions={example.definitions}
+        getFile={getFile}
+        oldFolder=""
+        newFolder=""
+      />,
+    );
+
+    const callstack = within(screen.getByTestId('callstack'));
+
+    // Selecting function which is only in the old call stack.
+    userEvent.click(callstack.getByTitle('left (macro)'));
+    // Waiting for update.
+    await screen.findByText(/left_file.c/);
+    // Testing that the whole code of the function is shown
+    // and it is shown on the left side and the right side is empty.
+    let expectedOldLineNum = oldStart;
+    testCodeNumberMatch(
+      oldCode,
+      '',
+      // Testing order of lines and checking whether any are missing.
+      (lineNumber) => {
+        expect(lineNumber).toBe(expectedOldLineNum);
+        expectedOldLineNum += 1;
+      },
+      () => {},
+    );
+    // Testing if the whole function is shown.
+    expect(expectedOldLineNum).toBe(oldEnd + 1);
+
+    // Selecting function which is only in the new call stack.
+    userEvent.click(callstack.getByTitle('right (macro)'));
+    // Waiting for update.
+    await screen.findByText(/right_file.c/);
+    // Testing that the whole code of the function is shown
+    // and it is shown on the right side and the left side is empty.
+    let expectedNewLineNum = newStart;
+    testCodeNumberMatch(
+      '',
+      newCode,
+      () => {},
+      // Testing order of lines and checking whether any are missing.
+      (lineNumber) => {
+        expect(lineNumber).toBe(expectedNewLineNum);
+        expectedNewLineNum += 1;
+      },
+    );
+    // Testing if the whole function is shown.
+    expect(expectedNewLineNum).toBe(newEnd + 1);
   });
 });
