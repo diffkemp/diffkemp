@@ -13,7 +13,6 @@ BuildRequires:  gcc gcc-c++ cmake ninja-build
 BuildRequires:  llvm-devel
 BuildRequires:  python3-devel python3-pip python3-setuptools python2
 BuildRequires:  git
-BuildRequires:  /usr/bin/pathfix.py
 BuildRequires:  npm
 Requires:       cscope
 Requires:       clang llvm-devel
@@ -51,7 +50,7 @@ mkdir -p %{buildroot}/%{_bindir}
 install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
 # Python part
 %py3_install
-pathfix.py -pni "%{__python3} %{py3_shbang_opts}" %{buildroot}%{_bindir}/diffkemp-cc-wrapper.py
+%py3_shebang_fix %{buildroot}%{_bindir}/diffkemp-cc-wrapper.py
 
 
 %check
