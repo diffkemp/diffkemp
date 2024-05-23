@@ -2,6 +2,7 @@
 from diffkemp.output import YamlOutput
 from diffkemp.semdiff.caching import ComparisonGraph, _get_callstack
 from diffkemp.semdiff.result import Result
+from diffkemp.utils import get_end_line
 import pytest
 
 
@@ -187,3 +188,47 @@ def test_yaml_output(result, mocker):
             assert definition == {
                 "kind": "type", "old": def_info, "new": def_info
             }
+
+
+@pytest.fixture
+def mock_files_content(mocker):
+    """Mock open function to return specified content as content of files."""
+    def inner(content):
+        mocked_open = mocker.mock_open(read_data=content)
+        mocker.patch("builtins.open", mocked_open)
+    return inner
+
+
+def test_end_line_for_function(mock_files_content):
+    """Testing getting correct end line for function."""
+    mock_files_content(
+        "// empty line\n"
+        "int dev_queue_xmit(struct sk_buff *skb)\n"
+        "{\n"
+        "       return __dev_queue_xmit(skb, NULL);\n"
+        "}\n"
+        "void foo() {}\n")
+    assert get_end_line("file", 2, "function") == 5
+
+
+def test_end_line_for_type(mock_files_content):
+    """Testing getting correct end line for type (struct)."""
+    mock_files_content(
+        "struct foo {\n"
+        "       unsigned bar;\n"
+        "};\n"
+        "void baz() {}\n")
+    assert get_end_line("file", 1, "type") == 3
+
+
+def test_end_line_for_macro(mock_files_content):
+    """Testing getting correct end line for macro."""
+    mock_files_content(
+        "void foo() {}\n"
+        "// empty line\n"
+        "#define __this_cpu_read(pcp)                    \\\n"
+        "({                                              \\\n"
+        "       __this_cpu_preempt_check(\"read\");      \\\n"
+        "       raw_cpu_read(pcp);                       \\\n"
+        "})\n")
+    assert get_end_line("file", 3, "macro") == 7
