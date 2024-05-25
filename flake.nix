@@ -106,6 +106,7 @@
             propagatedBuildInputs = with python3Packages; [
               pytest
               pytest-mock
+              flake8
             ];
 
             WITHOUT_RPYTHON = true;
