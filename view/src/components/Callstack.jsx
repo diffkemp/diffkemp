@@ -6,13 +6,29 @@ import { PropTypes } from 'prop-types';
 import { CallstackPropTypes, DefinitionsPropTypes } from '../PropTypesValues';
 
 /**
+ * Enum representing in which call stack is the call located.
+ */
+export const CallSide = Object.freeze({
+  BOTH: 'both',
+  NEW: 'new',
+  OLD: 'old',
+});
+
+const SelectedFunPropType = PropTypes.shape({
+  name: PropTypes.string,
+  side: PropTypes.oneOf(Object.values(CallSide)),
+});
+
+/**
  * Component for visualisation of call stack.
  * @param {Object} props
  * @param {string} props.compFunName - First (compared) function name.
- * @param {string} props.selectedFunction - Name of function which is selected
- * and should be highlighted in call stack.
- * @param {Function} props.onSelect - Callback function accepting a function
- * name which was chosen to be shown.
+ * @param {Object} props.selectedFunction - Function which is selected and should
+ *   be highlighted in the call stack.
+ * @param {string} props.selectedFunction.name - Name of the selected function.
+ * @param {string} props.selectedFunction.side - The side where the selected function is located.
+ * @param {Function} props.onSelect - Callback function accepting a selected function,
+ *   the callback is called when call (function) is clicked (selected).
  * @returns Returns call stack component.
  */
 export default function Callstack({
@@ -133,7 +149,7 @@ Callstack.propTypes = {
   compFunName: PropTypes.string.isRequired,
   oldCallStack: CallstackPropTypes.isRequired,
   newCallStack: CallstackPropTypes.isRequired,
-  selectedFunction: PropTypes.string,
+  selectedFunction: SelectedFunPropType,
   onSelect: PropTypes.func.isRequired,
   definitions: DefinitionsPropTypes.isRequired,
 };
@@ -143,9 +159,9 @@ Callstack.propTypes = {
  * @param {Object} props
  * @param {string} props.oldName - Name of old call (function).
  * @param {string} props.newName - Name of new call (function).
- * @param {string} props.selectedFunction - Name of selected function.
- * @param {Function} props.onSelect - Callback function which is called
- * when call (function) is clicked (selected).
+ * @param {Object} props.selectedFunction - Function which is selected and should
+ *   be highlighted in the call stack.
+ * @param {Function} props.onSelect - Callback function accepting a selected function.
  * @returns
  */
 function SingleCall({
@@ -160,6 +176,7 @@ function SingleCall({
         name={oldName}
         onSelect={onSelect}
         selectedFunction={selectedFunction}
+        side={CallSide.BOTH}
       />
     );
   }
@@ -176,7 +193,7 @@ function SingleCall({
 SingleCall.propTypes = {
   oldName: PropTypes.string.isRequired,
   newName: PropTypes.string,
-  selectedFunction: PropTypes.string,
+  selectedFunction: SelectedFunPropType,
   onSelect: PropTypes.func.isRequired,
 };
 
@@ -186,9 +203,9 @@ SingleCall.propTypes = {
  * @param {Object} props
  * @param {Object[]} props.oldCalls - Calls from old call stack.
  * @param {Object[]} props.newCalls - Calls from new call stack.
- * @param {string} props.selectedFunction - Name of selected function.
- * @param {Function} props.onSelect - Callback function which is called
- * when call (function) is clicked (selected).
+ * @param {Object} props.selectedFunction - Function which is selected and should
+ *   be highlighted in the call stack.
+ * @param {Function} props.onSelect - Callback function accepting a selected function.
  * @returns
  */
 function Calls({
@@ -204,6 +221,7 @@ function Calls({
             name={call.name}
             onSelect={onSelect}
             selectedFunction={selectedFunction}
+            side={CallSide.OLD}
           />
         ))}
       </ListGroup>
@@ -215,6 +233,7 @@ function Calls({
             name={call.name}
             onSelect={onSelect}
             selectedFunction={selectedFunction}
+            side={CallSide.NEW}
           />
         ))}
       </ListGroup>
@@ -225,7 +244,7 @@ function Calls({
 Calls.propTypes = {
   oldCalls: CallstackPropTypes.isRequired,
   newCalls: CallstackPropTypes,
-  selectedFunction: PropTypes.string,
+  selectedFunction: SelectedFunPropType,
   onSelect: PropTypes.func.isRequired,
 };
 
@@ -233,12 +252,18 @@ Calls.propTypes = {
  * Component for visualisation of call from call stack.
  * @param {Object} props
  * @param {string} props.name - Name of called function/macro/type.
- * @param {string} props.selectedFunction - Name of selected function.
- * @param {Function} props.onSelect - Callback function which is called
- * when call (function) is clicked (selected).
+ * @param {Object} props.selectedFunction - Function which is selected and should
+ *   be highlighted in the call stack.
+ * @param {Function} props.onSelect - Callback function accepting a selected function.
+ * @param {string} props.side - The side where the call is located.
  * @returns
  */
-function Call({ name, selectedFunction, onSelect }) {
+function Call({
+  name,
+  selectedFunction,
+  onSelect,
+  side,
+}) {
   // putting information about type/macro under the name of function
   const nameWrap = name.replace(' ', '<br/>');
   return (
@@ -247,8 +272,8 @@ function Call({ name, selectedFunction, onSelect }) {
       title={name}
       action
       className="callstack-call"
-      onClick={() => onSelect(name)}
-      active={name === selectedFunction}
+      onClick={() => onSelect({ name, side })}
+      active={name === selectedFunction?.name && side === selectedFunction?.side}
       dangerouslySetInnerHTML={{ __html: nameWrap }}
     />
   );
@@ -256,6 +281,7 @@ function Call({ name, selectedFunction, onSelect }) {
 
 Call.propTypes = {
   name: PropTypes.string.isRequired,
-  selectedFunction: PropTypes.string,
+  selectedFunction: SelectedFunPropType,
   onSelect: PropTypes.func.isRequired,
+  side: PropTypes.oneOf(Object.values(CallSide)),
 };
