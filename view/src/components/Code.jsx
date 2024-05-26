@@ -36,7 +36,9 @@ const DIFF_DIRECTORY = 'diffs';
  *                                              of the function ends.
  * @param {Number} [props.specification.calling] - Tuple (old, new) of line numbers where are called
  *                                                 next functions which should be highlighted
- *                                                 or undefined if it is differing function.
+ *                                                 or undefined if no functions are called.
+ * @param {boolean} props.specification.differing - True if the symbol is the differing one
+ *                                                  and the syntax difference should be highlighted.
  * @param {string} props.oldFolder - Name of snapshot folder with old version of project.
  * @param {string} props.newFolder - Name of snapshot folder with new version of project.
  * @param {Function} props.getFile - Function for getting file.
@@ -124,7 +126,7 @@ export default function Code({
             newStart={specification.newStart}
             oldEnd={specification.oldEnd}
             newEnd={specification.newEnd}
-            showDiff={specification.calling === undefined}
+            showDiff={specification.differing}
             linesToShow={specification.calling === undefined
               ? null
               : specification.calling}
@@ -145,6 +147,7 @@ Code.propTypes = {
     oldEnd: PropTypes.number,
     newEnd: PropTypes.number,
     calling: PropTypes.arrayOf(PropTypes.number),
+    differing: PropTypes.bool,
   }).isRequired,
   oldFolder: PropTypes.string.isRequired,
   newFolder: PropTypes.string.isRequired,
