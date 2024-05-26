@@ -1,7 +1,7 @@
 // Component for visualisation of found difference
 // Author: Lukas Petr
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PropTypes } from 'prop-types';
 
 import Container from 'react-bootstrap/Container';
@@ -30,12 +30,23 @@ export default function Difference({
   definitions,
   getFile,
 }) {
+  // Name (with kind) of differing symbol.
+  const [oldDiffering, newDiffering] = useMemo(() => {
+    let oldD;
+    let newD;
+    if (diff['old-callstack'].length > 0) {
+      oldD = diff['old-callstack'][diff['old-callstack'].length - 1].name;
+      newD = diff['new-callstack'][diff['new-callstack'].length - 1].name;
+    } else {
+      // If there is no call stack, the differing function is the compared function.
+      oldD = compare;
+      newD = compare;
+    }
+    return [oldD, newD];
+  }, [diff, compare]);
   // Function which code to show (defaultly showing the differing function).
   const [functionToShow, setFunctionToShow] = useState({
-    // If there is no call stack, the differing function is the compared function.
-    name: diff['old-callstack'].length > 0
-      ? diff['old-callstack'][diff['old-callstack'].length - 1].name
-      : compare,
+    name: oldDiffering,
     // The differing function should be located in both call stacks.
     side: CallSide.BOTH,
   });
@@ -100,6 +111,7 @@ export default function Difference({
         oldEnd: needsOldCode ? oldDefintion['end-line'] : null,
         newEnd: needsNewCode ? newDefintion['end-line'] : null,
         calling: getCallingLine(),
+        differing: [oldDiffering, newDiffering].includes(functionToShow.name),
       };
       codeBlock = (
         <Code
