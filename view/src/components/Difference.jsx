@@ -85,6 +85,7 @@ export default function Difference({
         oldStart: oldDefintion.line,
         newStart: newDefintion.line,
         oldEnd: oldDefintion['end-line'],
+        newEnd: newDefintion['end-line'],
         calling: getCallingLine(),
       };
       codeBlock = (
