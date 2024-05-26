@@ -655,7 +655,8 @@ class Viewer:
         self.compare_output_dir = compare_output_dir
         self.devel = devel
         # Relative path of src files which were already copied to viewer dir.
-        self.processed_files = set()
+        self.old_processed_files = set()
+        self.new_processed_files = set()
         # Path to snapshot directories.
         self.old_snapshot_dir = None
         self.new_snapshot_dir = None
@@ -668,7 +669,8 @@ class Viewer:
         # Path to the viewer dir containing data of the compared project.
         self.data_dir = None
         # Path to the viewer dir containing sources of the compared project.
-        self.source_dir = None
+        self.old_out_dir = None
+        self.new_out_dir = None
         # Path to the viewer dir containing diff of functions.
         self.diff_dir = None
         # Path to the yaml (describing the result) in the viewer directory.
@@ -732,10 +734,13 @@ class Viewer:
         self.data_dir = os.path.join(self.public_dir, "data")
         if not os.path.exists(self.data_dir):
             os.mkdir(self.data_dir)
-        # Preparing source directory
-        self.source_dir = os.path.join(self.data_dir, "src")
-        if not os.path.exists(self.source_dir):
-            os.mkdir(self.source_dir)
+        # Preparing source directories
+        self.old_out_dir = os.path.join(self.data_dir, "src-old")
+        self.new_out_dir = os.path.join(self.data_dir, "src-new")
+        if not os.path.exists(self.old_out_dir):
+            os.mkdir(self.old_out_dir)
+        if not os.path.exists(self.new_out_dir):
+            os.mkdir(self.new_out_dir)
         # Preparing diff directory
         self.diff_dir = os.path.join(self.data_dir, "diffs")
         if not os.path.exists(self.diff_dir):
@@ -770,43 +775,63 @@ class Viewer:
         `definition`, update the YAML with info about the diff existence and
         save the source file containing the symbol and the diff to viewer dir.
         """
-        # Relatives paths to source files
-        old_file = definition["old"]["file"]
-        new_file = definition["new"]["file"]
+        # Relatives paths to source files, None if we do not know it.
+        old_file = None
+        new_file = None
+        if "old" in definition:
+            old_file = definition["old"]["file"]
+            self._copy_file(old_file, is_old=True)
+        if "new" in definition:
+            new_file = definition["new"]["file"]
+            self._copy_file(new_file, is_old=False)
 
-        old_file_abs_path = os.path.join(self.old_snapshot_dir, old_file)
-        new_file_abs_path = os.path.join(self.new_snapshot_dir, new_file)
-
-        # Copy source file
-        if old_file not in self.processed_files:
-            self.processed_files.add(old_file)
-
-            output_file_path = os.path.join(self.source_dir, old_file)
-            output_dir_path = os.path.dirname(output_file_path)
-            if not os.path.isdir(output_dir_path):
-                os.makedirs(output_dir_path)
-
-            shutil.copy(old_file_abs_path, output_dir_path)
+        if (old_file is None or new_file is None or
+                "end-line" not in definition["old"] or
+                "end-line" not in definition["new"]):
+            definition["diff"] = False
+            return
 
         # Make diff of function, add diff info to YAML
-        if ("end-line" in definition["old"] and
-                "end-line" in definition["new"]):
-            diff = unified_syntax_diff(
-                first_file=old_file_abs_path,
-                second_file=new_file_abs_path,
-                first_line=definition["old"]["line"],
-                second_line=definition["new"]["line"],
-                first_end=definition["old"]["end-line"],
-                second_end=definition["new"]["end-line"])
-            if diff.isspace() or diff == "":
-                definition["diff"] = False
-            else:
-                definition["diff"] = True
-                diff_path = os.path.join(self.diff_dir, name + ".diff")
-                with open(diff_path, "w") as file:
-                    file.write(diff)
-        else:
+        old_file_abs_path = os.path.join(self.old_snapshot_dir, old_file)
+        new_file_abs_path = os.path.join(self.new_snapshot_dir, new_file)
+        diff = unified_syntax_diff(
+            first_file=old_file_abs_path,
+            second_file=new_file_abs_path,
+            first_line=definition["old"]["line"],
+            second_line=definition["new"]["line"],
+            first_end=definition["old"]["end-line"],
+            second_end=definition["new"]["end-line"])
+        if diff.isspace() or diff == "":
             definition["diff"] = False
+        else:
+            definition["diff"] = True
+            diff_path = os.path.join(self.diff_dir, name + ".diff")
+            with open(diff_path, "w") as file:
+                file.write(diff)
+
+    def _copy_file(self, file_path, is_old=True):
+        """
+        Copy file to out_src_dir if it is not already processed.
+        :param file_path: Relative path to snapshot dir of a file to copy.
+        :param is_old: True for old version, false for new version of project.
+        """
+        if is_old:
+            file_abs_path = os.path.join(self.old_snapshot_dir, file_path)
+            processed_files = self.old_processed_files
+            out_dir = self.old_out_dir
+        else:
+            file_abs_path = os.path.join(self.new_snapshot_dir, file_path)
+            processed_files = self.new_processed_files
+            out_dir = self.new_out_dir
+        if file_path in processed_files:
+            return
+        processed_files.add(file_path)
+        output_file_path = os.path.join(out_dir, file_path)
+        # Copying directory hierarchy.
+        output_dir_path = os.path.dirname(output_file_path)
+        os.makedirs(output_dir_path, exist_ok=True)
+        # Copying file.
+        shutil.copy(file_abs_path, output_dir_path)
 
     def _start_server(self):
         """Start server with the viewer."""
@@ -828,6 +853,7 @@ class Viewer:
 
     def _clean(self):
         """Clean directories."""
-        shutil.rmtree(self.source_dir)
+        shutil.rmtree(self.old_out_dir)
+        shutil.rmtree(self.new_out_dir)
         shutil.rmtree(self.diff_dir)
         os.remove(self.viewer_yaml_path)

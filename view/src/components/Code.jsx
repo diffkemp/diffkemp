@@ -12,7 +12,10 @@ import Col from 'react-bootstrap/Col';
 
 import DiffViewWrapper from './DiffViewWrapper';
 
-const SOURCE_DIRECTORY = 'src';
+// Directories with compared project sources.
+const OLD_SRC_DIR = 'src-old';
+// eslint-disable-next-line no-unused-vars
+const NEW_SRC_DIR = 'src-new';
 const DIFF_DIRECTORY = 'diffs';
 
 /**
@@ -49,7 +52,7 @@ export default function Code({
 
     const getOldCode = async () => {
       const oldCodeFile = await getFile(
-        path.join(SOURCE_DIRECTORY, specification.oldSrc),
+        path.join(OLD_SRC_DIR, specification.oldSrc),
       );
       if (ignoreFetchedFiles) return;
       setOldCode(oldCodeFile);
