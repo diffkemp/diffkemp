@@ -135,6 +135,8 @@ function getSyntaxHighlightedTokens(hunks) {
  * - if the function is short (<= MAX_LINES_THRESHOLD), the entire function is shown,
  * - otherwise, only the line with the call surrounded by a certain
  *   amount (LINES_OF_CONTEXT) of lines is shown.
+ * If `linesToShow` is not set and `showDiff` is `false` then the entire body of
+ * the function is shown.
  *
  * It is possible to show source code of only one version (old/new) of a function
  * in that case set the code of the other version (oldCode/newCode) to empty string.
@@ -233,25 +235,28 @@ export default function DiffViewWrapper({
     if (onlyOneSide) return;
     addFirstAndLastLine();
     setHunks((oldHunks) => getHunksInRange(oldHunks));
-    // Showing function which is called instead of diff of function
-    if (linesToShow) {
-      if (isFunctionLong(oldStart, oldEnd)) {
-        // old calling line
-        addLineWithContext(linesToShow[0]);
-        // add new calling line in case if it is in different change
-        // than old calling line
-        const oldLineOfNewCalling = getCorrespondingOldLineNumber(
-          file.hunks,
-          linesToShow[1],
-        );
-        if (oldLineOfNewCalling !== linesToShow[0]) {
-          addLineWithContext(oldLineOfNewCalling);
-        }
-      } else {
-        addAllLinesOfFunction();
+    // If the function is not a differing one (we are not showing diff) then we need to
+    // determine which lines need to be shown and add them. Otherwise we are done.
+    if (showDiff) return;
+    if (!linesToShow || !isFunctionLong(oldStart, oldEnd)) {
+      // Code of the function is short or we do not have info about which line inside the function
+      // should be shown - adding the whole function.
+      addAllLinesOfFunction();
+    } else {
+      // Function is long, adding specified line with context around it.
+      // old calling line
+      addLineWithContext(linesToShow[0]);
+      // add new calling line in case if it is in different change
+      // than old calling line
+      const oldLineOfNewCalling = getCorrespondingOldLineNumber(
+        file.hunks,
+        linesToShow[1],
+      );
+      if (oldLineOfNewCalling !== linesToShow[0]) {
+        addLineWithContext(oldLineOfNewCalling);
       }
     }
-  }, [file, oldCode, oldStart, oldEnd, linesToShow, expandHunks, onlyOneSide]);
+  }, [file, oldCode, oldStart, oldEnd, linesToShow, expandHunks, onlyOneSide, showDiff]);
 
   /**
    * Function for rendering/adding expand button on places
