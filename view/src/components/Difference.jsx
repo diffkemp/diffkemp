@@ -110,9 +110,13 @@ export default function Difference({
         newStart: needsNewCode ? newDefintion.line : null,
         oldEnd: needsOldCode ? oldDefintion['end-line'] : null,
         newEnd: needsNewCode ? newDefintion['end-line'] : null,
-        calling: getCallingLine(),
         differing: [oldDiffering, newDiffering].includes(functionToShow.name),
       };
+      // If the selected symbol is a function, get the line on which is called
+      // next symbol from the call stack.
+      if (definitions[name].kind === 'function') {
+        specification.calling = getCallingLine();
+      }
       codeBlock = (
         <Code
           key={`${compare}-${name}`}
