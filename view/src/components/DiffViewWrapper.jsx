@@ -68,6 +68,52 @@ function getLinesToHighlight(linesToShow, hunks) {
   return [];
 }
 
+/**
+ * Creates a file structure for code visualisation of one version of a symbol.
+ * @param {boolean} isOld - True if the version is old version of the symbol, otherwise false.
+ * @param {string} code - Content of a file in which is the symbol located.
+ * @param {number} start - Line on which the code of the symbol starts.
+ * @param {number} end - Line on which the code of the symbol ends.
+ * @returns Returns file structure containing code of the symbol.
+ */
+function createFileStructForOneSide(isOld, code, start, end) {
+  // Note: The structure which react-diff-view uses
+  // is described here https://github.com/ecomfe/gitdiff-parser#api
+  // (gitdiff-parser is a package which react-diff-view uses).
+  let lines = code.split('\n');
+  lines = lines.slice(start - 1, end);
+  // Creating changes from every line. Based on whether the code belongs to the old or new version,
+  // setting the change type so the code is shown on the correct side.
+  const changes = lines.map((line, index) => ({
+    content: line,
+    type: isOld ? 'delete' : 'insert',
+    lineNumber: start + index,
+    isDelete: isOld,
+    isInsert: !isOld,
+  }));
+  // Creating hunk with the changes and setting attributes based on which version
+  // the code belongs to.
+  const hunk = {
+    oldStart: isOld ? start : 0,
+    oldLines: isOld ? end - start + 1 : 0,
+    newStart: isOld ? 0 : start,
+    newLines: isOld ? 0 : end - start + 1,
+    changes,
+  };
+  hunk.content = `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`;
+  // Note: Missing fields: oldMode, newMode, similarity, oldRevision, newRevision,
+  // Note 2: `type` must be 'modify' so the code is shown on the correct side.
+  const file = {
+    hunks: [hunk],
+    oldEndingNewLine: true,
+    newEndingNewLine: true,
+    oldPath: '',
+    newPath: '',
+    type: 'modify',
+  };
+  return file;
+}
+
 function getSyntaxHighlightedTokens(hunks) {
   const options = {
     highlight: true,
@@ -79,6 +125,8 @@ function getSyntaxHighlightedTokens(hunks) {
 
 /**
  * A component for visualisation of source code of two versions of a function.
+ * Function refers generally to symbol definition, including functions, types and macros.
+ *
  * For the function, we show:
  * - lines containing differences,
  * - the first and the last line of the function.
@@ -88,38 +136,67 @@ function getSyntaxHighlightedTokens(hunks) {
  * - otherwise, only the line with the call surrounded by a certain
  *   amount (LINES_OF_CONTEXT) of lines is shown.
  *
+ * It is possible to show source code of only one version (old/new) of a function
+ * in that case set the code of the other version (oldCode/newCode) to empty string.
+ * The entire code of the function is shown then.
+ *
  * For the lines which are not shown, we render buttons that allow user to show these lines.
- * @param {Object} props
+ * @param {Object} props - The old/new props can be null when showing only one version
+ *   of the function.
  * @param {string} props.oldCode - Source code of file containing old version of the function.
+ * @param {string} props.newCode - Source code of file containing new version of the function.
+ *   If oldCode or newCode is empty string, then we are showing only one version of function.
  * @param {string} props.diff - Output of unified diff of old and new source code.
  * @param {number} props.oldStart - Line where the old version of the function starts.
  * @param {number} props.newStart - Line where the new version of the function starts.
  * @param {number} props.oldEnd - Line where the old version of the function ends.
+ * @param {number} props.newEnd - Line where the new version of the function ends.
  * @param {Boolean} [props.showDiff=true] - True to color differences in function.
  * @param {Number} [props.linesToShow=null] - Lines (old, new) of function which
  *                                            should be shown and highlighted.
  */
 export default function DiffViewWrapper({
   oldCode,
+  newCode,
   diff,
   oldStart,
   newStart,
   oldEnd,
+  newEnd,
   showDiff = true,
   linesToShow = null,
 }) {
-  /* getting object which Diff component needs */
+  /* Showing code only for one version of a function? */
+  const onlyOneSide = (oldCode === '' || newCode === '');
+  /**
+   * Getting object which Diff component needs, it is an object which represents
+   * differences in a file, it contains hunks (group of changes),
+   * the hunks contain individual line changes (insert/delete/normal).
+   */
   const file = useMemo(() => {
-    if (diff !== '') {
-      const [fileObject] = parseDiff(diff);
-      return fileObject;
+    if (onlyOneSide) {
+      // Only one side/version of code will be shown - creating the object from the code.
+      const onlyOld = (newCode === '');
+      const [code, start, end] = onlyOld
+        ? [oldCode, oldStart, oldEnd]
+        : [newCode, newStart, newEnd];
+      return createFileStructForOneSide(onlyOld, code, start, end);
     }
+    if (diff !== '') {
+      // Code contains syntax differences - creating the object from the diff.
+      return parseDiff(diff)[0];
+    }
+    // Code does not contain syntax differences - creating the object using first line of code.
     return createFileStructure(oldCode, oldStart, newStart);
-  }, [diff, oldCode, oldStart, newStart]);
-    /* hunks of differences/code which will be shown */
+  }, [diff, oldCode, newCode, oldStart, newStart, oldEnd, newEnd, onlyOneSide]);
+  /* hunks of differences/code which will be shown */
   const [hunks, setHunks] = useState(null);
-  // function for adding lines of old code form startLine to endLine
-  // which should be shown
+  // Function for adding lines of old code from startLine to endLine
+  // which should be shown.
+  // TODO - edit to work also if showing only one version of a function.
+  // Currently it does not make sense, because only one version is shown
+  // in case of a macro call, for macro calls we do not know on which line
+  // is used next macro and we are showing whole body of macro.
   const expandHunks = useCallback(
     (startLine, endLine = startLine) => {
       setHunks((oldHunks) => expandFromRawCode(oldHunks, oldCode, startLine, endLine + 1));
@@ -152,6 +229,8 @@ export default function DiffViewWrapper({
     };
 
     setHunks(file.hunks);
+    // If showing code for onlyOneSide, then right now we are showing the whole function.
+    if (onlyOneSide) return;
     addFirstAndLastLine();
     setHunks((oldHunks) => getHunksInRange(oldHunks));
     // Showing function which is called instead of diff of function
@@ -172,7 +251,7 @@ export default function DiffViewWrapper({
         addAllLinesOfFunction();
       }
     }
-  }, [file, oldCode, oldStart, oldEnd, linesToShow, expandHunks]);
+  }, [file, oldCode, oldStart, oldEnd, linesToShow, expandHunks, onlyOneSide]);
 
   /**
    * Function for rendering/adding expand button on places
@@ -220,11 +299,13 @@ export default function DiffViewWrapper({
 }
 
 DiffViewWrapper.propTypes = {
-  oldCode: PropTypes.string.isRequired,
+  oldCode: PropTypes.string,
+  newCode: PropTypes.string,
   diff: PropTypes.string.isRequired,
-  oldStart: PropTypes.number.isRequired,
-  newStart: PropTypes.number.isRequired,
-  oldEnd: PropTypes.number.isRequired,
+  oldStart: PropTypes.number,
+  newStart: PropTypes.number,
+  oldEnd: PropTypes.number,
+  newEnd: PropTypes.number,
   showDiff: PropTypes.bool,
   linesToShow: PropTypes.arrayOf(PropTypes.number),
 };
