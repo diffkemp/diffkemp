@@ -10,20 +10,8 @@ The main use-case of DiffKemp is to compare selected functions and configuration
 options in two versions of a project and to report any discovered semantic
 differences.
 
-## About
-
-The main focus of DiffKemp is high scalability, such that it can be applied to
-large-scale projects containing a lot of code. To achieve that, the analysed
-functions are first compiled into LLVM IR, then several code transformations are
-applied, and finally the comparison itself is performed.
-
-Wherever possible, DiffKemp tries to compare instruction-by-instruction (on LLVM
-IR instructions) which is typically sufficient for most of the code. When not
-sufficient, DiffKemp tries to apply one of the built-in or user-supplied
-*semantics-preserving patterns*. If a semantic difference is still discovered,
-the relevant diffs are reported to the user.
-
-Note that DiffKemp is incomplete it its nature, hence may provide false positive
+> [!WARNING]
+> DiffKemp is incomplete in its nature, hence may provide false positive
 results (i.e. claiming that functions are not equivalent even though they are).
 This especially happens with complex refactorings.
 
@@ -76,7 +64,8 @@ DiffKemp runs in two phases:
 
 - **Snapshot generation** compiles the compared project versions into LLVM IR
   and creates so-called *snapshots* which contain the relevant LLVM IR files and
-  additional metadata.
+  additional metadata. (DiffKemp needs the analysed project to be compiled with
+  debugging information in order to work properly.)
 
   There are several options for snapshot generation:
   - ```
@@ -155,24 +144,18 @@ once such as:
 Currently, these sysctl option groups are supported: `kernel.*`,
 `vm.*`, `fs.*`, `net.core.*`, `net.ipv4.conf.*`.
 
-## Important implementation details
+## How does it work?
 
-The core of DiffKemp is the *SimpLL* component, written in C++ for performance
-reasons. The user inputs and comparison results are handled by Python for
-simplicity. SimpLL performs several important steps:
+The main focus of DiffKemp is high scalability, such that it can be applied to
+large-scale projects containing a lot of code. To achieve that, the analysed
+functions are first compiled into LLVM IR, then several code transformations are
+applied, and finally the comparison itself is performed.
 
-- Simplification of the compared programs by applying multiple code
-  transformations such as dead code elimination, indirect calls abstraction,
-  etc.
-- Debug info parsing to collect information important for the comparison.
-  DiffKemp needs the analysed project to be built with debugging information in
-  order to work properly.
-- The comparison itself is mostly done instruction-by-instruction. In addition,
-  DiffKemp handles semantics-preserving changes that adhere to one of the
-  built-in patterns. Additional patterns can be specified manually and passed to
-  the `compare` command.
-- See publications on the bottom of this page for futher information on DiffKemp
-  internals.
+Wherever possible, DiffKemp tries to compare instruction-by-instruction (at the
+level of LLVM IR) which is typically sufficient for most of the code. When not
+sufficient, DiffKemp tries to apply one of the built-in or user-supplied
+*semantics-preserving patterns*. If no pattern can be applied,
+the relevant diffs are reported to the user.
 
 ## Development
 
@@ -281,7 +264,7 @@ The result viewer contains unit tests and integration tests
 which can be run by:
 
     cd view && npm test -- --watchAll
-    
+
 ## Contributors
 
 The list of code and non-code contributors to this project, in pseudo-random
@@ -298,15 +281,16 @@ order:
 ## Publications and talks
 
 There is a number of publications and talks related to DiffKemp:
+
 - ICST'21 [paper](https://ieeexplore.ieee.org/document/9438578)
   and [talk](https://zenodo.org/record/4658966):  
   V. Malík and T. Vojnar, "Automatically Checking Semantic Equivalence between
   Versions of Large-Scale C Projects," 2021 14th IEEE Conference on Software
   Testing, Verification and Validation (ICST), 2021, pp. 329-339.
+- [DevConf.CZ'19 talk](https://www.youtube.com/watch?v=PUZSaLf9exg).
 - NETYS'22
   [paper](https://link.springer.com/chapter/10.1007/978-3-031-17436-0_18) and
   [talk](https://www.youtube.com/watch?v=FPOUfgorF8s):  
   Malík, V., Šilling, P., Vojnar, T. (2022). Applying Custom Patterns in
   Semantic Equality Analysis. In: Koulali, MA., Mezini, M. (eds) Networked
   Systems. NETYS 2022.
-- [DevConf.CZ'19 talk](https://www.youtube.com/watch?v=PUZSaLf9exg).
