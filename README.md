@@ -17,47 +17,19 @@ This especially happens with complex refactorings.
 
 ## Installation
 
-There are two options to install DiffKemp, either build from source or use a
-prepared RPM package for Fedora.
+You can install DiffKemp:
 
-### Install from source
+- By building it manually [from source](docs/installation.md)
+- From a prepared RPM package that can be installed from our
+  [Copr repository](https://copr.fedorainfracloud.org/coprs/viktormalik/diffkemp/):
 
-Currently, DiffKemp runs on Linux and needs the following software installed:
-* Clang and LLVM (supported versions are 9, 10, 11, 12, 13, 14, 15)
-* Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
-* Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
-* CScope (when comparing versions of the Linux kernel)
-* GoogleTest (gtest) for running the C++ tests (can be vendored by using
-  `-DVENDOR_GTEST=On` in the `cmake` command)
-
-Additionally, to build manually, you need to install the following tools:
-* CMake
-* Ninja build system
-
-Build can be done by running:
-
-    mkdir build
-    cd build
-    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
-    ninja
-    cd ..
-
-    pip install -e .
-
-The DiffKemp binary is then located in `bin/diffkemp`.
-
-For running the result viewer, it is necessary to have installed:
-* Node.js (>= 14.x)
-* npm (8)
-
-When building with `cmake`, use `-DBUILD_VIEWER=On` to install necessary
-packages and build an optimized version of the result viewer.
-
-### Install from RPM
-
-Alternatively, you can use a prepared RPM package for Fedora that can be
-installed from our Copr repository:
-[https://copr.fedorainfracloud.org/coprs/viktormalik/diffkemp/](https://copr.fedorainfracloud.org/coprs/viktormalik/diffkemp/)
+  ```sh
+  # Enabling the DiffKemp repository
+  dnf install -y dnf-plugins-core
+  dnf copr enable -y viktormalik/diffkemp
+  # Installing DiffKemp
+  dnf install -y diffkemp
+  ```
 
 ## Usage
 DiffKemp runs in two phases:
