@@ -5,6 +5,7 @@ information about:
 
 - [How to set up development environment](#development-environment)
 - [How to build DiffKemp](#build)
+- [How to check code follows the coding style](#coding-style)
 - [Where the tests are located and how to run them](#tests)
 - [Links to tools for performing experiments](#tools-for-performing-experiments)
 - [Useful links to learn more](#useful-links)
@@ -144,6 +145,17 @@ so even if you rebuild the library, the changes will not be visible when running
   `diffkemp compare ...`.
   (Note: This does not seems to be working in the [Nix development environment](#nix-as-development-environment),
   so use option 1 instead.)
+
+## Coding style
+
+We require that the code is according to a certain coding style, which can be
+checked with the following tools:
+
+- For Python code: `flake8 diffkemp tests`.
+- For C++ code: it is necessary to have `clang-format` installed and the coding
+  style can be checked with `tools/check-clang-format.sh -d` (it can be also
+  automatically fixed by running `tools/check-clang-format.sh -di`).
+- For JavaScript code: `npm --prefix view run lint`.
 
 ## Tests
 
