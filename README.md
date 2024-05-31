@@ -32,89 +32,50 @@ You can install DiffKemp:
   ```
 
 ## Usage
-DiffKemp runs in two phases:
 
-- **Snapshot generation** compiles the compared project versions into LLVM IR
-  and creates so-called *snapshots* which contain the relevant LLVM IR files and
-  additional metadata. (DiffKemp needs the analysed project to be compiled with
-  debugging information in order to work properly.)
+DiffKemp runs in three phases:
 
-  There are several options for snapshot generation:
-  - ```
-    diffkemp build PROJ_DIR SNAPSHOT_DIR [SYMBOL_LIST]
+1. **Snapshot generation** takes symbols (functions) that you want to compare
+   and project versions. It compiles the versions into LLVM IR
+   (which it uses for the comparison) and creates
+   so-called *snapshots* which contain the relevant LLVM IR files and
+   additional metadata. (DiffKemp needs the analysed project to be compiled with
+   debugging information in order to work properly.)
+
+   There are several options for snapshot generation:
+     - ```sh
+       diffkemp build PROJ_DIR SNAPSHOT_DIR [SYMBOL_LIST]
+       ```
+       is the default snapshot generation command for `make`-based projects.
+     - ```sh
+       diffkemp build-kernel KERNEL_DIR SNAPSHOT_DIR SYMBOL_LIST
+       ```
+       is a command specialized for building snapshots from the Linux kernel.
+     - ```sh
+       diffkemp llvm-to-snapshot PROJ_DIR LLVM_FILE SNAPSHOT_DIR SYMBOL_LIST
+       ```
+       can be used if the project is already compiled into a single LLVM IR file.
+
+   In any case, the command should be run twice, once for each of the compared
+   versions.
+
+2. **Semantic comparison** takes two snapshots, compares them for semantic
+   equality, and saves a report about symbols that were compared as semantically
+   different. It is invoked via:
+
+    ```sh
+    diffkemp compare SNAPSHOT_DIR_1 SNAPSHOT_DIR_2 -o COMPARE_OUTPUT_DIR
     ```
-    is the default snapshot generation command for `make`-based projects. It
-    takes the project located in `PROJ_DIR`, builds it into LLVM IR, and creates
-    a snapshot for comparing semantics of functions from `SYMBOL_LIST` (if no
-    list is given, all exported functions from the project are considered). The
-    snapshot is stored in `SNAPSHOT_DIR`. Warning: if `SNAPSHOT_DIR` exists, it
-    will be rewritten.
 
-    The command should be run twice, once for each of the compared versions.  It
-    also has additional options to configure the project build, see `diffkemp
-    build --help` for the complete list.
+3. Additionally, you can run **result viewer** to get a visualisation of
+   the found differences:
 
-    The command can be also used to generate a snapshot from a single C file.
-    In this case, the path to the file should be given in place of `PROJ_DIR`.
+   ```sh
+   diffkemp view COMPARE_OUTPUT_DIR
+   ```
 
-  - ```
-    diffkemp build-kernel KERNEL_DIR SNAPSHOT_DIR SYMBOL_LIST
-    ```
-    is a command similar to `build` which is specialized for building snapshots
-    from the Linux kernel. Its main advantage is that it does not build the
-    entire kernel, only the files containing functions from `SYMBOL_LIST`. The
-    kernel source to build must be properly configured (by `make prepare`) and
-    all the tools necessary for building kernel must be installed.
-
-  - ```
-    diffkemp llvm-to-snapshot PROJ_DIR LLVM_FILE SNAPSHOT_DIR SYMBOL_LIST
-    ```
-    can be used if the project is already compiled into a single LLVM IR file.
-    The file name is given in `LLVM_FILE` and must be relative to `PROJ_DIR`.
-    The remaining options are the same as for the other commands.
-
-- **Semantic comparison** takes two snapshots and compares them for semantic
-  equality. It is invoked via:
-  ```
-  diffkemp compare SNAPSHOT_DIR_1 SNAPSHOT_DIR_2
-  ```
-
-  To show syntactic diffs of the discovered differences, use the `--syntax-diff`
-  option. The diffs are stored in separate files (one file for each compared
-  function that is different) in a newly created directory. The name of the
-  directory can be specified using the `-o` option, otherwise it is generated
-  automatically. The `--stdout` option causes the diffs to be printed to
-  standard output.
-
-Additionally, you can run **result viewer** to get a visualisation of the found
-differences.
-
-- **Result viewer** takes the directory with the output of the compare phase. 
-  It is invoked via:
-  ```
-  diffkemp view COMPARE_OUTPUT_DIR
-  ```
-
-  It prepares the necessary files and runs a static server. The command displays the URL that you can use to access the result viewer.
-
-### Comparing sysctl options
-
-Apart from comparing specific functions, DiffKemp supports comparison of
-semantics of sysctl options. The list of the options to compare can be passed
-via `SYMBOL_LIST` to the `build-kernel` command. In such case, use `--sysctl`
-switch to generate snapshot for sysctl parameter comparison. The `compare`
-command is used in normal way.
-
-Sysctl option comparison compares semantics of the proc handler function and
-semantics of all functions using the data variable that the sysctl option sets.
-
-It is possible to use patterns to specify a number of multiple sysctl options at
-once such as:
-* `kernel.*`
-* `kernel.{sysctl-1|sysctl-2}`
-
-Currently, these sysctl option groups are supported: `kernel.*`,
-`vm.*`, `fs.*`, `net.core.*`, `net.ipv4.conf.*`.
+See the [Usage reference](docs/usage.md) to learn more about how to use
+individual commands.
 
 ## How does it work?
 
