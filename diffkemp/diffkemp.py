@@ -28,6 +28,8 @@ import yaml
 VIEW_INSTALL_DIR = "/var/lib/diffkemp/view"
 # Name of YAML output file created by diffkemp compare command.
 YAML_FILE_NAME = "diffkemp-out.yaml"
+# Error message shown when no symbols were found in the symbol list file.
+EMSG_EMPTY_SYMBOL_LIST = "ERROR: symbol list is empty or could not be read\n"
 
 
 def build(args):
@@ -141,9 +143,17 @@ def build_c_project(args):
     shutil.copyfile(db_filename, os.path.join(args.output_dir, "diffkemp-wdb"))
 
     # Build sources for symbols from the list into LLVM IR
+    user_symbol_list = True
     if args.symbol_list is None:
+        user_symbol_list = False
         args.symbol_list = os.path.join(args.source_dir, "function_list")
     symbol_list = read_symbol_list(args.symbol_list)
+    if not symbol_list:
+        if user_symbol_list:
+            sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
+        else:
+            sys.stderr.write("ERROR: no symbols were found in the project\n")
+        sys.exit(errno.EINVAL)
     generate_from_function_list(snapshot, symbol_list)
 
     # Create the snapshot directory containing the YAML description file
@@ -171,6 +181,12 @@ def build_c_file(args):
         function_list = source_finder.get_function_list()
     else:
         function_list = read_symbol_list(args.symbol_list)
+    if not function_list:
+        if args.symbol_list:
+            sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
+        else:
+            sys.stderr.write("ERROR: no symbols were found in the file\n")
+        sys.exit(errno.EINVAL)
     generate_from_function_list(snapshot, function_list)
 
     # Create the snapshot directory containing the YAML description file.
@@ -198,8 +214,8 @@ def build_kernel(args):
     # Read the symbol list
     symbol_list = read_symbol_list(args.symbol_list)
     if not symbol_list:
-        sys.stderr.write("ERROR: symbol list is empty or could not be read\n")
-        return
+        sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
+        sys.exit(errno.EINVAL)
 
     # Generate snapshot contents
     if args.sysctl:
@@ -223,8 +239,8 @@ def llvm_to_snapshot(args):
 
     function_list = read_symbol_list(args.function_list)
     if not function_list:
-        sys.stderr.write("ERROR: symbol list is empty or could not be read\n")
-        return
+        sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
+        sys.exit(errno.EINVAL)
 
     generate_from_function_list(snapshot, function_list)
     snapshot.generate_snapshot_dir()
