@@ -1,5 +1,12 @@
-from argparse import ArgumentParser, SUPPRESS
+from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
 import diffkemp.diffkemp
+import os
+
+
+def is_file(path):
+    if not os.path.isfile(path):
+        raise ArgumentTypeError(f"'{path}' is not a file")
+    return path
 
 
 def make_argument_parser():
@@ -24,7 +31,7 @@ def make_argument_parser():
                           "or a path to a single C file")
     build_ap.add_argument("output_dir",
                           help="output directory of the snapshot")
-    build_ap.add_argument("symbol_list", nargs='?',
+    build_ap.add_argument("symbol_list", nargs='?', type=is_file,
                           help="list of symbols to compare")
     build_ap.add_argument("--build-program", help="make tool used to be used\
                           for build", default="make")
@@ -60,7 +67,7 @@ def make_argument_parser():
                                  help="kernel's root directory")
     build_kernel_ap.add_argument("output_dir",
                                  help="output directory of the snapshot")
-    build_kernel_ap.add_argument("symbol_list",
+    build_kernel_ap.add_argument("symbol_list", type=is_file,
                                  help="list of symbols (functions) to compare")
     build_kernel_ap.add_argument(
         "--sysctl",
@@ -81,7 +88,7 @@ def make_argument_parser():
     llvm_snapshot_ap.add_argument("llvm_file", help="name of the LLVM IR file")
     llvm_snapshot_ap.add_argument("output_dir",
                                   help="output directory of the snapshot")
-    llvm_snapshot_ap.add_argument("function_list",
+    llvm_snapshot_ap.add_argument("function_list", type=is_file,
                                   help="list of functions to compare")
     llvm_snapshot_ap.set_defaults(func=diffkemp.diffkemp.llvm_to_snapshot)
 
