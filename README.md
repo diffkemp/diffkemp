@@ -154,6 +154,15 @@ DiffKemp runs in three phases:
 See the [Usage reference](docs/usage.md) to learn more about how to use
 individual commands.
 
+## Examples
+
+If you want to learn how you can use DiffKemp, you can read the following
+examples:
+
+- [Simple program](docs/examples/simple_program.md): Example of using DiffKemp
+  on a very simple program (contains a few lines of code) to understand how to
+  use DiffKemp, what it does, and what it gives us as a result.
+
 ## How does it work?
 
 The main focus of DiffKemp is high scalability, such that it can be applied to
