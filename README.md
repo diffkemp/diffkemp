@@ -168,6 +168,20 @@ examples:
 - [Linux kernel](docs/examples/linux_kernel.md): Example of using DiffKemp
   on the Linux kernel.
 
+## Why to use DiffKemp?
+
+- **Maintaining semantic stability**: There are functions whose behaviour
+  should not change between versions.
+- **Efficiency in code review**: DiffKemp can reduce the amount of code that
+  you will need to review manually by eliminating changes that do not impact
+  the behaviour of the program.
+- **Detection of unintended side effects**: Comparing programs on a semantic
+  level can detect subtle changes that might alter the program's behavior.
+- **Focus on critical functions**: You can specify a list of functions which
+  you want to compare.
+- **Support for large and complex C projects** like Linux kernel, C standard
+  libraries, cryptographic libraries, ...
+
 ## How does it work?
 
 The main focus of DiffKemp is high scalability, such that it can be applied to
