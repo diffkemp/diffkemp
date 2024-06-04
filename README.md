@@ -165,6 +165,8 @@ examples:
 - [Library](docs/examples/musl_library.md): Example of using DiffKemp
   on a more complex program, specifically on the musl C library. We will learn
   how to compare complex `make`-based projects and how to use the result viewer.
+- [Linux kernel](docs/examples/linux_kernel.md): Example of using DiffKemp
+  on the Linux kernel.
 
 ## How does it work?
 
