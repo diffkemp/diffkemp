@@ -162,6 +162,9 @@ examples:
 - [Simple program](docs/examples/simple_program.md): Example of using DiffKemp
   on a very simple program (contains a few lines of code) to understand how to
   use DiffKemp, what it does, and what it gives us as a result.
+- [Library](docs/examples/musl_library.md): Example of using DiffKemp
+  on a more complex program, specifically on the musl C library. We will learn
+  how to compare complex `make`-based projects and how to use the result viewer.
 
 ## How does it work?
 
