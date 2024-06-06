@@ -1,0 +1,40 @@
+[build-system]
+requires = [
+    "setuptools",
+    "cffi",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Diffkemp"
+version = "0.6.1"
+dependencies = [
+    "pyyaml",
+    "cffi",
+]
+readme = "README.md"
+description = "A tool for semantic difference analysis of kernel functions"
+authors = [
+    {name = "Viktor Malik", email = "vmalik@redhat.com"},
+]
+
+optional-dependencies.dev = [
+    "flake8",
+    "pytest",
+    "pytest-mock",
+]
+
+[tool.setuptools]
+packages = [
+    "diffkemp",
+    "diffkemp.building",
+    "diffkemp.llvm_ir",
+    "diffkemp.semdiff",
+    "diffkemp.simpll",
+    "diffkemp.syndiff",
+    "diffkemp.building.cc_wrapper",
+]
+
+[project.scripts]
+diffkemp = 'diffkemp.cli:run_from_cli'
+
