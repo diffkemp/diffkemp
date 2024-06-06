@@ -49,13 +49,12 @@ if (NOT ${system_libs} STREQUAL "")
     target_link_libraries(simpll ${system_libs})
 endif()
 
-if(SIMPLL_REBUILD_BINDINGS)
-add_custom_target(python-ffi ALL DEPENDS _simpll.c)
-add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/_simpll.c"
-                   DEPENDS simpll-lib
-                   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-                   COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/simpll_build.py")
-endif()
+add_custom_target(python-ffi ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/_simpll.c")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/_simpll.c"
+  DEPENDS simpll-lib "simpll_build.py"
+  COMMENT "Building CFFI python bindings for SimpLL"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/simpll_build.py . && ./simpll_build.py)
 
 if(SIMPLL_INSTALL_BINARY)
 install(TARGETS simpll
