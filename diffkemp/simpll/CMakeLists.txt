@@ -49,12 +49,20 @@ if (NOT ${system_libs} STREQUAL "")
     target_link_libraries(simpll ${system_libs})
 endif()
 
+if (NOT DEFINED $ENV{SIMPLL_BUILD_DIR})
+  message(STATUS "Setting SIMPLL_BUILD_DIR to ${CMAKE_BINARY_DIR}")
+  set(simpll_build_dir ${CMAKE_BINARY_DIR})
+else ()
+  set(simpll_build_dir $ENV{SIMPLL_BUILD_DIR})
+endif ()
+
 add_custom_target(python-ffi ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/_simpll.c")
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/_simpll.c"
   DEPENDS simpll-lib "simpll_build.py"
   COMMENT "Building CFFI python bindings for SimpLL"
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/simpll_build.py . && ./simpll_build.py)
+  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/simpll_build.py .
+  && ${CMAKE_COMMAND} -E env PATH=$ENV{PATH} "SIMPLL_BUILD_DIR=${simpll_build_dir}" python3 simpll_build.py)
 
 if(SIMPLL_INSTALL_BINARY)
 install(TARGETS simpll
