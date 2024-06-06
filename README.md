@@ -54,9 +54,10 @@ Build can be done by running:
     ninja
     cd ..
 
-    pip install -e .
+    pip install .
 
-The DiffKemp binary is then located in `bin/diffkemp`.
+The Diffkemp executable should then be available in your `PATH`, depending on
+your `pip` configuration.
 
 For running the result viewer, it is necessary to have installed:
 * Node.js (>= 14.x)
@@ -235,8 +236,8 @@ This will enter a development shell with all DiffKemp dependencies
 pre-installed. You can then follow the [standard build
 instructions](#install-from-source) to build and install DiffKemp. The only
 difference is that it is not possible to run `pip install` inside Nix shell
-(because of the way Nix works) and it is necessary to use the built-in
-`setuptoolsShellHook` function instead.
+(because of the way Nix works). Fortunately in case of nix you don't have to, as
+we are generating working development executable in `build/bin/diffkemp`.
 
 We also provide a special Nix environment for retrieving and preparing kernel
 versions necessary for running regression tests (see below for details).
