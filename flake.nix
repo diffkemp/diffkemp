@@ -18,6 +18,7 @@
           python3Packages.buildPythonPackage {
             pname = "diffkemp";
             version = "0.6.0";
+            pyproject = true;
 
             src = self;
 
@@ -41,7 +42,11 @@
               cffi
               pyyaml
               setuptools
-              pipInstallHook
+              pypaInstallHook
+            ];
+
+            build-system = with python3Packages; [
+                setuptools
             ];
 
             WITHOUT_RPYTHON = true;
@@ -59,12 +64,12 @@
             buildPhase = ''
               cd ..
               ninjaBuildPhase
-              setuptoolsBuildPhase
+              pypaBuildPhase
             '';
 
             installPhase = ''
               ninjaInstallPhase
-              pipInstallPhase
+              pypaInstallPhase
               install -m 0755 bin/diffkemp $out/bin/diffkemp
             '';
           };
@@ -113,7 +118,6 @@
 
             # Running setuptoolsShellHook by default is confusing because it
             # will fail if SimpLL hasn't been built before.
-            dontUseSetuptoolsShellHook = true;
 
             # On the other hand, we want to allow running it from CLI using
             # `nix develop --command bash -c setuptoolsShellHook` inside CI.
@@ -121,7 +125,6 @@
             # function) so we workaround this with the below hack which exports
             # the function (and all functions it uses) as commands.
             shellHook = ''
-              export -f setuptoolsShellHook runHook _eval _callImplicitHook
 
               # Adding current (diffkemp) directory to PYTHONPATH,
               # the `diffkemp build` subcommand does not work without it
@@ -190,8 +193,6 @@
             propagatedBuildInputs = default.propagatedBuildInputs;
 
             WITHOUT_RPYTHON = true;
-
-            dontUseSetuptoolsShellHook = true;
           };
       };
     };
