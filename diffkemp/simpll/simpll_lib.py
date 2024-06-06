@@ -1,15 +1,11 @@
-import sys
-from diffkemp.utils import get_simpll_build_dir
+"""Module exports:
+- lib - loaded SimpLL library (contains callable references to the C functions
+  declared in `library/FFI.h`),
+- ffi - interface for defining C types/functions and manipulating C data in
+  Python.
+"""
 
 # Dynamically import the SimpLL C extension module.
-# First try to import from the current build directory (to allow multiple
-# parallel local builds).
-# If that fails, import from the default location.
-try:
-    sys.path.append(get_simpll_build_dir())
-    _simpll = __import__("_simpll")
-except ImportError:
-    _simpll = __import__("diffkemp.simpll._simpll", fromlist=[None])
-
+_simpll = __import__("_simpll")
 lib = _simpll.lib
 ffi = _simpll.ffi
