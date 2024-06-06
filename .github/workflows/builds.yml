@@ -22,8 +22,15 @@ jobs:
         include:
           - build-type: release
             diffkemp-bin: diffkemp
+            build-dir: build
           - build-type: development
-            diffkemp-bin: bin/diffkemp
+            diffkemp-bin: build/bin/diffkemp
+            build-dir: build
+          # Development build with custom build directory and disabled CFFI
+          - build-type: development
+            diffkemp-bin: my-build-dir/bin/diffkemp
+            build-dir: my-build-dir
+            compare-options: --disable-simpll-ffi
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -31,8 +38,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install cmake ninja-build libgtest-dev
-          pip install -r requirements.txt
+          sudo apt install cmake ninja-build libgtest-dev python3-cffi virtualenv
       - name: Install LLVM
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -43,21 +49,28 @@ jobs:
       - name: Release build and install of DiffKemp
         if: ${{ matrix.build-type == 'release' }}
         run: |
-          cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
-          sudo ninja -C build install
+          cmake -S . -B ${{ matrix.build-dir }} -GNinja -DCMAKE_BUILD_TYPE=Release
+          sudo ninja -C ${{ matrix.build-dir }} install
+          virtualenv -p python3 venv
+          source venv/bin/activate
           pip install .
-          sudo install -m 0755 bin/diffkemp /usr/bin/diffkemp
+          pip install .[dev]
       - name: Development build of DiffKemp
         if: ${{ matrix.build-type == 'development' }}
         run: |
-          cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug
-          sudo ninja -C build
-          pip install -e .
+          cmake -S . -B ${{ matrix.build-dir }} -GNinja -DCMAKE_BUILD_TYPE=Debug
+          sudo ninja -C ${{ matrix.build-dir }}
+          virtualenv -p python3 venv
+          source venv/bin/activate
+          # Installing dependencies
+          SIMPLL_BUILD_DIR="${{matrix.build-dir}}" pip install .
+          pip uninstall -y diffkemp
       - name: Check by building and comparing make-based project
         run: |
+          source venv/bin/activate
           ${{matrix.diffkemp-bin}} build tests/testing_projects/make_based/ old-snapshot
           ${{matrix.diffkemp-bin}} build tests/testing_projects/make_based/ new-snapshot
-          ${{matrix.diffkemp-bin}} compare old-snapshot new-snapshot
+          ${{matrix.diffkemp-bin}} compare ${{matrix.compare-options}} old-snapshot new-snapshot
 
   nix-development-build:
     runs-on: ubuntu-latest
@@ -66,16 +79,15 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@v10
       - name: Build DiffKemp
         run: >
-          nix develop . --command bash -c
-          "cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug &&
+          nix develop . --command bash -c "
+           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug &&
            ninja -C build"
       - name: Check by building and comparing make-based project
         run: >
           nix develop . --command bash -c
-          "setuptoolsShellHook &&
-           bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
-           bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
-           bin/diffkemp compare old-snapshot new-snapshot"
+          "build/bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
+           build/bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
+           build/bin/diffkemp compare old-snapshot new-snapshot"
 
   cc-wrapper-build:
     runs-on: ubuntu-22.04
