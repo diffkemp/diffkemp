@@ -32,7 +32,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install cmake ninja-build libgtest-dev
-          pip install -r requirements.txt
       - name: Install LLVM
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -72,8 +71,7 @@ jobs:
       - name: Check by building and comparing make-based project
         run: >
           nix develop . --command bash -c
-          "setuptoolsShellHook &&
-           bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
+          "bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
            bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
            bin/diffkemp compare old-snapshot new-snapshot"
 
