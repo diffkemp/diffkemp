@@ -1,8 +1,8 @@
 """
 LLVM sources finding in a project source tree.
 """
-from abc import ABC, abstractmethod
 import os
+from abc import ABC, abstractmethod
 
 
 class SourceNotFoundException(Exception):

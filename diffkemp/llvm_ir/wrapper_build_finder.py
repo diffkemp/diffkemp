@@ -2,9 +2,10 @@
 LLVM source finder for projects that are entirely compiled in build phase
 of DiffKemp using the compiler wrapper.
 """
-from diffkemp.llvm_ir.llvm_source_finder import LlvmSourceFinder
-from diffkemp.utils import get_functions_from_llvm
 import os
+
+from diffkemp.llvm_ir import LlvmSourceFinder
+from diffkemp.utils import get_functions_from_llvm
 
 
 class WrapperBuildFinder(LlvmSourceFinder):

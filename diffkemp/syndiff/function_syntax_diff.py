@@ -3,13 +3,13 @@ Syntax difference of two functions - using diff utility and filtering the
 result.
 """
 
-from subprocess import check_output, CalledProcessError
-from tempfile import mkdtemp
-from diffkemp.utils import get_end_line, EndLineNotFound
-
 import os
-from enum import IntEnum
 import re
+from enum import IntEnum
+from subprocess import CalledProcessError, check_output
+from tempfile import mkdtemp
+
+from diffkemp.utils import EndLineNotFound, get_end_line
 
 DIFF_NOT_OBTAINED_MESSAGE = "  [could not obtain diff]\n"
 UNIFIED_HUNK_HEAD_REGEX = re.compile(r"""^@@\ -(\d+) # from file start

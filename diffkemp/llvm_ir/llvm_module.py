@@ -3,13 +3,13 @@ LLVM IR modules.
 Functions for working with modules and parameters in them.
 """
 
-from diffkemp.simpll.library import SimpLLModule
-from diffkemp.simpll._simpll.lib import shutdownSimpLL
-from diffkemp.utils import get_opt_command
 import os
 import re
 import shutil
-from subprocess import check_call, CalledProcessError
+from subprocess import CalledProcessError, check_call
+
+from diffkemp.simpll import SimpLLModule, lib
+from diffkemp.utils import get_opt_command
 
 # Set of standard functions that are supported, so they should not be
 # included in function collecting.
@@ -66,7 +66,7 @@ class LlvmModule:
     @staticmethod
     def clean_all():
         """Clean all statically managed LLVM memory."""
-        shutdownSimpLL()
+        lib.shutdownSimpLL()
 
     def link_modules(self, modules):
         """Link module against a list of other modules."""

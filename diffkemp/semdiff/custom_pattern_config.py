@@ -1,8 +1,9 @@
 """Configuration for difference code patterns."""
-from subprocess import check_call, CalledProcessError, DEVNULL
-from diffkemp.utils import get_llvm_version, get_opt_command
 import os
+from subprocess import DEVNULL, CalledProcessError, check_call
 import yaml
+
+from diffkemp.utils import get_llvm_version, get_opt_command
 
 
 class UnsupportedCustomPatternError(ValueError):

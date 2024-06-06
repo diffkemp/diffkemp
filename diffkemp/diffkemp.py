@@ -1,29 +1,25 @@
-from diffkemp.building.cc_wrapper import get_cc_wrapper_path, wrapper_env_vars
-from diffkemp.config import Config
-from diffkemp.snapshot import Snapshot
-from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
-from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
-from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
-from diffkemp.llvm_ir.source_tree import SourceTree, SourceNotFoundException
-from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
-from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
-from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
-from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
-from diffkemp.semdiff.caching import SimpLLCache
-from diffkemp.semdiff.function_diff import functions_diff
-from diffkemp.semdiff.result import Result
-from diffkemp.output import YamlOutput
-from diffkemp.syndiff.function_syntax_diff import unified_syntax_diff
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-from subprocess import check_call, CalledProcessError
-from tempfile import mkdtemp
-from timeit import default_timer
 import errno
 import os
 import re
-import sys
 import shutil
+import sys
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from subprocess import CalledProcessError, check_call
+from tempfile import mkdtemp
+from timeit import default_timer
 import yaml
+
+from diffkemp.building.cc_wrapper import get_cc_wrapper_path, wrapper_env_vars
+from diffkemp.config import Config
+from diffkemp.llvm_ir import (BuildException, KernelLlvmSourceBuilder,
+                              KernelSourceTree, LlvmModule, LlvmParam,
+                              SingleCBuilder, SingleLlvmFinder,
+                              SourceNotFoundException, SourceTree,
+                              WrapperBuildFinder, opt_llvm)
+from diffkemp.output import YamlOutput
+from diffkemp.semdiff import Result, SimpLLCache, functions_diff
+from diffkemp.snapshot import Snapshot
+from diffkemp.syndiff import unified_syntax_diff
 
 VIEW_INSTALL_DIR = "/var/lib/diffkemp/view"
 # Name of YAML output file created by diffkemp compare command.

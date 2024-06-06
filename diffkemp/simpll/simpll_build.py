@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 from cffi import FFI
-from subprocess import check_output
-from diffkemp.utils import get_simpll_build_dir
 import os
 import sys
+from subprocess import check_output
+
+def get_simpll_build_dir():
+    """
+    Return the current SimpLL build directory as specified
+    in the `SIMPLL_BUILD_DIR` environment variable.
+    """
+    build_dir_var = "SIMPLL_BUILD_DIR"
+    if build_dir_var in os.environ:
+        return os.environ[build_dir_var]
+    return "build"
 
 
 def get_c_declarations(header_filename):

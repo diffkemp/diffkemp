@@ -1,11 +1,14 @@
 """Semantic difference of two functions using llreve and Z3 SMT solver."""
-from diffkemp.llvm_ir.source_tree import SourceNotFoundException
-from diffkemp.simpll.simpll import run_simpll, SimpLLException
-from diffkemp.semdiff.result import Result
-from diffkemp.syndiff.function_syntax_diff import syntax_diff
-from subprocess import Popen, PIPE
-from threading import Timer
 import sys
+from subprocess import PIPE, Popen
+from threading import Timer
+
+# from diffkemp.llvm_ir import SourceNotFoundException
+import diffkemp.llvm_ir as llvm_ir
+from diffkemp.semdiff import Result
+import diffkemp.simpll as simpll
+# from diffkemp.simpll import SimpLLException, run_simpll
+from diffkemp.syndiff import syntax_diff
 
 
 def _kill(processes):
@@ -31,12 +34,12 @@ def _link_symbol_def(snapshot, module, symbol):
 
     try:
         new_mod = snapshot.snapshot_tree.get_module_for_symbol(symbol, time)
-    except SourceNotFoundException:
+    except llvm_ir.SourceNotFoundException:
         if snapshot.source_tree:
             try:
                 new_mod = snapshot.source_tree.get_module_for_symbol(symbol,
                                                                      time)
-            except SourceNotFoundException:
+            except llvm_ir.SourceNotFoundException:
                 pass
 
     if new_mod:
@@ -211,15 +214,16 @@ def functions_diff(mod_first, mod_second,
             else:
                 # Simplify modules and get the output graph.
                 first_simpl, second_simpl, curr_result_graph, missing_defs = \
-                    run_simpll(first=mod_first.llvm, second=mod_second.llvm,
-                               fun_first=fun_first, fun_second=fun_second,
-                               var=glob_var.name if glob_var else None,
-                               config=config,
-                               suffix=glob_var.name if glob_var else "simpl",
-                               cache_dir=function_cache.directory
-                               if function_cache else None,
-                               module_cache=module_cache,
-                               modules_to_cache=modules_to_cache)
+                    simpll.run_simpll(
+                        first=mod_first.llvm, second=mod_second.llvm,
+                        fun_first=fun_first, fun_second=fun_second,
+                        var=glob_var.name if glob_var else None,
+                        config=config,
+                        suffix=glob_var.name if glob_var else "simpl",
+                        cache_dir=function_cache.directory
+                        if function_cache else None,
+                        module_cache=module_cache,
+                        modules_to_cache=modules_to_cache)
                 if missing_defs:
                     # If there are missing function definitions, try to find
                     # their implementation, link them to the current modules,
@@ -309,7 +313,7 @@ def functions_diff(mod_first, mod_second,
                 result.add_inner(fun_result)
     except ValueError:
         result.kind = Result.Kind.ERROR
-    except SimpLLException as e:
+    except simpll.SimpLLException as e:
         if config.verbosity > 0:
             print(e)
         result.kind = Result.Kind.ERROR

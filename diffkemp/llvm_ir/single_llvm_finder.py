@@ -2,8 +2,9 @@
 LLVM source finder for projects that are entirely compiled into a single
 LLVM IR file.
 """
-from diffkemp.llvm_ir.llvm_source_finder import LlvmSourceFinder
 import os
+
+from diffkemp.llvm_ir import LlvmSourceFinder
 
 
 class SingleLlvmFinder(LlvmSourceFinder):
