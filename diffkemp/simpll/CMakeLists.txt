@@ -54,6 +54,13 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/_simpll.c"
   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/simpll_build.py .
           && "SIMPLL_BUILD_DIR=${simpll_build_dir}" python3 simpll_build.py)
 
+message(STATUS "Generating bin/diffkemp executable")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../diffkemp.in
+  ${CMAKE_BINARY_DIR}/bin/diffkemp
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                   GROUP_READ
+                   WORLD_READ)
+
 if(SIMPLL_INSTALL_BINARY)
 install(TARGETS simpll
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
