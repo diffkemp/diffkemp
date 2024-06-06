@@ -133,8 +133,7 @@ jobs:
         shell: bash
         run: >
           nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
-          "setuptoolsShellHook &&
-           pytest tests -v"
+          pytest tests -v
 
   cc-wrapper-build:
     runs-on: ubuntu-latest
