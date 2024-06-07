@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+import os
+import sys
+import pytest
+
+if __name__ == "__main__":
+    sys.path.append("${CMAKE_BINARY_DIR}/diffkemp/simpll")
+    sys.path.append("${CMAKE_SOURCE_DIR}")
+    os.environ["SIMPLL_BUILD_DIR"] = "${CMAKE_BINARY_DIR}"
+    sys.exit(pytest.main([
+        "${CMAKE_SOURCE_DIR}/tests",
+        # Pass the CLI arguments to pytest
+        *sys.argv[1:]
+    ]))
