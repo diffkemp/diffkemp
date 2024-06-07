@@ -244,10 +244,31 @@ versions necessary for running regression tests (see below for details).
 
 ### Tests
 
-The project contains unit and regression testing using pytest that can be run
-by:
+The project contains a number of unit tests and regression tests.
 
-    pytest tests
+## Unit Tests
+
+These tests are build together with the library during main build process and
+can be executed by running a binary called `runTest` found in the build
+directory.
+
+For their runtime you can facilitate CMake's test manager `ctest` and run the
+test via:
+
+    ninja -c BUILDDIR test
+
+## Regression Tests
+
+Another group of tests are regression tests which use `pytest` and there are two
+ways of how you might call them.
+
+1. if you have build the project using `pip`:
+
+        pytest tests
+
+2. if didn't use `pip`, then you have to use generated test runner
+   which can be found in `BUILDDIR/bin/run_e2e_tests.py` which links to
+   correct version of SimpLL.
 
 The tests require the sources of the following kernel versions to be stored and
 configured in `kernel/linux-{version}` directories:
