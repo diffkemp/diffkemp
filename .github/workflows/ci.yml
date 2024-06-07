@@ -105,8 +105,7 @@ jobs:
         shell: bash
         run: >
           nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
-          "setuptoolsShellHook &&
-           pytest tests -v"
+          ${{ github.workspace }}/build/bin/run_pytest_tests.py -v
 
       - name: Cache Test Data
         if: matrix.regression-tests
