@@ -6,6 +6,7 @@ information about:
 - [How to set up development environment](#development-environment)
 - [How to build DiffKemp](#build)
 - [Where the tests are located and how to run them](#tests)
+- [Links to tools for performing experiments](#tools-for-performing-experiments)
 - [Useful links to learn more](#useful-links)
 
 ## Development environment
@@ -219,6 +220,17 @@ The result viewer contains unit tests and integration tests located in
 npm --prefix view test -- --watchAll
 npm --prefix view run cypress:run
 ```
+
+## Tools for performing experiments
+
+We have some tools which can be handy when developing DiffKemp:
+
+- [Tool for building and subsequently comparing multiple versions of a provided
+   C project](https://github.com/zacikpa/diffkemp-analysis)
+- [Tool for running DiffKemp with EqBench dataset of equivalent and
+   non-equivalent program pairs](https://github.com/diffkemp/EqBench-workflow):
+   You can use this tool if you make bigger changes to the SimpLL library to
+   ensure that the evaluation results are not worse than before.
 
 ## Useful links
 
