@@ -169,7 +169,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
+          flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504 --per-file-ignores="__init__.py:F401"
           flake8 tests
           tools/check-clang-format.sh -d
   
