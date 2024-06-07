@@ -16,6 +16,14 @@ Currently, DiffKemp runs on Linux and needs the following software installed:
 - CMake and Ninja build system for building
 - Node.js (>= 14.x) and npm for running the result viewer
 
+> [!NOTE]
+> Optionally, to create *snapshots* of projects faster when running `diffkemp build`
+> command, you need to have [RPython](https://rpython.readthedocs.io/en/latest/)
+> installed. However, it can be problematic to install it on modern OS
+> distributions because it depends on Python 2.
+> (RPython is used to compile a part of Python code to binary, which accelerates
+> the creation of snapshots).
+
 ### On Ubuntu
 
 ```sh
