@@ -33,11 +33,21 @@ list is given, all exported functions from the project are considered).
 The snapshot is stored in `SNAPSHOT_DIR`. Warning: if `SNAPSHOT_DIR` exists,
 it will be overwritten.
 
-It also has additional options to configure the project build, see `diffkemp
-build --help` for the complete list.
-
 The command can be also used to generate a snapshot from a single C file.
 In this case, the path to the file should be given in place of `PROJ_DIR`.
+
+#### Options
+
+- `--no-opt-override`: Uses optimisation options provided in the project's
+  Makefile or specified with `--clang-append="-OX"`. With this option DiffKemp
+  can potentially handle more complex refactoring (report fewer false
+  positives). However, this may reduce precision in identifying the exact
+  location of semantic differences (eg. reporting if a difference is in
+  a macro).
+- `--clang-append="..."`: Allows specifying options that will be appended to
+  `clang` when compiling source files to LLVM IR.
+- Additional options to configure the project build, see `diffkemp build --help`
+  for the complete list.
 
 ### b) `build-kernel`: snapshot generation from the Linux kernel
 
