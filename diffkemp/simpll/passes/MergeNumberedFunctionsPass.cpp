@@ -28,7 +28,7 @@ PreservedAnalyses
     // Go over all called functions and put them into the map. Functions without
     // a suffix are included, too, because there may be variants that have it.
     for (Function &Fun : Mod) {
-        if (isSimpllAbstraction(&Fun) || Fun.getName().startswith("llvm."))
+        if (isSimpllAbstraction(&Fun) || hasPrefix(Fun.getName(), "llvm."))
             // Do not merge LLVM intrinsics and SimpLL abstractions.
             continue;
         std::string originalName = Fun.getName().str();
