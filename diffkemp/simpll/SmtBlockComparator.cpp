@@ -424,7 +424,7 @@ z3::expr SmtBlockComparator::encodeBinaryOperator(
     case Instruction::SDiv: {
         // Signed division is the default behavior of the overload.
         auto div = res == op1 / op2;
-        if (dyn_cast<SDivOperator>(Inst)->isExact()) {
+        if (dyn_cast<PossiblyExactOperator>(Inst)->isExact()) {
             auto precond = z3::srem(op1, op2) == 0;
             e = z3::implies(precond, div);
         } else {
@@ -434,7 +434,7 @@ z3::expr SmtBlockComparator::encodeBinaryOperator(
     }
     case Instruction::UDiv: {
         auto div = res == z3::udiv(op1, op2);
-        if (dyn_cast<UDivOperator>(Inst)->isExact()) {
+        if (dyn_cast<PossiblyExactOperator>(Inst)->isExact()) {
             auto precond = z3::urem(op1, op2) == 0;
             e = z3::implies(precond, div);
         } else {

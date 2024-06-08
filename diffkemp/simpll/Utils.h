@@ -227,4 +227,10 @@ const AllocaInst *getAllocaOp(const InstType *Inst) {
     return getAllocaFromPtr(Inst->getPointerOperand());
 }
 
+/// LLVM Version independent predicate whether string ref contains some suffix.
+bool hasSuffix(StringRef ref, StringRef suffix);
+///
+/// LLVM Version independent predicate whether string ref contains some prefix.
+bool hasPrefix(StringRef ref, StringRef prefix);
+
 #endif // DIFFKEMP_SIMPLL_UTILS_H

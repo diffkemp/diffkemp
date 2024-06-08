@@ -202,7 +202,7 @@ std::string extractLineFromLocation(DILocation *LineLoc, int offset) {
     findAndReplace(lineWithoutWhitespace, " ", "");
     findAndReplace(lineWithoutWhitespace, "\t", "");
 
-    if (StringRef(lineWithoutWhitespace).startswith("return")
+    if (hasPrefix(StringRef(lineWithoutWhitespace), "return")
         && !StringRef(line).contains(";")) {
         do {
             ++it;
