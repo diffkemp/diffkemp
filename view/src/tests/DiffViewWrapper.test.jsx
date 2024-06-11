@@ -49,7 +49,9 @@ function testCodeNumberMatch(
       try {
         // Note: This will also fail if line is shown but we expect no lines
         // to be shown (oldCode is an empty string).
-        expect(lineCode).toBe(oldCodeLines[lineNumber - 1]);
+        // Note 2: Using trimEnd because react-diff-view package from 3.2.0
+        // version renders empty line as line with space.
+        expect(lineCode.trimEnd()).toBe(oldCodeLines[lineNumber - 1]);
       } catch (e) {
         e.message += `\nReceived line number in old file: ${lineNumber}`;
         throw e;
@@ -61,7 +63,7 @@ function testCodeNumberMatch(
       const lineNumber = Number(cells[2].textContent);
       const lineCode = cells[3].textContent;
       try {
-        expect(lineCode).toBe(newCodeLines[lineNumber - 1]);
+        expect(lineCode.trimEnd()).toBe(newCodeLines[lineNumber - 1]);
       } catch (e) {
         e.message += `\nReceived line number in new file: ${lineNumber}`;
         throw e;
