@@ -50,19 +50,16 @@ struct FunctionStats {
     FunctionStats() {}
 };
 
-/// Type for function call information: contains the called function and its
-/// call location (file and line).
-struct CallInfo {
-    std::string fun;
-    std::string file;
-    unsigned line;
+/// Type for function call information: contains the called function name and
+/// its call location (file and line).
+struct CallInfo : public CodeLocation {
     mutable bool weak;
 
     // Default constructor needed for YAML serialisation.
     CallInfo() {}
-    CallInfo(const std::string &fun, const std::string &file, unsigned int line)
-            : fun(fun), file(file), line(line), weak(false) {}
-    bool operator<(const CallInfo &Rhs) const { return fun < Rhs.fun; }
+    CallInfo(const std::string &name, const std::string &file, unsigned line)
+            : CodeLocation(name, line, file), weak(false) {}
+    bool operator<(const CallInfo &Rhs) const { return name < Rhs.name; }
 };
 
 /// Call stack - list of call entries
