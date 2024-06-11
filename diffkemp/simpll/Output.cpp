@@ -23,7 +23,7 @@ namespace llvm {
 namespace yaml {
 template <> struct MappingTraits<CallInfo> {
     static void mapping(IO &io, CallInfo &callinfo) {
-        io.mapRequired("function", callinfo.fun);
+        io.mapRequired("function", callinfo.name);
         io.mapRequired("file", callinfo.file);
         io.mapRequired("line", callinfo.line);
         io.mapRequired("weak", callinfo.weak);

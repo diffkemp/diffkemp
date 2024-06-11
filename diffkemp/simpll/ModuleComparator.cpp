@@ -181,13 +181,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 if (calledFirst)
                     for (const CallInfo &CI :
                          ComparedFuns.at({FirstFun, SecondFun}).First.calls) {
-                        if (CI.fun == calledFirst->getName().str())
+                        if (CI.name == calledFirst->getName().str())
                             CI.weak = true;
                     }
                 if (calledSecond)
                     for (const CallInfo &CI :
                          ComparedFuns.at({FirstFun, SecondFun}).Second.calls) {
-                        if (CI.fun == calledSecond->getName().str())
+                        if (CI.name == calledSecond->getName().str())
                             CI.weak = true;
                     }
             }

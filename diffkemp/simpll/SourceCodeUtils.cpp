@@ -287,14 +287,14 @@ std::vector<std::unique_ptr<SyntaxDifference>>
             LOG_VERBOSE_EXTRA("Left stack:\n\t");
             LOG_VERBOSE_EXTRA(MacroUseL.second.def->body << "\n");
             for (CallInfo &elem : StackL) {
-                LOG_VERBOSE_EXTRA("\t\tfrom " << elem.fun << " in file "
+                LOG_VERBOSE_EXTRA("\t\tfrom " << elem.name << " in file "
                                               << elem.file << " on line "
                                               << elem.line << "\n");
             }
             LOG_VERBOSE_EXTRA("Right stack:\n\t");
             LOG_VERBOSE_EXTRA(MacroUseR->second.def->body << "\n");
             for (CallInfo &elem : StackR) {
-                LOG_VERBOSE_EXTRA("\t\tfrom " << elem.fun << " in file "
+                LOG_VERBOSE_EXTRA("\t\tfrom " << elem.name << " in file "
                                               << elem.file << " on line "
                                               << elem.line << "\n");
             };
