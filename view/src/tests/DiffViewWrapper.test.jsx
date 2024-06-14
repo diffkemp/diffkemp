@@ -11,13 +11,21 @@ import DiffViewWrapper from '../components/DiffViewWrapper';
 import Difference from '../components/Difference';
 
 /**
- * Helper function to test if shown line number and line of code match
- * to original line numbering.
+ * Helper function for testing. It checks that for all displayed lines,
+ * the shown line matches the line content located at shown line number
+ * in the provided source code. If the provided source code is an empty string
+ * but a line with content is shown, the test will fail.
+ *
+ * Additionally, you can provide callback functions to be executed for each
+ * shown line. These callback functions receive the shown line number and
+ * the content of the shown line, allowing for further testing (e.g.,
+ * ensuring all lines in a function are displayed).
+ *
  * @param {string} oldCode Old source of code.
  * @param {string} newCode New source of code.
- * @param {Function} oldLineCallback Function which is called for each line of
- * old code, function receives shown line number and shown line of code.
- * @param {Function} newLineCallback Same as oldLineCallback but for new code.
+ * @param {Function} [oldLineCallback] Function which is called for each shown
+ * line of old code.
+ * @param {Function} [newLineCallback] Same as oldLineCallback but for new code.
  */
 function testCodeNumberMatch(
   oldCode,
@@ -30,23 +38,25 @@ function testCodeNumberMatch(
   const rows = screen.getAllByRole('row');
   rows.forEach((row) => {
     const cells = within(row).getAllByRole('cell');
-    // is row with code
+    // Check if the row contains code.
     if (cells.length !== 4) {
       return;
     }
-    // old lines check
+    // Check the content of the old line.
     if (cells[0].textContent !== '') {
       const lineNumber = Number(cells[0].textContent);
       const lineCode = cells[1].textContent;
       try {
+        // Note: This will also fail if line is shown but we expect no lines
+        // to be shown (oldCode is an empty string).
         expect(lineCode).toBe(oldCodeLines[lineNumber - 1]);
       } catch (e) {
         e.message += `\nReceived line number in old file: ${lineNumber}`;
         throw e;
       }
-      oldLineCallback(lineNumber, lineCode);
+      oldLineCallback?.(lineNumber, lineCode);
     }
-    // new lines check
+    // Check the content of the new line.
     if (cells[2].textContent !== '') {
       const lineNumber = Number(cells[2].textContent);
       const lineCode = cells[3].textContent;
@@ -56,7 +66,7 @@ function testCodeNumberMatch(
         e.message += `\nReceived line number in new file: ${lineNumber}`;
         throw e;
       }
-      newLineCallback(lineNumber, lineCode);
+      newLineCallback?.(lineNumber, lineCode);
     }
   });
 }
@@ -185,8 +195,6 @@ describe('testing a differing function visualisation', () => {
     testCodeNumberMatch(
       oldCode,
       newCode,
-      () => {},
-      () => {},
     );
   });
 
@@ -319,8 +327,6 @@ describe('testing a caller function visualisation', () => {
     testCodeNumberMatch(
       oldCode,
       newCode,
-      () => {},
-      () => {},
     );
   });
 
@@ -400,7 +406,6 @@ describe('testing a caller function visualisation', () => {
         expect(lineNumber).toBe(expectedOldLineNum);
         expectedOldLineNum += 1;
       },
-      () => {},
     );
     // Testing if the whole function is shown.
     expect(expectedOldLineNum).toBe(oldEnd + 1);
@@ -415,7 +420,7 @@ describe('testing a caller function visualisation', () => {
     testCodeNumberMatch(
       '',
       newCode,
-      () => {},
+      undefined,
       // Testing order of lines and checking whether any are missing.
       (lineNumber) => {
         expect(lineNumber).toBe(expectedNewLineNum);
