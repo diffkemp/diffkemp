@@ -1144,10 +1144,23 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
             // forward (find a code relocation).
             if (config.Patterns.Relocations
                 && Reloc.status == RelocationInfo::None) {
+                LOG("Trying to find possible relocation:\n");
+                LOG_INDENT();
+                LOG_OFF_FOR_NO_FORCE();
                 if (findMatchingOpWithOffset(InstL, InstR, Program::Second)
                     || findMatchingOpWithOffset(InstL, InstR, Program::First)) {
                     Res = 0;
+                    LOG_ON();
+                    LOG("SUCCESS: Possible relocation found:\n");
+                    LOG_INDENT();
+                    LOG("from:" << *Reloc.begin << "\n");
+                    LOG("to:  " << *Reloc.end << "\n");
+                    LOG_UNINDENT();
+                } else {
+                    LOG_ON();
+                    LOG("FAILURE: Possible relocation was NOT found\n");
                 }
+                LOG_UNINDENT();
             }
 
             if (Res)
@@ -2056,10 +2069,6 @@ bool DifferentialFunctionComparator::findMatchingOpWithOffset(
             Reloc.status = RelocationInfo::Stored;
             Reloc.prog = prog_to_search;
             Reloc.tryInlineBackup = tryInlineBackup;
-
-            LOG("Possible relocation found:\n"
-                << "    from: " << *Reloc.begin << "\n"
-                << "      to: " << *Reloc.end << "\n");
             return true;
         }
         // Restore serial maps since the instructions do not match
