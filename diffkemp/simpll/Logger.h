@@ -106,6 +106,34 @@
 #define LOGGER_BASE_LEVEL DEBUG_SIMPLL_VERBOSE
 #define LOGGER_FORCE_LEVEL DEBUG_SIMPLL_VERBOSE_EXTRA
 
+// Temporarily turns off the logger if it is turned on.
+#define LOG_OFF()                                                              \
+    do {                                                                       \
+        if (DebugFlag) {                                                       \
+            DebugFlag = false;                                                 \
+            logger.off = true;                                                 \
+        }                                                                      \
+    } while (false)
+
+// Temporarily turns off the logger if the level is not LOGGER_FORCE_LEVEL.
+// If it is then nothing happens.
+#define LOG_OFF_FOR_NO_FORCE()                                                 \
+    do {                                                                       \
+        if (!isCurrentDebugType(LOGGER_FORCE_LEVEL)) {                         \
+            LOG_OFF();                                                         \
+        }                                                                      \
+    } while (false)
+
+// Turns on the logger if it was previously temporarily turned off by LOG_OFF
+// or LOG_OFF_FOR_NO_FORCE macros.
+#define LOG_ON()                                                               \
+    do {                                                                       \
+        if (logger.off) {                                                      \
+            DebugFlag = true;                                                  \
+            logger.off = false;                                                \
+        }                                                                      \
+    } while (false)
+
 // Prepare a log message for (potential) future logging and create context for
 // logging its children. Must be later followed by LOG_KEEP or RETURN_WITH_LOG
 // (or the _FORCE/_NEQ variant, respectively), determining whether to keep
@@ -174,6 +202,9 @@
 
 class Logger {
   public:
+    // Flag indicating if the logger is temporary turned off by LOG_OFF or
+    // LOG_OFF_FOR_NO_FORCE macros.
+    bool off = false;
     struct BufferMessage {
         struct Value {
             enum {
