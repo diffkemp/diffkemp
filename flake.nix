@@ -70,7 +70,6 @@
             installPhase = ''
               ninjaInstallPhase
               pypaInstallPhase
-              install -m 0755 bin/diffkemp $out/bin/diffkemp
             '';
           };
 
