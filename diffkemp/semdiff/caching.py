@@ -7,10 +7,11 @@ are equal or not) and the edges are function calls. This graph is represented
 by the ComparisonGraph class.
 """
 
-from collections import deque
-from diffkemp.semdiff.result import Result
-from enum import IntEnum
 import os
+from collections import deque
+from enum import IntEnum
+
+from diffkemp.semdiff import Result
 
 
 class ComparisonGraph:

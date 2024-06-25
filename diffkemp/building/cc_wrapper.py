@@ -7,13 +7,13 @@ executable, or with Python to modify itself into a Python script.
 Because of that it has to run under both Python 2 and Python 3 and some of
 Python library functions are redefined here to be RPython-compatible.
 """
-# TODO: Decompose simultaneous compiling and linking to get individual .ll
-#       files out of it; support other GCC languages than C (Fortran, C++)
-from diffkemp.llvm_ir.compiler import get_clang_default_options
 import os
 import shutil
 import sys
 
+# TODO: Decompose simultaneous compiling and linking to get individual .ll
+#       files out of it; support other GCC languages than C (Fortran, C++)
+from diffkemp.llvm_ir import get_clang_default_options
 
 wrapper_env_vars = {
     "db_filename": "DIFFKEMP_WRAPPER_DB_FILENAME",

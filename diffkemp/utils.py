@@ -1,6 +1,6 @@
 import os
-import subprocess
 import re
+import subprocess
 import sys
 
 LLVM_FUNCTION_REGEX = re.compile(r"^define.*@(\w+)\(", flags=re.MULTILINE)

@@ -1,7 +1,8 @@
 """Functions for optimizations of LLVM IR."""
-from diffkemp.utils import get_opt_command
-from subprocess import check_call, CalledProcessError
 import os
+from subprocess import CalledProcessError, check_call
+
+from diffkemp.utils import get_opt_command
 
 
 class BuildException(Exception):

@@ -3,8 +3,8 @@ LLVM module containing definitions of kernel sysctl options compiled into
 LLVM IR. Contains reference to LlvmModule and additional sysctl-specific fields
 and methods.
 """
-from diffkemp.llvm_ir.llvm_module import LlvmParam
-from diffkemp.simpll.library import SimpLLSysctlTable
+from diffkemp.llvm_ir import LlvmParam
+from diffkemp.simpll import SimpLLSysctlTable
 
 
 def matches(name, pattern):

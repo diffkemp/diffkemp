@@ -1,6 +1,7 @@
-from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
-import diffkemp.diffkemp
 import os
+from argparse import SUPPRESS, ArgumentParser, ArgumentTypeError
+
+import diffkemp.diffkemp
 
 
 def is_file(path):

@@ -39,13 +39,27 @@ if (NOT ${system_libs} STREQUAL "")
     target_link_libraries(simpll ${system_libs})
 endif()
 
-if(SIMPLL_REBUILD_BINDINGS)
-add_custom_target(python-ffi ALL DEPENDS _simpll.c)
-add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/_simpll.c"
-                   DEPENDS simpll-lib
-                   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-                   COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/simpll_build.py")
-endif()
+if (NOT DEFINED $ENV{SIMPLL_BUILD_DIR})
+  message(STATUS "Setting SIMPLL_BUILD_DIR to ${CMAKE_BINARY_DIR}")
+  set(simpll_build_dir ${CMAKE_BINARY_DIR})
+else ()
+  set(simpll_build_dir $ENV{SIMPLL_BUILD_DIR})
+endif ()
+
+add_custom_target(python-ffi ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/_simpll.c")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/_simpll.c"
+  DEPENDS simpll-lib "simpll_build.py"
+  COMMENT "Building CFFI python bindings for SimpLL"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/simpll_build.py .
+          && "SIMPLL_BUILD_DIR=${simpll_build_dir}" python3 simpll_build.py)
+
+message(STATUS "Generating bin/diffkemp executable")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../diffkemp.in
+  ${CMAKE_BINARY_DIR}/bin/diffkemp
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                   GROUP_READ
+                   WORLD_READ)
 
 if(SIMPLL_INSTALL_BINARY)
 install(TARGETS simpll

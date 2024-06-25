@@ -44,3 +44,12 @@ gtest_discover_tests(runTests)
 add_custom_target(test
   COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
   DEPENDS runTests)
+
+message(STATUS "Creating end-2-end tests executable")
+add_custom_target(e2e-test
+    COMMAND python ${CMAKE_BINARY_DIR}/bin/run_e2e_tests.py)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../run_e2e_tests.py.in
+  ${CMAKE_BINARY_DIR}/bin/run_e2e_tests.py
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                   GROUP_READ
+                   WORLD_READ)

@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 from cffi import FFI
+import os
+import sys
 from subprocess import check_output
-from diffkemp.utils import get_simpll_build_dir
+
+
+def get_simpll_build_dir():
+    """
+    Return the current SimpLL build directory as specified
+    in the `SIMPLL_BUILD_DIR` environment variable.
+    """
+    build_dir_var = "SIMPLL_BUILD_DIR"
+    if build_dir_var in os.environ:
+        return os.environ[build_dir_var]
+    return "build"
 
 
 def get_c_declarations(header_filename):
@@ -20,9 +32,20 @@ def get_c_declarations(header_filename):
         return "".join(lines[start:end])
 
 
-ffibuilder = FFI()
+def get_root_dir(path, is_develop_build):
+    # The build script is located in CMAKE_BINARY_DIR/diffkemp/simpll, hence
+    # we have to move out of it
+    if is_develop_build:
+        return os.path.abspath(f'{path}/../../..')
+    return os.path.abspath(f'{path}/../..')
 
-ffibuilder.cdef(get_c_declarations("diffkemp/simpll/library/FFI.h"))
+
+ffibuilder = FFI()
+location = os.path.dirname(os.path.abspath(__file__))
+root_dir = get_root_dir(location, is_develop_build=(len(sys.argv) == 1))
+path_to_ffi_header = "diffkemp/simpll/library/FFI.h"
+
+ffibuilder.cdef(get_c_declarations(f"{root_dir}/{path_to_ffi_header}"))
 
 llvm_components = ["irreader", "passes", "support"]
 llvm_cflags = check_output(["llvm-config", "--cflags"])
@@ -37,15 +60,16 @@ llvm_ldflags = list(filter(lambda x: x != "",
 llvm_libs = list(filter(lambda x: x != "",
                         llvm_libs.decode("ascii").strip().split()))
 
-simpll_link_arg = "-L{}/diffkemp/simpll".format(get_simpll_build_dir())
+simpll_link_arg = f"-L{get_simpll_build_dir()}/diffkemp/simpll"
+
+include_path = f'{root_dir}/diffkemp/simpll'
 
 ffibuilder.set_source(
-    "diffkemp.simpll._simpll", '#include <library/FFI.h>',
+    "_simpll", '#include <library/FFI.h>',
     language="c++",
     libraries=['simpll-lib'],
-    extra_compile_args=["-Idiffkemp/simpll"] + llvm_cflags,
-    extra_link_args=[simpll_link_arg, "-lstdc++"] + llvm_ldflags +
-    llvm_libs)
+    extra_compile_args=[f"-I{include_path}"] + llvm_cflags,
+    extra_link_args=[simpll_link_arg, "-lstdc++"] + llvm_ldflags + llvm_libs)
 
 if __name__ == "__main__":
     ffibuilder.compile()

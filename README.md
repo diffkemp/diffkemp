@@ -37,7 +37,7 @@ prepared RPM package for Fedora.
 Currently, DiffKemp runs on Linux and needs the following software installed:
 * Clang and LLVM (supported versions are 9, 10, 11, 12, 13, 14, 15)
 * Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
-* Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
+* Python packages which can be found in `pyproject.toml`
 * CScope (when comparing versions of the Linux kernel)
 * GoogleTest (gtest) for running the C++ tests (can be vendored by using
   `-DVENDOR_GTEST=On` in the `cmake` command)
@@ -54,9 +54,10 @@ Build can be done by running:
     ninja
     cd ..
 
-    pip install -e .
+    pip install .
 
-The DiffKemp binary is then located in `bin/diffkemp`.
+The Diffkemp executable should then be available in your `PATH`, depending on
+your `pip` configuration.
 
 For running the result viewer, it is necessary to have installed:
 * Node.js (>= 14.x)
@@ -235,18 +236,39 @@ This will enter a development shell with all DiffKemp dependencies
 pre-installed. You can then follow the [standard build
 instructions](#install-from-source) to build and install DiffKemp. The only
 difference is that it is not possible to run `pip install` inside Nix shell
-(because of the way Nix works) and it is necessary to use the built-in
-`setuptoolsShellHook` function instead.
+(because of the way Nix works). Fortunately in case of nix you don't have to, as
+we are generating working development executable in `build/bin/diffkemp`.
 
 We also provide a special Nix environment for retrieving and preparing kernel
 versions necessary for running regression tests (see below for details).
 
 ### Tests
 
-The project contains unit and regression testing using pytest that can be run
-by:
+The project contains a number of unit tests and regression tests.
 
-    pytest tests
+## Unit Tests
+
+These tests are build together with the library during main build process and
+can be executed by running a binary called `runTest` found in the build
+directory.
+
+For their runtime you can facilitate CMake's test manager `ctest` and run the
+test via:
+
+    ninja -c BUILDDIR test
+
+## Regression Tests
+
+Another group of tests are regression tests which use `pytest` and there are two
+ways of how you might call them.
+
+1. if you have build the project using `pip`:
+
+        pytest tests
+
+2. if didn't use `pip`, then you have to use generated test runner
+   which can be found in `BUILDDIR/bin/run_e2e_tests.py` which links to
+   correct version of SimpLL.
 
 The tests require the sources of the following kernel versions to be stored and
 configured in `kernel/linux-{version}` directories:
