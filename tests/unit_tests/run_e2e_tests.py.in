@@ -6,7 +6,7 @@ if __name__ == "__main__":
     sys.path.append("${CMAKE_BINARY_DIR}/diffkemp/simpll")
     sys.exit(pytest.main([
         "-x",
-        "${CMAKE_BINARY_DIR}/../",
+        "${CMAKE_BINARY_DIR}/../tests",
         # Pass the CLI arguments to pytest
         *sys.argv[1:]
     ]))
