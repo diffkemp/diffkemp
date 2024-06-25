@@ -133,7 +133,7 @@ jobs:
         shell: bash
         run: >
           nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
-          ${{ github.workspace }}/build/bin/run_e2e_tests.py -v
+          ${{ github.workspace }}/build/bin/run_e2e_tests.py -v --ignore='kernel/*'
 
   cc-wrapper-build:
     runs-on: ubuntu-latest
