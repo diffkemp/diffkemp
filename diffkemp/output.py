@@ -8,8 +8,19 @@ which are located in the differences.
 from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.utils import get_end_line, EndLineNotFound
 from diffkemp.semdiff.result import Result
+from enum import Enum
 import os
 import yaml
+
+
+class SymbolKind(str, Enum):
+    """Kind of symbol."""
+    FUNCTION = "function"
+    TYPE = "type"
+    MACRO = "macro"
+
+    def __str__(self):
+        return self.value
 
 
 class MacroDefinitions:
@@ -76,12 +87,12 @@ class MacroDefinitions:
                                              non_fun.kind)
                     break
 
-    def _add_definitions(self, macro_defs, is_old=True, kind="macro"):
+    def _add_definitions(self, macro_defs, is_old=True, kind=SymbolKind.MACRO):
         """Updates definitions with multiple macro definitions."""
         for macro_def in macro_defs:
             self._add_definition(macro_def, is_old, kind)
 
-    def _add_definition(self, macro_def, is_old=True, kind="macro"):
+    def _add_definition(self, macro_def, is_old=True, kind=SymbolKind.MACRO):
         """Adds new definition.
         :param macro_def: Definition extracted from the call stack or
             from SyntaxDiff definition of differing object
@@ -94,7 +105,7 @@ class MacroDefinitions:
         file = os.path.join(base_dir, macro_def["file"])
         line = macro_def["line"]
         definition = {
-            "kind": kind,
+            "kind": str(kind),
             version: create_def_info(line, file, base_dir, kind)
         }
         if name not in self.definitions:
@@ -196,15 +207,15 @@ class YamlOutput:
                 continue
             vertex = self.result.graph[name]
             definition = {
-                "kind": "function",
+                "kind": str(SymbolKind.FUNCTION),
                 "old": create_def_info(vertex.lines[0],
                                        vertex.files[0],
                                        self.old_dir,
-                                       "function"),
+                                       SymbolKind.FUNCTION),
                 "new": create_def_info(vertex.lines[1],
                                        vertex.files[1],
                                        self.new_dir,
-                                       "function"),
+                                       SymbolKind.FUNCTION),
             }
             # function name differs
             if vertex.names[1] != vertex.names[0]:
@@ -225,15 +236,15 @@ class YamlOutput:
                 if non_fun.name == type_name and \
                         isinstance(non_fun, ComparisonGraph.TypeDiff):
                     definition = {
-                        "kind": "type",
+                        "kind": str(SymbolKind.TYPE),
                         "old": create_def_info(non_fun.line[0],
                                                non_fun.file[0],
                                                self.old_dir,
-                                               "type"),
+                                               SymbolKind.TYPE),
                         "new": create_def_info(non_fun.line[1],
                                                non_fun.file[1],
                                                self.new_dir,
-                                               "type")
+                                               SymbolKind.TYPE)
                     }
                     definitions[type_name] = definition
                     break
