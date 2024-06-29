@@ -69,7 +69,7 @@ unable to determine semantic equivalency (e.g. because the compared symbol was
 found only in one compared version). The command creates
 `diff-linux` directory containing
 information about the found semantic differences. The structure of the
-directory is the same as was described in [the library example](musl_library.md#4-going-through-the-results).
+directory is the same as was described in [the library example](musl_library.md#5-going-through-the-results).
 
 ## 4. Viewing the found differences
 
@@ -81,7 +81,7 @@ diffkemp view diff-linux
 ```
 
 The command will launch a web application that we can access in our browser.
-The viewer is more described in [the library example](musl_library.md#5-different-visualizations-of-the-differences)
+The viewer is more described in [the library example](musl_library.md#6-different-visualizations-of-the-differences)
 
 ## 5. Summary
 
