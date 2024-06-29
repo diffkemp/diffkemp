@@ -1,0 +1,84 @@
+<svg width="349mm" height="61.5mm" version="1.1" viewBox="0 0 349 61.5" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <marker id="Arrow1Lend" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+  <marker id="Arrow1Lend-3" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+  <marker id="Arrow1Lend-3-5" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+  <marker id="Arrow1Lend-3-5-6" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+  <marker id="Arrow1Lend-3-5-6-1" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+  <marker id="Arrow1Lend-3-3-8" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+  <marker id="Arrow1Lend-3-3-8-6" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+  <marker id="Arrow1Lend-3-3-8-6-4" overflow="visible" orient="auto">
+   <path transform="matrix(-.8 0 0 -.8 -10 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+ </defs>
+ <g transform="translate(13.516 -81.679)">
+  <rect x="-13.516" y="81.679" width="349" height="61.5" fill="#fff"/>
+  <g>
+   <text x="-6.7758698" y="138.60011" fill="#a02c2c" font-family="sans-serif" font-size="5.29px" stroke-width=".116" style="fill:#000080;line-height:1.25" xml:space="preserve"><tspan x="-6.7758698" y="138.60011" fill="#a02c2c" font-size="5.29px" stroke-width=".116" style="fill:#000080">SYMBOL LIST</tspan></text>
+   <path d="m30.1 137 28.1-7.15" fill="none" marker-end="url(#Arrow1Lend-3-5)" stroke="#a02c2c" stroke-width=".5" style="stroke:#000080"/>
+  </g>
+  <g>
+   <path d="m105 112h63" fill="none" marker-end="url(#Arrow1Lend-3)" stroke="#000080" stroke-width=".5" style="fill:#000;stroke:#000080"/>
+   <text x="113.85083" y="110.49675" fill="#000080" font-family="sans-serif" font-size="5.29px" stroke-width=".217" style="fill:#000080;line-height:1.25" xml:space="preserve"><tspan x="113.85083" y="110.49675" fill="#000080" font-size="5.29px" stroke-width=".217" style="fill:#000080">OLD SNAPSHOT</tspan></text>
+  </g>
+  <g>
+   <path d="m105 124h63" fill="none" marker-end="url(#Arrow1Lend)" stroke="#000080" stroke-width=".5" style="fill:#000;stroke-width:.5;stroke:#000080"/>
+   <text x="113.62862" y="123.31897" fill="#000080" font-family="sans-serif" font-size="5.29px" stroke-width=".217" style="fill:#000080;line-height:1.25" xml:space="preserve"><tspan x="113.62862" y="123.31897" fill="#000080" font-size="5.29px" stroke-width=".217" style="fill:#000080">NEW SNAPSHOT</tspan></text>
+  </g>
+  <g>
+   <text x="-11.098493" y="117.93334" fill="#008000" font-family="sans-serif" font-size="4.91px" stroke-width=".101" style="line-height:1.25" xml:space="preserve"><tspan x="-11.098493" y="117.93334" fill="#008000" stroke-width=".101" style="fill:#000000">project versions</tspan></text>
+   <g>
+    <path d="m30.1 112h25.4" fill="none" marker-end="url(#Arrow1Lend-3-5-6-1)" stroke="#008000" stroke-width=".5" style="stroke:#000"/>
+    <text x="34.358036" y="110.49675" fill="#008000" font-family="sans-serif" font-size="5.29px" stroke-width=".217" style="fill:#000000;line-height:1.25" xml:space="preserve"><tspan x="34.358036" y="110.49675" fill="#008000" stroke-width=".217" style="fill:#000000">OLD</tspan></text>
+   </g>
+   <g>
+      <path d="m30.1 124h25.4" fill="none" marker-end="url(#Arrow1Lend-3-5-6)" stroke="#008000" stroke-width=".5" style="stroke:#000"/>
+      <text x="33.504082" y="123.32156" fill="#008000" font-family="sans-serif" font-size="5.29px" stroke-width=".217" style="fill:#000000;line-height:1.25" xml:space="preserve"><tspan x="33.504082" y="123.32156" fill="#008000" stroke-width=".217" style="fill:#000000">NEW</tspan></text>
+   </g>
+  </g>
+  <g>
+     <rect x="56" y="102" width="48.8" height="28.6" ry="7.78" fill="none" stroke="#000080" stroke-width="1.17" style="stroke:#000"/>
+     <text x="80.476913" y="114.36102" fill="#000080" font-family="sans-serif" font-size="6.35px" stroke-width=".162" text-align="center" text-anchor="middle" style="fill:#000000;line-height:1.25" xml:space="preserve"><tspan x="80.476913" y="114.36102" text-align="center" style="fill:#000000">Snapshot</tspan><tspan x="80.476913" y="122.29852" text-align="center" style="fill:#000000">generation</tspan></text>
+     <text x="80.061958" y="89.482262" fill="#000080" font-family="sans-serif" font-size="4.23px" stroke-width=".265" text-align="center" text-anchor="middle" style="fill:#000000;line-height:1.25" xml:space="preserve"><tspan x="80.061958" y="89.482262" text-align="center" style="fill:#000000">build</tspan><tspan x="80.061958" y="94.773926" text-align="center" style="fill:#000000">build-kernel</tspan><tspan x="80.061958" y="100.06558" text-align="center" style="fill:#000000">llvm-to-snapshot</tspan></text>
+  </g>
+  <g>
+     <rect x="169" y="102" width="48.8" height="28.6" ry="7.78" fill="none" stroke="#a02c2c" stroke-width="1.17" style="stroke:#000080"/>
+     <text x="193.64085" y="114.36102" fill="#a02c2c" font-family="sans-serif" font-size="6.35px" stroke-width=".162" text-align="center" text-anchor="middle" style="fill:#000080;line-height:1.25" xml:space="preserve"><tspan x="193.64085" y="114.36102" text-align="center" style="fill:#000080">Semantic</tspan><tspan x="193.64085" y="122.29852" text-align="center" style="fill:#000080">comparison</tspan></text>
+     <text x="307.5752" y="112.82724" fill="#a02c2c" font-family="sans-serif" font-size="6.35px" stroke-width=".162" text-align="center" text-anchor="middle" style="fill:#800000;line-height:1.25" xml:space="preserve"><tspan x="307.5752" y="112.82724">Result</tspan><tspan x="307.5752" y="120.76474">visualisation</tspan></text>
+     <text x="193.39746" y="100.06622" fill="#a02c2c" font-family="sans-serif" font-size="4.23px" stroke-width=".265" text-align="center" text-anchor="middle" style="fill:#000080;line-height:1.25" xml:space="preserve"><tspan x="193.39746" y="100.06622" fill="#a02c2c" font-size="4.23px" stroke-width=".265" text-align="center" text-anchor="middle" style="fill:#000080">compare</tspan></text>
+  </g>
+  <g>
+     <rect x="283" y="102" width="48.8" height="28.6" ry="7.78" fill="none" stroke="#008000" stroke-width="1.17" style="stroke:#a02c2c"/>
+     <text x="307.75925" y="100.8862" fill="#008000" font-family="sans-serif" font-size="4.23px" stroke-width=".265" text-align="center" text-anchor="middle" style="fill:#a02c2c;line-height:1.25" xml:space="preserve"><tspan x="307.75925" y="100.8862" fill="#008000" font-size="4.23px" stroke-width=".265" text-align="center" text-anchor="middle" style="fill:#a02c2c">view</tspan></text>
+     <text transform="translate(-.33302 -.13178)" x="307.9086" y="114.83033" fill="#008000" font-family="sans-serif" font-size="6.35px" stroke-width=".162" text-align="center" text-anchor="middle" style="inline-size:58.7338;line-height:1.25;white-space:pre" xml:space="preserve"/>
+  </g>
+  <g>
+   <path d="m216.85 106.24 18.691-7.163" fill="none" marker-end="url(#Arrow1Lend-3-3-8)" stroke="#000080" stroke-width=".40744" style="marker-end:url(#Arrow1Lend-3-3-8);stroke-width:.5;stroke:#008000"/>
+   <text x="236.03625" y="87.862183" style="fill:#000000;font-family:sans-serif;font-size:10.583px;line-height:1.25;stroke-width:.26458" xml:space="preserve"><tspan x="236.03625" y="87.862183" style="stroke-width:.26458"/><tspan x="236.03625" y="101.09131" style="fill:#008000;stroke-width:.26458">✓<tspan style="font-family:sans-serif;font-size:5.2917px;font-style:italic;font-weight:bold"/></tspan></text>
+   <text x="245.22729" y="98.869431" style="fill:#000000;font-family:sans-serif;font-size:4.5861px;line-height:1.25;stroke-width:.26458" xml:space="preserve"><tspan x="245.22729" y="98.869431" style="fill:#008000;font-family:sans-serif;font-size:4.5861px;font-style:italic;font-weight:bold;stroke-width:.26458">equal</tspan></text>
+  </g>
+  <g>
+   <path d="m217.41 114.32 18.691-7.163" fill="none" marker-end="url(#Arrow1Lend-3-3-8-6)" stroke="#000080" stroke-width=".40744" style="fill:#800000;marker-end:url(#Arrow1Lend-3-3-8-6);stroke-width:.5;stroke:#800000"/>
+   <text x="236.37732" y="97.917564" style="fill:#000000;font-family:sans-serif;font-size:10.583px;line-height:1.25;stroke-width:.26458" xml:space="preserve"><tspan x="236.37732" y="97.917564" style="stroke-width:.26458"/><tspan x="236.37732" y="111.14669" style="fill:#a02c2c;stroke-width:.26458">✗</tspan></text>
+   <text x="257.51663" y="108.5827" style="fill:#000000;font-family:sans-serif;font-size:4.5861px;line-height:1.25;stroke-width:.26458;text-align:center;text-anchor:middle" xml:space="preserve"><tspan x="257.51663" y="108.5827" style="fill:#a02c2c;font-family:sans-serif;font-size:4.5861px;font-style:italic;font-weight:bold;stroke-width:.26458;text-align:center;text-anchor:middle">not equal</tspan></text>
+  </g>
+  <g>
+   <path d="m217.5 123 64.743-0.0134" fill="none" marker-end="url(#Arrow1Lend-3-3-8-6-4)" stroke="#000080" stroke-width=".40744" style="fill:#800000;marker-end:url(#Arrow1Lend-3-3-8-6-4);stroke-dasharray:0.5, 2;stroke-width:.5;stroke:#800000"/>
+   <text x="247.68661" y="121.25217" style="fill:#000000;font-family:sans-serif;font-size:3.5278px;font-style:italic;line-height:1.25;stroke-width:.26458;text-align:center;text-anchor:middle" xml:space="preserve"><tspan x="247.68661" y="121.25217" style="fill:#a02c2c;font-family:sans-serif;font-size:3.5278px;font-style:italic;stroke-width:.26458;text-align:center;text-anchor:middle">report for not equal symbols</tspan></text>
+  </g>
+ </g>
+</svg>
