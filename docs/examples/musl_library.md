@@ -7,6 +7,7 @@ in the library API. We will use the [musl libc](https://musl.libc.org/) library
 and we will learn how to:
 
 - save the result of the comparison to a directory,
+- get statistics about the comparison,
 - interpret the content of the output directory and
 - use the result viewer for visualisation of the differences.
 
@@ -77,10 +78,11 @@ Building of the snapshots will take some time.
 After creating the snapshots, we can compare them. Because there are many
 functions, using the `--stdout` argument (printing the result to standard
 output) isn't the best idea. We can use the `-o` option followed by the
-directory name to which the result will be saved:
+directory name to which the result will be saved. We can also add
+`--report-stat` option to get basic statistics about the comparison.
 
 ```sh
-diffkemp compare snapshot-musl-1.2.3 snapshot-musl-1.2.4 -o diff-musl
+diffkemp compare snapshot-musl-1.2.3 snapshot-musl-1.2.4 -o diff-musl --report-stat
 ```
 
 If the `function_list` was used when building the snapshots then the
@@ -95,9 +97,40 @@ sem_post.diff
 
 If there are no differences found then the directory is not even created.
 
-## 4. Going through the results
+## 4. Going through the comparison statistics
 
-In the directory, there are multiple files, the files with extension `.diff`
+By using the `--report-stat` option, we will get the following text on standard
+output:
+
+```txt
+Statistics
+----------
+Total symbols: 6
+Equal:         3 (50%)
+Not equal:     3 (50%)
+(empty diff):  0 (0%)
+Unknown:       0 (0%)
+Errors:        0 (0%)
+```
+
+The report tells us that 6 symbols (functions) were compared. Three were
+evaluated as equal and three were found to have differences. The `empty diff`
+field reports for how many not-equal symbols were found differences in functions
+with no syntax difference. The `Unknown` field represents how many symbols
+DiffKemp could not evaluate (caused mainly by the symbol occurrence only in
+one version of the program). The `Error` field represents symbols for which the
+comparison failed.
+
+> [!TIP]
+> In reality, DiffKemp compared more than 6 functions, because it compares also
+> the called functions. We could use `--extended-stat` option to get the total
+> number of compared functions and other information (number of compared
+> instructions, the total number of found differences, etc.).
+
+## 5. Going through the results
+
+In the output directory (`diff-musl`), there are multiple files. The files with
+extension `.diff`
 represents compared functions in which differences were found. So in our case,
 if we compared `sin`, `cos`, `open`, `sem_post`, `dlopen` and `fork`
 functions, we can see that the `dlopen`, `fork` and `sem_post` functions
@@ -197,7 +230,7 @@ Except for the `.diff` files, there is also `diffkemp-out.yaml` file which
 contains the same data but in a more structured form. It also contains some
 metadata. This file can be used e.g. for automatic processing of the results.
 
-## 5. Different visualizations of the differences
+## 6. Different visualizations of the differences
 
 Because viewing the differences in the files can be kind of inconvenient, we
 can use `diffkemp view` command to visualize the results in another way,
@@ -234,7 +267,7 @@ Eg. by clicking on the first/compared function we will see this:
 
 ![alt text](../img/viewer_code_of_compared.png)
 
-## 6. Summary
+## 7. Summary
 
 That's all for the example of library comparison. We learned, that:
 
@@ -242,6 +275,7 @@ That's all for the example of library comparison. We learned, that:
   the same or not, can be specified in the `diffkemp build` command.
 - The `-o` option can be used in `diffkemp compare` command to specify
   a directory where the result (found differences) should be saved.
+- The `--report-stat` option can be used to get statistics about the comparison.
 - The output directory will contain `*.diff` files with the information about
   the differences.
 - `diffkemp view` command can be used for a different visualization of the
