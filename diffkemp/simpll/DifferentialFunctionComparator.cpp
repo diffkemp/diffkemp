@@ -54,9 +54,17 @@ int DifferentialFunctionComparator::compare() {
         return 1;
     }
     if (Res == 0) {
-        for (auto &PhiPair : phisToCompare)
+        // Size-based for-loop is intentionally used instead of range-based,
+        // since new elements may be inserted into the array during iteration
+        // (e.g., when the result of one PHI node is used inside another
+        // PHI node -- the first PHI is not present in phisToCompare since its
+        // only user was skipped and the operands were not analyzed).
+        // We need to analyze all the PHI nodes, even such PHI chains.
+        for (unsigned i = 0; i < phisToCompare.size(); i++) {
+            auto PhiPair = phisToCompare[i];
             if (cmpPHIs(PhiPair.first, PhiPair.second))
                 return 1;
+        }
         // Functions are equal so we don't have differing instructions
         DifferingInstructions = {nullptr, nullptr};
         return 0;

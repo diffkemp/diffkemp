@@ -282,6 +282,49 @@ TEST_F(DFCLlvmIrTest, ReorderedPHIs) {
     ASSERT_EQ(DiffComp->compare(), 0);
 }
 
+TEST_F(DFCLlvmIrTest, PHIChain) {
+    auto left = R"(define i8 @f() {
+            %1 = icmp eq i1 true, false
+            br i1 %1, label %2, label %3
+        2:
+            %var2 = add i8 0, 1
+            br label %7
+        3:
+            br i1 %1, label %4, label %5
+        4:
+            br label %6
+        5:
+            br label %6
+        6:
+            %phi1 = phi i8 [ 0, %4 ], [ 1, %5]
+            br label %7
+        7:
+            %phi2 = phi i8 [ %var2 , %2 ], [ %phi1, %6]
+            ret i8 %phi2
+    })";
+    auto right = R"(define i8 @f() {
+            %1 = icmp eq i1 true, false
+            br i1 %1, label %2, label %3
+        2:
+            %var2 = add i8 0, 1
+            br label %7
+        3:
+            br i1 %1, label %4, label %5
+        4:
+            br label %6
+        5:
+            br label %6
+        6:
+            %phi1 = phi i8 [ 0, %4 ], [ 0, %5]
+            br label %7
+        7:
+            %phi2 = phi i8 [ %var2 , %2 ], [ %phi1, %6]
+            ret i8 %phi2
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 1);
+}
+
 TEST_F(DFCLlvmIrTest, ReorderedPHIsSanityCheck) {
     auto left = R"(define i8 @f() {
             %1 = icmp eq i1 true, false
