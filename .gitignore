@@ -106,7 +106,7 @@ cmake-build-debug/
 *.smt2
 *.pdf
 
-tests/regression/kernel_modules
+tests/regression/test_data
 
 # Kernel sources and snapshots directory
 kernel/

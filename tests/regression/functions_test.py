@@ -31,14 +31,13 @@ def collect_task_specs():
                 # TaskSpec object.
                 if "functions" in spec_yaml:
                     for fun, res in spec_yaml["functions"].items():
+                        spec_id = "{}_{}".format(spec_file_name, fun)
                         spec = TaskSpec(
                             spec=spec_yaml,
-                            task_name=fun,
+                            task_name=spec_id,
                             kernel_path=cwd)
 
                         spec.add_function_spec(fun, res)
-
-                        spec_id = "{}_{}".format(spec_file_name, fun)
                         result.append((spec_id, spec))
 
             except yaml.YAMLError:
@@ -57,11 +56,6 @@ def task_spec(request):
     spec = request.param
     for fun in spec.functions:
         mod_old, mod_new = spec.build_modules_for_function(fun)
-        spec.prepare_dir(
-            old_module=mod_old,
-            old_src="{}.c".format(mod_old.llvm[:-3]),
-            new_module=mod_new,
-            new_src="{}.c".format(mod_new.llvm[:-3]))
     yield spec
     spec.finalize()
 

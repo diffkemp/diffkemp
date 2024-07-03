@@ -5,11 +5,13 @@ This module runs tests for syntax differences using the "syntax_diffs" key in
 the YAML spec file.
 """
 from diffkemp.semdiff.function_diff import functions_diff
+from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from .task_spec import SyntaxDiffSpec, specs_path, tasks_path
 import glob
 import os
 import pytest
 import re
+import shutil
 import yaml
 
 
@@ -36,9 +38,11 @@ def collect_task_specs():
                         else:
                             symbol_type = "diff_symbol"
 
+                        spec_id = "{}_{}".format(spec_file_name,
+                                                 symbol[symbol_type])
                         spec = SyntaxDiffSpec(
                             spec=spec_yaml,
-                            task_name=symbol[symbol_type],
+                            task_name=spec_id,
                             kernel_path=cwd)
 
                         spec.add_function_spec(symbol["function"], "not_equal")
@@ -52,8 +56,6 @@ def collect_task_specs():
                                 symbol["def_new"]
                             )
 
-                        spec_id = "{}_{}".format(spec_file_name,
-                                                 symbol[symbol_type])
                         result.append((spec_id, spec))
 
             except yaml.YAMLError:
@@ -72,16 +74,11 @@ def task_spec(request):
     spec = request.param
     for fun in spec.functions:
         mod_old, mod_new = spec.build_modules_for_function(fun)
-        spec.prepare_dir(
-            old_module=mod_old,
-            old_src="{}.c".format(mod_old.llvm[:-3]),
-            new_module=mod_new,
-            new_src="{}.c".format(mod_new.llvm[:-3]))
     yield spec
     spec.finalize()
 
 
-def test_syntax_diff(task_spec):
+def test_syntax_diff(task_spec, mocker):
     """
     Test correctness of the obtained syntax diff.
     The expected difference is obtained by concatenation of symbol
@@ -90,6 +87,26 @@ def test_syntax_diff(task_spec):
     Function differences are displayed using the diff utility and this test
     cannot be currently used to verify them.
     """
+    original_syntax_diff = syntax_diff
+
+    def mock_syntax_diff(first_file, second_file, name, kind,
+                         first_line, second_line):
+        old_cached = os.path.join(task_spec.old_source_dir,
+                                  os.path.basename(first_file))
+        new_cached = os.path.join(task_spec.new_source_dir,
+                                  os.path.basename(first_file))
+
+        if not os.path.isfile(old_cached):
+            shutil.copyfile(first_file, old_cached)
+        if not os.path.isfile(new_cached):
+            shutil.copyfile(second_file, new_cached)
+
+        return original_syntax_diff(old_cached, new_cached, name, kind,
+                                    first_line, second_line)
+
+    mocker.patch("diffkemp.semdiff.function_diff.syntax_diff",
+                 side_effect=mock_syntax_diff)
+
     for fun_spec in task_spec.functions.values():
         result = functions_diff(
             mod_first=fun_spec.old_module,
