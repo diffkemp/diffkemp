@@ -32,10 +32,12 @@ def collect_task_specs():
                 # a single SysctlTaskSpec object.
                 if "sysctls" in spec_yaml:
                     for sysctl in spec_yaml["sysctls"]:
+                        spec_id = spec_file_name + "_" + sysctl["sysctl"]
                         spec = SysctlTaskSpec(
                             spec=spec_yaml,
-                            task_name=sysctl["sysctl"],
+                            task_name=spec_id,
                             kernel_path=cwd,
+                            sysctl=sysctl["sysctl"],
                             data_var=sysctl["data_variable"]["name"])
 
                         (proc_h, proc_h_res), = sysctl["proc_handler"].items()
@@ -45,7 +47,6 @@ def collect_task_specs():
                                 sysctl["data_variable"]["functions"].items():
                             spec.add_data_var_function(data_fun, res)
 
-                        spec_id = spec_file_name + "_" + sysctl["sysctl"]
                         result.append((spec_id, spec))
             except yaml.YAMLError:
                 pass
@@ -66,12 +67,6 @@ def task_spec(request):
         if fun.result == Result.Kind.NONE:
             continue
         mod_old, mod_new = spec.build_modules_for_function(fun.name)
-        spec.prepare_dir(
-            old_module=mod_old,
-            old_src="{}.c".format(mod_old.llvm[:-3]),
-            new_module=mod_new,
-            new_src="{}.c".format(mod_new.llvm[:-3]),
-            name=fun.name)
     yield spec
     spec.finalize()
 

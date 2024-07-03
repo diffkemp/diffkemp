@@ -1,7 +1,6 @@
 """Functions for working with modules used by regression tests."""
 
 import os
-import shutil
 
 from diffkemp.config import Config, BuiltinPatterns
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
@@ -11,11 +10,13 @@ from diffkemp.semdiff.result import Result
 from diffkemp.snapshot import Snapshot
 from diffkemp.utils import get_llvm_version
 
+from .mock_source_tree import MockSourceTree
+
 
 base_path = os.path.abspath(".")
 custom_patterns_path = os.path.abspath("tests/regression/custom_patterns")
 specs_path = os.path.abspath("tests/regression/test_specs")
-tasks_path = os.path.abspath("tests/regression/kernel_modules")
+tasks_path = os.path.abspath("tests/regression/test_data")
 
 
 class FunctionSpec:
@@ -40,10 +41,43 @@ class TaskSpec:
     Contains a list of functions to be compared with DiffKemp during the test.
     """
     def __init__(self, spec, task_name, kernel_path):
-        self.old_kernel_dir = os.path.join(kernel_path, spec["old_kernel"])
-        self.new_kernel_dir = os.path.join(kernel_path, spec["new_kernel"])
         self.name = task_name
         self.task_dir = os.path.join(tasks_path, task_name)
+        # Paths to test data directories (test_data/<taskname>/{old,new})
+        self.old_source_dir = os.path.join(self.task_dir, "old")
+        self.new_source_dir = os.path.join(self.task_dir, "new")
+
+        # If paths to the real kernel sources exist, create corresponding
+        # KernelSourceTree objects
+        self.old_kernel_dir = os.path.join(kernel_path, spec["old_kernel"])
+        self.new_kernel_dir = os.path.join(kernel_path, spec["new_kernel"])
+        self.old_kernel_source_tree = None
+        self.new_kernel_source_tree = None
+        if os.path.isdir(self.old_kernel_dir):
+            self.old_kernel_source_tree = KernelSourceTree(
+                self.old_kernel_dir,
+                KernelLlvmSourceBuilder(self.old_kernel_dir))
+        if os.path.isdir(self.new_kernel_dir):
+            self.new_kernel_source_tree = KernelSourceTree(
+                self.new_kernel_dir,
+                KernelLlvmSourceBuilder(self.new_kernel_dir))
+
+        if not os.path.isdir(self.task_dir):
+            os.mkdir(self.task_dir)
+            os.mkdir(self.old_source_dir)
+            os.mkdir(self.new_source_dir)
+
+        # Create MockSourceTree objects which will be used to get LLVM IR
+        # modules. These are primarily taken from the task data directory,
+        # but if they don't exist there, we pass additional KernelSourceTree
+        # objects for build the required modules.
+        self.old_kernel = MockSourceTree(self.old_source_dir,
+                                         self.old_kernel_source_tree)
+        self.new_kernel = MockSourceTree(self.new_source_dir,
+                                         self.new_kernel_source_tree)
+
+        # Custom pattern configuration
+        custom_pattern_config = None
         if "custom_pattern_config" in spec:
             if get_llvm_version() >= 15:
                 config_filename = spec["custom_pattern_config"]["opaque"]
@@ -53,18 +87,13 @@ class TaskSpec:
                 path=os.path.join(custom_patterns_path, config_filename),
                 patterns_path=base_path
             )
-        else:
-            custom_pattern_config = None
-
+        # Builtin pattern configuration
         builtin_patterns = BuiltinPatterns(
             control_flow_only=spec.get("control_flow_only", False),
         )
 
-        # Create LLVM sources and configuration
-        self.old_kernel = KernelSourceTree(
-            self.old_kernel_dir, KernelLlvmSourceBuilder(self.old_kernel_dir))
-        self.new_kernel = KernelSourceTree(
-            self.new_kernel_dir, KernelLlvmSourceBuilder(self.new_kernel_dir))
+        # Create Config object. It requires snapshots so we just provide the
+        # kernel directories.
         self.old_snapshot = Snapshot(self.old_kernel, self.old_kernel)
         self.new_snapshot = Snapshot(self.new_kernel, self.new_kernel)
         self.config = Config(snapshot_first=self.old_snapshot,
@@ -99,59 +128,15 @@ class TaskSpec:
         self.functions[fun].new_module = mod_new
         return mod_old, mod_new
 
-    def _file_name(self, suffix, ext, name=None):
-        """
-        Get name of a task file having the given name, suffix, and extension.
-        """
-        return os.path.join(self.task_dir,
-                            "{}_{}.{}".format(name or self.name, suffix, ext))
-
-    def old_llvm_file(self, name=None):
-        """Name of the old LLVM file in the task dir."""
-        return self._file_name("old", "ll", name)
-
-    def new_llvm_file(self, name=None):
-        """Name of the new LLVM file in the task dir."""
-        return self._file_name("new", "ll", name)
-
-    def old_src_file(self, name=None):
-        """Name of the old C file in the task dir."""
-        return self._file_name("old", "c", name)
-
-    def new_src_file(self, name=None):
-        """Name of the new C file in the task dir."""
-        return self._file_name("new", "c", name)
-
-    def prepare_dir(self, old_module, new_module, old_src, new_src, name=None):
-        """
-        Create the task directory and copy the LLVM and the C files there.
-        :param old_module: Old LLVM module (instance of LlvmModule).
-        :param old_src: C source from the old kernel version to be copied.
-        :param new_module: New LLVM module (instance of LlvmModule).
-        :param new_src: C source from the new kernel version to be copied.
-        :param name: Optional parameter to specify the new file names. If None
-                     then the spec name is used.
-        """
-        if not os.path.isdir(self.task_dir):
-            os.mkdir(self.task_dir)
-
-        if not os.path.isfile(self.old_llvm_file(name)):
-            shutil.copyfile(old_module.llvm, self.old_llvm_file(name))
-        if old_src and not os.path.isfile(self.old_src_file(name)):
-            shutil.copyfile(old_src, self.old_src_file(name))
-        if not os.path.isfile(self.new_llvm_file(name)):
-            shutil.copyfile(new_module.llvm, self.new_llvm_file(name))
-        if new_src and not os.path.isfile(self.new_src_file(name)):
-            shutil.copyfile(new_src, self.new_src_file(name))
-
 
 class SysctlTaskSpec(TaskSpec):
     """
     Task specification for test of sysctl comparison.
     Extends TaskSpec by data variable and proc handler function.
     """
-    def __init__(self, spec, task_name, kernel_path, data_var):
+    def __init__(self, spec, task_name, kernel_path, sysctl, data_var):
         TaskSpec.__init__(self, spec, task_name, kernel_path)
+        self.sysctl = sysctl
         self.data_var = data_var
         self.proc_handler = None
         self.old_sysctl_module = None
@@ -172,8 +157,8 @@ class SysctlTaskSpec(TaskSpec):
 
     def build_sysctl_module(self):
         """Build the compared sysctl modules into LLVM."""
-        self.old_sysctl_module = self.old_kernel.get_sysctl_module(self.name)
-        self.new_sysctl_module = self.new_kernel.get_sysctl_module(self.name)
+        self.old_sysctl_module = self.old_kernel.get_sysctl_module(self.sysctl)
+        self.new_sysctl_module = self.new_kernel.get_sysctl_module(self.sysctl)
 
 
 class ModuleParamSpec(TaskSpec):
@@ -181,8 +166,8 @@ class ModuleParamSpec(TaskSpec):
     Task specification for test of kernel module parameter comparison.
     Extends TaskSpec by module and parameter specification.
     """
-    def __init__(self, spec, dir, mod, param, kernel_path):
-        TaskSpec.__init__(self, spec, "{}-{}".format(mod, param), kernel_path)
+    def __init__(self, spec, task_name, kernel_path, dir, mod, param):
+        TaskSpec.__init__(self, spec, task_name, kernel_path)
         self.dir = dir
         self.mod = mod
         self.param = param

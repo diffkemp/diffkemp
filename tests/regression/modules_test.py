@@ -32,19 +32,20 @@ def collect_task_specs():
                 if "modules" in spec_yaml:
                     for module in spec_yaml["modules"]:
                         for param in module["params"]:
+                            spec_id = "{}_{}_{}".format(spec_file_name,
+                                                        module["mod"],
+                                                        param["name"])
                             spec = ModuleParamSpec(
                                 spec=spec_yaml,
+                                task_name=spec_id,
+                                kernel_path=cwd,
                                 dir=module["dir"],
                                 mod=module["mod"],
-                                param=param["name"],
-                                kernel_path=cwd
+                                param=param["name"]
                             )
 
                             for fun, res in param["functions"].items():
                                 spec.add_function_spec(fun, res)
-                            spec_id = "{}_{}_{}".format(spec_file_name,
-                                                        module["mod"],
-                                                        param["name"])
                             result.append((spec_id, spec))
             except yaml.YAMLError:
                 pass
@@ -61,11 +62,6 @@ def task_spec(request):
     """pytest fixture to prepare tasks"""
     spec = request.param
     spec.build_module()
-    spec.prepare_dir(
-        old_module=spec.old_module,
-        old_src=None,
-        new_module=spec.new_module,
-        new_src=None)
     for fun in spec.functions.values():
         if fun.result == Result.Kind.NONE:
             continue
