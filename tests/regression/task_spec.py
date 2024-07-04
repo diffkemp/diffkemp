@@ -189,10 +189,9 @@ class DiffSpec:
     Specification of a syntax difference. Contains the name of the differing
     symbol and its old and new definition.
     """
-    def __init__(self, symbol, def_old, def_new):
+    def __init__(self, symbol, diff):
         self.symbol = symbol
-        self.def_old = def_old
-        self.def_new = def_new
+        self.diff = diff
 
 
 class SyntaxDiffSpec(TaskSpec):
@@ -210,6 +209,6 @@ class SyntaxDiffSpec(TaskSpec):
         """Add a symbol that should not be present in the result"""
         self.equal_symbols.add(symbol)
 
-    def add_syntax_diff_spec(self, symbol, def_old, def_new):
+    def add_syntax_diff_spec(self, symbol, diff):
         """Add an expected syntax difference"""
-        self.syntax_diffs[symbol] = DiffSpec(symbol, def_old, def_new)
+        self.syntax_diffs[symbol] = DiffSpec(symbol, diff)

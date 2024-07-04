@@ -49,11 +49,13 @@ def collect_task_specs():
 
                         if symbol_type == "equal_symbol":
                             spec.add_equal_symbol(symbol[symbol_type])
+                        elif "diff" in symbol:
+                            spec.add_syntax_diff_spec(
+                                symbol[symbol_type], symbol["diff"])
                         else:
                             spec.add_syntax_diff_spec(
                                 symbol[symbol_type],
-                                symbol["def_old"],
-                                symbol["def_new"]
+                                symbol["def_old"] + symbol["def_new"]
                             )
 
                         result.append((spec_id, spec))
@@ -81,11 +83,12 @@ def task_spec(request):
 def test_syntax_diff(task_spec, mocker):
     """
     Test correctness of the obtained syntax diff.
-    The expected difference is obtained by concatenation of symbol
-    definitions in the compared versions, which is the way that DiffKemp uses
-    for displaying diffs of macros and inline assemblies.
-    Function differences are displayed using the diff utility and this test
-    cannot be currently used to verify them.
+    The expected difference can be provided using two ways:
+    - providing the diff directly in the spec file ("diff" key), used for
+      function diffs,
+    - providing full definitions of the symbols in the compared versions,
+      the expected diff is then a concatenation of the definitions, used for
+      macros and inline assemblies.
     """
     original_syntax_diff = syntax_diff
 
@@ -125,6 +128,5 @@ def test_syntax_diff(task_spec, mocker):
                 # Compare the obtained diff with the expected one, omitting
                 # all whitespace
                 actual_diff = re.sub(r"\s+", "", symbol_result.diff)
-                expected_diff = re.sub(r"\s+", "",
-                                       diff_spec.def_old + diff_spec.def_new)
+                expected_diff = re.sub(r"\s+", "", diff_spec.diff)
                 assert actual_diff == expected_diff
