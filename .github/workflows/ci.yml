@@ -51,17 +51,6 @@ jobs:
               "rhel-kernel-get $k --output-dir kernel && \
                make -C kernel/linux-$k cscope"
           done
-  nix-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v10
-      - uses: DeterminateSystems/magic-nix-cache-action@v4
-      - name: Build using nix
-        run: nix build
-      - name: Run built Diffkemp
-        run: result/bin/diffkemp --help
-      
 
   build-and-test:
     needs: cache-kernels
@@ -135,72 +124,3 @@ jobs:
           nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
           "setuptoolsShellHook &&
            pytest tests -v"
-
-  cc-wrapper-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Pip3 backup
-        run: python3 -m pip install pip -U
-      - name: RPython installation
-        run: |
-          sudo apt install python2 python-pip
-          python2 -m pip install rpython
-      - name: Build cc-wrapper to binary
-        run: python2 -m rpython ${{ github.workspace }}/diffkemp/building/cc_wrapper.py
-
-  code-style:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.9
-
-      - name: Install Dependencies
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          sudo apt-get install clang-format
-          pip install flake8
-
-      - name: Check Coding Style
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
-          flake8 tests
-          tools/check-clang-format.sh -d
-  
-  result-viewer:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [14.x, 16.x, 18.x, 20.x]
-    steps:
-    - uses: actions/checkout@v4
-    - name: Setup Node ${{ matrix.node }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node }}
-    - name: Install dependencies and cache them
-      uses: cypress-io/github-action@v6
-      with:
-        runTests: false
-        working-directory: view
-    - name: Run RTL tests
-      run: npm test --prefix view
-    - name: Run Cypress tests
-      uses: cypress-io/github-action@v6
-      with:
-        install: false
-        component: true
-        browser: firefox
-        working-directory: view
-        config: video=false,screenshotOnRunFailure=false
-    - name: Check coding style with ESLint
-      run: npm run lint --prefix view
-    - name: Create build
-      run: CI=false npm run build --prefix view

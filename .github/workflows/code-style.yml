@@ -1,0 +1,30 @@
+name: Code style
+
+on: [push, pull_request]
+
+jobs:
+  code-style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          sudo apt-get install clang-format
+          pip install flake8
+
+      - name: Check Coding Style
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
+          flake8 tests
+          tools/check-clang-format.sh -d
+  

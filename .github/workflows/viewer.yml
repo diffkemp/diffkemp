@@ -1,0 +1,35 @@
+name: Viewer CI
+
+on: [push, pull_request]
+
+jobs:
+  result-viewer:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [14.x, 16.x, 18.x, 20.x]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Node ${{ matrix.node }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node }}
+    - name: Install dependencies and cache them
+      uses: cypress-io/github-action@v6
+      with:
+        runTests: false
+        working-directory: view
+    - name: Run RTL tests
+      run: npm test --prefix view
+    - name: Run Cypress tests
+      uses: cypress-io/github-action@v6
+      with:
+        install: false
+        component: true
+        browser: firefox
+        working-directory: view
+        config: video=false,screenshotOnRunFailure=false
+    - name: Check coding style with ESLint
+      run: npm run lint --prefix view
+    - name: Create build
+      run: CI=false npm run build --prefix view
