@@ -66,3 +66,17 @@ syntax_diffs:
                    _ASM_EXTABLE(1b, 3b)
                    : "=r" (err), ltype(x)
                    : "m" (__m(addr)), "i" (errret), "0" (err))
+  - function: dio_iodone2_helper
+    diff_symbol: dio_iodone2_helper
+    diff: |
+      *************** static void dio_iodone2_helper(struct dio *dio, loff_t offset,
+      *** 246,250 ***
+        {
+      ! 	if (dio->end_io && dio->result)
+      ! 		dio->end_io(dio->iocb, offset,
+      ! 				transferred, dio->private, ret, is_async);
+
+      --- 246,249 ---
+        {
+      ! 	if (dio->end_io)
+      ! 		dio->end_io(dio->iocb, offset, ret, dio->private, 0, 0);
