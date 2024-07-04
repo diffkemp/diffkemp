@@ -63,14 +63,12 @@ def test_link_modules(source, mod):
     assert not mod.links_mod(init)
 
 
-def test_find_param_var():
+def test_find_param_var(source):
     """
     Test finding the name of a variable corresponding to a module parameter.
     This is necessary since for parameters defined with module_param_named,
     names of the parameter and of the variable differ.
     """
-    kernel_dir = "kernel/linux-3.10"
-    source = SourceTree(kernel_dir, KernelLlvmSourceBuilder(kernel_dir))
     mod = source.get_module_for_symbol("rfkill_init")
     assert mod.find_param_var("default_state").name == "rfkill_default_state"
 
