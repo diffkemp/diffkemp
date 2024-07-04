@@ -29,7 +29,5 @@ jobs:
         browser: firefox
         working-directory: view
         config: video=false,screenshotOnRunFailure=false
-    - name: Check coding style with ESLint
-      run: npm run lint --prefix view
     - name: Create build
       run: CI=false npm run build --prefix view

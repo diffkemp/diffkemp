@@ -3,7 +3,22 @@ name: Code style
 on: [push, pull_request]
 
 jobs:
-  code-style:
+  code-style-cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: sudo apt-get install clang-format
+
+      - name: Check Coding Style
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: tools/check-clang-format.sh -d
+
+  code-style-python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,15 +31,27 @@ jobs:
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         shell: bash
-        run: |
-          sudo apt-get install clang-format
-          pip install flake8
+        run: pip install flake8
 
       - name: Check Coding Style
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          flake8 diffkemp --exclude=llreve --ignore=F403,F405,W504
+          flake8 diffkemp --ignore=F403,F405,W504
           flake8 tests
-          tools/check-clang-format.sh -d
-  
+
+  code-style-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install Dependencies
+        run: npm ci --prefix view
+
+      - name: Check coding style with ESLint
+        run: npm run lint --prefix view
