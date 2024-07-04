@@ -16,44 +16,7 @@ env:
     4.11
 
 jobs:
-  cache-kernels:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v10
-      - uses: DeterminateSystems/magic-nix-cache-action@v4
-
-      - name: Cache Linux Kernels
-        id: kernel-cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/kernel
-          key: kernels-${{ env.KERNELS }}
-          lookup-only: true
-
-      - name: Delete unused software
-        if: steps.kernel-cache.outputs.cache-hit != 'true'
-        # This is necessary for running CScope database build as it takes
-        # a lot of disk space and the runners die silently when out of space.
-        run: |
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-
-      - name: Get Linux Kernels
-        if: steps.kernel-cache.outputs.cache-hit != 'true'
-        working-directory: ${{ github.workspace }}
-        run: |
-          mkdir kernel
-          for k in $KERNELS; do
-            nix develop .#test-kernel-buildenv --command bash -c \
-              "rhel-kernel-get $k --output-dir kernel && \
-               make -C kernel/linux-$k cscope"
-          done
-
   build-and-test:
-    needs: cache-kernels
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -93,13 +56,34 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
 
-      - name: Restore Kernels
+      - name: Restore Test Data
         uses: actions/cache/restore@v4
+        id: cache-test-data
         if: matrix.regression-tests
         with:
-          path: ${{ github.workspace }}/kernel
-          key: kernels-${{ env.KERNELS }}
-          fail-on-cache-miss: true
+          path: tests/regression/test_data
+          key: test-data-llvm${{ matrix.llvm }}-${{ hashFiles('tests/regression/test_specs/*') }}
+
+      # Download kernel sources:
+      # - if test_data is cached, we only need the kernel for unit tests
+      # - if test_data is not cached, we need all kernels
+      - name: Download Kernel for Unit Tests
+        if: |
+          matrix.regression-tests &&
+          steps.cache-test-data.outputs.cache-hit == 'true'
+        run:
+          nix develop .#test-kernel-buildenv --command bash -c \
+            "rhel-kernel-get 3.10.0-957.el7 --output-dir kernel"
+      - name: Download Kernels
+        if: |
+          matrix.regression-tests &&
+          steps.cache-test-data.outputs.cache-hit != 'true'
+        run: |
+          mkdir kernel
+          for k in $KERNELS; do
+            nix develop .#test-kernel-buildenv --command bash -c \
+              "rhel-kernel-get $k --output-dir kernel"
+          done
 
       - name: Prepare Build Environment
         run: |
@@ -124,3 +108,10 @@ jobs:
           nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
           "setuptoolsShellHook &&
            pytest tests -v"
+
+      - name: Cache Test Data
+        if: matrix.regression-tests
+        uses: actions/cache@v4
+        with:
+          path: tests/regression/test_data
+          key: test-data-llvm${{ matrix.llvm }}-${{ hashFiles('tests/regression/test_specs/*') }}
