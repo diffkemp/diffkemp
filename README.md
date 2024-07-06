@@ -33,6 +33,83 @@ You can install DiffKemp:
 
 ## Usage
 
+```mermaid
+---
+# This code renders an image showing the relation of the commands.
+# The image does not show on the GitHub app, use a browser to see the image.
+config:
+  theme: base
+  themeCSS: "
+/* redefinition of subgraphs labels */
+.cluster-label {
+  font-family: monospace;
+  font-size: 16px;
+}
+"
+  themeVariables:
+    nodeBorder: black
+    mainBkg: white
+    clusterBkg: white
+    clusterBorder: white
+    edgeLabelBackground: lightgrey
+---
+flowchart LR
+%% Wrapping the whole thing in a subgraph so it has a white background even
+%% in a dark mode.
+subgraph G[" "]
+    direction LR
+    %% nodes
+    pv(project versions)
+    sl(symbol list)
+    subgraph sgSubgraph[diffkemp build\ndiffkemp build-kernel\ndiffkemp llvm-to-snapshot]
+        sg(Snapshot\ngeneration)
+    end
+    subgraph scSubgraph[diffkemp compare]
+        sc(Semantic\ncomparison)
+    end
+    subgraph rvSubgraph[diffkemp view]
+        rv(Result viewer)
+    end
+    report[report for\nnot equal symbols]
+    neq(✗ not equal)
+    eq(✓ equal)
+    %% invisible node for making pv node more aligned with other nodes
+    tmp(" ")
+    %% edges
+    %% for nodes alignment
+    tmp ~~~ sg
+    pv -- old --> sg
+    pv -- new --> sg
+    sl --> sg
+    sg -- old snapshot --> sc
+    %% invisible edge to make old and new snapshot edges more symetric
+    sg ~~~ sc
+    sg -- new snapshot --> sc
+    sc --- report
+    report .-> rv
+    report --> neq
+    sc --> eq
+    %% styles for edges
+    %% style for `sc --- report` edge
+    linkStyle 7 stroke:darkred;
+    %% style for `report .-> rv` edge
+    linkStyle 8 stroke:darkred;
+    %% style for `report --> neq` edge
+    linkStyle 9 stroke:darkred;
+    %% style for `sc --> eq` edge
+    linkStyle 10 stroke:darkgreen;
+    %% node style definitions
+    classDef noBorderClass stroke:white;
+    classDef invisibleNodeClass display:none;
+    %% node style application
+    style report fill:lightgrey,stroke:lightgray;
+    style neq color:darkred;
+    style eq color:darkgreen;
+    class tmp invisibleNodeClass;
+    class pv,sl,eq,neq noBorderClass;
+end
+```
+
 DiffKemp runs in three phases:
 
 1. **Snapshot generation** takes symbols (functions) that you want to compare
