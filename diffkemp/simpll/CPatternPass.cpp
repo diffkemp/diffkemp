@@ -157,8 +157,8 @@ bool CPatternPass::isPatternBody(Instruction *Inst) {
     if (isa<ReturnInst>(Inst)) {
         return false;
     }
-    if (isa<CallInst>(Inst)) {
-        Function *Fun = getCalledFunction(dyn_cast<CallInst>(Inst));
+    if (auto Call = dyn_cast<CallInst>(Inst)) {
+        Function *Fun = getCalledFunction(Call);
         if (Fun && Fun->hasName()
             && Fun->getName().equals(CustomPatternSet::OutputMappingFunName)) {
             return false;
