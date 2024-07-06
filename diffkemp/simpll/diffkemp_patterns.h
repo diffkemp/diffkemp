@@ -49,10 +49,10 @@
  * Example of a function declaration:
  *  void FUNCTION_OLD(sub, int x, int y, int z);
  *
- * If used for a definition of a function with void return type, it can be also
- * be used to define patterns, which is specifically useful if one wants to use
- * differently named arguments in each version of the pattern. However, it is
- * still necessary that the signatures match.
+ * The FUNCTION_OLD and FUNCTION_NEW macros can be also used to define patterns
+ * with differently named arguments. In such a case, use these (with a void
+ * return type) instead of PATTERN_NAME and PATTERN_ARGS. Note that the function
+ * signatures must still match.
  *
  * To define a pattern that ends with a resolution of a condition, use
  * CONDITION_PATTERN_OLD and CONDITION_PATTERN_NEW macros. The pattern should
