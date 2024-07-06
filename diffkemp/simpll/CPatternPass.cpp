@@ -141,18 +141,10 @@ void CPatternPass::tagPatterns(Module *Mod) {
 
 /// Rename function to a proper LLVM pattern name.
 void CPatternPass::renameFunction(Function &Fun) {
-#if LLVM_VERSION_MAJOR >= 16
-    if (Fun.getName().starts_with(CPATTERN_OLD_PREFIX)) {
-#else
     if (Fun.getName().startswith(CPATTERN_OLD_PREFIX)) {
-#endif
         Fun.setName(CustomPatternSet::FullPrefixL
                     + Fun.getName().substr(strlen(CPATTERN_OLD_PREFIX)));
-#if LLVM_VERSION_MAJOR >= 16
-    } else if (Fun.getName().starts_with(CPATTERN_NEW_PREFIX)) {
-#else
     } else if (Fun.getName().startswith(CPATTERN_NEW_PREFIX)) {
-#endif
         Fun.setName(CustomPatternSet::FullPrefixR
                     + Fun.getName().substr(strlen(CPATTERN_NEW_PREFIX)));
     } else if (Fun.getName().equals(CPATTERN_OUTPUT_MAPPING_NAME)) {
