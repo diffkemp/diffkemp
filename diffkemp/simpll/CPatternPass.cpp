@@ -55,7 +55,7 @@ void CPatternPass::initialize(Module *Mod) {
         std::string NameR{CPATTERN_NEW_PREFIX + PatternName};
         Function *FunPtrR = Mod->getFunction(NameR);
         if (FunPtrR && !FunPtrR->isDeclaration()) {
-            PatternPair PatternPair{&FunL, FunPtrR};
+            std::pair<Function *, Function *> PatternPair{&FunL, FunPtrR};
             patterns.emplace(PatternName, PatternPair);
         }
     }

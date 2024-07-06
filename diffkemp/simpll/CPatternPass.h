@@ -26,10 +26,8 @@ using namespace llvm;
 /// compiled to LLVM IR. Primary function consists of renaming functions to
 /// proper names and tagging pattern starts and ends.
 class CPatternPass {
-    /// A pair of old and new pattern represented as LLVM functions.
-    using PatternPair = std::tuple<Function *, Function *>;
-    /// Map of pattern names and LLVM pattern pairs.
-    std::unordered_map<std::string, CPatternPass::PatternPair> patterns{};
+    /// Map of pattern names and LLVM pattern function pairs.
+    std::unordered_map<std::string, std::pair<Function *, Function *>> patterns{};
 
   public:
     /// Run the preprocessing pass.
