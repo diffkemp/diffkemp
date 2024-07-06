@@ -119,10 +119,10 @@ def make_argument_parser():
                             help="compare only selected function")
     compare_ap.add_argument("--custom-patterns", "-p",
                             help="custom pattern file or configuration")
-    compare_ap.add_argument("--c-pattern-append", help="option to append to \
+    compare_ap.add_argument("--pattern-clang-append", help="option to append to \
                             clang when compiling custom C pattern",
                             action="append")
-    compare_ap.add_argument("--c-pattern-kernel-path",
+    compare_ap.add_argument("--pattern-include-kernel",
                             help="automatically use all necessary include \
                                 paths, incldues and definitions for compiling \
                                 kernel patterns, using the given kernel path")
@@ -202,12 +202,12 @@ def make_argument_parser():
                                            pattern into valid form")
     compile_pattern_ap.add_argument("pattern_file",
                                     help="path to the custom pattern file")
-    compile_pattern_ap.add_argument("--c-pattern-append", help="option to \
+    compile_pattern_ap.add_argument("--clang-append", help="option to \
                                     append to clang when compiling custom C \
                                     pattern",
                                     action="append")
     compile_pattern_ap.add_argument(
-        "--c-pattern-kernel-path", help="automatically use all necessary \
+        "--include-kernel", help="automatically use all necessary \
         include paths, incldues and definitions for compiling kernel \
         patterns, using the given kernel path")
     compile_pattern_ap.add_argument("--disable-simpll-ffi",
