@@ -1,0 +1,5 @@
+old_kernel: kernel/linux-4.18.0-147.el8
+new_kernel: kernel/linux-4.18.0-193.el8
+
+functions:
+  __rmqueue_smallest: equal

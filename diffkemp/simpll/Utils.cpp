@@ -17,6 +17,7 @@
 #include "DebugInfo.h"
 #include <algorithm>
 #include <iostream>
+#include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/DebugInfo.h>
@@ -31,6 +32,7 @@
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Transforms/Scalar/NewGVN.h>
 #include <llvm/Transforms/Scalar/SimplifyCFG.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <numeric>
@@ -293,9 +295,11 @@ void simplifyFunction(Function *Fun) {
     PassBuilder pb;
     FunctionPassManager fpm;
     FunctionAnalysisManager fam;
+    fam.registerPass([] { return AAManager(); });
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(SimplifyCFGPass{});
     fpm.addPass(DCEPass{});
+    fpm.addPass(NewGVNPass{});
     fpm.run(*Fun, fam);
 }
 
