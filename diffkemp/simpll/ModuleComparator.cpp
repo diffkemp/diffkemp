@@ -133,8 +133,6 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
         std::set<ConstFunPair> inlinedPairs;
 
         while (tryInline.first || tryInline.second) {
-            LOG_INDENT();
-
             // Try to inline the problematic function calls
             CallInst *callFirst = findCallInst(tryInline.first, FirstFun);
             CallInst *callSecond = findCallInst(tryInline.second, SecondFun);
@@ -157,7 +155,6 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             // If nothing was inlined, do not continue
             if (inlineResultFirst != InliningResult::Inlined
                 && inlineResultSecond != InliningResult::Inlined) {
-                LOG_UNINDENT();
                 break;
             }
             inlinedPairs.emplace(calledFirst, calledSecond);
@@ -167,8 +164,19 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             simplifyFunction(FirstFun);
             simplifyFunction(SecondFun);
 
+            LOG_VERBOSE_EXTRA("Functions after inlining:\n"
+                              << "L:\n"
+                              << *FirstFun << "R:\n"
+                              << *SecondFun);
+
             // Reset the function diff result
             ComparedFuns.at({FirstFun, SecondFun}).kind = Result::UNKNOWN;
+
+            LOG("Comparing \"" << FirstFun->getName() << "\" and \""
+                               << SecondFun->getName()
+                               << "\" (after inlining) {\n");
+            LOG_INDENT();
+
             // Re-run the comparison
             DifferentialFunctionComparator fCompSecond(
                     FirstFun, SecondFun, config, DI, &CustomPatterns, this);
@@ -200,14 +208,10 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
                 for (auto &inlinedPair : inlinedPairs)
                     ComparedFuns.erase(inlinedPair);
 
-                LOG("\"" << FirstFun->getName() << "\" and \""
-                         << SecondFun->getName() << "\" "
-                         << Color::makeGreen("equal") << " after inlining\n");
+                LOG("} " << Color::makeGreen("equal\n"));
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
             } else {
-                LOG("\"" << FirstFun->getName() << "\" and \""
-                         << SecondFun->getName() << "\" still "
-                         << Color::makeRed("not equal") << " after inlining\n");
+                LOG("} still " << Color::makeRed("not equal\n"));
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;
             }
         }
