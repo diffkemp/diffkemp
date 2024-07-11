@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from cffi import FFI
 from subprocess import check_output
-from diffkemp.utils import get_simpll_build_dir
 import os
 import sys
 
@@ -50,7 +49,10 @@ llvm_ldflags = list(filter(lambda x: x != "",
 llvm_libs = list(filter(lambda x: x != "",
                         llvm_libs.decode("ascii").strip().split()))
 
-simpll_link_arg = f"-L{get_simpll_build_dir()}/diffkemp/simpll"
+env_var = "SIMPLL_BUILD_DIR"
+build_dir = os.environ[env_var] if env_var in os.environ else "build"
+
+simpll_link_arg = f"-L{build_dir}/diffkemp/simpll"
 
 include_path = f"{root_dir}/diffkemp/simpll"
 
