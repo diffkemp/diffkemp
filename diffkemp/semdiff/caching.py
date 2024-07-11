@@ -521,7 +521,7 @@ class ComparisonGraph:
                     calls = None
                 else:
                     # Transform the Edge objects to a Callstack
-                    edges = _get_callstack(backtracking_map, self[fun], vertex)
+                    edges = get_callstack(backtracking_map, self[fun], vertex)
                     calls = Result.Callstack.from_edge_objects(edges)
                 # Note: a function diff is covered (i.e. hidden when empty)
                 # if and only if there is a non-function difference
@@ -557,8 +557,8 @@ class ComparisonGraph:
                         else fun_second
                     if nonfun_diff.parent_fun != fun:
                         parent_calls = Result.Callstack.from_edge_objects(
-                            _get_callstack(backtracking_map, self[fun],
-                                           vertex))
+                            get_callstack(backtracking_map, self[fun],
+                                          vertex))
                         calls = parent_calls + calls
 
                     if isinstance(nonfun_diff, ComparisonGraph.SyntaxDiff):
@@ -587,7 +587,7 @@ class ComparisonGraph:
         return objects_to_compare, syndiff_bodies_left, syndiff_bodies_right
 
 
-def _get_callstack(backtracking_map, start_vertex, end_vertex):
+def get_callstack(backtracking_map, start_vertex, end_vertex):
     """Generates an edge callstack based on the backtracking map."""
     if start_vertex == end_vertex:
         return []
