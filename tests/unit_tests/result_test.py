@@ -1,6 +1,6 @@
 """Unit tests for the Callstack and YamlOutput class."""
 from diffkemp.output import YamlOutput
-from diffkemp.semdiff.caching import ComparisonGraph, _get_callstack
+from diffkemp.semdiff.caching import ComparisonGraph, get_callstack
 from diffkemp.semdiff.result import Result
 from diffkemp.utils import get_end_line
 import pytest
@@ -10,7 +10,7 @@ def test_callstack_from_edge_objects(graph):
     """Tests creation of Callstack from callstack consisting of Edge objects.
     """
     _, map = graph.reachable_from(ComparisonGraph.Side.LEFT, "main_function")
-    edges = _get_callstack(map, graph["main_function"], graph["do_check"])
+    edges = get_callstack(map, graph["main_function"], graph["do_check"])
     callstack = Result.Callstack.from_edge_objects(edges)
     assert callstack.calls == [
         {"name": "do_check", "file": "app/main.c", "line": 58}
