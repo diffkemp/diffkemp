@@ -10,13 +10,14 @@ from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.utils import get_llvm_version
+import importlib.metadata
 import datetime
 import os
-import pkg_resources
 import shutil
 import sys
 import yaml
 import errno
+import subprocess
 
 
 class Snapshot:
@@ -242,6 +243,19 @@ class Snapshot:
                              f["tag"],
                              group)
 
+    def get_diffkemp_version(self):
+        try:
+            version = importlib.metadata.version("diffkemp")
+        except importlib.metadata.PackageNotFoundError:
+            # We are in a development version of the project
+            cwd = os.path.dirname(os.path.relpath(__file__))
+            short_commit_hash = subprocess.check_output(
+                ['git', 'rev-parse', '--short', 'HEAD'],
+                cwd=cwd,
+            ).decode('ascii').strip()
+            version = f"devel-{short_commit_hash}"
+        return version
+
     def to_yaml(self):
         """
         Dump the snapshot as a YAML string. Paths to files are given relative
@@ -267,7 +281,7 @@ class Snapshot:
 
         # Create the top level YAML structure.
         yaml_dict = [{
-            "diffkemp_version": pkg_resources.require("diffkemp")[0].version,
+            "diffkemp_version": self.get_diffkemp_version(),
             "llvm_version": get_llvm_version(),
             "created_time": datetime.datetime.now(datetime.timezone.utc),
             "list_kind": self.list_kind,
