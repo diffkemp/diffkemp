@@ -83,7 +83,8 @@ from the Linux kernel. Its main advantage is that it does not build the
 entire kernel, only the files containing functions from `SYMBOL_LIST`. The
 kernel source to build must be properly configured (by `make prepare`) and
 all the tools necessary for building kernel must be installed. It also
-requires the `cscope` tool to be installed.
+requires the `cscope` tool to be installed. At the moment, the command only
+supports the x86 architecture.
 
 #### Comparing sysctl options
 
