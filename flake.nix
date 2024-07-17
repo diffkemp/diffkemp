@@ -111,6 +111,7 @@
               pytest
               pytest-mock
               flake8
+              cffi
             ];
 
             WITHOUT_RPYTHON = true;
