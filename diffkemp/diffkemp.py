@@ -346,6 +346,11 @@ def generate_from_sysctl_list(snapshot, sysctl_list):
                 for data_fun in data_mod.get_functions_using_param(data):
                     if data_fun == proc_fun:
                         continue
+                    # For now, we only support the x86 architecture in kernel
+                    if "/arch/" in data_mod.llvm and \
+                            "/arch/x86/" not in data_mod.llvm:
+                        continue
+
                     snapshot.add_fun(
                         name=data_fun,
                         llvm_mod=data_mod,
