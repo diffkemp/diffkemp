@@ -35,6 +35,8 @@
               diffutils
               gtest
               gnumake
+              libmpc
+              mpfr
             ];
 
             propagatedBuildInputs = with python3Packages; [
