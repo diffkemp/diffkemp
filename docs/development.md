@@ -80,7 +80,12 @@ versions necessary for running [regression tests](#python-tests)
 
 You can also develop DiffKemp directly. For this you need to install the
 necessary [dependencies](installation.md#dependencies) to your system and then
-[build DiffKemp](#build).
+you may [build DiffKemp](#build). Or you can develop DiffKemp without using
+`pip`, as it can be quite slow in iterative development.
+
+For that purpose, if you build DiffKemp with CMake just like in [section about
+build](#build) you can use generated executable located in
+`BUILD_DIR/bin/diffkemp`,
 
 ### Docker
 
@@ -213,6 +218,13 @@ also be used to download and configure the aforementioned kernels.
 >
 > and using `rhel-kernel-get` inside the environment to retrieve the above
 > kernels.
+
+#### Python test without pip
+
+In a case where you are developing DiffKemp without `pip` you cannot simply call
+`pytest`, because you dependencies are not easily available. Thus, you have to
+use generated test runner which is created when [building DiffKemp with
+CMake](#build) `BUILD_DIR/bin/run_pytest_tests.py`.
 
 ### Tests for the SimpLL library
 
