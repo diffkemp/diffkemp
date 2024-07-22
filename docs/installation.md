@@ -10,7 +10,7 @@ Currently, DiffKemp runs on Linux and needs the following software installed:
 - Clang and LLVM (supported versions are 9 - 17)
 * Z3 SMT solver and its C++ bindings (packages `z3` and `z3-devel` in Fedora)
 - Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
-- Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
+- Python packages from `packages` field in `pyproject.toml` (automatically installed when running `pip install .`)
 - CScope (when comparing versions of the Linux kernel)
 - GoogleTest (gtest) for running the C++ tests (can be vendored by using
   `-DVENDOR_GTEST=On` in the `cmake` command)
@@ -29,8 +29,7 @@ Currently, DiffKemp runs on Linux and needs the following software installed:
 
 ```sh
 # Installation of dependencies
-apt install -y cmake ninja-build llvm clang g++ libgtest-dev python3-pip python-is-python3 z3 z3-dev
-pip install -r requirements.txt # You may want to use it in virtual environment
+apt install -y cmake ninja-build llvm clang g++ libgtest-dev python3-pip python-is-python3 z3 libz3-dev python3-cffi
 # Installation of the result viewer dependencies (node, npm)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install 20
@@ -40,8 +39,7 @@ nvm install 20
 
 ```sh
 # Installation of dependencies
-dnf install -y cmake ninja-build llvm-devel clang g++ python3-devel diffutils python3-pip gtest-devel z3 z3-devel
-pip install -r requirements.txt
+dnf install -y cmake ninja-build llvm-devel clang g++ python3-devel diffutils python3-pip gtest-devel z3 z3-devel python3-cffi python3-setuptools
 # Installation of the result viewer dependencies (node, npm)
 dnf install nodejs
 ```
@@ -53,30 +51,18 @@ dnf install nodejs
 > ensure DiffKemp uses correct version (e.g. by prefixing the PATH with path
 > to the LLVM binaries - `PATH="/usr/lib64/llvmXX/bin/:$PATH"`).
 
-## Building
+## Building and installation
 
-Build can be done by running:
+Build with installation can be done by running:
 
 ```sh
 cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_VIEWER=On
-ninja -C build
-pip install -e .
+ninja -C build install
+pip install .
 ```
-
-The DiffKemp binary is then located in `bin/diffkemp`.
 
 You can omit `-DBUILD_VIEWER=On` flag in `cmake` if you do not want to use the
 result viewer (dependencies won't be installed for that and the viewer won't be
 built).
-
-## Installation
-
-Optionally, you can install DiffKemp on the system using the following commands:
-
-```sh
-ninja -C build install
-pip install .
-install -m 0755 bin/diffkemp /usr/bin/diffkemp
-```
 
 Then you can use the `diffkemp` command from any location.
