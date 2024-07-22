@@ -68,9 +68,10 @@ nix develop .#diffkemp-llvm14
 This will enter a development shell with all DiffKemp dependencies
 pre-installed. You can then follow the [standard build
 instructions](#build) to build and install DiffKemp. The only
-difference is that it is not possible to run `pip install` inside Nix shell
-(because of the way Nix works) and it is necessary to use the built-in
-`setuptoolsShellHook` function instead.
+difference is that you do not need to install the Python dependencies because
+they are already preinstalled.
+
+The generated executable is then located in `BUILD_DIR/bin/diffkemp`.
 
 We also provide a special Nix environment for retrieving and preparing kernel
 versions necessary for running [regression tests](#python-tests)
@@ -80,7 +81,9 @@ versions necessary for running [regression tests](#python-tests)
 
 You can also develop DiffKemp directly. For this you need to install the
 necessary [dependencies](installation.md#dependencies) to your system and then
-[build DiffKemp](#build).
+you may [build DiffKemp](#build).
+
+The generated executable is then located in `BUILD_DIR/bin/diffkemp`.
 
 ### Docker
 
@@ -122,7 +125,6 @@ To build DiffKemp, use the following commands:
 ```sh
 cmake -S . -B build -GNinja -DBUILD_VIEWER=On
 ninja -C build
-pip install -e . # In case of Nix use setuptoolsShellHook instead
 ```
 
 - `-DBUILD_VIEWER=On`: This flag will install packages and build the result
@@ -130,21 +132,21 @@ pip install -e . # In case of Nix use setuptoolsShellHook instead
   want to use `-DBUILD_VIEWER=Off` instead.
 
 If you make changes to the SimpLL library, you will need to rebuild it by
-running `ninja -C build`. We are using [CFFI](https://cffi.readthedocs.io/en/stable/)
-for accessing the library from the Python. The CFFI is not rebuilt by default,
-so even if you rebuild the library, the changes will not be visible when running
-`diffkemp compare ...`. Currently, you have multiple options to overcome this:
+running `ninja -C <BUILD_DIR>`. We are using [CFFI](https://cffi.readthedocs.io/en/stable/)
+for accessing the library from the Python.
 
-1. Use `diffkemp compare --disable-simpll-ffi ...` which will run SimpLL
-  through a binary instead of the CFFI.
-2. On some OS distributions, it is enough to run `pip install -e .` again.
-3. Another option is to to run `rm build/_simpll.abi3.so` and then run `cmake`
-  again with `-DSIMPLL_REBUILD_BINDINGS=On` flag. After this, when you make
-  changes to the SimpLL library, running `ninja -C build` should be enough and
-  it should rebuild the CFFI, and the changes should be visible when running
-  `diffkemp compare ...`.
-  (Note: This does not seems to be working in the [Nix development environment](#nix-as-development-environment),
-  so use option 1 instead.)
+To be able to use DiffKemp, it is also necessary to **install Python dependencies**,
+you can install them:
+
+- by running `pip install . && pip uninstall -y diffkemp` or
+- install them manually by using `pip install <DEPENDENCIES>` (dependencies are
+  specified in `packages` field in `pyproject.toml` file).
+
+> [!NOTE]
+> If you used different than the default build directory (`build`) and want to
+> use `pip install .` for installing python dependencies, then you need to
+> specify the build directory when running `pip` by using
+> `SIMPLL_BUILD_DIR=<BUILD_DIR> pip install .`.
 
 ## Coding style
 
@@ -167,7 +169,18 @@ The project contains multiple tests:
 
 ### Python tests
 
-The tests use pytest and can be run by:
+By default, the DiffKemp generates its own test runner executable located in
+`BUILD_DIR/bin/run_pytest_tests.py`.
+
+In addition to the standard `diffkemp` package you also have to install the
+development dependencies by running:
+
+```sh
+pip instal .[dev]
+```
+
+In a case where you have installed both the `diffkemp` package and development
+dependencies you can run the tests by:
 
 ```sh
 pytest tests
