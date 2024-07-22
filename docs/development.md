@@ -69,8 +69,7 @@ This will enter a development shell with all DiffKemp dependencies
 pre-installed. You can then follow the [standard build
 instructions](#build) to build and install DiffKemp. The only
 difference is that it is not possible to run `pip install` inside Nix shell
-(because of the way Nix works) and it is necessary to use the built-in
-`setuptoolsShellHook` function instead.
+(because of the way Nix works). Thus, you have to use our generated executables.
 
 We also provide a special Nix environment for retrieving and preparing kernel
 versions necessary for running [regression tests](#python-tests)
@@ -80,7 +79,9 @@ versions necessary for running [regression tests](#python-tests)
 
 You can also develop DiffKemp directly. For this you need to install the
 necessary [dependencies](installation.md#dependencies) to your system and then
-[build DiffKemp](#build).
+you may [build DiffKemp](#build).
+
+The generated executable is then located in `BUILD_DIR/bin/diffkemp`.
 
 ### Docker
 
@@ -167,7 +168,11 @@ The project contains multiple tests:
 
 ### Python tests
 
-The tests use pytest and can be run by:
+By default, the DiffKemp generates its own test runner executable located in
+`BUILD_DIR/bin/run_pytest_tests.py`.
+
+In a case where you have used `pip` to install the `diffkemp` package, you can
+then run the tests also by:
 
 ```sh
 pytest tests
