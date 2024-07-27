@@ -636,6 +636,10 @@ TypeInfo getPointeeStructTypeInfo(const Value *Val, const DataLayout *Layout) {
 
     // Get the pointee type
     const DIType *PointeeTy = PtrTy->getBaseType();
+    if (!PointeeTy) {
+        // Base type is null -> the pointer type is void *.
+        return {"", 0};
+    }
 
     // Check if the pointee type is a structured type (composite type)
     const DICompositeType *StrTy = dyn_cast<DICompositeType>(PointeeTy);
