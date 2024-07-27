@@ -629,6 +629,80 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
 
+/// Tests the comparison of calls to memset functions with void * type
+/// (compiled as i8*) and different sizes. The result should be non-equal
+/// because we do not have enough information (type name and size) to evaluate
+/// the void* types as equal. This used to caused errors for LLVM >= 15.
+TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsVoidPtrType) {
+    // Create auxilliary functions to serve as the memset functions.
+    Function *AuxFL = Function::Create(
+            FunctionType::get(PointerType::get(Type::getVoidTy(CtxL), 0),
+                              {PointerType::get(Type::getVoidTy(CtxL), 0),
+                               Type::getInt32Ty(CtxL),
+                               Type::getInt32Ty(CtxL)},
+                              false),
+            GlobalValue::ExternalLinkage,
+            "AuxFL",
+            ModL.get());
+    Function *AuxFR = Function::Create(
+            FunctionType::get(PointerType::get(Type::getVoidTy(CtxR), 0),
+                              {PointerType::get(Type::getVoidTy(CtxR), 0),
+                               Type::getInt32Ty(CtxR),
+                               Type::getInt32Ty(CtxR)},
+                              false),
+            GlobalValue::ExternalLinkage,
+            "AuxFR",
+            ModR.get());
+
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    AllocaInst *AllL = new AllocaInst(Type::getInt8Ty(CtxL), 0, "var", BBL);
+    AllocaInst *AllR = new AllocaInst(Type::getInt8Ty(CtxR), 0, "var", BBR);
+
+    CallInst *CL =
+            CallInst::Create(AuxFL->getFunctionType(),
+                             AuxFL,
+                             {AllL,
+                              ConstantInt::get(Type::getInt32Ty(CtxL), 5),
+                              ConstantInt::get(Type::getInt32Ty(CtxL), 8)},
+                             "",
+                             BBL);
+    CallInst *CR =
+            CallInst::Create(AuxFR->getFunctionType(),
+                             AuxFR,
+                             {AllR,
+                              ConstantInt::get(Type::getInt32Ty(CtxR), 5),
+                              ConstantInt::get(Type::getInt32Ty(CtxR), 12)},
+                             "",
+                             BBR);
+
+    // Create calls to llvm.dbg.value with type metadata.
+    DIBuilder builderL(*ModL);
+    DIBuilder builderR(*ModR);
+    DIFile *UnitL = builderL.createFile("foo", "bar");
+    DIFile *UnitR = builderL.createFile("foo", "bar");
+    DISubprogram *FunTypeL =
+            builderL.createFunction(UnitL, "F", "F", UnitL, 0, nullptr, 0);
+    DISubprogram *FunTypeR =
+            builderR.createFunction(UnitR, "F", "F", UnitR, 0, nullptr, 0);
+    // Void * type has nullptr pointee type.
+    auto PointerTypeL = builderL.createPointerType(nullptr, 64);
+    auto PointerTypeR = builderR.createPointerType(nullptr, 64);
+    DILocalVariable *varL = builderL.createAutoVariable(
+            FunTypeL, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR = builderR.createAutoVariable(
+            FunTypeR, "var", nullptr, 0, PointerTypeR);
+    DIExpression *exprL = builderL.createExpression();
+    DIExpression *exprR = builderR.createExpression();
+    DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
+    DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+
+    ASSERT_NE(DiffComp->testCmpMemset(CL, CR), 0);
+}
+
 /// Tests several cases where cmpTypes should detect a semantic equivalence.
 TEST_F(DifferentialFunctionComparatorTest, CmpTypes) {
     // Try to compare a union type of a greater size than the other type.

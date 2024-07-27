@@ -524,6 +524,10 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
     // Retrieve type names and sizes
     TypeInfo TypeInfoL = getPointeeStructTypeInfo(ValL, &LayoutL);
     TypeInfo TypeInfoR = getPointeeStructTypeInfo(ValR, &LayoutR);
+    if (TypeInfoL.Name.empty() || TypeInfoR.Name.empty()) {
+        PREP_LOG("pointee type not found", ValL, ValR);
+        LOG_KEEP(1);
+    }
 
     // Compare the names and check if type sizes correspond with allocs
     RETURN_WITH_LOG(TypeInfoL.Name.empty() || TypeInfoR.Name.empty()
@@ -1794,6 +1798,10 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
 
     TypeInfo TypeInfoL = getPointeeStructTypeInfo(ValL, &LayoutL);
     TypeInfo TypeInfoR = getPointeeStructTypeInfo(ValR, &LayoutR);
+    if (TypeInfoL.Name.empty() || TypeInfoR.Name.empty()) {
+        PREP_LOG("pointee type not found", ValL, ValR);
+        LOG_KEEP(1);
+    }
 
     // Return 0 (equality) if both memory destinations are structs of the same
     // name and each memset size is equal to the corresponding struct size.
