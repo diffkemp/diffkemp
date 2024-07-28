@@ -394,14 +394,18 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     DIBuilder builderR(*ModR);
     DIFile *UnitL = builderL.createFile("foo", "bar");
     DIFile *UnitR = builderL.createFile("foo", "bar");
+    DISubprogram *FunTypeL =
+            builderL.createFunction(UnitL, "F", "F", UnitL, 0, nullptr, 0);
+    DISubprogram *FunTypeR =
+            builderR.createFunction(UnitR, "F", "F", UnitR, 0, nullptr, 0);
     DIBasicType *PointeeTypeL = builderL.createNullPtrType();
     DIBasicType *PointeeTypeR = builderR.createNullPtrType();
     DIDerivedType *PointerTypeL = builderL.createPointerType(PointeeTypeL, 64);
     DIDerivedType *PointerTypeR = builderR.createPointerType(PointeeTypeR, 64);
-    DILocalVariable *varL =
-            builderL.createAutoVariable(UnitL, "var", nullptr, 0, PointerTypeL);
-    DILocalVariable *varR =
-            builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
+    DILocalVariable *varL = builderL.createAutoVariable(
+            FunTypeL, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR = builderR.createAutoVariable(
+            FunTypeR, "var", nullptr, 0, PointerTypeR);
     DIExpression *exprL = builderL.createExpression();
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
@@ -466,8 +470,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     // Create calls to llvm.dbg.value with type metadata.
     PointerTypeL = builderL.createPointerType(StructTypeL, 64);
     PointerTypeR = builderR.createPointerType(StructTypeR, 64);
-    varL = builderL.createAutoVariable(UnitL, "var", nullptr, 0, PointerTypeL);
-    varR = builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
+    varL = builderL.createAutoVariable(
+            FunTypeL, "var", nullptr, 0, PointerTypeL);
+    varR = builderR.createAutoVariable(
+            FunTypeR, "var", nullptr, 0, PointerTypeR);
     exprL = builderL.createExpression();
     exprR = builderR.createExpression();
     locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
@@ -503,7 +509,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
             nullptr,
             builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
     PointerTypeR = builderR.createPointerType(StructTypeR, 64);
-    varR = builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
+    varR = builderR.createAutoVariable(
+            FunTypeR, "var", nullptr, 0, PointerTypeR);
     builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 1);
 }
@@ -569,6 +576,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
     DIBuilder builderR(*ModR);
     DIFile *UnitL = builderL.createFile("foo", "bar");
     DIFile *UnitR = builderL.createFile("foo", "bar");
+    DISubprogram *FunTypeL =
+            builderL.createFunction(UnitL, "F", "F", UnitL, 0, nullptr, 0);
+    DISubprogram *FunTypeR =
+            builderR.createFunction(UnitR, "F", "F", UnitR, 0, nullptr, 0);
     auto Int8TypeL =
             builderL.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
     auto Int8TypeR =
@@ -595,10 +606,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
             builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
     auto PointerTypeL = builderL.createPointerType(StructTypeL, 64);
     auto PointerTypeR = builderR.createPointerType(StructTypeR, 64);
-    DILocalVariable *varL =
-            builderL.createAutoVariable(UnitL, "var", nullptr, 0, PointerTypeL);
-    DILocalVariable *varR =
-            builderR.createAutoVariable(UnitR, "var", nullptr, 0, PointerTypeR);
+    DILocalVariable *varL = builderL.createAutoVariable(
+            FunTypeL, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR = builderR.createAutoVariable(
+            FunTypeR, "var", nullptr, 0, PointerTypeR);
     DIExpression *exprL = builderL.createExpression();
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
@@ -626,6 +637,135 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
                           BBR);
     builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
     builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+    ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
+}
+
+/// Tests the comparison of calls to memset functions.
+/// Example when the compiled LLVM IR has multiple debug metadata describing
+/// memset destination variable. The first one describes the variable in scope
+/// of current function (contains info about the type on which the variable
+/// points to). The second debug info is from the scope of stdlib C memset
+/// function which was 'inlined' and does not contain info about the pointee
+/// type. The multiple debug metadata for the same variable caused problems for
+/// LLVM >= 15, where we used dbg info for extracting the pointee type info.
+TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsMultipleDebugMetadata) {
+    // Create auxilliary functions to serve as the memset functions.
+    Function *AuxFL = Function::Create(
+            FunctionType::get(PointerType::get(Type::getVoidTy(CtxL), 0),
+                              {PointerType::get(Type::getVoidTy(CtxL), 0),
+                               Type::getInt32Ty(CtxL),
+                               Type::getInt32Ty(CtxL)},
+                              false),
+            GlobalValue::ExternalLinkage,
+            "AuxFL",
+            ModL.get());
+    Function *AuxFR = Function::Create(
+            FunctionType::get(PointerType::get(Type::getVoidTy(CtxR), 0),
+                              {PointerType::get(Type::getVoidTy(CtxR), 0),
+                               Type::getInt32Ty(CtxR),
+                               Type::getInt32Ty(CtxR)},
+                              false),
+            GlobalValue::ExternalLinkage,
+            "AuxFR",
+            ModR.get());
+
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Create structure types and allocas that will be used by the memset calls.
+    StructType *STyL =
+            StructType::create({Type::getInt8Ty(CtxL), Type::getInt8Ty(CtxL)});
+    STyL->setName("struct.test");
+    StructType *STyR = StructType::create({Type::getInt8Ty(CtxR),
+                                           Type::getInt8Ty(CtxR),
+                                           Type::getInt8Ty(CtxR)});
+    STyR->setName("struct.test");
+    uint64_t STyLSize = ModL->getDataLayout().getTypeStoreSize(STyL);
+    uint64_t STyRSize = ModR->getDataLayout().getTypeStoreSize(STyR);
+    AllocaInst *AllL = new AllocaInst(STyL, 0, "var", BBL);
+    AllocaInst *AllR = new AllocaInst(STyR, 0, "var", BBR);
+
+    CallInst *CL = CallInst::Create(
+            AuxFL->getFunctionType(),
+            AuxFL,
+            {AllL,
+             ConstantInt::get(Type::getInt32Ty(CtxL), 5),
+             ConstantInt::get(Type::getInt32Ty(CtxL), STyLSize)},
+            "",
+            BBL);
+    CallInst *CR = CallInst::Create(
+            AuxFR->getFunctionType(),
+            AuxFR,
+            {AllR,
+             ConstantInt::get(Type::getInt32Ty(CtxR), 5),
+             ConstantInt::get(Type::getInt32Ty(CtxR), STyRSize)},
+            "",
+            BBR);
+
+    // Debug metadata describing var from the scope of current (F) function.
+    DIBuilder builderL(*ModL);
+    DIBuilder builderR(*ModR);
+    DIFile *UnitL = builderL.createFile("foo", "bar");
+    DIFile *UnitR = builderL.createFile("foo", "bar");
+    DISubprogram *FunTypeL =
+            builderL.createFunction(UnitL, "F", "F", UnitL, 0, nullptr, 0);
+    DISubprogram *FunTypeR =
+            builderR.createFunction(UnitR, "F", "F", UnitR, 0, nullptr, 0);
+    auto Int8TypeL =
+            builderL.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
+    auto Int8TypeR =
+            builderR.createBasicType("int8_t", 8, dwarf::DW_ATE_signed);
+    auto StructTypeL = builderL.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            STyLSize * 8,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderL.getOrCreateArray({Int8TypeL, Int8TypeL}));
+    auto StructTypeR = builderR.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            STyRSize * 8,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int8TypeR}));
+    auto PointerTypeL = builderL.createPointerType(StructTypeL, 64);
+    auto PointerTypeR = builderR.createPointerType(StructTypeR, 64);
+    DILocalVariable *varL = builderL.createAutoVariable(
+            FunTypeL, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR = builderR.createAutoVariable(
+            FunTypeR, "var", nullptr, 0, PointerTypeR);
+    DIExpression *exprL = builderL.createExpression();
+    DIExpression *exprR = builderR.createExpression();
+    DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
+    DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+
+    // Debug metadata describing var from the scope of memset function.
+    DIFile *MemsetUnitL = builderL.createFile("memset", "stdlib");
+    DIFile *MemsetUnitR = builderL.createFile("memset", "stdlib");
+    DISubprogram *MemsetTypeL = builderL.createFunction(
+            UnitL, "memset", "memset", MemsetUnitL, 0, nullptr, 0);
+    DISubprogram *MemsetTypeR = builderR.createFunction(
+            UnitR, "memset", "memset", MemsetUnitR, 0, nullptr, 0);
+    auto MemsetPointerTypeL = builderL.createPointerType(nullptr, 64);
+    auto MemsetPointerTypeR = builderR.createPointerType(nullptr, 64);
+    DILocalVariable *memsetVarL = builderL.createAutoVariable(
+            MemsetTypeL, "__dest", nullptr, 0, MemsetPointerTypeL);
+    DILocalVariable *memsetVarR = builderR.createAutoVariable(
+            MemsetTypeR, "__dest", nullptr, 0, MemsetPointerTypeR);
+    builderL.insertDbgValueIntrinsic(
+            AllL, memsetVarL, builderL.createExpression(), locL, BBL);
+    builderR.insertDbgValueIntrinsic(
+            AllR, memsetVarR, builderR.createExpression(), locR, BBR);
+
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
 

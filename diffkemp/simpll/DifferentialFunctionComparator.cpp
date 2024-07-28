@@ -522,8 +522,10 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
             isa<BitCastInst>(CR->getNextNode()) ? CR->getNextNode() : CR;
 
     // Retrieve type names and sizes
-    TypeInfo TypeInfoL = getPointeeStructTypeInfo(ValL, &LayoutL);
-    TypeInfo TypeInfoR = getPointeeStructTypeInfo(ValR, &LayoutR);
+    TypeInfo TypeInfoL =
+            getPointeeStructTypeInfo(ValL, &LayoutL, FnL->getName());
+    TypeInfo TypeInfoR =
+            getPointeeStructTypeInfo(ValR, &LayoutR, FnR->getName());
     if (TypeInfoL.Name.empty() || TypeInfoR.Name.empty()) {
         PREP_LOG("pointee type not found", ValL, ValR);
         LOG_KEEP(1);
@@ -1796,8 +1798,10 @@ int DifferentialFunctionComparator::cmpMemset(const CallInst *CL,
                                 ? dyn_cast<BitCastInst>(destR)->getOperand(0)
                                 : destR;
 
-    TypeInfo TypeInfoL = getPointeeStructTypeInfo(ValL, &LayoutL);
-    TypeInfo TypeInfoR = getPointeeStructTypeInfo(ValR, &LayoutR);
+    TypeInfo TypeInfoL =
+            getPointeeStructTypeInfo(ValL, &LayoutL, FnL->getName());
+    TypeInfo TypeInfoR =
+            getPointeeStructTypeInfo(ValR, &LayoutR, FnR->getName());
     if (TypeInfoL.Name.empty() || TypeInfoR.Name.empty()) {
         PREP_LOG("pointee type not found", ValL, ValR);
         LOG_KEEP(1);

@@ -201,7 +201,9 @@ std::string makeYellow(std::string text);
 StructType *getTypeByName(const Module &Mod, StringRef Name);
 
 /// Retrieve information about a structured type being pointed to by a value
-TypeInfo getPointeeStructTypeInfo(const Value *Val, const DataLayout *Layout);
+TypeInfo getPointeeStructTypeInfo(const Value *Val,
+                                  const DataLayout *Layout,
+                                  const StringRef &FunName);
 
 /// Given an instruction and a pointer value, try to determine whether the
 /// instruction may store to the memory pointed to by the pointer. This is
