@@ -618,16 +618,35 @@ std::string getIdentifierForValue(
 /// Retrieve information about a structured type being pointed to by a value.
 /// Note: There are two completely different approaches used. Up to LLVM 14,
 /// type information can be obtained directly from the value. Since LLVM 15,
-/// type information is obtained from calls to debug intrinsics.
-TypeInfo getPointeeStructTypeInfo(const Value *Val, const DataLayout *Layout) {
+/// type information is obtained from calls to debug intrinsics. It is necessary
+/// to provide current function name to use the correct debug intrinsic call
+/// (there can be multiple different ones).
+TypeInfo getPointeeStructTypeInfo(const Value *Val,
+                                  const DataLayout *Layout,
+                                  [[maybe_unused]] const StringRef &FunName) {
 #if LLVM_VERSION_MAJOR >= 15
     (void)Layout;
     // Look for the type of the value in debug intrinsics
     SmallVector<DbgValueInst *> DbgValues;
     findDbgValues(DbgValues, const_cast<Value *>(Val));
-    if (DbgValues.empty())
+
+    // There can be potentially multiple different dbg info for the same
+    // value. It is necessary to find the one belonging to the current function.
+    // The other dbg info can belong to called functions where the value could
+    // be provided as (void *) and therefore does not have to contain necessary
+    // information about the pointee type.
+    DbgValueInst *DbgValue = nullptr;
+    for (auto &Dbg : DbgValues) {
+        auto scopeName =
+                Dbg->getVariable()->getScope()->getSubprogram()->getName();
+        if (scopeName == FunName) {
+            DbgValue = Dbg;
+            break;
+        }
+    }
+    if (!DbgValue)
         return {"", 0};
-    const DIType *Ty = DbgValues[0]->getVariable()->getType();
+    const DIType *Ty = DbgValue->getVariable()->getType();
 
     // Check if it is a pointer type (derived type)
     const DIDerivedType *PtrTy = dyn_cast<DIDerivedType>(Ty);

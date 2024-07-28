@@ -35,7 +35,7 @@ jobs:
             asan: OFF
             regression-tests: true
 
-          - llvm: 14
+          - llvm: 17
             env:
               CC: gcc-9
               CXX: g++-9
