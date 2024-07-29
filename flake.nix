@@ -90,6 +90,8 @@
           mkShell {
             inputsFrom = [ diffkemp-pkg ];
 
+            # Dependies for projects on which we run experiments
+            # (kernel, security libraries, ...).
             buildInputs = [
               bc
               bison
@@ -103,12 +105,18 @@
               rhel_kernel_get
               rpm
               xz
+              libtool
+              autoconf
+              automake
+              autogen
             ];
 
             propagatedBuildInputs = with python3Packages; [
               pytest
               pytest-mock
               flake8
+              jinja2
+              jsonschema
             ];
 
             WITHOUT_RPYTHON = true;
