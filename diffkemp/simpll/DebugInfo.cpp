@@ -47,6 +47,9 @@ bool isDebugInfo(const Instruction &Instr) {
 bool isDebugInfo(const Function &Fun) {
     return Fun.getIntrinsicID() == Intrinsic::dbg_declare
            || Fun.getIntrinsicID() == Intrinsic::dbg_value
+#if LLVM_VERSION_MAJOR >= 16
+           || Fun.getIntrinsicID() == Intrinsic::dbg_assign
+#endif
            || Fun.getIntrinsicID() == Intrinsic::dbg_label;
 }
 
