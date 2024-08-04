@@ -99,6 +99,7 @@
               cpio
               flex
               gdb
+              git
               gmp
               kmod
               openssl
