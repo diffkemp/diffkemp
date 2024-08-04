@@ -50,7 +50,7 @@
 
             # Including cmake in nativeBuildInputs automatically runs it during
             # configurePhase so we just need to set correct flags.
-            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" "-GNinja" ];
+            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" "-GNinja" ];
 
             # We're mixing Ninja and Python build here so we need to manually
             # define buildPhase and installPhase to make sure both are built.
