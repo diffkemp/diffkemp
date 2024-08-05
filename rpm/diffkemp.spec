@@ -1,5 +1,5 @@
 Name:           diffkemp
-Version:        0.6.0
+Version:        0.6.1
 Release:        1%{?dist}
 Summary:        A tool for analyzing semantic differences in C projects
 
@@ -76,6 +76,11 @@ install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
 
 
 %changelog
+* Mon Aug 05 2024 Viktor Malik <vmalik@redhat.com> - 0.6.1-1
+- Various bug fixes
+- Run GVN pass after function inlining
+- Release for TOSEM 2024 publication
+
 * Wed May 15 2024 Viktor Malik <vmalik@redhat.com> - 0.6.0-1
 - Allow creating snapshots from a single C source file
 - Add extended analysis statistics
