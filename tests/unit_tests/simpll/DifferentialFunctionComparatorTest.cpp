@@ -843,6 +843,139 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsVoidPtrType) {
     ASSERT_NE(DiffComp->testCmpMemset(CL, CR), 0);
 }
 
+/// Tests the comparison of calls to memset functions called with pointer to
+/// typedefed struct, this caused problems for opaque pointers.
+TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsOfTypedef) {
+    // // old version
+    // typedef struct test {
+    //   char a;
+    //   long b;
+    //   char c;
+    // } s;
+    // void F(s *var) {
+    //   memset(var, 0, sizeof(s));
+    // }
+    // // new version - better alignment of the struct = has smaller size
+    // typedef struct test {
+    //   char a;
+    //   char c;
+    //   long b;
+    // } s;
+    // void F(s *var) {
+    //   memset(var, 0, sizeof(s));
+    // }
+
+    // Create auxilliary functions to serve as the memset functions.
+    Function *AuxFL = Function::Create(
+            FunctionType::get(PointerType::get(Type::getVoidTy(CtxL), 0),
+                              {PointerType::get(Type::getVoidTy(CtxL), 0),
+                               Type::getInt32Ty(CtxL),
+                               Type::getInt32Ty(CtxL)},
+                              false),
+            GlobalValue::ExternalLinkage,
+            "AuxFL",
+            ModL.get());
+    Function *AuxFR = Function::Create(
+            FunctionType::get(PointerType::get(Type::getVoidTy(CtxR), 0),
+                              {PointerType::get(Type::getVoidTy(CtxR), 0),
+                               Type::getInt32Ty(CtxR),
+                               Type::getInt32Ty(CtxR)},
+                              false),
+            GlobalValue::ExternalLinkage,
+            "AuxFR",
+            ModR.get());
+
+    BasicBlock *BBL = BasicBlock::Create(CtxL, "", FL);
+    BasicBlock *BBR = BasicBlock::Create(CtxR, "", FR);
+
+    // Create structure types and allocas that will be used by the memset calls.
+    StructType *STyL = StructType::create({Type::getInt8Ty(CtxL),
+                                           Type::getInt64Ty(CtxL),
+                                           Type::getInt8Ty(CtxL)});
+    STyL->setName("struct.test");
+    StructType *STyR = StructType::create({Type::getInt8Ty(CtxR),
+                                           Type::getInt8Ty(CtxR),
+                                           Type::getInt64Ty(CtxR)});
+    STyR->setName("struct.test");
+    // The sizes are different because of swapped struct fields causing
+    // different alignment and padding.
+    uint64_t STyLSize = ModL->getDataLayout().getTypeStoreSize(STyL);
+    uint64_t STyRSize = ModR->getDataLayout().getTypeStoreSize(STyR);
+    AllocaInst *AllL = new AllocaInst(STyL, 0, "var", BBL);
+    AllocaInst *AllR = new AllocaInst(STyR, 0, "var", BBR);
+
+    CallInst *CL = CallInst::Create(
+            AuxFL->getFunctionType(),
+            AuxFL,
+            {AllL,
+             ConstantInt::get(Type::getInt32Ty(CtxL), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxL), STyLSize)},
+            "",
+            BBL);
+    CallInst *CR = CallInst::Create(
+            AuxFR->getFunctionType(),
+            AuxFR,
+            {AllR,
+             ConstantInt::get(Type::getInt32Ty(CtxR), 0),
+             ConstantInt::get(Type::getInt32Ty(CtxR), STyRSize)},
+            "",
+            BBR);
+
+    // Create calls to llvm.dbg.value with type metadata.
+    DIBuilder builderL(*ModL);
+    DIBuilder builderR(*ModR);
+    DIFile *UnitL = builderL.createFile("foo", "bar");
+    DIFile *UnitR = builderL.createFile("foo", "bar");
+    DISubprogram *FunTypeL =
+            builderL.createFunction(UnitL, "F", "F", UnitL, 0, nullptr, 0);
+    DISubprogram *FunTypeR =
+            builderR.createFunction(UnitR, "F", "F", UnitR, 0, nullptr, 0);
+    auto Int8TypeL =
+            builderL.createBasicType("int8_t", 8, dwarf::DW_ATE_signed_char);
+    auto Int8TypeR =
+            builderR.createBasicType("int8_t", 8, dwarf::DW_ATE_signed_char);
+    auto Int64TypeL =
+            builderL.createBasicType("int64_t", 8, dwarf::DW_ATE_signed);
+    auto Int64TypeR =
+            builderR.createBasicType("int64_t", 8, dwarf::DW_ATE_signed);
+    auto StructTypeL = builderL.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            STyLSize * 8,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderL.getOrCreateArray({Int8TypeL, Int64TypeL, Int8TypeL}));
+    auto StructTypeR = builderR.createStructType(
+            nullptr,
+            "struct.test",
+            nullptr,
+            0,
+            STyRSize * 8,
+            0,
+            static_cast<DINode::DIFlags>(0),
+            nullptr,
+            builderR.getOrCreateArray({Int8TypeR, Int8TypeR, Int64TypeR}));
+    auto TypedefL = builderL.createTypedef(StructTypeL, "s", UnitL, 0, nullptr);
+    auto TypedefR = builderL.createTypedef(StructTypeR, "s", UnitR, 0, nullptr);
+    auto PointerTypeL = builderL.createPointerType(TypedefL, 64);
+    auto PointerTypeR = builderR.createPointerType(TypedefR, 64);
+    DILocalVariable *varL = builderL.createAutoVariable(
+            FunTypeL, "var", nullptr, 0, PointerTypeL);
+    DILocalVariable *varR = builderR.createAutoVariable(
+            FunTypeR, "var", nullptr, 0, PointerTypeR);
+    DIExpression *exprL = builderL.createExpression();
+    DIExpression *exprR = builderR.createExpression();
+    DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
+    DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+
+    ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
+}
+
 /// Tests several cases where cmpTypes should detect a semantic equivalence.
 TEST_F(DifferentialFunctionComparatorTest, CmpTypes) {
     // Try to compare a union type of a greater size than the other type.
