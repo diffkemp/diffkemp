@@ -105,6 +105,7 @@
               openssl
               rhel_kernel_get
               rpm
+              wget
               xz
               libtool
               autoconf
