@@ -204,6 +204,12 @@ def build_kernel(args):
     """
     # Create a new snapshot from the kernel source directory.
     source_finder = KernelLlvmSourceBuilder(args.source_dir)
+    if not source_finder.is_configured():
+        sys.stderr.write(
+            "Error: Kernel configuration is incomplete or invalid.\n"
+            "Run `make olddefconfig` to set missing configurations.\n"
+        )
+        sys.exit(errno.EINVAL)
     source = KernelSourceTree(args.source_dir, source_finder)
     list_kind = "sysctl" if args.sysctl else "function"
     snapshot = Snapshot.create_from_source(source,
