@@ -7,7 +7,9 @@ from diffkemp.llvm_ir.llvm_source_finder import LlvmSourceFinder, \
     SourceNotFoundException
 from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
 import os
+import shutil
 from subprocess import check_call, check_output, CalledProcessError
+import subprocess
 
 
 class KernelLlvmSourceBuilder(LlvmSourceFinder):
@@ -161,6 +163,36 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
                         check_call(command, stderr=devnull)
             except CalledProcessError:
                 pass
+
+    def is_configured(self):
+        """
+        Check if the kernel is properly configured (all necessary options are
+        set).
+        """
+        config_file = os.path.join(self.source_dir, ".config")
+        config_backup_file = os.path.join(self.source_dir, ".config.bak")
+        # Backup the kernel config.
+        if os.path.exists(config_file):
+            shutil.copy2(config_file, config_backup_file)
+        # Running `make oldconfig` which will prompt for necessary unset
+        # configs. Providing empty input (EOF) should cause the command fail if
+        # there are any unset options, and the output should then contain
+        # 'Restart config'. In case the empty input would not stop the command
+        # from hanging for input, there is also timeout.
+        try:
+            out = check_output(["make", "oldconfig"], cwd=self.source_dir,
+                               timeout=300, stderr=subprocess.DEVNULL,
+                               input="", text=True)
+            if "Restart config" in out:
+                return False
+        except subprocess.TimeoutExpired:
+            return False
+        finally:
+            # Recovering old config because the `make oldconfig` command could
+            # change it.
+            if os.path.exists(config_backup_file):
+                shutil.move(config_backup_file, config_file)
+        return True
 
     ###################################################
     # Methods for finding C source files using CScope #
