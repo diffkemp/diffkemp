@@ -43,7 +43,7 @@ config:
 /* redefinition of subgraphs labels */
 .cluster-label {
   font-family: monospace;
-  font-size: 16px;
+  font-size: 13px;
 }
 "
   themeVariables:
@@ -61,16 +61,16 @@ subgraph G[" "]
     %% nodes
     pv(project versions)
     sl(symbol list)
-    subgraph sgSubgraph[diffkemp build\ndiffkemp build-kernel\ndiffkemp llvm-to-snapshot]
-        sg(Snapshot\ngeneration)
+    subgraph sgSubgraph[diffkemp build<br/>diffkemp build-kernel<br/>diffkemp llvm-to-snapshot]
+        sg(Snapshot<br/>generation)
     end
     subgraph scSubgraph[diffkemp compare]
-        sc(Semantic\ncomparison)
+        sc(Semantic<br/>comparison)
     end
     subgraph rvSubgraph[diffkemp view]
         rv(Result viewer)
     end
-    report[report for\nnot equal symbols]
+    report[report for<br/>not equal symbols]
     neq(✗ not equal)
     eq(✓ equal)
     %% invisible node for making pv node more aligned with other nodes
