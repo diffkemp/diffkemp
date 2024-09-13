@@ -3,5 +3,6 @@ import sys
 
 if __name__ == "__main__":
     sys.path.append("${CMAKE_BINARY_DIR}/diffkemp/simpll")
+    sys.path.append("${CMAKE_SOURCE_DIR}")
     from diffkemp.cli import run_from_cli
     run_from_cli()
