@@ -54,6 +54,15 @@ class OutOfTimeException : public SmtException {
     }
 };
 
+/// An exception thrown when we fail to establish output variable mapping
+/// that is used to construct the SMT postcondition.
+class IndistinguishableOutputVarsException : public SmtException {
+  public:
+    virtual const char *what() const noexcept {
+        return "Failed to establish output variable mapping";
+    }
+};
+
 /// A class for comparing short sequential code snippets using an SMT solver.
 class SmtBlockComparator {
   public:
@@ -113,6 +122,25 @@ class SmtBlockComparator {
     void mapOperands(z3::solver &s,
                      z3::context &c,
                      BasicBlock::const_iterator InstL);
+
+    /// Checks whether the given Instruction is an output instruction of the
+    /// code snippet ending on Instruction End, i.e. if any of its use is
+    /// located after End.
+    static bool isOutputVar(BasicBlock::const_iterator Inst,
+                            BasicBlock::const_iterator End);
+
+    /// Collects output variables in the given code snippet.
+    static std::set<const Value *>
+            collectOutputVars(BasicBlock::const_iterator Start,
+                              BasicBlock::const_iterator End);
+
+    /// Construct SMT formula postcondition expressing that output variables
+    /// must be equal.
+    z3::expr constructPostCondition(z3::context &c,
+                                    BasicBlock::const_iterator StartL,
+                                    BasicBlock::const_iterator EndL,
+                                    BasicBlock::const_iterator StartR,
+                                    BasicBlock::const_iterator EndR);
 
     /// Encodes the given LLVM Instruction into a Z3 assertion. Prefixes
     /// operands and the result register with the given prefix.
