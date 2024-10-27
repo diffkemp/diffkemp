@@ -1075,3 +1075,171 @@ TEST_F(DFCLlvmIrTest, CustomPatternSkippingInstruction) {
     DiffComp->addCustomPatternSet(&PatSet);
     ASSERT_EQ(DiffComp->compare(), 0);
 }
+
+TEST_F(DFCSmtTest, SmtDistributive) {
+    auto left = R"(define i8 @f() {
+        %1 = add i8 1, 0
+        %2 = add i8 2, 0
+        %3 = add i8 %2, 3
+        %4 = mul i8 %1, %3
+        ret i8 %4
+    })";
+
+    auto right = R"(define i8 @f() {
+        %1 = add i8 1, 0
+        %2 = add i8 2, 0
+        %3 = mul i8 %1, %2
+        %4 = mul i8 %1, 3
+        %5 = add i8 %3, %4
+        ret i8 %5
+    })";
+
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DFCSmtTest, SmtMulReplace) {
+    auto left = R"(define i8 @f() {
+        %1 = add i8 2, 0
+        %2 = mul i8 %1, 5
+        ret i8 %2
+    })";
+
+    auto right = R"(define i8 @f() {
+        %1 = add i8 2, 0
+        %2 = shl i8 %1, 2
+        %3 = add i8 %2, %1
+        ret i8 %3
+    })";
+
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DFCSmtTest, SmtMulReplaceOverflow) {
+    // Use nsw (as if the values were signed integers in a C program).
+    // The instructions can produce a poison value, i.e. undefined behavior
+    auto left = R"(define i8 @f() {
+        %1 = add i8 2, 0
+        %2 = mul nsw i8 %1, 5
+        ret i8 %2
+    })";
+
+    auto right = R"(define i8 @f() {
+        %1 = add i8 2, 0
+        %2 = shl nsw i8 %1, 2
+        %3 = add nsw i8 %2, %1
+        ret i8 %3
+    })";
+
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_NE(DiffComp->compare(), 0);
+}
+
+TEST_F(DFCSmtTest, ReorderedBinaryOperationCommutativeSmt) {
+    // The same as ReorderedBinaryOperationCommutative but with SMT
+    Conf.Patterns.ReorderedBinOps = false;
+    auto left = R"(define i8 @f() {
+        %1 = add i8 0, 1
+        ret i8 %1
+    })";
+    auto right = R"(define i8 @f() {
+        %1 = add i8 1, 0
+        ret i8 %1
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DFCSmtTest, ReorderedBinaryOperationNotCommutativeSmt) {
+    // The same as ReorderedBinaryOperationNotCommutative but with SMT
+    Conf.Patterns.ReorderedBinOps = false;
+    auto left = R"(define i8 @f() {
+        %1 = sub i8 0, 1
+        ret i8 %1
+    })";
+    auto right = R"(define i8 @f() {
+        %1 = sub i8 1, 0
+        ret i8 %1
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 1);
+}
+
+TEST_F(DFCSmtTest, ReorderedBinaryOperationDifferentOperandsSmt) {
+    // The same as ReorderedBinaryOperationDifferentOperands but with SMT
+    Conf.Patterns.ReorderedBinOps = false;
+    auto left = R"(define i8 @f() {
+        %1 = add i8 0, 0
+        ret i8 %1
+    })";
+    auto right = R"(define i8 @f() {
+        %1 = add i8 1, 0
+        ret i8 %1
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 1);
+}
+
+TEST_F(DFCSmtTest, SmtReorderedThreeInst) {
+    Conf.Patterns.ReorderedBinOps = false;
+    auto left = R"(define i8 @f() {
+        %1 = add i8 0, 1
+        %2 = add i8 2, 3
+        %3 = add i8 %1, %2
+        ret i8 %3
+    })";
+    auto right = R"(define i8 @f() {
+        %1 = add i8 0, 1
+        %2 = add i8 %2, 2
+        %3 = add i8 %2, 3
+        ret i8 %3
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DFCSmtTest, SmtFloatingPointSimple) {
+    // Floating point SMT-solving suffers from exponential blow up, keep it
+    // simple -- just do a redundant addition of 0.0
+    // Increase the timeout just to make sure that it has enough time
+    Conf.SmtTimeout = 5000;
+    auto left = R"(define float @f() {
+        %1 = fadd float 2.0, 0.0
+        %2 = fadd float %1, 0.0
+        %3 = fadd float %2, 2.0
+        ret float %3
+    })";
+    auto right = R"(define float @f() {
+        %1 = fadd float 2.0, 0.0
+        %2 = fadd float %1, 2.0
+        ret float %2
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
+
+TEST_F(DFCSmtTest, SmtInverseCond) {
+    auto left = R"(define i1 @f() {
+        %1 = add i8 2, 0
+        %2 = icmp slt i8 %1, 101
+        br i1 %2, label %T, label %F
+
+        T:
+            ret i1 1
+        F:
+            ret i1 0
+    })";
+    auto right = R"(define i1 @f() {
+        %1 = add i8 2, 0
+        %2 = icmp sgt i8 %1, 100
+        br i1 %2, label %F, label %T
+
+        T:
+            ret i1 1
+        F:
+            ret i1 0
+    })";
+    CREATE_FROM_LLVM(left, right);
+    ASSERT_EQ(DiffComp->compare(), 0);
+}
