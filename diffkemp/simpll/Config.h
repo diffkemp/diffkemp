@@ -110,7 +110,7 @@ class Config {
            std::string CacheDir,
            std::string CustomPatternConfigPath,
            bool UseSmt = false,
-           unsigned SmtTimeout = 30,
+           unsigned SmtTimeout = 500,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
            bool ExtendedStat = false)

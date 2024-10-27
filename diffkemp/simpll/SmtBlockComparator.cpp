@@ -13,7 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "SmtBlockComparator.h"
-#include <ctime>
+#include <chrono>
 #include <llvm/IR/Instruction.def>
 #include <llvm/IR/Operator.h>
 #include <sstream>
@@ -65,9 +65,63 @@ void SmtBlockComparator::findSnippetEnd(BasicBlock::const_iterator &InstL,
             fComp->mappedValuesBySn = mappedValuesBySnBackup;
             InstR++;
         }
+        // If we skip this instruction, it is always going to be included in
+        // the upcoming synchronization points. Stop if it is not supported.
+        if (!isSupportedInst(InstL)) {
+            std::string msg = "Unsupported instruction with opcode"
+                              + std::to_string(InstL->getOpcode());
+            throw UnsupportedOperationException(msg);
+        }
         InstL++;
     }
     throw NoSynchronizationPointException();
+}
+
+bool SmtBlockComparator::isSupportedInst(BasicBlock::const_iterator Inst) {
+    if (isDebugInfo(*Inst))
+        return true;
+    switch (Inst->getOpcode()) {
+    // Unary operators
+    case Instruction::FNeg:
+    // Binary operators
+    case Instruction::Add:
+    case Instruction::FAdd:
+    case Instruction::Sub:
+    case Instruction::FSub:
+    case Instruction::Mul:
+    case Instruction::FMul:
+    case Instruction::UDiv:
+    case Instruction::SDiv:
+    case Instruction::FDiv:
+    case Instruction::URem:
+    case Instruction::SRem:
+    case Instruction::FRem:
+    // Bitwise binary operators
+    case Instruction::Shl:
+    case Instruction::LShr:
+    case Instruction::AShr:
+    case Instruction::And:
+    case Instruction::Or:
+    case Instruction::Xor:
+    // Casts
+    case Instruction::Trunc:
+    case Instruction::ZExt:
+    case Instruction::SExt:
+    case Instruction::FPTrunc:
+    case Instruction::FPExt:
+    case Instruction::FPToUI:
+    case Instruction::FPToSI:
+    case Instruction::UIToFP:
+    case Instruction::SIToFP:
+    // Other
+    case Instruction::Call:
+    case Instruction::ICmp:
+    case Instruction::FCmp:
+    case Instruction::Select:
+        return true;
+    default:
+        return false;
+    }
 }
 
 z3::expr SmtBlockComparator::createVar(z3::context &c,
@@ -588,6 +642,12 @@ z3::expr SmtBlockComparator::constructPostCondition(
     return !postcond;
 }
 
+uint64_t timeSinceEpochMillisec() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch())
+            .count();
+}
+
 int SmtBlockComparator::compareSnippets(BasicBlock::const_iterator &StartL,
                                         BasicBlock::const_iterator &EndL,
                                         BasicBlock::const_iterator &StartR,
@@ -600,10 +660,8 @@ int SmtBlockComparator::compareSnippets(BasicBlock::const_iterator &StartL,
     }
     z3::context c;
     z3::solver s(c);
-    if (config.SmtTimeout > 0) {
-        // Convert seconds to milliseconds
-        s.set("timeout", remainingTime * 1000);
-    }
+    if (config.SmtTimeout > 0)
+        s.set("timeout", remainingTime);
 
     // Construct a formula consisting of 3 parts connected by conjunction:
     //   1. equality of input variables of the snippet based on varmap
@@ -636,14 +694,14 @@ int SmtBlockComparator::compareSnippets(BasicBlock::const_iterator &StartL,
 
     s.add(constructPostCondition(c, StartL, EndL, StartR, EndR));
 
-    std::time_t start = std::time(nullptr);
+    auto start = timeSinceEpochMillisec();
     switch (s.check()) {
     case z3::unsat:
         return 0;
     default:
         // If SAT (blocks not equal), SMT solving may be run once again.
         // Decrease the remaining time by the time taken.
-        auto elapsed = std::time(nullptr) - start;
+        auto elapsed = timeSinceEpochMillisec() - start;
         if (config.SmtTimeout > 0) {
             if (elapsed >= remainingTime) {
                 throw OutOfTimeException();
