@@ -139,10 +139,11 @@ def make_argument_parser():
                             help="Use SMT-based checking of short snippets",
                             action="store_true")
     compare_ap.add_argument("--smt-timeout",
-                            help="Set timeout for SMT checking. Set to 0 for \
-                            no timeout.",
+                            help="Set timeout in milliseconds for SMT \
+                            checking. Set to 0 for no timeout. Extend the \
+                            timeout if the programs contain float operations.",
                             type=not_negative,
-                            default=30)
+                            default=500)
     compare_ap.add_argument("--output-llvm-ir",
                             help="output each simplified module to a file",
                             action="store_true")

@@ -119,7 +119,7 @@ class Config:
         custom_pattern_config=None,
         builtin_patterns=BuiltinPatterns(),
         use_smt=False,
-        smt_timeout=30,
+        smt_timeout=500,
         print_asm_diffs=False,
         extended_stat=False,
         verbosity=0,

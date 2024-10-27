@@ -95,6 +95,9 @@ class SmtBlockComparator {
     void findSnippetEnd(BasicBlock::const_iterator &InstL,
                         BasicBlock::const_iterator &InstR);
 
+    /// Checks whether the given instruction is supported in our encoding.
+    static bool isSupportedInst(BasicBlock::const_iterator Inst);
+
     /// Compare semantics of snippets <StartL, EndL> and <StartR, EndR>.
     /// Setting invertCond to true results in CMP instructions whose results
     /// is used in a branch instruction being inverted on one of the sides
