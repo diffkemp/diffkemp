@@ -70,6 +70,8 @@ class Config {
     std::string CustomPatternConfigPath;
     // Use SMT-based checking for short snippets.
     bool UseSmt;
+    // Timeout for SMT
+    unsigned SmtTimeout;
 
     // The following structure specifies which built-in patterns
     // should be treated as semantically equal.
@@ -94,6 +96,7 @@ class Config {
            std::string CustomPatternConfigPath,
            BuiltinPatterns Patterns,
            bool UseSmt,
+           unsigned SmtTimeout,
            std::string Variable = "",
            bool OutputLlvmIR = false,
            bool PrintAsmDiffs = true,
@@ -107,6 +110,7 @@ class Config {
            std::string CacheDir,
            std::string CustomPatternConfigPath,
            bool UseSmt = false,
+           unsigned SmtTimeout = 30,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
            bool ExtendedStat = false)
@@ -114,8 +118,9 @@ class Config {
               First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
               CustomPatternConfigPath(CustomPatternConfigPath), UseSmt(UseSmt),
-              OutputLlvmIR(false), PrintAsmDiffs(PrintAsmDiffs),
-              PrintCallStacks(PrintCallStacks), ExtendedStat(ExtendedStat) {}
+              SmtTimeout(SmtTimeout), OutputLlvmIR(false),
+              PrintAsmDiffs(PrintAsmDiffs), PrintCallStacks(PrintCallStacks),
+              ExtendedStat(ExtendedStat) {}
 
     /// Sets debug types specified in the vector.
     void setDebugTypes(std::vector<std::string> &debugTypes);
