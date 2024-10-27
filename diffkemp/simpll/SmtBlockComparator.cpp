@@ -155,7 +155,8 @@ void SmtBlockComparator::mapOperands(z3::solver &s,
 z3::expr SmtBlockComparator::encodeCmpInstruction(z3::context &c,
                                                   z3::expr &res,
                                                   const std::string &prefix,
-                                                  const CmpInst *Inst) {
+                                                  const CmpInst *Inst,
+                                                  bool invertCond) {
     auto op1 = createExprFromValue(c, prefix, Inst->getOperand(0));
     auto op2 = createExprFromValue(c, prefix, Inst->getOperand(1));
 
@@ -244,6 +245,10 @@ z3::expr SmtBlockComparator::encodeCmpInstruction(z3::context &c,
         break;
     }
     if (e) {
+        if (invertCond) {
+            e = !e;
+            inverted.push_back(Inst);
+        }
         return res == e;
     }
     return e;
@@ -465,7 +470,8 @@ z3::expr SmtBlockComparator::encodeFunctionCall(z3::context &c,
 void SmtBlockComparator::encodeInstruction(z3::solver &s,
                                            z3::context &c,
                                            const std::string &prefix,
-                                           BasicBlock::const_iterator Inst) {
+                                           BasicBlock::const_iterator Inst,
+                                           bool invertCond) {
     if (isDebugInfo(*Inst)) {
         return;
     }
@@ -480,7 +486,7 @@ void SmtBlockComparator::encodeInstruction(z3::solver &s,
     if (auto binOp = dyn_cast<BinaryOperator>(Inst)) {
         e = encodeBinaryOperator(c, res, prefix, binOp);
     } else if (auto cmpInst = dyn_cast<CmpInst>(Inst)) {
-        e = encodeCmpInstruction(c, res, prefix, cmpInst);
+        e = encodeCmpInstruction(c, res, prefix, cmpInst, invertCond);
     } else if (auto call = dyn_cast<CallInst>(Inst)) {
         e = encodeFunctionCall(c, res, prefix, call);
     } else if (auto select = dyn_cast<SelectInst>(Inst)) {
@@ -585,7 +591,8 @@ z3::expr SmtBlockComparator::constructPostCondition(
 int SmtBlockComparator::compareSnippets(BasicBlock::const_iterator &StartL,
                                         BasicBlock::const_iterator &EndL,
                                         BasicBlock::const_iterator &StartR,
-                                        BasicBlock::const_iterator &EndR) {
+                                        BasicBlock::const_iterator &EndR,
+                                        bool invertCond) {
     // There must be at least one instruction on each side, otherwise,
     // there would be no operands to map, as well as no output variables
     if (StartL == EndL || StartR == EndR) {
@@ -618,12 +625,12 @@ int SmtBlockComparator::compareSnippets(BasicBlock::const_iterator &StartL,
     fComp->sn_mapL = sn_mapL_backup;
     while (InstL != EndL) {
         mapOperands(s, c, InstL);
-        encodeInstruction(s, c, LPrefix, InstL);
+        encodeInstruction(s, c, LPrefix, InstL, invertCond);
         InstL++;
     }
     fComp->sn_mapL = newMapL;
     while (InstR != EndR) {
-        encodeInstruction(s, c, RPrefix, InstR);
+        encodeInstruction(s, c, RPrefix, InstR, false);
         InstR++;
     }
 
@@ -648,6 +655,40 @@ int SmtBlockComparator::compareSnippets(BasicBlock::const_iterator &StartL,
     }
 }
 
+bool SmtBlockComparator::isInvertibleInst(BasicBlock::const_iterator Inst) {
+    if (auto *cmpInst = dyn_cast<CmpInst>(Inst))
+        for (const auto &user : cmpInst->users())
+            if (isa<BranchInst>(user))
+                return true;
+    return false;
+}
+
+bool SmtBlockComparator::hasPossiblyInverseCmp(BasicBlock::const_iterator Start,
+                                               BasicBlock::const_iterator End) {
+    while (Start != End) {
+        // A CMP result must be an output variable (outside the current snippet)
+        // and be used by a branch instruction in order for the inversion of
+        // the CMP instruction to make sense.
+        if (isOutputVar(Start, End) && isInvertibleInst(Start))
+            return true;
+        Start++;
+    }
+    return false;
+}
+
+void SmtBlockComparator::updateInverseCondList() {
+    for (const auto *LValue : inverted) {
+
+        auto serialNumber = fComp->sn_mapL.find(LValue);
+        if (serialNumber != fComp->sn_mapL.end()) {
+            auto values = fComp->mappedValuesBySn.find(serialNumber->second);
+            if (values != fComp->mappedValuesBySn.end()) {
+                fComp->inverseConditions.emplace(values->second);
+            }
+        }
+    }
+}
+
 int SmtBlockComparator::doCompare(BasicBlock::const_iterator &InstL,
                                   BasicBlock::const_iterator &InstR) {
     // Back-up the start of the snippet
@@ -667,10 +708,24 @@ int SmtBlockComparator::doCompare(BasicBlock::const_iterator &InstL,
         findSnippetEnd(InstL, InstR);
 
         try {
-            int res = compareSnippets(StartL, InstL, StartR, InstR);
+            int res = compareSnippets(StartL, InstL, StartR, InstR, false);
 
             if (res == 0)
                 return res;
+
+            // Try to invert a cmp operation whose result is an output value.
+            // This aims to facilitate more complex refactorings than
+            // inverse-branch-condition pattern, e.g. replacing x < 101 with
+            // x > 100 (where x is an integer) and swapping branches.
+            if (hasPossiblyInverseCmp(StartL, InstL)
+                && hasPossiblyInverseCmp(StartR, InstR)) {
+                res = compareSnippets(StartL, InstL, StartR, InstR, true);
+                if (res == 0) {
+                    updateInverseCondList();
+                    return res;
+                }
+                inverted.clear();
+            }
 
             // Restore the original state of fComp so that we can look for
             // another synchronization point.
@@ -703,7 +758,10 @@ int SmtBlockComparator::compare(BasicBlock::const_iterator &InstL,
     // DifferentialFunctionComparator does Inst{L,R}++.
     InstL--;
     InstR--;
-    // There may be some mess in the maps.
+    // Clean up for the next potential run
+    inverted.clear();
+    // There may be some mess in the maps, e.g. if the inverted condition logic
+    // was triggered and resulted in an insertion to fComp->inverseConditions.
     // Reset the maps and let function comparator do a fresh mapping.
     // Ideally we would do this as RAII via a destructor, however the calling
     // function (cmpBasicBlocks) is declared as const in LLVM and we need to
