@@ -126,6 +126,14 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// only. (The rest is the same as in LLVM.)
     int cmpBasicBlocks(const BasicBlock *BBL,
                        const BasicBlock *BBR) const override;
+    /// Compares basic blocks from the specified instructions.
+    int cmpBasicBlocksFromInstructions(
+            const BasicBlock *BBL,
+            const BasicBlock *BBR,
+            BasicBlock::const_iterator InstL,
+            BasicBlock::const_iterator InstR,
+            bool suppressRelocations = false,
+            bool suppressSmt = false) const;
     /// Implement comparison of global values that does not use a
     /// GlobalNumberState object, since that approach does not fit the use case
     /// of comparing functions in two different modules.
