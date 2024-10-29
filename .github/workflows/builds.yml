@@ -39,6 +39,7 @@ jobs:
           sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${{ env.llvm }} main"
           sudo apt update
           sudo apt install llvm-${{ env.llvm }}-dev clang-${{ env.llvm }}
+          ls "/usr/lib/llvm-${{ env.llvm }}/bin"
           echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
       - name: Release build and install of DiffKemp
         if: ${{ matrix.build-type == 'release' }}
@@ -75,7 +76,8 @@ jobs:
       - name: Check by building and comparing make-based project
         run: >
           nix develop . --command bash -c
-          "build/bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
+          "pwd && ls && cat build/bin/diffkemp &&
+           build/bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
            build/bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
            build/bin/diffkemp compare old-snapshot new-snapshot"
 
