@@ -126,6 +126,13 @@
             ];
 
             WITHOUT_RPYTHON = true;
+
+            shellHook = ''
+              # Adding current (diffkemp) directory to PYTHONPATH,
+              # the `diffkemp build` subcommand does not work without it
+              # - `cc_wrapper.py` ends with `ModuleNotFoundError`.
+              export PYTHONPATH="$(pwd):$PYTHONPATH"
+            '';
           };
     in
     {
