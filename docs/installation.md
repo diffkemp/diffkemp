@@ -8,6 +8,7 @@ it is possible to build and install DiffKemp also from source.
 Currently, DiffKemp runs on Linux and needs the following software installed:
 
 - Clang and LLVM (supported versions are 9 - 17)
+* Z3 SMT solver and its C++ bindings (packages `z3` and `z3-devel` in Fedora)
 - Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 - Python packages from `requirements.txt` (run `pip install -r requirements.txt`)
 - CScope (when comparing versions of the Linux kernel)
@@ -28,7 +29,7 @@ Currently, DiffKemp runs on Linux and needs the following software installed:
 
 ```sh
 # Installation of dependencies
-apt install -y cmake ninja-build llvm clang g++ libgtest-dev python3-pip python-is-python3
+apt install -y cmake ninja-build llvm clang g++ libgtest-dev python3-pip python-is-python3 z3 z3-dev
 pip install -r requirements.txt # You may want to use it in virtual environment
 # Installation of the result viewer dependencies (node, npm)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -39,7 +40,7 @@ nvm install 20
 
 ```sh
 # Installation of dependencies
-dnf install -y cmake ninja-build llvm-devel clang g++ python3-devel diffutils python3-pip gtest-devel
+dnf install -y cmake ninja-build llvm-devel clang g++ python3-devel diffutils python3-pip gtest-devel z3 z3-devel
 pip install -r requirements.txt
 # Installation of the result viewer dependencies (node, npm)
 dnf install nodejs
