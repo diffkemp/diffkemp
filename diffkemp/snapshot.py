@@ -248,7 +248,7 @@ class Snapshot:
             version = importlib.metadata.version("diffkemp")
         except importlib.metadata.PackageNotFoundError:
             # We are in a development version of the project
-            cwd = os.path.relpath(__file__)
+            cwd = os.path.dirname(os.path.relpath(__file__))
             short_commit_hash = subprocess.check_output(
                 ['git', 'rev-parse', '--short', 'HEAD'],
                 cwd=cwd,
