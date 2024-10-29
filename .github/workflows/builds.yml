@@ -24,7 +24,7 @@ jobs:
           - build-type: release
             diffkemp-bin: diffkemp
           - build-type: development
-            diffkemp-bin: bin/diffkemp
+            diffkemp-bin: build/bin/diffkemp
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -32,22 +32,24 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install cmake ninja-build libgtest-dev
-          pip install -r requirements.txt
+          sudo apt install cmake ninja-build libgtest-dev python3-cffi
       - name: Install LLVM
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${{ env.llvm }} main"
           sudo apt update
           sudo apt install llvm-${{ env.llvm }}-dev clang-${{ env.llvm }}
+          ls "/usr/lib/llvm-${{ env.llvm }}/bin"
           echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
+          echo $GITHUB_PATH
       - name: Release build and install of DiffKemp
         if: ${{ matrix.build-type == 'release' }}
         run: |
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
           pip install .
-          sudo install -m 0755 bin/diffkemp /usr/bin/diffkemp
+          # No need to install binary with python build
+          # sudo install -m 0755 bin/diffkemp /usr/bin/diffkemp
       - name: Development build of DiffKemp
         if: ${{ matrix.build-type == 'development' }}
         run: |
@@ -69,15 +71,16 @@ jobs:
       - name: Build DiffKemp
         run: >
           nix develop . --command bash -c
-          "cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug &&
+          "pip install cffi &&
+           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug &&
            ninja -C build"
       - name: Check by building and comparing make-based project
         run: >
           nix develop . --command bash -c
-          "setuptoolsShellHook &&
-           bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
-           bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
-           bin/diffkemp compare old-snapshot new-snapshot"
+          "pwd && ls && cat build/bin/diffkemp &&
+           build/bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
+           build/bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
+           build/bin/diffkemp compare old-snapshot new-snapshot"
 
   cc-wrapper-build:
     runs-on: ubuntu-latest
