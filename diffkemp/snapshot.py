@@ -281,7 +281,7 @@ class Snapshot:
 
         # Create the top level YAML structure.
         yaml_dict = [{
-            "diffkemp_version": get_diffkemp_version(),
+            "diffkemp_version": self.get_diffkemp_version(),
             "llvm_version": get_llvm_version(),
             "created_time": datetime.datetime.now(datetime.timezone.utc),
             "list_kind": self.list_kind,
