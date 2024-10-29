@@ -32,7 +32,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install cmake ninja-build libgtest-dev
+          sudo apt install cmake ninja-build libgtest-dev python3-cffi
       - name: Install LLVM
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -43,7 +43,6 @@ jobs:
       - name: Release build and install of DiffKemp
         if: ${{ matrix.build-type == 'release' }}
         run: |
-          pip install cffi
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
           pip install .
@@ -52,7 +51,6 @@ jobs:
       - name: Development build of DiffKemp
         if: ${{ matrix.build-type == 'development' }}
         run: |
-          pip install cffi
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug
           sudo ninja -C build
           pip install -e .
@@ -71,7 +69,7 @@ jobs:
       - name: Build DiffKemp
         run: >
           nix develop . --command bash -c
-          "pip instal cffi &&
+          "pip install cffi &&
            cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug &&
            ninja -C build"
       - name: Check by building and comparing make-based project
