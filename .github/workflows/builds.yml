@@ -23,7 +23,7 @@ jobs:
           - build-type: release
             diffkemp-bin: diffkemp
           - build-type: development
-            diffkemp-bin: bin/diffkemp
+            diffkemp-bin: build/bin/diffkemp
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -45,7 +45,7 @@ jobs:
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
           pip install .
-          sudo install -m 0755 bin/diffkemp /usr/bin/diffkemp
+          sudo install -m 0755 build/bin/diffkemp /usr/bin/diffkemp
       - name: Development build of DiffKemp
         if: ${{ matrix.build-type == 'development' }}
         run: |
@@ -71,9 +71,9 @@ jobs:
       - name: Check by building and comparing make-based project
         run: >
           nix develop . --command bash -c
-          "bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
-           bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
-           bin/diffkemp compare old-snapshot new-snapshot"
+          "build/bin/diffkemp build tests/testing_projects/make_based/ old-snapshot &&
+           build/bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
+           build/bin/diffkemp compare old-snapshot new-snapshot"
 
   cc-wrapper-build:
     runs-on: ubuntu-22.04
