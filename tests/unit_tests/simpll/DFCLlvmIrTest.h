@@ -78,7 +78,7 @@ class DFCLlvmIrTest : public DifferentialFunctionComparatorTest {
 
 class DFCSmtTest : public DFCLlvmIrTest {
   public:
-    DFCSmtTest() : ::DFCLlvmIrTest() { Conf.UseSmt = true; }
+    DFCSmtTest() : ::DFCLlvmIrTest() { Conf.Patterns.SequentialAluOps = true; }
 };
 
 #endif // DIFFKEMP_DFC_LLVM_IR_TEST_H

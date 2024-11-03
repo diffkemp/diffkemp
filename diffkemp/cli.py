@@ -135,9 +135,6 @@ def make_argument_parser():
                             help="compare only selected function")
     compare_ap.add_argument("--custom-patterns", "-p",
                             help="custom pattern file or configuration")
-    compare_ap.add_argument("--use-smt",
-                            help="Use SMT-based checking of short snippets",
-                            action="store_true")
     compare_ap.add_argument("--smt-timeout",
                             help="Set timeout in milliseconds for SMT \
                             checking. Set to 0 for no timeout. Extend the \
@@ -181,7 +178,8 @@ def make_argument_parser():
                         "control-flow-only",
                         "inverse-conditions",
                         "reordered-bin-ops",
-                        "group-vars"]
+                        "group-vars",
+                        "sequential-alu-ops"]
 
     # Semantic patterns options.
     compare_ap.add_argument("--enable-pattern",

@@ -39,6 +39,7 @@ struct BuiltinPatterns {
     bool InverseConditions = true;
     bool ReorderedBinOps = true;
     bool GroupVars = true;
+    bool SequentialAluOps = false;
 };
 
 /// Tool configuration parsed from CLI options.
@@ -68,8 +69,6 @@ class Config {
     std::string CacheDir;
     // Path to custom LLVM IR differential pattern configuration.
     std::string CustomPatternConfigPath;
-    // Use SMT-based checking for short snippets.
-    bool UseSmt;
     // Timeout for SMT
     unsigned SmtTimeout;
 
@@ -95,7 +94,6 @@ class Config {
            std::string CacheDir,
            std::string CustomPatternConfigPath,
            BuiltinPatterns Patterns,
-           bool UseSmt,
            unsigned SmtTimeout,
            std::string Variable = "",
            bool OutputLlvmIR = false,
@@ -109,7 +107,6 @@ class Config {
            std::string SecondFunName,
            std::string CacheDir,
            std::string CustomPatternConfigPath,
-           bool UseSmt = false,
            unsigned SmtTimeout = 500,
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
@@ -117,7 +114,7 @@ class Config {
             : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
               First(nullptr), Second(nullptr), FirstOutFile("/dev/null"),
               SecondOutFile("/dev/null"), CacheDir(CacheDir),
-              CustomPatternConfigPath(CustomPatternConfigPath), UseSmt(UseSmt),
+              CustomPatternConfigPath(CustomPatternConfigPath),
               SmtTimeout(SmtTimeout), OutputLlvmIR(false),
               PrintAsmDiffs(PrintAsmDiffs), PrintCallStacks(PrintCallStacks),
               ExtendedStat(ExtendedStat) {}

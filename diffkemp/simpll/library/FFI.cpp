@@ -74,6 +74,7 @@ BuiltinPatterns BuiltinPatternsFromC(builtin_patterns PatternsC) {
             .InverseConditions = (bool)PatternsC.InverseConditions,
             .ReorderedBinOps = (bool)PatternsC.ReorderedBinOps,
             .GroupVars = (bool)PatternsC.GroupVars,
+            .SequentialAluOps = (bool)PatternsC.SequentialAluOps,
     };
 }
 
@@ -252,7 +253,6 @@ void runSimpLL(void *ModL,
                   Conf.CacheDir,
                   Conf.CustomPatterns,
                   BuiltinPatternsFromC(Conf.BuiltinPatterns),
-                  Conf.UseSmt,
                   Conf.SmtTimeout,
                   Conf.Variable,
                   Conf.OutputLlvmIR,

@@ -1176,7 +1176,7 @@ int DifferentialFunctionComparator::cmpBasicBlocksFromInstructions(
                 LOG_UNINDENT();
             }
 
-            if (Res && config.UseSmt && !suppressSmt)
+            if (Res && config.Patterns.SequentialAluOps && !suppressSmt)
                 try {
                     Res = SmtComparator->compare(InstL, InstR);
                 } catch (const SmtException &err) {
