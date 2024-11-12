@@ -41,10 +41,10 @@ jobs:
           sudo apt install llvm-${{ env.llvm }}-dev clang-${{ env.llvm }}
           ls "/usr/lib/llvm-${{ env.llvm }}/bin"
           echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
-          echo $GITHUB_PATH
       - name: Release build and install of DiffKemp
         if: ${{ matrix.build-type == 'release' }}
         run: |
+          echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
           pip install .
