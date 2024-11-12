@@ -37,6 +37,8 @@ path_to_ffi_header = "diffkemp/simpll/library/FFI.h"
 ffibuilder.cdef(get_c_declarations(f"{root_dir}/{path_to_ffi_header}"))
 
 llvm_components = ["irreader", "passes", "support"]
+path = check_output(["echo", "$PATH"])
+print(path)
 llvm_cflags = check_output(["llvm-config", "--cflags"])
 llvm_ldflags = check_output(["llvm-config", "--ldflags"])
 llvm_libs = check_output(["llvm-config", "--libs"] + llvm_components +
