@@ -39,7 +39,6 @@ ffibuilder.cdef(get_c_declarations(f"{root_dir}/{path_to_ffi_header}"))
 llvm_components = ["irreader", "passes", "support"]
 print(check_output(["env"]))
 print("PATH:", os.environ['PATH'])
-print("GITHUB_PATH:", os.environ['GITHUB_PATH'])
 llvm_cflags = check_output(["llvm-config", "--cflags"])
 llvm_ldflags = check_output(["llvm-config", "--ldflags"])
 llvm_libs = check_output(["llvm-config", "--libs"] + llvm_components +

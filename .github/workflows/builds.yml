@@ -45,7 +45,7 @@ jobs:
         if: ${{ matrix.build-type == 'release' }}
         run: |
           echo "$PATH"
-          env "$PATH"
+          env
           echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
