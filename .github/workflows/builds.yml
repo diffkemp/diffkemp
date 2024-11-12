@@ -44,6 +44,7 @@ jobs:
       - name: Release build and install of DiffKemp
         if: ${{ matrix.build-type == 'release' }}
         run: |
+          echo "$PATH"
           echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
