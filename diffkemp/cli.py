@@ -1,3 +1,4 @@
+import argparse
 from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
 import diffkemp.diffkemp
 import os
@@ -7,6 +8,14 @@ def is_file(path):
     if not os.path.isfile(path):
         raise ArgumentTypeError(f"'{path}' is not a file")
     return path
+
+
+def not_negative(value):
+    int_value = int(value)
+    if int_value < 0:
+        raise argparse.ArgumentTypeError(
+            f"{value} is an invalid non-negative number")
+    return int_value
 
 
 def make_argument_parser():
@@ -126,6 +135,12 @@ def make_argument_parser():
                             help="compare only selected function")
     compare_ap.add_argument("--custom-patterns", "-p",
                             help="custom pattern file or configuration")
+    compare_ap.add_argument("--smt-timeout",
+                            help="Set timeout in milliseconds for SMT \
+                            checking. Set to 0 for no timeout. Extend the \
+                            timeout if the programs contain float operations.",
+                            type=not_negative,
+                            default=500)
     compare_ap.add_argument("--output-llvm-ir",
                             help="output each simplified module to a file",
                             action="store_true")
@@ -163,7 +178,8 @@ def make_argument_parser():
                         "control-flow-only",
                         "inverse-conditions",
                         "reordered-bin-ops",
-                        "group-vars"]
+                        "group-vars",
+                        "sequential-alu-ops"]
 
     # Semantic patterns options.
     compare_ap.add_argument("--enable-pattern",

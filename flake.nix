@@ -37,6 +37,7 @@
               gnumake
               libmpc
               mpfr
+              z3
             ];
 
             propagatedBuildInputs = with python3Packages; [

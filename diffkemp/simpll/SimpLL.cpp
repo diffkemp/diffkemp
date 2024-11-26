@@ -75,6 +75,11 @@ cl::opt<bool> ExtendedStats("extended-stat",
                             cl::desc("Track extended statistics "
                                      "(may be more expensive to compute)."),
                             cl::cat(SimpLLCategory));
+cl::opt<unsigned> SmtTimeoutOpt(
+        "smt-timeout",
+        cl::desc("Set timeout for SMT solving (e.g. smt-sequential-blocks "
+                 "pattern). Set to 0 to prevent timing out."),
+        cl::cat(SimpLLCategory));
 
 cl::OptionCategory BuiltinPatternsCategory("SimpLL pattern options",
                                            "Options for configuring built-in "
@@ -118,6 +123,10 @@ cl::opt<bool> ReorderedBinOpsOpt(
 cl::opt<bool> GroupVarsOpt("group-vars",
                            cl::desc("Enable variable grouping pattern."),
                            cl::cat(BuiltinPatternsCategory));
+cl::opt<bool> SequentialAluOpsOpt(
+        "sequential-alu-ops",
+        cl::desc("Enable SMT-based checking of sequential code blocks."),
+        cl::cat(BuiltinPatternsCategory));
 
 /// Add suffix to the file name.
 /// \param File Original file name.
@@ -166,7 +175,8 @@ int main(int argc, const char **argv) {
                              .ControlFlowOnly = ControlFlowOnlyOpt,
                              .InverseConditions = InverseConditionsOpt,
                              .ReorderedBinOps = ReorderedBinOpsOpt,
-                             .GroupVars = GroupVarsOpt};
+                             .GroupVars = GroupVarsOpt,
+                             .SequentialAluOps = SequentialAluOpsOpt};
 
     // Parse --fun option
     auto FunName = parseFunOption();
@@ -187,6 +197,7 @@ int main(int argc, const char **argv) {
                   CacheDirOpt,
                   CustomPatternConfigOpt,
                   Patterns,
+                  SmtTimeoutOpt,
                   VariableOpt,
                   OutputLlvmIROpt,
                   PrintAsmDiffsOpt,

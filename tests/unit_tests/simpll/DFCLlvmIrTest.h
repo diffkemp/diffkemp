@@ -76,4 +76,9 @@ class DFCLlvmIrTest : public DifferentialFunctionComparatorTest {
     void checkValue(const char *type, const char *name, Value *L, Value *R);
 };
 
+class DFCSmtTest : public DFCLlvmIrTest {
+  public:
+    DFCSmtTest() : ::DFCLlvmIrTest() { Conf.Patterns.SequentialAluOps = true; }
+};
+
 #endif // DIFFKEMP_DFC_LLVM_IR_TEST_H

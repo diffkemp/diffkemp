@@ -24,6 +24,7 @@ class BuiltinPatterns:
         inverse_conditions=True,
         reordered_bin_ops=True,
         group_vars=True,
+        sequential_alu_ops=False,
     ):
         """
         Create a configuration of built-in patterns.
@@ -43,6 +44,8 @@ class BuiltinPatterns:
         :param inverse_conditions: Inverted branch conditions.
         :param reordered_bin_ops: Match reordered binary operations.
         :param group_vars: Grouping of local variables.
+        :param sequential_alu_ops: Comparison of sequential blocks using
+            an SMT solver.
         """
         self.settings = {
             "struct-alignment": struct_alignment,
@@ -57,6 +60,7 @@ class BuiltinPatterns:
             "inverse-conditions": inverse_conditions,
             "reordered-bin-ops": reordered_bin_ops,
             "group-vars": group_vars,
+            "sequential-alu-ops": sequential_alu_ops
         }
         self.resolve_dependencies()
 
@@ -105,7 +109,11 @@ class BuiltinPatterns:
         ffi_struct.InverseConditions = self.settings["inverse-conditions"]
         ffi_struct.ReorderedBinOps = self.settings["reordered-bin-ops"]
         ffi_struct.GroupVars = self.settings["group-vars"]
+        ffi_struct.SequentialAluOps = self.settings["sequential-alu-ops"]
         return ffi_struct
+
+    def is_enabled(self, pattern):
+        return self.settings[pattern]
 
 
 class Config:
@@ -118,6 +126,7 @@ class Config:
         output_llvm_ir=False,
         custom_pattern_config=None,
         builtin_patterns=BuiltinPatterns(),
+        smt_timeout=500,
         print_asm_diffs=False,
         extended_stat=False,
         verbosity=0,
@@ -132,6 +141,7 @@ class Config:
         :param full_diff: Evaluate semantics-preserving syntax differences too.
         :param output_llvm_ir: Output each simplified module into a file.
         :param custom_pattern_config: Valid custom pattern configuration.
+        :param smt_timeout: Set timeout for SMT-based checking.
         :param builtin_patterns: Configuration of built-in patterns.
         :param print_asm_diffs: Print assembly differences.
         :param extended_stat: Gather extended statistics.
@@ -147,6 +157,7 @@ class Config:
         self.output_llvm_ir = output_llvm_ir
         self.custom_pattern_config = custom_pattern_config
         self.builtin_patterns = builtin_patterns
+        self.smt_timeout = smt_timeout
         self.print_asm_diffs = print_asm_diffs
         self.extended_stat = extended_stat
         self.verbosity = verbosity
@@ -196,6 +207,7 @@ class Config:
             full_diff=args.full_diff,
             custom_pattern_config=custom_pattern_config,
             builtin_patterns=builtin_patterns,
+            smt_timeout=args.smt_timeout,
             output_llvm_ir=args.output_llvm_ir,
             print_asm_diffs=args.print_asm_diffs,
             extended_stat=args.extended_stat,
