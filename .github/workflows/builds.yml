@@ -32,7 +32,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install cmake ninja-build libgtest-dev python3-cffi
+          sudo apt install cmake ninja-build libgtest-dev python3-cffi pipx
       - name: Install LLVM
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -49,7 +49,7 @@ jobs:
           echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
-          pip install .
+          pipx install .
           # No need to install binary with python build
           # sudo install -m 0755 bin/diffkemp /usr/bin/diffkemp
       - name: Development build of DiffKemp
