@@ -49,8 +49,9 @@ jobs:
           echo "/usr/lib/llvm-${{ env.llvm }}/bin" >> $GITHUB_PATH
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
+          pip install .
           # No need to install binary with python build
-          sudo install -m 0755 bin/diffkemp /usr/bin/diffkemp
+          sudo install -m 0755 build/bin/diffkemp /usr/bin/diffkemp
       - name: Development build of DiffKemp
         if: ${{ matrix.build-type == 'development' }}
         run: |
