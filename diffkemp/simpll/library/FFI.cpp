@@ -99,7 +99,7 @@ void freePointerArray(struct ptr_array PtrArr) { delete[] PtrArr.arr; }
 
 void freeStringArray(struct ptr_array PtrArr) {
     for (unsigned long i = 0; i < PtrArr.len; i++)
-        delete[](char *) PtrArr.arr[i];
+        delete[] (char *)PtrArr.arr[i];
 
     freePointerArray(PtrArr);
 }
