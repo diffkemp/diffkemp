@@ -7,16 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Dependencies
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: sudo apt-get install clang-format
+      - uses: DeterminateSystems/nix-installer-action@v10
 
       - name: Check Coding Style
         working-directory: ${{ github.workspace }}
         shell: bash
-        run: tools/check-clang-format.sh -d
+        run: nix develop .#diffkemp-llvm17 --command tools/check-clang-format.sh -d
 
   code-style-python:
     runs-on: ubuntu-latest
