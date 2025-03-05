@@ -31,7 +31,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install cmake ninja-build libgtest-dev python3-cffi
+          sudo apt install cmake ninja-build libgtest-dev python3-cffi virtualenv
       - name: Install LLVM
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -44,6 +44,8 @@ jobs:
         run: |
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo ninja -C build install
+          virtualenv -p python3 venv
+          source venv/bin/activate
           pip install .
           sudo install -m 0755 build/bin/diffkemp /usr/bin/diffkemp
       - name: Development build of DiffKemp
@@ -51,9 +53,12 @@ jobs:
         run: |
           cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug
           sudo ninja -C build
+          virtualenv -p python3 venv
+          source venv/bin/activate
           pip install -e .
       - name: Check by building and comparing make-based project
         run: |
+          source venv/bin/activate
           ${{matrix.diffkemp-bin}} build tests/testing_projects/make_based/ old-snapshot
           ${{matrix.diffkemp-bin}} build tests/testing_projects/make_based/ new-snapshot
           ${{matrix.diffkemp-bin}} compare old-snapshot new-snapshot
