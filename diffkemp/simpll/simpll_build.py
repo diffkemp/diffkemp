@@ -59,12 +59,14 @@ simpll_link_arg = f"-L{build_dir}/diffkemp/simpll"
 
 include_path = f"{root_dir}/diffkemp/simpll"
 
+manual_ldflags = [simpll_link_arg, "-lstdc++", "-lz3"]
+
 ffibuilder.set_source(
     "_simpll", "#include <library/FFI.h>",
     language="c++",
     libraries=["simpll-lib"],
     extra_compile_args=[f"-I{include_path}"] + llvm_cflags,
-    extra_link_args=[simpll_link_arg, "-lstdc++"] + llvm_ldflags + llvm_libs)
+    extra_link_args=manual_ldflags + llvm_ldflags + llvm_libs)
 
 if __name__ == "__main__":
     ffibuilder.compile()
