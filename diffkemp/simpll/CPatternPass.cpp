@@ -16,7 +16,7 @@
 #include "CustomPatternSet.h"
 #include "ModuleAnalysis.h"
 #include "Utils.h"
-#include "diffkemp_patterns.h"
+#include "../patterns/diffkemp_patterns.h"
 #include "passes/ReduceFunctionMetadataPass.h"
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Metadata.h>
