@@ -9,7 +9,9 @@ from diffkemp.utils import get_opt_command
 import os
 import re
 import shutil
-from subprocess import check_call, CalledProcessError
+from subprocess import check_call, check_output
+from subprocess import CalledProcessError, Popen, PIPE
+
 
 # Set of standard functions that are supported, so they should not be
 # included in function collecting.
@@ -76,10 +78,10 @@ class LlvmModule:
             return False
 
         if "-linked" not in self.llvm:
-            new_llvm = "{}-linked.ll".format(self.llvm[:-3])
+            new_llvm = "{}-linked.bc".format(self.llvm[:-3])
         else:
             new_llvm = self.llvm
-        link_command = ["llvm-link", "-S", self.llvm]
+        link_command = ["llvm-link", self.llvm]
         link_command.extend([m.llvm for m in link_llvm_modules])
         link_command.extend(["-o", new_llvm])
         opt_command = get_opt_command([("constmerge", "module")], new_llvm)
@@ -114,15 +116,30 @@ class LlvmModule:
 
     def has_function(self, fun):
         """Check if module contains a function definition."""
-        pattern = re.compile(r"^define.*@{}\(".format(fun), flags=re.MULTILINE)
-        with open(self.llvm, "r") as llvm_file:
-            return pattern.search(llvm_file.read()) is not None
+        command = ["llvm-nm", self.llvm]
+        source_dir = os.path.dirname(self.llvm)
+        nm_out = check_output(command, cwd=source_dir)
+        pattern = re.compile(rf"[T|t] {re.escape(fun)}$", re.MULTILINE)
+        match = pattern.search(nm_out.decode())
+        return match is not None
 
     def has_global(self, glob):
         """Check if module contains a global variable with the given name."""
-        pattern = re.compile(r"^@{}\s*=".format(glob), flags=re.MULTILINE)
-        with open(self.llvm, "r") as llvm_file:
-            return pattern.search(llvm_file.read()) is not None
+        command = ["llvm-nm", self.llvm]
+        source_dir = os.path.dirname(self.llvm)
+        nm_out = check_output(command, cwd=source_dir)
+        pattern = re.compile(rf"[DdBbCU] {re.escape(glob)}$", re.MULTILINE)
+        match = pattern.search(nm_out.decode())
+        return match is not None
+
+    def has_definition(self, symbol):
+        """Check if module contains a given symbol definition."""
+        command = ["llvm-nm", self.llvm]
+        source_dir = os.path.dirname(self.llvm)
+        nm_out = check_output(command, cwd=source_dir)
+        pattern = re.compile(rf"[DdBbCTt] {re.escape(symbol)}$", re.MULTILINE)
+        match = pattern.search(nm_out.decode())
+        return match is not None
 
     def is_declaration(self, fun):
         """
@@ -158,14 +175,21 @@ class LlvmModule:
                                      os.path.relpath(self.llvm, old_root))
             # Copy the .ll file and replace all occurrences of the old root by
             # the new root. There are usually in debug info.
-            with open(self.llvm, "r") as llvm:
-                with open(dest_llvm, "w") as llvm_new:
-                    for line in llvm.readlines():
-                        if "constant" not in line:
-                            llvm_new.write(line.replace(old_root.strip("/"),
-                                                        new_root.strip("/")))
-                        else:
-                            llvm_new.write(line)
+            cat_out = Popen(["cat", self.llvm], stdout=PIPE, text=True)
+            dis_out = Popen(["llvm-dis"], stdin=cat_out.stdout, stdout=PIPE,
+                            text=True)
+            output, _ = dis_out.communicate()
+            new_file = []
+            for line in output.splitlines():
+                if "constant" not in line:
+                    new_file.append(line.replace(old_root.strip("/"),
+                                                 new_root.strip("/")))
+                else:
+                    new_file.append(line)
+            as_out = Popen(["llvm-as", "-o", dest_llvm], stdin=PIPE,
+                           stdout=PIPE, stderr=PIPE, text=True)
+            as_out.communicate(input="\n".join(new_file))
+            output, _ = as_out.communicate()
             self.llvm = dest_llvm
 
         if self.source and self.source.startswith(old_root):
@@ -180,16 +204,19 @@ class LlvmModule:
         Get the list of source files that this module includes.
         Requires debugging information.
         """
-        # Search for all .h files mentioned in the debug info.
-        pattern = re.compile(r"filename:\s*\"([^\"]*)\", "
-                             r"directory:\s*\"([^\"]*)\"")
+        source_dir = ''.join(os.path.split(self.llvm)[0])
+        command = ["llvm-bcanalyzer", self.llvm, "-dump"]
+        source_dir = os.path.dirname(self.llvm)
+        bc_out = check_output(command, cwd=source_dir)
+        root_dir = re.search(r"^\s*'/.*'$", bc_out.decode(),
+                             flags=re.MULTILINE)
+        root_dir = root_dir.group(0).replace(' ', '').replace("'", '')
+        matches = set(re.findall(r"^\s*'.*\.(?:h|c)'", bc_out.decode(),
+                                 flags=re.MULTILINE))
         result = set()
-        with open(self.llvm, "r") as llvm:
-            for line in llvm.readlines():
-                s = pattern.search(line)
-                if (s and (s.group(1).endswith(".h") or
-                           s.group(1).endswith(".c"))):
-                    result.add(os.path.join(s.group(2), s.group(1)))
+        for m in matches:
+            match = m.replace(' ', '').replace("'", '')
+            result.add(os.path.join(root_dir, match))
         return result
 
     def get_functions_using_param(self, param):

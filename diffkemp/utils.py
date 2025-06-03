@@ -2,8 +2,9 @@ import os
 import subprocess
 import re
 import sys
+from subprocess import check_output
 
-LLVM_FUNCTION_REGEX = re.compile(r"^define.*@(\w+)\(", flags=re.MULTILINE)
+LLVM_FUNCTION_REGEX = re.compile(r"^.{16} [T|t] (\w+)", flags=re.MULTILINE)
 
 
 def get_simpll_build_dir():
@@ -40,7 +41,7 @@ def get_opt_command(passes, llvm_file, overwrite=True):
         pass_names = map(lambda p: p[0], passes)
         opt_command.extend(map(lambda pass_name: f"-{pass_name}", pass_names))
     if overwrite:
-        opt_command.extend(["-S", "-o", llvm_file])
+        opt_command.extend(["-o", llvm_file])
     return opt_command
 
 
@@ -94,9 +95,10 @@ def get_functions_from_llvm(llvm_files):
             sys.stderr.write(
                 f"Warning: llvm file '{llvm_filename}' does not exist\n")
             continue
-        with open(llvm_filename, 'r') as llvm_file:
-            llvm_file_content = llvm_file.read()
-            matches = LLVM_FUNCTION_REGEX.findall(llvm_file_content)
-            for match in matches:
-                functions[match] = llvm_filename
+        command = ["llvm-nm", llvm_filename]
+        source_dir = ''.join(os.path.split(llvm_filename)[0])
+        nm_out = check_output(command, cwd=source_dir)
+        matches = LLVM_FUNCTION_REGEX.findall(nm_out.decode())
+        for match in matches:
+            functions[match] = llvm_filename
     return functions

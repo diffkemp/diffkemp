@@ -135,14 +135,14 @@ def wrapper(argv):
         if index > 1 and argv[index - 1] == "-o":
             if is_object_file and not linking:
                 # Compiling to object file: swap .o with .ll
-                arg = arg.rsplit(".", 1)[0] + ".ll"
+                arg = arg.rsplit(".", 1)[0] + ".bc"
             if not is_object_file and linking:
                 # Linking: add a .llw suffix (LLVM IR whole)
                 arg = arg + ".llw"
             output_file = arg
         elif is_object_file and linking:
             # Input to linking phase: change suffix to .ll
-            arg = arg.rsplit(".", 1)[0] + ".ll"
+            arg = arg.rsplit(".", 1)[0] + ".bc"
             clang = llvm_link
         elif is_source_file and linking:
             # Mark as linking with sources to detect hybrid mode
@@ -153,16 +153,16 @@ def wrapper(argv):
         # Compile/link mode with object files detected
         # Drop object files and revert to normal compile/link mode
         clang = old_clang
-        clang_argv = [arg for arg in clang_argv if not arg.endswith(".ll")]
+        clang_argv = [arg for arg in clang_argv if not arg.endswith(".bc")]
 
     # Do not continue if output is not .ll or .llw
     # Note: this means that this is neither compilation nor linking
-    if (output_file is not None and not output_file.endswith(".ll") and
+    if (output_file is not None and not output_file.endswith(".bc") and
             not output_file.endswith(".llw")):
         return 0
 
     # Do not run clang on conftest files
-    if output_file in ["conftest.ll", "conftest.llw"] or "conftest.c" in argv:
+    if output_file in ["conftest.bc", "conftest.llw"] or "conftest.c" in argv:
         return 0
 
     # Not compiling C source file
@@ -176,7 +176,7 @@ def wrapper(argv):
     elif not linking:
         # Compiling to default output file
         db.extend(["o:" + os.path.join(os.getcwd(),
-                                       arg.rsplit(".", 1)[0] + ".ll")
+                                       arg.rsplit(".", 1)[0] + ".bc")
                    for arg in clang_argv if not arg.endswith(".c")])
 
     # Analyze and modify parameters for clang (phase 2)
@@ -192,7 +192,7 @@ def wrapper(argv):
     else:
         # Keep only arguments with input files (and llvm-link itself)
         clang_argv = [arg for arg in clang_argv if arg == clang or
-                      arg.endswith(".ll") or arg.endswith(".llw") or
+                      arg.endswith(".bc") or arg.endswith(".llw") or
                       arg == "-o"]
         # Remove non-existent files
         # Note: these might have been e.g. generated from assembly
