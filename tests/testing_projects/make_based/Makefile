@@ -23,4 +23,4 @@ file.so: file.o
 	$(CC) $(CFLAGS) -o $@ $^ -shared
 
 clean:
-	rm -f *.o *.ll *.so
+	rm -f *.o *.ll *.so *.bc

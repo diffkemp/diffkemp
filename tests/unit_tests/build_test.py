@@ -5,6 +5,8 @@ import os
 import pytest
 import re
 import yaml
+from subprocess import Popen, PIPE
+
 
 SINGLE_C_FILE = os.path.abspath("tests/testing_projects/make_based/file.c")
 MAKE_BASED_PROJECT_DIR = os.path.abspath("tests/testing_projects/make_based")
@@ -41,11 +43,12 @@ def get_db_file_content(snapshot_dir):
 
 def get_llvm_fun_body(llvm_file, fun_name):
     """Returns body of fun_name function from llvm_file."""
-    with open(llvm_file, "r") as file:
-        content = file.read()
-        match = re.search(r"define.*@" + re.escape(fun_name) + r"[ (][^}]*",
-                          content, re.MULTILINE)
-        return match.group(0)
+    cat_out = Popen(["cat", llvm_file], stdout=PIPE, text=True)
+    dis_out = Popen(["llvm-dis"], stdin=cat_out.stdout, stdout=PIPE, text=True)
+    output, error = dis_out.communicate()
+    match = re.search(r"define.*@" + re.escape(fun_name) + r"[ (][^}]*",
+                      output, re.MULTILINE)
+    return match.group(0)
 
 
 @pytest.mark.parametrize("source",
@@ -60,11 +63,11 @@ def test_build_command(source, tmp_path):
     # Snapshot should contain source file, LLVM file and file with metadata.
     output_files = os.listdir(output_dir)
     assert "file.c" in output_files
-    assert "file.ll" in output_files
+    assert "file.bc" in output_files
     assert "snapshot.yaml" in output_files
 
     # Functions from the source file should be also in the llvm file.
-    llvm_file_path = os.path.join(output_dir, "file.ll")
+    llvm_file_path = os.path.join(output_dir, "file.bc")
     llvm_fun_list = get_functions_from_llvm([llvm_file_path])
     assert "add" in llvm_fun_list
     assert "mul" in llvm_fun_list
@@ -122,6 +125,6 @@ def test_build_no_opt_override(tmp_path):
     # With --no-opt-override the optimization level which is written
     # in Makefile should be used, because it is -O2 the `add` function
     # should not be called from the `mul` function` (should be "inlined").
-    llvm_file_path = os.path.join(output_dir, "file.ll")
+    llvm_file_path = os.path.join(output_dir, "file.bc")
     body = get_llvm_fun_body(llvm_file_path, "mul")
     assert re.search(r"call.*@add", body) is None

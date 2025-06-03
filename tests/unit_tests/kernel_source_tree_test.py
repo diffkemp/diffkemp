@@ -18,10 +18,10 @@ def source():
 
 @pytest.mark.parametrize("name, llvm_file, table", [
     ("net.core.message_burst",
-     "net/core/sysctl_net_core.ll",
+     "net/core/sysctl_net_core.bc",
      "net_core_table"),
     ("kernel.usermodehelper.bset",
-     "kernel/kmod.ll",
+     "kernel/kmod.bc",
      "usermodehelper_table")
 ])
 def test_get_sysctl_module(source, name, llvm_file, table):

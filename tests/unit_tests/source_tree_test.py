@@ -30,7 +30,7 @@ def test_get_module_for_symbol(source):
     """
     mod = source.get_module_for_symbol("__alloc_workqueue_key")
     assert mod is not None
-    assert mod.llvm == os.path.join(source.source_dir, "kernel/workqueue.ll")
+    assert mod.llvm == os.path.join(source.source_dir, "kernel/workqueue.bc")
     assert mod.has_function("__alloc_workqueue_key")
 
 
@@ -41,7 +41,7 @@ def test_get_module_for_symbol_built_after(source):
     The LLVM file should not be retrieved.
     """
     before_time = datetime.datetime.now() - datetime.timedelta(minutes=1)
-    llvm_file = os.path.join(source.source_dir, "kernel/workqueue.ll")
+    llvm_file = os.path.join(source.source_dir, "kernel/workqueue.bc")
 
     # Temporarily change mtime of the LLVM IR file to now
     stat = os.stat(llvm_file)
@@ -60,7 +60,7 @@ def test_get_module_for_symbol_built_after(source):
 def test_get_module_for_symbol_fail(source):
     """Test getting LLVM module for a non-existing function definition."""
     with pytest.raises(SourceNotFoundException):
-        source.get_module_for_symbol("__get_user_2")
+        source.get_module_for_symbol("__get_user_3")
 
 
 def test_get_modules_using_symbol(source):
@@ -71,8 +71,8 @@ def test_get_modules_using_symbol(source):
     assert len(mods) == 2
     assert set([m.llvm for m in mods]) == \
         set([os.path.join(source.source_dir, f)
-             for f in ["net/core/sock.ll",
-                       "net/netfilter/ipvs/ip_vs_sync.ll"]])
+             for f in ["net/core/sock.bc",
+                       "net/netfilter/ipvs/ip_vs_sync.bc"]])
 
 
 def test_copy_source_files(source):
@@ -87,8 +87,8 @@ def test_copy_source_files(source):
         assert os.path.isdir(os.path.join(tmp_source.source_dir, d))
 
     # Check that files were successfully copied.
-    for f in ["net/core/utils.c", "net/core/utils.ll", "kernel/workqueue.c",
-              "kernel/workqueue.ll", "include/linux/module.h",
+    for f in ["net/core/utils.c", "net/core/utils.bc", "kernel/workqueue.c",
+              "kernel/workqueue.bc", "include/linux/module.h",
               "include/linux/kernel.h"]:
         assert os.path.isfile(os.path.join(tmp_source.source_dir, f))
 
