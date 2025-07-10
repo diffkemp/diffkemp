@@ -4,7 +4,8 @@ import re
 import sys
 from subprocess import check_output
 
-LLVM_FUNCTION_REGEX = re.compile(r"^.{16} [T|t] (\w+)", flags=re.MULTILINE)
+LLVM_FUNCTION_REGEX = re.compile(r"^.* [T|t] ([\w|\.|\$]+)",
+                                 flags=re.MULTILINE)
 
 
 def get_simpll_build_dir():

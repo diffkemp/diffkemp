@@ -5,7 +5,7 @@ import os
 import pytest
 import re
 import yaml
-from subprocess import Popen, PIPE
+from subprocess import check_output
 
 
 SINGLE_C_FILE = os.path.abspath("tests/testing_projects/make_based/file.c")
@@ -43,9 +43,9 @@ def get_db_file_content(snapshot_dir):
 
 def get_llvm_fun_body(llvm_file, fun_name):
     """Returns body of fun_name function from llvm_file."""
-    cat_out = Popen(["cat", llvm_file], stdout=PIPE, text=True)
-    dis_out = Popen(["llvm-dis"], stdin=cat_out.stdout, stdout=PIPE, text=True)
-    output, error = dis_out.communicate()
+    command = ["llvm-dis", llvm_file, "-o", "-"]
+    source_dir = os.path.dirname(llvm_file)
+    output = check_output(command, cwd=source_dir).decode()
     match = re.search(r"define.*@" + re.escape(fun_name) + r"[ (][^}]*",
                       output, re.MULTILINE)
     return match.group(0)

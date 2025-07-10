@@ -10,7 +10,7 @@ import os
 import re
 import shutil
 from subprocess import check_call, check_output
-from subprocess import CalledProcessError, Popen, PIPE
+from subprocess import CalledProcessError, PIPE, run
 
 
 # Set of standard functions that are supported, so they should not be
@@ -114,32 +114,31 @@ class LlvmModule:
         name = self.llvm_module.find_param_var(param)
         return LlvmParam(name, []) if name is not None else None
 
-    def has_function(self, fun):
-        """Check if module contains a function definition."""
+    def module_has(self, pattern):
+        """
+        Check if a module contains matches for a pattern.
+        Used in has_function, has_global and has_definition.
+        """
         command = ["llvm-nm", self.llvm]
         source_dir = os.path.dirname(self.llvm)
         nm_out = check_output(command, cwd=source_dir)
-        pattern = re.compile(rf"[T|t] {re.escape(fun)}$", re.MULTILINE)
         match = pattern.search(nm_out.decode())
         return match is not None
+
+    def has_function(self, fun):
+        """Check if module contains a function definition."""
+        pattern = re.compile(rf"[T|t] {re.escape(fun)}$", re.MULTILINE)
+        return self.module_has(pattern)
 
     def has_global(self, glob):
         """Check if module contains a global variable with the given name."""
-        command = ["llvm-nm", self.llvm]
-        source_dir = os.path.dirname(self.llvm)
-        nm_out = check_output(command, cwd=source_dir)
         pattern = re.compile(rf"[DdBbCU] {re.escape(glob)}$", re.MULTILINE)
-        match = pattern.search(nm_out.decode())
-        return match is not None
+        return self.module_has(pattern)
 
     def has_definition(self, symbol):
         """Check if module contains a given symbol definition."""
-        command = ["llvm-nm", self.llvm]
-        source_dir = os.path.dirname(self.llvm)
-        nm_out = check_output(command, cwd=source_dir)
         pattern = re.compile(rf"[DdBbCTt] {re.escape(symbol)}$", re.MULTILINE)
-        match = pattern.search(nm_out.decode())
-        return match is not None
+        return self.module_has(pattern)
 
     def is_declaration(self, fun):
         """
@@ -173,12 +172,12 @@ class LlvmModule:
         if self.llvm.startswith(old_root):
             dest_llvm = os.path.join(new_root,
                                      os.path.relpath(self.llvm, old_root))
-            # Copy the .ll file and replace all occurrences of the old root by
-            # the new root. There are usually in debug info.
-            cat_out = Popen(["cat", self.llvm], stdout=PIPE, text=True)
-            dis_out = Popen(["llvm-dis"], stdin=cat_out.stdout, stdout=PIPE,
-                            text=True)
-            output, _ = dis_out.communicate()
+            # Copy the .bc file and replace all occurrences of the old root by
+            # the new root. There are usually in debug info. Use textual
+            # LLVM IR to find the paths.
+            command = ["llvm-dis", self.llvm, "-o", "-"]
+            source_dir = os.path.dirname(self.llvm)
+            output = check_output(command, cwd=source_dir).decode()
             new_file = []
             for line in output.splitlines():
                 if "constant" not in line:
@@ -186,10 +185,8 @@ class LlvmModule:
                                                  new_root.strip("/")))
                 else:
                     new_file.append(line)
-            as_out = Popen(["llvm-as", "-o", dest_llvm], stdin=PIPE,
-                           stdout=PIPE, stderr=PIPE, text=True)
-            as_out.communicate(input="\n".join(new_file))
-            output, _ = as_out.communicate()
+            run(["llvm-as", "-o", dest_llvm], input="\n".join(new_file),
+                stdout=PIPE, stderr=PIPE, text=True, check=True)
             self.llvm = dest_llvm
 
         if self.source and self.source.startswith(old_root):
@@ -210,12 +207,13 @@ class LlvmModule:
         bc_out = check_output(command, cwd=source_dir)
         root_dir = re.search(r"^\s*'/.*'$", bc_out.decode(),
                              flags=re.MULTILINE)
-        root_dir = root_dir.group(0).replace(' ', '').replace("'", '')
+        root_dir = root_dir.group(0).strip()[1:-1]
         matches = set(re.findall(r"^\s*'.*\.(?:h|c)'", bc_out.decode(),
                                  flags=re.MULTILINE))
+
         result = set()
         for m in matches:
-            match = m.replace(' ', '').replace("'", '')
+            match = m.strip()[1:-1]
             result.add(os.path.join(root_dir, match))
         return result
 

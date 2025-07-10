@@ -134,14 +134,14 @@ def wrapper(argv):
         contains_source = contains_source or is_source_file
         if index > 1 and argv[index - 1] == "-o":
             if is_object_file and not linking:
-                # Compiling to object file: swap .o with .ll
+                # Compiling to object file: swap .o with .bc
                 arg = arg.rsplit(".", 1)[0] + ".bc"
             if not is_object_file and linking:
                 # Linking: add a .llw suffix (LLVM IR whole)
                 arg = arg + ".llw"
             output_file = arg
         elif is_object_file and linking:
-            # Input to linking phase: change suffix to .ll
+            # Input to linking phase: change suffix to .bc
             arg = arg.rsplit(".", 1)[0] + ".bc"
             clang = llvm_link
         elif is_source_file and linking:
@@ -155,7 +155,7 @@ def wrapper(argv):
         clang = old_clang
         clang_argv = [arg for arg in clang_argv if not arg.endswith(".bc")]
 
-    # Do not continue if output is not .ll or .llw
+    # Do not continue if output is not .bc or .llw
     # Note: this means that this is neither compilation nor linking
     if (output_file is not None and not output_file.endswith(".bc") and
             not output_file.endswith(".llw")):

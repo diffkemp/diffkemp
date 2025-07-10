@@ -10,7 +10,7 @@ import os
 import pytest
 import shutil
 import tempfile
-from subprocess import Popen, PIPE
+from subprocess import check_output
 
 
 @pytest.fixture
@@ -89,9 +89,9 @@ def test_move_to_other_root_dir(source):
 
     # Check that the llvm file does not contain the original directory.
     assert mod.llvm == os.path.join(tmp, "sound/core/init.bc")
-    cat_out = Popen(["cat", mod.llvm], stdout=PIPE, text=True)
-    dis_out = Popen(["llvm-dis"], stdin=cat_out.stdout, stdout=PIPE, text=True)
-    output, error = dis_out.communicate()
+    command = ["llvm-dis", mod.llvm, "-o", "-"]
+    source_dir = os.path.dirname(mod.llvm)
+    output = check_output(command, cwd=source_dir).decode()
     for line in output.splitlines():
         assert ("constant" in line or
                 "kernel/linux-3.10.0-957.el7" not in line)

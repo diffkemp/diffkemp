@@ -395,7 +395,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
             if param.startswith('-D"DEBUG_HASH2='):
                 param = '-D"DEBUG_HASH2=1"'
 
-            # Output name is given by replacing .c by .ll in source name
+            # Output name is given by replacing .c by .bc in source name
             if param.endswith(".c"):
                 output_file = "{}.bc".format(param[:-2])
 
