@@ -1,21 +1,23 @@
 from diffkemp.building.cc_wrapper import get_cc_wrapper_path, wrapper_env_vars
+from diffkemp.building.building_files.build_c_project_file import build_c_project, build_c_file
+from diffkemp.building.building_files.build_utils import generate_from_function_list, read_symbol_list
 from diffkemp.config import Config
 from diffkemp.snapshot import Snapshot
-from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
-from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
-from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
+#from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
+#from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
+#from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.llvm_ir.source_tree import SourceTree, SourceNotFoundException
 from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
 from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
-from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
-from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
+#from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
+#from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from diffkemp.output import YamlOutput
 from diffkemp.syndiff.function_syntax_diff import unified_syntax_diff
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from subprocess import check_call, CalledProcessError
+#from subprocess import check_call, CalledProcessError
 from tempfile import mkdtemp
 from timeit import default_timer
 import errno
@@ -45,7 +47,7 @@ def build(args):
         )
         sys.exit(errno.EINVAL)
 
-
+"""
 def build_c_project(args):
     # Generate wrapper for C/C++ compiler
     cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
@@ -195,13 +197,13 @@ def build_c_file(args):
 
 
 def build_kernel(args):
-    """
+    #
     Create snapshot of a Linux kernel source tree. Kernel sources are
     compiled into LLVM IR on-the-fly as necessary.
     Supports two kinds of symbol lists to generate the snapshot from:
       - list of functions (default)
       - list of sysctl options
-    """
+    #
     # Create a new snapshot from the kernel source directory.
     source_finder = KernelLlvmSourceBuilder(args.source_dir)
     if not source_finder.is_configured():
@@ -232,7 +234,7 @@ def build_kernel(args):
     # Create the snapshot directory containing the YAML description file
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
-
+"""
 
 def llvm_to_snapshot(args):
     """
@@ -252,14 +254,14 @@ def llvm_to_snapshot(args):
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
 
-
+"""
 def read_symbol_list(list_path):
-    """
+    #
     Read and parse the symbol list file. Filters out entries which are not
     valid symbols (do not start with letter or underscore).
     :param list_path: Path to the list.
     :return: List of symbols (strings).
-    """
+    #
     with open(list_path, "r") as list_file:
         return [symbol for line in list_file.readlines() if
                 (symbol := line.strip()) and
@@ -267,7 +269,7 @@ def read_symbol_list(list_path):
 
 
 def generate_from_function_list(snapshot, fun_list):
-    """
+    #
     Generate a snapshot from a list of functions.
     For each function, find the source with its definition, compile it into
     LLVM IR, and add the appropriate entry to the snapshot.
@@ -275,7 +277,7 @@ def generate_from_function_list(snapshot, fun_list):
     :param fun_list: List of functions to add. If non-function symbols are
                      present, these are added into the snapshot with empty
                      module entry.
-    """
+    #
     for symbol in fun_list:
         try:
             sys.stdout.write("{}: ".format(symbol))
@@ -297,7 +299,7 @@ def generate_from_function_list(snapshot, fun_list):
 
 
 def generate_from_sysctl_list(snapshot, sysctl_list):
-    """
+    #
     Generate a snapshot from a list of sysctl options.
     For each sysctl option:
       - get LLVM IR of the file which defines the sysctl option
@@ -308,7 +310,7 @@ def generate_from_sysctl_list(snapshot, sysctl_list):
     :param snapshot: Existing Snapshot object to fill
     :param sysctl_list: List of sysctl options.
                         May contain patterns such as "kernel.*".
-    """
+    #
     for symbol in sysctl_list:
         # Get module with sysctl definitions
         try:
@@ -368,7 +370,7 @@ def generate_from_sysctl_list(snapshot, sysctl_list):
                         os.path.relpath(data_mod.llvm,
                                         snapshot.source_tree.source_dir),
                         data.name))
-
+"""
 
 def _get_modules_to_cache(functions, group_name, other_snapshot,
                           min_frequency):

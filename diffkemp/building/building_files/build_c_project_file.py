@@ -1,19 +1,19 @@
 from diffkemp.building.cc_wrapper import get_cc_wrapper_path, wrapper_env_vars
 from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
 from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
-from diffkemp.llvm_ir.source_tree import SourceTree, SourceNotFoundException
+from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.snapshot import Snapshot
-from diffkemp.building.building_files.build_utils import read_symbol_list, generate_from_function_list, errno
+from diffkemp.building.building_files.build_utils import read_symbol_list, generate_from_function_list
 from subprocess import check_call, CalledProcessError
 from tempfile import mkdtemp
+import errno
 import os
 import sys
 import shutil
 
 EMSG_EMPTY_SYMBOL_LIST = "ERROR: symbol list is empty or could not be read\n"
 
-"""
 def build_c_project(args):
     # Generate wrapper for C/C++ compiler
     cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
@@ -129,7 +129,7 @@ def build_c_project(args):
     snapshot.finalize()
     # Removing the tmp dir with diffkemp-wdb file
     shutil.rmtree(tmpdir)
-"""
+
 
 def build_c_file(args):
     # It ignores following args: build-program, build-file, clang-drop,
