@@ -205,16 +205,34 @@ class LlvmModule:
         command = ["llvm-bcanalyzer", self.llvm, "-dump"]
         source_dir = os.path.dirname(self.llvm)
         bc_out = check_output(command, cwd=source_dir)
-        root_dir = re.search(r"^\s*'/.*'$", bc_out.decode(),
-                             flags=re.MULTILINE)
-        root_dir = root_dir.group(0).strip()[1:-1]
-        matches = set(re.findall(r"^\s*'.*\.(?:h|c)'", bc_out.decode(),
-                                 flags=re.MULTILINE))
-
         result = set()
-        for m in matches:
-            match = m.strip()[1:-1]
-            result.add(os.path.join(root_dir, match))
+        in_metadata = False
+        in_strings = False
+        root_dir = ""
+        source_file = ""
+        for line in bc_out.decode().splitlines():
+            line = line.strip()
+            if line.startswith("<METADATA_BLOCK "):
+                in_metadata = True
+            elif in_metadata and line.startswith("<STRINGS "):
+                in_strings = True
+                continue
+            if not in_strings:
+                continue
+            if line == "}":
+                break
+            # Extract paths: 1st path is source file name,
+            # 2nd is project directory
+            string = line[1:-1]
+            if source_file and (string.endswith(".h") or string.endswith(".c")
+                                ) and not string.startswith("/"):
+                result.add(os.path.join(root_dir, string))
+            if not source_file:
+                source_file = string
+            elif not root_dir:
+                root_dir = string
+        # Add source file when project directory is known
+        result.add(os.path.join(root_dir, source_file))
         return result
 
     def get_functions_using_param(self, param):
