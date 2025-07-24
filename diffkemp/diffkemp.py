@@ -1,22 +1,20 @@
-from diffkemp.building.cc_wrapper.cc_wrapper \
-    import get_cc_wrapper_path, wrapper_env_vars
+from diffkemp.building.build_c_project \
+    import build_c_project, build_c_file
+from diffkemp.building.build_utils import (
+    generate_from_function_list,
+    read_symbol_list,
+    EMSG_EMPTY_SYMBOL_LIST)
 from diffkemp.config import Config
 from diffkemp.snapshot import Snapshot
-from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
-from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
-from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
-from diffkemp.llvm_ir.source_tree import SourceTree, SourceNotFoundException
+from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
 from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
-from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
-from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
 from diffkemp.output import YamlOutput
 from diffkemp.syndiff.function_syntax_diff import unified_syntax_diff
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from subprocess import check_call, CalledProcessError
 from tempfile import mkdtemp
 from timeit import default_timer
 import errno
@@ -29,8 +27,6 @@ import yaml
 VIEW_INSTALL_DIR = "/var/lib/diffkemp/view"
 # Name of YAML output file created by diffkemp compare command.
 YAML_FILE_NAME = "diffkemp-out.yaml"
-# Error message shown when no symbols were found in the symbol list file.
-EMSG_EMPTY_SYMBOL_LIST = "ERROR: symbol list is empty or could not be read\n"
 
 
 def build(args):
@@ -45,194 +41,6 @@ def build(args):
             "Error: the specified source_dir is not a directory nor a C file\n"
         )
         sys.exit(errno.EINVAL)
-
-
-def build_c_project(args):
-    # Generate wrapper for C/C++ compiler
-    cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
-
-    # Create temp directory and environment
-    tmpdir = mkdtemp()
-    db_filename = os.path.join(tmpdir, "diffkemp-wdb")
-    environment = {
-        wrapper_env_vars["db_filename"]: db_filename,
-        wrapper_env_vars["clang"]: args.clang,
-        wrapper_env_vars["clang_append"]: ",".join(args.clang_append)
-        if args.clang_append is not None
-        else "",
-        wrapper_env_vars["clang_drop"]: ",".join(args.clang_drop)
-        if args.clang_drop is not None
-        else "",
-        wrapper_env_vars["llvm_link"]: args.llvm_link,
-        wrapper_env_vars["no_opt_override"]: ("1" if args.no_opt_override
-                                              else "0")
-    }
-    environment.update(os.environ)
-
-    # Determine make args
-    make_cc_setting = 'CC="{}"'.format(cc_wrapper)
-    make_args = [args.build_program, "-C", args.source_dir, make_cc_setting]
-    if args.build_file is not None:
-        make_args.extend(["-c", args.build_file])
-    make_target_args = make_args[:]
-    if args.target is not None:
-        make_target_args.extend(args.target)
-
-    # Clean the project
-    config_log_filename = os.path.join(args.source_dir, "config.log")
-    if os.path.exists(config_log_filename):
-        # Backup config.log
-        os.rename(config_log_filename, config_log_filename + ".bak")
-    try:
-        check_call(make_args + ["clean"], env=environment)
-    except CalledProcessError:
-        pass
-    if os.path.exists(config_log_filename + ".bak"):
-        # Restore config.log
-        os.rename(config_log_filename + ".bak", config_log_filename)
-
-    # If config.log is present, reconfigure using wrapper
-    # Note: this is done to support building with nested configure
-    if args.reconfigure and os.path.exists(config_log_filename):
-        with open(config_log_filename, "r") as config_log:
-            # Try to get line with configure command from config.log
-            # This line is identified by being the first line containing $
-            configure_cmd = None
-            for line in config_log.readlines():
-                if "$" in line:
-                    configure_cmd = line.strip()
-                    break
-            if configure_cmd and make_cc_setting not in configure_cmd:
-                # Remove beginning of line containing spaces and $
-                configure_cmd = configure_cmd.split("$ ", 1)[1]
-                configure_cmd += " " + make_cc_setting
-                # Delete all config.cache files
-                for root, dirs, _ in os.walk(args.source_dir):
-                    for dirname in dirs:
-                        try:
-                            os.remove(os.path.join(root, dirname,
-                                                   "config.cache"))
-                        except (FileNotFoundError, PermissionError):
-                            pass
-                # Reconfigure with CC wrapper
-                check_call(configure_cmd, cwd=args.source_dir,
-                           env=environment, shell=True)
-
-    # Build the project using generated wrapper
-    check_call(make_target_args, env=environment)
-
-    # Run LLVM IR simplification passes if the user did not request
-    # to use the default project's optimization.
-    if not args.no_opt_override:
-        # Run llvm passes on created LLVM IR files.
-        with open(db_filename, "r") as db_file:
-            for line in [r for r in db_file if r.startswith("o:")]:
-                llvm_file = line.split(":")[1].rstrip()
-                try:
-                    opt_llvm(llvm_file)
-                except BuildException:
-                    # Unsuccessful optimization, leaving as it is.
-                    pass
-
-    # Create a new snapshot from the source directory.
-    source_finder = WrapperBuildFinder(args.source_dir, db_filename)
-    source = SourceTree(args.source_dir, source_finder)
-    snapshot = Snapshot.create_from_source(source, args.output_dir,
-                                           "function")
-
-    # Copy the database file into the snapshot directory
-    shutil.copyfile(db_filename, os.path.join(args.output_dir, "diffkemp-wdb"))
-
-    # Build sources for symbols from the list into LLVM IR
-    user_symbol_list = True
-    if args.symbol_list is None:
-        user_symbol_list = False
-        args.symbol_list = os.path.join(args.source_dir, "function_list")
-    symbol_list = read_symbol_list(args.symbol_list)
-    if not symbol_list:
-        if user_symbol_list:
-            sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
-        else:
-            sys.stderr.write("ERROR: no symbols were found in the project\n")
-        sys.exit(errno.EINVAL)
-    generate_from_function_list(snapshot, symbol_list)
-
-    # Create the snapshot directory containing the YAML description file
-    snapshot.generate_snapshot_dir()
-    snapshot.finalize()
-    # Removing the tmp dir with diffkemp-wdb file
-    shutil.rmtree(tmpdir)
-
-
-def build_c_file(args):
-    # It ignores following args: build-program, build-file, clang-drop,
-    #   llvm-link, llvm-dis, target, reconfigure, no-native-cc-wrapper.
-    source_file_name = os.path.basename(args.source_dir)
-    source_dir = os.path.dirname(args.source_dir)
-
-    clang_append = args.clang_append if args.clang_append is not None else []
-    # Create a new snapshot and generate its content.
-    source_finder = SingleCBuilder(source_dir, source_file_name,
-                                   clang=args.clang,
-                                   clang_append=clang_append,
-                                   default_optim=not args.no_opt_override)
-    source = SourceTree(source_dir, source_finder)
-    snapshot = Snapshot.create_from_source(source, args.output_dir, "function")
-    if args.symbol_list is None:
-        function_list = source_finder.get_function_list()
-    else:
-        function_list = read_symbol_list(args.symbol_list)
-    if not function_list:
-        if args.symbol_list:
-            sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
-        else:
-            sys.stderr.write("ERROR: no symbols were found in the file\n")
-        sys.exit(errno.EINVAL)
-    generate_from_function_list(snapshot, function_list)
-
-    # Create the snapshot directory containing the YAML description file.
-    snapshot.generate_snapshot_dir()
-    snapshot.finalize()
-
-
-def build_kernel(args):
-    """
-    Create snapshot of a Linux kernel source tree. Kernel sources are
-    compiled into LLVM IR on-the-fly as necessary.
-    Supports two kinds of symbol lists to generate the snapshot from:
-      - list of functions (default)
-      - list of sysctl options
-    """
-    # Create a new snapshot from the kernel source directory.
-    source_finder = KernelLlvmSourceBuilder(args.source_dir)
-    if not source_finder.is_configured():
-        sys.stderr.write(
-            "Error: Kernel configuration is incomplete or invalid.\n"
-            "Run `make olddefconfig` to set missing configurations.\n"
-        )
-        sys.exit(errno.EINVAL)
-    source = KernelSourceTree(args.source_dir, source_finder)
-    list_kind = "sysctl" if args.sysctl else "function"
-    snapshot = Snapshot.create_from_source(source,
-                                           args.output_dir,
-                                           list_kind,
-                                           not args.no_source_dir)
-
-    # Read the symbol list
-    symbol_list = read_symbol_list(args.symbol_list)
-    if not symbol_list:
-        sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
-        sys.exit(errno.EINVAL)
-
-    # Generate snapshot contents
-    if args.sysctl:
-        generate_from_sysctl_list(snapshot, symbol_list)
-    else:
-        generate_from_function_list(snapshot, symbol_list)
-
-    # Create the snapshot directory containing the YAML description file
-    snapshot.generate_snapshot_dir()
-    snapshot.finalize()
 
 
 def llvm_to_snapshot(args):
@@ -252,123 +60,6 @@ def llvm_to_snapshot(args):
     generate_from_function_list(snapshot, function_list)
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
-
-
-def read_symbol_list(list_path):
-    """
-    Read and parse the symbol list file. Filters out entries which are not
-    valid symbols (do not start with letter or underscore).
-    :param list_path: Path to the list.
-    :return: List of symbols (strings).
-    """
-    with open(list_path, "r") as list_file:
-        return [symbol for line in list_file.readlines() if
-                (symbol := line.strip()) and
-                (symbol[0].isalpha() or symbol[0] == "_")]
-
-
-def generate_from_function_list(snapshot, fun_list):
-    """
-    Generate a snapshot from a list of functions.
-    For each function, find the source with its definition, compile it into
-    LLVM IR, and add the appropriate entry to the snapshot.
-    :param snapshot: Existing Snapshot object to fill.
-    :param fun_list: List of functions to add. If non-function symbols are
-                     present, these are added into the snapshot with empty
-                     module entry.
-    """
-    for symbol in fun_list:
-        try:
-            sys.stdout.write("{}: ".format(symbol))
-            sys.stdout.flush()
-
-            # Find the source for function definition and add it to
-            # the snapshot
-            llvm_mod = snapshot.source_tree.get_module_for_symbol(symbol)
-            if llvm_mod.has_function(symbol):
-                snapshot.add_fun(symbol, llvm_mod)
-                print(os.path.relpath(llvm_mod.llvm,
-                                      snapshot.source_tree.source_dir))
-            else:
-                snapshot.add_fun(symbol, None)
-                print("not a function")
-        except SourceNotFoundException:
-            print("source not found")
-            snapshot.add_fun(symbol, None)
-
-
-def generate_from_sysctl_list(snapshot, sysctl_list):
-    """
-    Generate a snapshot from a list of sysctl options.
-    For each sysctl option:
-      - get LLVM IR of the file which defines the sysctl option
-      - find and compile the proc handler function and add it to the snapshot
-      - find the sysctl data variable
-      - find, compile, and add to the snapshot all functions that use
-        the data variable
-    :param snapshot: Existing Snapshot object to fill
-    :param sysctl_list: List of sysctl options.
-                        May contain patterns such as "kernel.*".
-    """
-    for symbol in sysctl_list:
-        # Get module with sysctl definitions
-        try:
-            sysctl_mod = snapshot.source_tree.get_sysctl_module(symbol)
-        except SourceNotFoundException:
-            print("{}: sysctl not supported".format(symbol))
-            continue
-
-        # Iterate all sysctls represented by the symbol (it can be a pattern)
-        sysctl_list = sysctl_mod.parse_sysctls(symbol)
-        if not sysctl_list:
-            print("{}: no sysctl found".format(symbol))
-            continue
-        for sysctl in sysctl_list:
-            print("{}:".format(sysctl))
-
-            # Proc handler function for sysctl
-            proc_fun = sysctl_mod.get_proc_fun(sysctl)
-            if proc_fun:
-                try:
-                    proc_fun_mod = snapshot.source_tree.get_module_for_symbol(
-                        proc_fun)
-                    snapshot.add_fun(name=proc_fun,
-                                     llvm_mod=proc_fun_mod,
-                                     glob_var=None,
-                                     tag="proc handler function",
-                                     group=sysctl)
-                    print("  {}: {} (proc handler)".format(
-                        proc_fun,
-                        os.path.relpath(proc_fun_mod.llvm,
-                                        snapshot.source_tree.source_dir)))
-                except SourceNotFoundException:
-                    print("  could not build proc handler")
-
-            # Functions using the sysctl data variable
-            data = sysctl_mod.get_data(sysctl)
-            if not data:
-                continue
-            for data_mod in \
-                    snapshot.source_tree.get_modules_using_symbol(data.name):
-                for data_fun in data_mod.get_functions_using_param(data):
-                    if data_fun == proc_fun:
-                        continue
-                    # For now, we only support the x86 architecture in kernel
-                    if "/arch/" in data_mod.llvm and \
-                            "/arch/x86/" not in data_mod.llvm:
-                        continue
-
-                    snapshot.add_fun(
-                        name=data_fun,
-                        llvm_mod=data_mod,
-                        glob_var=data.name,
-                        tag="using data variable \"{}\"".format(data.name),
-                        group=sysctl)
-                    print("  {}: {} (using data variable \"{}\")".format(
-                        data_fun,
-                        os.path.relpath(data_mod.llvm,
-                                        snapshot.source_tree.source_dir),
-                        data.name))
 
 
 def _get_modules_to_cache(functions, group_name, other_snapshot,
