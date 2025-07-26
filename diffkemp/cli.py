@@ -1,6 +1,7 @@
 import argparse
 from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
 from diffkemp.building.build_kernel import build_kernel
+from diffkemp.compare import compare
 import diffkemp.diffkemp
 import os
 
@@ -200,7 +201,7 @@ def make_argument_parser():
                             dest="disable_pattern", const="all",
                             help="disable all built-in patterns")
 
-    compare_ap.set_defaults(func=diffkemp.diffkemp.compare)
+    compare_ap.set_defaults(func=compare)
 
     # "view" sub-command
     view_ap = sub_ap.add_parser("view",
