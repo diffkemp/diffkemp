@@ -2,7 +2,7 @@
 builds kernel
 """
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
-from diffkemp.llvm_ir.source_tree import SourceTree, SourceNotFoundException
+from diffkemp.llvm_ir.source_tree import SourceNotFoundException
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.snapshot import Snapshot
 from diffkemp.diffkemp import read_symbol_list, generate_from_function_list
