@@ -89,7 +89,8 @@ def make_argument_parser():
         "--no-source-dir",
         action="store_true",
         help="do not store path to the source kernel directory in snapshot")
-    build_kernel_ap.set_defaults(func=diffkemp.building.building_files.build_kernel.build_kernel)
+    build_kernel_ap.set_defaults(func=diffkemp.building.building_files\
+                                 .build_kernel.build_kernel)
 
     # "llvm-to-snapshot" sub-command
     llvm_snapshot_ap = sub_ap.add_parser(

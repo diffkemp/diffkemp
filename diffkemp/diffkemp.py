@@ -59,6 +59,7 @@ def llvm_to_snapshot(args):
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
 
+
 def _get_modules_to_cache(functions, group_name, other_snapshot,
                           min_frequency):
     """

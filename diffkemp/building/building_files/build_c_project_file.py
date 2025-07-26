@@ -102,7 +102,8 @@ def clean_project(config_log_filename, make_args, environment):
         os.rename(config_log_filename + ".bak", config_log_filename)
 
 
-def reconfigure_using_wrapper(config_log_filename, make_cc_setting, args, environment):
+def reconfigure_using_wrapper(config_log_filename, make_cc_setting, \
+                              args, environment):
     with open(config_log_filename, "r") as config_log:
         # Try to get line with configure command from config.log
         # This line is identified by being the first line containing $
