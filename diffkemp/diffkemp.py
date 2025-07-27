@@ -4,6 +4,7 @@ from diffkemp.building.build_utils import (
     generate_from_function_list,
     read_symbol_list,
     EMSG_EMPTY_SYMBOL_LIST)
+from diffkemp.utils import CMP_OUTPUT_FILE
 from diffkemp.snapshot import Snapshot
 from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.single_llvm_finder import SingleLlvmFinder
@@ -17,8 +18,6 @@ import shutil
 import yaml
 
 VIEW_INSTALL_DIR = "/var/lib/diffkemp/view"
-# Name of YAML output file created by diffkemp compare command.
-YAML_FILE_NAME = "diffkemp-out.yaml"
 
 
 def build(args):
@@ -193,10 +192,10 @@ class Viewer:
 
     def _load_yaml(self):
         """Load yaml which describes results."""
-        yaml_path = os.path.join(self.compare_output_dir, YAML_FILE_NAME)
+        yaml_path = os.path.join(self.compare_output_dir, CMP_OUTPUT_FILE)
         if not os.path.exists(yaml_path):
             sys.stderr.write(
-                f"ERROR: compare output is missing file '{YAML_FILE_NAME}'\n")
+                f"ERROR: compare output is missing file '{CMP_OUTPUT_FILE}'\n")
             sys.exit(errno.EINVAL)
         with open(yaml_path, "r") as file:
             self.yaml_result = yaml.safe_load(file)
@@ -270,7 +269,7 @@ class Viewer:
         for name, definition in self.yaml_result["definitions"].items():
             self._prepare_file_and_diff(name, definition)
         # Save updated YAML to viewer directory.
-        self.viewer_yaml_path = os.path.join(self.data_dir, YAML_FILE_NAME)
+        self.viewer_yaml_path = os.path.join(self.data_dir, CMP_OUTPUT_FILE)
         with open(self.viewer_yaml_path, "w") as file:
             yaml.dump(self.yaml_result, file, sort_keys=False)
 
