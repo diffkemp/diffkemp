@@ -47,7 +47,6 @@ jobs:
           virtualenv -p python3 venv
           source venv/bin/activate
           pip install .
-          sudo install -m 0755 build/bin/diffkemp /usr/bin/diffkemp
       - name: Development build of DiffKemp
         if: ${{ matrix.build-type == 'development' }}
         run: |
@@ -55,7 +54,9 @@ jobs:
           sudo ninja -C build
           virtualenv -p python3 venv
           source venv/bin/activate
-          pip install -e .
+          # Installing dependencies
+          pip install .
+          pip uninstall -y diffkemp
       - name: Check by building and comparing make-based project
         run: |
           source venv/bin/activate
@@ -70,8 +71,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@v10
       - name: Build DiffKemp
         run: >
-          nix develop . --command bash -c
-          "pip install cffi &&
+          nix develop . --command bash -c "
            cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug &&
            ninja -C build"
       - name: Check by building and comparing make-based project
