@@ -1,5 +1,5 @@
-from diffkemp.building.building_files.build_c_project_file import build_c_project, build_c_file
-from diffkemp.building.building_files.build_utils import generate_from_function_list, read_symbol_list
+from diffkemp.building.building_snapshot_files.build_c_project_file import build_c_project, build_c_file
+from diffkemp.building.building_snapshot_files.build_utils import generate_from_function_list, read_symbol_list
 from diffkemp.config import Config
 from diffkemp.snapshot import Snapshot
 from diffkemp.llvm_ir.source_tree import SourceTree

@@ -4,7 +4,7 @@ from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
 from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.snapshot import Snapshot
-from diffkemp.building.building_files.build_utils import read_symbol_list, generate_from_function_list
+from diffkemp.building.building_snapshot_files.build_utils import read_symbol_list, generate_from_function_list
 from subprocess import check_call, CalledProcessError
 from tempfile import mkdtemp
 import errno
@@ -19,7 +19,7 @@ def build_c_project(args):
     cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
 
     # Create temp directory and environment
-    environment, tmpdir, db_filename = create_temp_dir_and_env(args)
+    environment, tmpdir, db_filename = _create_temp_dir_and_env(args)
 
     # Determine make args
     make_cc_setting = 'CC="{}"'.format(cc_wrapper)
@@ -32,12 +32,12 @@ def build_c_project(args):
 
     # Clean the project
     config_log_filename = os.path.join(args.source_dir, "config.log")
-    clean_project(config_log_filename, make_args, environment)
+    _clean_project(config_log_filename, make_args, environment)
 
     # If config.log is present, reconfigure using wrapper
     # Note: this is done to support building with nested configure
     if args.reconfigure and os.path.exists(config_log_filename):
-        reconfigure_using_wrapper(config_log_filename, make_cc_setting,\
+        _reconfigure_using_wrapper(config_log_filename, make_cc_setting,\
                                   args, environment)
 
     # Build the project using generated wrapper
@@ -47,7 +47,7 @@ def build_c_project(args):
     # to use the default project's optimization.
     if not args.no_opt_override:
         # Run llvm passes on created LLVM IR files.
-        llvm_simplification(db_filename)
+        _llvm_simplification(db_filename)
 
     # Create a new snapshot from the source directory.
     source_finder = WrapperBuildFinder(args.source_dir, db_filename)
@@ -59,7 +59,7 @@ def build_c_project(args):
     shutil.copyfile(db_filename, os.path.join(args.output_dir, "diffkemp-wdb"))
 
     # Build sources for symbols from the list into LLVM IR
-    symbol_list = build_for_symbols(args)
+    symbol_list = _build_for_symbols(args)
     generate_from_function_list(snapshot, symbol_list)
 
     # Create the snapshot directory containing the YAML description file
@@ -69,7 +69,7 @@ def build_c_project(args):
     shutil.rmtree(tmpdir)
 
 
-def create_temp_dir_and_env(args):
+def _create_temp_dir_and_env(args):
     tmpdir = mkdtemp()
     db_filename = os.path.join(tmpdir, "diffkemp-wdb")
     environment = {
@@ -89,7 +89,7 @@ def create_temp_dir_and_env(args):
     return environment, tmpdir, db_filename
 
 
-def clean_project(config_log_filename, make_args, environment):
+def _clean_project(config_log_filename, make_args, environment):
     if os.path.exists(config_log_filename):
         # Backup config.log
         os.rename(config_log_filename, config_log_filename + ".bak")
@@ -102,7 +102,7 @@ def clean_project(config_log_filename, make_args, environment):
         os.rename(config_log_filename + ".bak", config_log_filename)
 
 
-def reconfigure_using_wrapper(config_log_filename, make_cc_setting, \
+def _reconfigure_using_wrapper(config_log_filename, make_cc_setting, \
                               args, environment):
     with open(config_log_filename, "r") as config_log:
         # Try to get line with configure command from config.log
@@ -129,7 +129,7 @@ def reconfigure_using_wrapper(config_log_filename, make_cc_setting, \
                         env=environment, shell=True)
 
 
-def llvm_simplification(db_filename):
+def _llvm_simplification(db_filename):
     with open(db_filename, "r") as db_file:
         for line in [r for r in db_file if r.startswith("o:")]:
             llvm_file = line.split(":")[1].rstrip()
@@ -140,7 +140,7 @@ def llvm_simplification(db_filename):
                 pass
 
 
-def build_for_symbols(args):
+def _build_for_symbols(args):
     user_symbol_list = True
     if args.symbol_list is None:
         user_symbol_list = False

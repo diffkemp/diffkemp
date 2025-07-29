@@ -5,7 +5,7 @@ from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.llvm_ir.source_tree import SourceNotFoundException
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.snapshot import Snapshot
-from diffkemp.diffkemp import read_symbol_list, generate_from_function_list
+from diffkemp.building.building_snapshot_files.build_utils import read_symbol_list, generate_from_function_list
 import errno
 import os
 import sys
@@ -81,46 +81,54 @@ def generate_from_sysctl_list(snapshot, sysctl_list):
         for sysctl in sysctl_list:
             print("{}:".format(sysctl))
 
-            # Proc handler function for sysctl
             proc_fun = sysctl_mod.get_proc_fun(sysctl)
-            if proc_fun:
-                try:
-                    proc_fun_mod = snapshot.source_tree.get_module_for_symbol(
-                        proc_fun)
-                    snapshot.add_fun(name=proc_fun,
-                                     llvm_mod=proc_fun_mod,
-                                     glob_var=None,
-                                     tag="proc handler function",
-                                     group=sysctl)
-                    print("  {}: {} (proc handler)".format(
-                        proc_fun,
-                        os.path.relpath(proc_fun_mod.llvm,
-                                        snapshot.source_tree.source_dir)))
-                except SourceNotFoundException:
-                    print("  could not build proc handler")
-
+            # Proc handler function for sysctl
+            _add_proc_handler(snapshot, sysctl, proc_fun)
             # Functions using the sysctl data variable
-            data = sysctl_mod.get_data(sysctl)
-            if not data:
-                continue
-            for data_mod in \
-                    snapshot.source_tree.get_modules_using_symbol(data.name):
-                for data_fun in data_mod.get_functions_using_param(data):
-                    if data_fun == proc_fun:
-                        continue
-                    # For now, we only support the x86 architecture in kernel
-                    if "/arch/" in data_mod.llvm and \
-                            "/arch/x86/" not in data_mod.llvm:
-                        continue
+            _add_data_func(snapshot, sysctl, sysctl_mod, proc_fun)
 
-                    snapshot.add_fun(
-                        name=data_fun,
-                        llvm_mod=data_mod,
-                        glob_var=data.name,
-                        tag="using data variable \"{}\"".format(data.name),
-                        group=sysctl)
-                    print("  {}: {} (using data variable \"{}\")".format(
-                        data_fun,
-                        os.path.relpath(data_mod.llvm,
-                                        snapshot.source_tree.source_dir),
-                        data.name))
+
+def _add_proc_handler(snapshot, sysctl, proc_fun):
+    if proc_fun:
+        try:
+            proc_fun_mod = snapshot.source_tree.get_module_for_symbol(
+                proc_fun)
+            snapshot.add_fun(name=proc_fun,
+                                llvm_mod=proc_fun_mod,
+                                glob_var=None,
+                                tag="proc handler function",
+                                group=sysctl)
+            print("  {}: {} (proc handler)".format(
+                proc_fun,
+                os.path.relpath(proc_fun_mod.llvm,
+                                snapshot.source_tree.source_dir)))
+            return proc_fun
+        except SourceNotFoundException:
+            print("  could not build proc handler")
+
+
+def _add_data_func(snapshot, sysctl, sysctl_mod, proc_fun):
+    data = sysctl_mod.get_data(sysctl)
+    if not data:
+        return
+    for data_mod in \
+            snapshot.source_tree.get_modules_using_symbol(data.name):
+        for data_fun in data_mod.get_functions_using_param(data):
+            if data_fun == proc_fun:
+                continue
+            # For now, we only support the x86 architecture in kernel
+            if "/arch/" in data_mod.llvm and \
+                    "/arch/x86/" not in data_mod.llvm:
+                continue
+
+            snapshot.add_fun(
+                name=data_fun,
+                llvm_mod=data_mod,
+                glob_var=data.name,
+                tag="using data variable \"{}\"".format(data.name),
+                group=sysctl)
+            print("  {}: {} (using data variable \"{}\")".format(
+                data_fun,
+                os.path.relpath(data_mod.llvm,
+                                snapshot.source_tree.source_dir),
+                data.name))
