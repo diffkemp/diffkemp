@@ -22,8 +22,15 @@ jobs:
         include:
           - build-type: release
             diffkemp-bin: diffkemp
+            build-dir: build
           - build-type: development
             diffkemp-bin: build/bin/diffkemp
+            build-dir: build
+          # Development build with custom build directory and disabled CFFI
+          - build-type: development
+            diffkemp-bin: my-build-dir/bin/diffkemp
+            build-dir: my-build-dir
+            compare-options: --disable-simpll-ffi
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -42,27 +49,27 @@ jobs:
       - name: Release build and install of DiffKemp
         if: ${{ matrix.build-type == 'release' }}
         run: |
-          cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
-          sudo ninja -C build install
+          cmake -S . -B ${{ matrix.build-dir }} -GNinja -DCMAKE_BUILD_TYPE=Release
+          sudo ninja -C ${{ matrix.build-dir }} install
           virtualenv -p python3 venv
           source venv/bin/activate
           pip install .
       - name: Development build of DiffKemp
         if: ${{ matrix.build-type == 'development' }}
         run: |
-          cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug
-          sudo ninja -C build
+          cmake -S . -B ${{ matrix.build-dir }} -GNinja -DCMAKE_BUILD_TYPE=Debug
+          sudo ninja -C ${{ matrix.build-dir }}
           virtualenv -p python3 venv
           source venv/bin/activate
           # Installing dependencies
-          pip install .
+          SIMPLL_BUILD_DIR="${{matrix.build-dir}}" pip install .
           pip uninstall -y diffkemp
       - name: Check by building and comparing make-based project
         run: |
           source venv/bin/activate
           ${{matrix.diffkemp-bin}} build tests/testing_projects/make_based/ old-snapshot
           ${{matrix.diffkemp-bin}} build tests/testing_projects/make_based/ new-snapshot
-          ${{matrix.diffkemp-bin}} compare old-snapshot new-snapshot
+          ${{matrix.diffkemp-bin}} compare ${{matrix.compare-options}} old-snapshot new-snapshot
 
   nix-development-build:
     runs-on: ubuntu-latest
