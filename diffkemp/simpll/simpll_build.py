@@ -31,6 +31,9 @@ def get_root_dir(path, is_develop_build):
 
 ffibuilder = FFI()
 location = os.path.dirname(os.path.abspath(__file__))
+# We can get the project root directory by recognizing whether the script is
+# ran manually or by the `setuptools`. The `setuptools` build calls this script
+# with additional arguments (_in_process.py bdist_wheel --dist-info-dir ...).
 root_dir = get_root_dir(location, is_develop_build=(len(sys.argv) == 1))
 path_to_ffi_header = "diffkemp/simpll/library/FFI.h"
 
