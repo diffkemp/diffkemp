@@ -18,22 +18,13 @@ import shutil
 
 
 def build_c_project(args):
-    # Generate wrapper for C/C++ compiler
-    cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
-
     # Create temp directory and environment
     tmpdir = mkdtemp()
     db_filename = os.path.join(tmpdir, "diffkemp-wdb")
     environment = _create_env(args, db_filename)
 
     # Determine make args
-    make_cc_setting = 'CC="{}"'.format(cc_wrapper)
-    make_args = [args.build_program, "-C", args.source_dir, make_cc_setting]
-    if args.build_file is not None:
-        make_args.extend(["-c", args.build_file])
-    make_target_args = make_args[:]
-    if args.target is not None:
-        make_target_args.extend(args.target)
+    make_args, make_target_args, make_cc_setting = _make_args(args)
 
     # Clean the project
     config_log_filename = os.path.join(args.source_dir, "config.log")
@@ -92,6 +83,21 @@ def _create_env(args, db_filename):
     return environment
 
 
+def _make_args(args):
+    # Generate wrapper for C/C++ compiler
+    cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
+
+    make_cc_setting = 'CC="{}"'.format(cc_wrapper)
+    make_args = [args.build_program, "-C", args.source_dir, make_cc_setting]
+    if args.build_file is not None:
+        make_args.extend(["-c", args.build_file])
+    make_target_args = make_args[:]
+    if args.target is not None:
+        make_target_args.extend(args.target)
+
+    return make_args, make_target_args, make_cc_setting
+
+
 def _clean_project(config_log_filename, make_args, environment):
     if os.path.exists(config_log_filename):
         # Backup config.log
@@ -148,13 +154,16 @@ def _build_for_symbols(args):
     if args.symbol_list is None:
         user_symbol_list = False
         args.symbol_list = os.path.join(args.source_dir, "function_list")
+
     symbol_list = read_symbol_list(args.symbol_list)
+
     if not symbol_list:
         if user_symbol_list:
             sys.stderr.write(EMSG_EMPTY_SYMBOL_LIST)
         else:
             sys.stderr.write("ERROR: no symbols were found in the project\n")
         sys.exit(errno.EINVAL)
+
     return symbol_list
 
 
