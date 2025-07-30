@@ -22,13 +22,7 @@ def build_c_project(args):
     environment, tmpdir, db_filename = _create_temp_dir_and_env(args)
 
     # Determine make args
-    make_cc_setting = 'CC="{}"'.format(cc_wrapper)
-    make_args = [args.build_program, "-C", args.source_dir, make_cc_setting]
-    if args.build_file is not None:
-        make_args.extend(["-c", args.build_file])
-    make_target_args = make_args[:]
-    if args.target is not None:
-        make_target_args.extend(args.target)
+    make_args, make_target_args, make_cc_setting = _make_args(cc_wrapper, args)
 
     # Clean the project
     config_log_filename = os.path.join(args.source_dir, "config.log")
@@ -87,6 +81,17 @@ def _create_temp_dir_and_env(args):
     }
     environment.update(os.environ)
     return environment, tmpdir, db_filename
+
+
+def _make_args(cc_wrapper, args):
+    make_cc_setting = 'CC="{}"'.format(cc_wrapper)
+    make_args = [args.build_program, "-C", args.source_dir, make_cc_setting]
+    if args.build_file is not None:
+        make_args.extend(["-c", args.build_file])
+    make_target_args = make_args[:]
+    if args.target is not None:
+        make_target_args.extend(args.target)
+    return make_args, make_target_args, make_cc_setting
 
 
 def _clean_project(config_log_filename, make_args, environment):
