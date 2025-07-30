@@ -15,7 +15,7 @@ Currently, DiffKemp runs on Linux and needs the following software installed:
 - GoogleTest (gtest) for running the C++ tests (can be vendored by using
   `-DVENDOR_GTEST=On` in the `cmake` command)
 - CMake and Ninja build system for building
-- Node.js (>= 14.x) and npm for running the result viewer
+- Node.js (>= 20.x) and npm for running the result viewer
 
 > [!NOTE]
 > Optionally, to create *snapshots* of projects faster when running `diffkemp build`

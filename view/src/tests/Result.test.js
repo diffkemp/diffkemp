@@ -1,5 +1,6 @@
 // Tests of Result class
 // Author: Lukas Petr
+import { beforeAll } from 'vitest';
 
 import Result from '../Result';
 
