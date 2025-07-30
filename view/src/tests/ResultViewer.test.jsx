@@ -33,11 +33,13 @@ results:
 definitions: {}
 `;
 
-const mockPropsDifference = jest.fn();
-jest.mock('../components/Difference', () => function mockComponentDifference(props) {
-  mockPropsDifference(props);
-  return <mock-Difference />;
-});
+const mockPropsDifference = vi.fn();
+vi.mock('../components/Difference', () => ({
+  default: function mockComponentDifference(props) {
+    mockPropsDifference(props);
+    return <mock-Difference />;
+  },
+}));
 
 /**
  * Mocked getFile to return result when trying to get file

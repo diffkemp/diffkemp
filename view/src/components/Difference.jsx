@@ -146,7 +146,7 @@ export default function Difference({
         </Col>
         <Col>
           {errorCodeMessage ? (
-            <Alert>
+            <Alert show variant="primary">
               Unable to show code:
               {errorCodeMessage}
             </Alert>

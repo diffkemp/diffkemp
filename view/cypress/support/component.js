@@ -2,7 +2,7 @@
 
 // Disabling error about using dev dependency
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { mount } from 'cypress/react18';
+import { mount } from 'cypress/react';
 
 import {} from '../../src/setup';
 

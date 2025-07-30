@@ -36,6 +36,7 @@ export default function FunctionListing({
     rows.push(
       <Button
         className="text-start ms-2"
+        variant="primary"
         size="sm"
         onClick={() => onFunctionSelect(fun)}
         key={fun}
