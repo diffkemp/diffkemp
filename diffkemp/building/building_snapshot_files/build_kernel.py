@@ -1,6 +1,3 @@
-"""
-builds kernel
-"""
 from diffkemp.llvm_ir.kernel_llvm_source_builder import KernelLlvmSourceBuilder
 from diffkemp.llvm_ir.source_tree import SourceNotFoundException
 from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
@@ -52,42 +49,6 @@ def build_kernel(args):
     snapshot.finalize()
 
 
-def generate_from_sysctl_list(snapshot, sysctl_list):
-    """
-    Generate a snapshot from a list of sysctl options.
-    For each sysctl option:
-      - get LLVM IR of the file which defines the sysctl option
-      - find and compile the proc handler function and add it to the snapshot
-      - find the sysctl data variable
-      - find, compile, and add to the snapshot all functions that use
-        the data variable
-    :param snapshot: Existing Snapshot object to fill
-    :param sysctl_list: List of sysctl options.
-                        May contain patterns such as "kernel.*".
-    """
-    for symbol in sysctl_list:
-        # Get module with sysctl definitions
-        try:
-            sysctl_mod = snapshot.source_tree.get_sysctl_module(symbol)
-        except SourceNotFoundException:
-            print("{}: sysctl not supported".format(symbol))
-            continue
-
-        # Iterate all sysctls represented by the symbol (it can be a pattern)
-        sysctl_list = sysctl_mod.parse_sysctls(symbol)
-        if not sysctl_list:
-            print("{}: no sysctl found".format(symbol))
-            continue
-        for sysctl in sysctl_list:
-            print("{}:".format(sysctl))
-
-            proc_fun = sysctl_mod.get_proc_fun(sysctl)
-            # Proc handler function for sysctl
-            _add_proc_handler(snapshot, sysctl, proc_fun)
-            # Functions using the sysctl data variable
-            _add_data_func(snapshot, sysctl, sysctl_mod, proc_fun)
-
-
 def _add_proc_handler(snapshot, sysctl, proc_fun):
     if proc_fun:
         try:
@@ -132,3 +93,38 @@ def _add_data_func(snapshot, sysctl, sysctl_mod, proc_fun):
                 os.path.relpath(data_mod.llvm,
                                 snapshot.source_tree.source_dir),
                 data.name))
+
+def generate_from_sysctl_list(snapshot, sysctl_list):
+    """
+    Generate a snapshot from a list of sysctl options.
+    For each sysctl option:
+      - get LLVM IR of the file which defines the sysctl option
+      - find and compile the proc handler function and add it to the snapshot
+      - find the sysctl data variable
+      - find, compile, and add to the snapshot all functions that use
+        the data variable
+    :param snapshot: Existing Snapshot object to fill
+    :param sysctl_list: List of sysctl options.
+                        May contain patterns such as "kernel.*".
+    """
+    for symbol in sysctl_list:
+        # Get module with sysctl definitions
+        try:
+            sysctl_mod = snapshot.source_tree.get_sysctl_module(symbol)
+        except SourceNotFoundException:
+            print("{}: sysctl not supported".format(symbol))
+            continue
+
+        # Iterate all sysctls represented by the symbol (it can be a pattern)
+        sysctl_list = sysctl_mod.parse_sysctls(symbol)
+        if not sysctl_list:
+            print("{}: no sysctl found".format(symbol))
+            continue
+        for sysctl in sysctl_list:
+            print("{}:".format(sysctl))
+
+            proc_fun = sysctl_mod.get_proc_fun(sysctl)
+            # Proc handler function for sysctl
+            _add_proc_handler(snapshot, sysctl, proc_fun)
+            # Functions using the sysctl data variable
+            _add_data_func(snapshot, sysctl, sysctl_mod, proc_fun)
