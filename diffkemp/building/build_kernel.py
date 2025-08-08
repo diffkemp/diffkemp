@@ -20,19 +20,7 @@ def build_kernel(args):
       - list of sysctl options
     """
     # Create a new snapshot from the kernel source directory.
-    source_finder = KernelLlvmSourceBuilder(args.source_dir)
-    if not source_finder.is_configured():
-        sys.stderr.write(
-            "Error: Kernel configuration is incomplete or invalid.\n"
-            "Run `make olddefconfig` to set missing configurations.\n"
-        )
-        sys.exit(errno.EINVAL)
-    source = KernelSourceTree(args.source_dir, source_finder)
-    list_kind = "sysctl" if args.sysctl else "function"
-    snapshot = Snapshot.create_from_source(source,
-                                           args.output_dir,
-                                           list_kind,
-                                           not args.no_source_dir)
+    snapshot = _generate_snapshot(args)
 
     # Read the symbol list
     symbol_list = read_symbol_list(args.symbol_list)
@@ -49,6 +37,31 @@ def build_kernel(args):
     # Create the snapshot directory containing the YAML description file
     snapshot.generate_snapshot_dir()
     snapshot.finalize()
+
+
+def _generate_snapshot(args):
+    source_finder = KernelLlvmSourceBuilder(args.source_dir)
+    if not _validate_kernel_config(source_finder):
+        sys.exit(errno.EINVAL)
+
+    source = KernelSourceTree(args.source_dir, source_finder)
+    list_kind = "sysctl" if args.sysctl else "function"
+
+    return Snapshot.create_from_source(source,
+                                       args.output_dir,
+                                       list_kind,
+                                       not args.no_source_dir)
+
+
+def _validate_kernel_config(source_finder):
+    if source_finder.is_configured():
+        return True
+
+    sys.stderr.write(
+        "Error: Kernel configuration is incomplete or invalid.\n"
+        "Run `make olddefconfig` to set missing configurations.\n"
+    )
+    return False
 
 
 def generate_from_sysctl_list(snapshot, sysctl_list):
@@ -80,46 +93,59 @@ def generate_from_sysctl_list(snapshot, sysctl_list):
         for sysctl in sysctl_list:
             print("{}:".format(sysctl))
 
-            # Proc handler function for sysctl
             proc_fun = sysctl_mod.get_proc_fun(sysctl)
-            if proc_fun:
-                try:
-                    proc_fun_mod = snapshot.source_tree.get_module_for_symbol(
-                        proc_fun)
-                    snapshot.add_fun(name=proc_fun,
-                                     llvm_mod=proc_fun_mod,
-                                     glob_var=None,
-                                     tag="proc handler function",
-                                     group=sysctl)
-                    print("  {}: {} (proc handler)".format(
-                        proc_fun,
-                        os.path.relpath(proc_fun_mod.llvm,
-                                        snapshot.source_tree.source_dir)))
-                except SourceNotFoundException:
-                    print("  could not build proc handler")
+            # Proc handler function for sysctl
+            _add_proc_handler(snapshot, sysctl, proc_fun)
+            # Adds functions which use the sysctl data variable
+            _add_funcs_for_data(snapshot, sysctl, sysctl_mod, proc_fun)
 
-            # Functions using the sysctl data variable
-            data = sysctl_mod.get_data(sysctl)
-            if not data:
+
+def _add_proc_handler(snapshot, sysctl, proc_fun):
+    if not proc_fun:
+        return
+
+    try:
+        proc_fun_mod = snapshot.source_tree.get_module_for_symbol(
+            proc_fun)
+        snapshot.add_fun(name=proc_fun,
+                         llvm_mod=proc_fun_mod,
+                         glob_var=None,
+                         tag="proc handler function",
+                         group=sysctl)
+        print("  {}: {} (proc handler)".format(
+            proc_fun,
+            os.path.relpath(proc_fun_mod.llvm,
+                            snapshot.source_tree.source_dir)))
+    except SourceNotFoundException:
+        print("  could not build proc handler")
+
+
+def _add_funcs_for_data(snapshot, sysctl, sysctl_mod, proc_fun):
+    data = sysctl_mod.get_data(sysctl)
+
+    if not data:
+        return
+
+    for module in \
+            snapshot.source_tree.get_modules_using_symbol(data.name):
+        # For now, we only support the x86 architecture in kernel
+        if "/arch/" in module.llvm and \
+                "/arch/x86/" not in module.llvm:
+            continue
+
+        curr_mod_path = os.path.relpath(module.llvm,
+                                        snapshot.source_tree.source_dir)
+        for func in module.get_functions_using_param(data):
+            if func == proc_fun:
                 continue
-            for data_mod in \
-                    snapshot.source_tree.get_modules_using_symbol(data.name):
-                for data_fun in data_mod.get_functions_using_param(data):
-                    if data_fun == proc_fun:
-                        continue
-                    # For now, we only support the x86 architecture in kernel
-                    if "/arch/" in data_mod.llvm and \
-                            "/arch/x86/" not in data_mod.llvm:
-                        continue
 
-                    snapshot.add_fun(
-                        name=data_fun,
-                        llvm_mod=data_mod,
-                        glob_var=data.name,
-                        tag="using data variable \"{}\"".format(data.name),
-                        group=sysctl)
-                    print("  {}: {} (using data variable \"{}\")".format(
-                        data_fun,
-                        os.path.relpath(data_mod.llvm,
-                                        snapshot.source_tree.source_dir),
-                        data.name))
+            snapshot.add_fun(
+                name=func,
+                llvm_mod=module,
+                glob_var=data.name,
+                tag="using data variable \"{}\"".format(data.name),
+                group=sysctl)
+            print("  {}: {} (using data variable \"{}\")".format(
+                func,
+                curr_mod_path,
+                data.name))
