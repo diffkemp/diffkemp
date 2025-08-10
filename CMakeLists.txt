@@ -31,6 +31,13 @@ if (${BUILD_LLREVE})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/llreve/reve)
 endif ()
 
+message(STATUS "Generating bin/diffkemp executable")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/diffkemp/diffkemp.in
+  ${CMAKE_BINARY_DIR}/bin/diffkemp
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                   GROUP_READ
+                   WORLD_READ)
+
 execute_process(COMMAND
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/simpll_clean.sh
   ${CMAKE_CURRENT_SOURCE_DIR})

@@ -67,6 +67,10 @@ def build_c_project(args):
                                               else "0")
     }
     environment.update(os.environ)
+    # Passing down the PYTHONPATH variable to be able to run CC_WRAPPER
+    # even in development mode (without installation of DiffKemp).
+    # Without this the wrapper could not import from DiffKemp package.
+    environment["PYTHONPATH"] = ":".join(sys.path)
 
     # Determine make args
     make_cc_setting = 'CC="{}"'.format(cc_wrapper)
