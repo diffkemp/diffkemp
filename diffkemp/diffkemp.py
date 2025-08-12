@@ -1,4 +1,5 @@
-from diffkemp.building.cc_wrapper import get_cc_wrapper_path, wrapper_env_vars
+from diffkemp.building.cc_wrapper.cc_wrapper \
+    import get_cc_wrapper_path, wrapper_env_vars
 from diffkemp.config import Config
 from diffkemp.snapshot import Snapshot
 from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException

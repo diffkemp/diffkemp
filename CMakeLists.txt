@@ -17,7 +17,7 @@ include(GNUInstallDirs)
 option(SANITIZE_ADDRESS "Enable address sanitizer" OFF)
 
 add_subdirectory(diffkemp/simpll)
-add_subdirectory(diffkemp/building)
+add_subdirectory(diffkemp/building/cc_wrapper)
 
 option(BUILD_LLREVE "Build the LLReve tool for semantic comparison" OFF)
 if (${BUILD_LLREVE})
