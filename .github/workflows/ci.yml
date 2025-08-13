@@ -61,7 +61,7 @@ jobs:
         if: matrix.regression-tests
         with:
           path: tests/regression/test_data
-          key: test-data-llvm${{ matrix.llvm }}-${{ hashFiles('tests/regression/test_specs/*') }}
+          key: test-data-llvm${{ matrix.llvm }}-bc-${{ hashFiles('tests/regression/test_specs/*') }}
 
       # Download kernel sources:
       # - if test_data is cached, we only need the kernel for unit tests
@@ -113,4 +113,4 @@ jobs:
         uses: actions/cache@v4
         with:
           path: tests/regression/test_data
-          key: test-data-llvm${{ matrix.llvm }}-${{ hashFiles('tests/regression/test_specs/*') }}
+          key: test-data-llvm${{ matrix.llvm }}-bc-${{ hashFiles('tests/regression/test_specs/*') }}
