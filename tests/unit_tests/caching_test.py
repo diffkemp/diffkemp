@@ -269,14 +269,14 @@ def test_cachability_reset_after_absorb(graph_uncachable):
 
 @pytest.fixture
 def cache_file():
-    yield SimpLLCache.CacheFile(mkdtemp(), "/test/f1/1.ll", "/test/f2/2.ll")
+    yield SimpLLCache.CacheFile(mkdtemp(), "/test/f1/1.bc", "/test/f2/2.bc")
 
 
 def test_cache_file_init(cache_file):
     """Tests the constructor of the SimpLLCache.CacheFile class."""
-    assert cache_file.left_module == "/test/f1/1.ll"
-    assert cache_file.right_module == "/test/f2/2.ll"
-    assert cache_file.filename.endswith("..$f1$1.ll:..$f2$2.ll")
+    assert cache_file.left_module == "/test/f1/1.bc"
+    assert cache_file.right_module == "/test/f2/2.bc"
+    assert cache_file.filename.endswith("..$f1$1.bc:..$f2$2.bc")
 
 
 def test_cache_file_add_function_pairs(cache_file):
@@ -302,27 +302,27 @@ def simpll_cache():
 def vertices():
     yield [ComparisonGraph.Vertex(dup("f"),
                                   Result.Kind.EQUAL,
-                                  ("/test/f1/1.ll", "/test/f2/2.ll")),
+                                  ("/test/f1/1.bc", "/test/f2/2.bc")),
            ComparisonGraph.Vertex(dup("h"),
                                   Result.Kind.NOT_EQUAL,
-                                  ("/test/f1/1.ll", "/test/f2/3.ll")),
+                                  ("/test/f1/1.bc", "/test/f2/3.bc")),
            ComparisonGraph.Vertex(dup("g"),
                                   Result.Kind.NOT_EQUAL,
-                                  ("/test/f1/1.ll", "/test/f2/2.ll"))]
+                                  ("/test/f1/1.bc", "/test/f2/2.bc"))]
 
 
 def test_simpll_cache_update(simpll_cache, vertices):
     """Tests updating of a SimpLL cache with vertices from a graph."""
     simpll_cache.update(vertices)
     assert os.path.exists(os.path.join(simpll_cache.directory,
-                                       "..$f1$1.ll:..$f2$2.ll"))
+                                       "..$f1$1.bc:..$f2$2.bc"))
     assert os.path.exists(os.path.join(simpll_cache.directory,
-                                       "..$f1$1.ll:..$f2$3.ll"))
+                                       "..$f1$1.bc:..$f2$3.bc"))
     with open(os.path.join(simpll_cache.directory,
-                           "..$f1$1.ll:..$f2$2.ll"), "r") as file:
+                           "..$f1$1.bc:..$f2$2.bc"), "r") as file:
         assert file.readlines() == ["f:f\n", "g:g\n"]
     with open(os.path.join(simpll_cache.directory,
-                           "..$f1$1.ll:..$f2$3.ll"), "r") as file:
+                           "..$f1$1.bc:..$f2$3.bc"), "r") as file:
         assert file.readlines() == ["h:h\n"]
 
 
