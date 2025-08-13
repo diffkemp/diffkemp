@@ -92,28 +92,14 @@ def test_make_based_with_assembly(tmp_path):
     args = Arguments(MAKE_BASED_PROJECT_DIR, output_dir,
                      target=["with-assembly"])
     build(args)
-    # .s, .S files should not be compiled to .ll
+    # .s, .S files should not be compiled to .bc
     src_dir_files = os.listdir(MAKE_BASED_PROJECT_DIR)
-    assert "mod.ll" not in src_dir_files
-    assert "sub.ll" not in src_dir_files
+    assert "mod.bc" not in src_dir_files
+    assert "sub.bc" not in src_dir_files
     # and they should not be added to db file
     db_file_content = get_db_file_content(output_dir)
-    assert "mod.ll" not in db_file_content
-    assert "sub.ll" not in db_file_content
-
-
-def test_make_based_with_linking(tmp_path):
-    """Tests make based project which contains linking of file(s)."""
-    output_dir = str(tmp_path)
-    args = Arguments(MAKE_BASED_PROJECT_DIR, output_dir,
-                     target=["with-linking"])
-    build(args)
-    # When linking *.o files, appropriate .ll files
-    # should be linked with llvm-link and saved as `.llw`.
-    # Note: The .llw is not copied to snapshot dir.
-    assert "file.so.llw" in os.listdir(MAKE_BASED_PROJECT_DIR)
-    db_file_content = get_db_file_content(output_dir)
-    assert "file.so.llw" in db_file_content
+    assert "mod.bc" not in db_file_content
+    assert "sub.bc" not in db_file_content
 
 
 def test_build_no_opt_override(tmp_path):
