@@ -5,6 +5,9 @@ import sys
 
 LLVM_FUNCTION_REGEX = re.compile(r"^define.*@(\w+)\(", flags=re.MULTILINE)
 
+# Name of YAML output file created by diffkemp compare command.
+CMP_YAML_FILENAME = "diffkemp-out.yaml"
+
 
 def get_simpll_build_dir():
     """
