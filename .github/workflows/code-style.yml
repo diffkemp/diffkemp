@@ -33,8 +33,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          flake8 diffkemp --ignore=F403,F405,W504
-          flake8 tests
+          flake8 diffkemp tests
 
   code-style-js:
     runs-on: ubuntu-latest
