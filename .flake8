@@ -1,0 +1,6 @@
+[flake8]
+per-file-ignores =
+    # ignore specific rules in diffkemp
+    diffkemp/*: F403, F405, W504
+    # do not ignore anything in tests
+    tests/*:
