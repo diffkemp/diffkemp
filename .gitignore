@@ -54,6 +54,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# VsCode
+.vscode/
+
 # py.test files
 .cache
 .pytest_cache
