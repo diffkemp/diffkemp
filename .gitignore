@@ -101,6 +101,9 @@ cmake-build-debug/
 # Vim files
 *.swp
 
+# Vs Code files
+.vscode/
+
 # Temporary files from regression tests. Used for debugging purposes only.
 *.ll
 *.smt2
