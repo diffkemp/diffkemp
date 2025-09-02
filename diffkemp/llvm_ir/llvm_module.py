@@ -114,7 +114,7 @@ class LlvmModule:
         name = self.llvm_module.find_param_var(param)
         return LlvmParam(name, []) if name is not None else None
 
-    def module_has(self, pattern):
+    def module_has(self, symtype_pattern, symbol):
         """
         Check if a module contains matches for a pattern.
         Used in has_function, has_global and has_definition.
@@ -122,23 +122,22 @@ class LlvmModule:
         command = ["llvm-nm", self.llvm]
         source_dir = os.path.dirname(self.llvm)
         nm_out = check_output(command, cwd=source_dir)
+        pattern = re.compile(rf"{symtype_pattern} {re.escape(symbol)}",
+                             re.MULTILINE)
         match = pattern.search(nm_out.decode())
         return match is not None
 
     def has_function(self, fun):
         """Check if module contains a function definition."""
-        pattern = re.compile(rf"[T|t] {re.escape(fun)}$", re.MULTILINE)
-        return self.module_has(pattern)
+        return self.module_has("[T|t]", fun)
 
     def has_global(self, glob):
         """Check if module contains a global variable with the given name."""
-        pattern = re.compile(rf"[DdBbCU] {re.escape(glob)}$", re.MULTILINE)
-        return self.module_has(pattern)
+        return self.module_has("[DdBbCU]", glob)
 
     def has_definition(self, symbol):
         """Check if module contains a given symbol definition."""
-        pattern = re.compile(rf"[DdBbCTt] {re.escape(symbol)}$", re.MULTILINE)
-        return self.module_has(pattern)
+        return self.module_has("[DdBbCTt]", symbol)
 
     def is_declaration(self, fun):
         """
@@ -178,14 +177,14 @@ class LlvmModule:
             command = ["llvm-dis", self.llvm, "-o", "-"]
             source_dir = os.path.dirname(self.llvm)
             output = check_output(command, cwd=source_dir).decode()
-            new_file = []
+            new_lines = []
             for line in output.splitlines():
                 if "constant" not in line:
-                    new_file.append(line.replace(old_root.strip("/"),
-                                                 new_root.strip("/")))
+                    new_lines.append(line.replace(old_root.strip("/"),
+                                                  new_root.strip("/")))
                 else:
-                    new_file.append(line)
-            run(["llvm-as", "-o", dest_llvm], input="\n".join(new_file),
+                    new_lines.append(line)
+            run(["llvm-as", "-o", dest_llvm], input="\n".join(new_lines),
                 stdout=PIPE, stderr=PIPE, text=True, check=True)
             self.llvm = dest_llvm
 
@@ -199,11 +198,13 @@ class LlvmModule:
     def get_included_sources(self):
         """
         Get the list of source files that this module includes.
-        Requires debugging information.
+        Sources are extracted from the llvm-bcanalyzer output (with --dump).
+        The are located in the first METADATA_BLOCK as STRINGS.
+        The first string is the file name, second is project directory,
+        the includes follow.
         """
         source_dir = ''.join(os.path.split(self.llvm)[0])
         command = ["llvm-bcanalyzer", self.llvm, "-dump"]
-        source_dir = os.path.dirname(self.llvm)
         bc_out = check_output(command, cwd=source_dir)
         result = set()
         in_metadata = False
