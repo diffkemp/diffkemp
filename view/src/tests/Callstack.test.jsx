@@ -12,7 +12,7 @@ describe('simple callstack visualisation test', () => {
   const compFunName = '__put_task_struct';
   const oldCallStack = [{ name: 'free_task' }, { name: 'free_task_struct' }];
   const newCallStack = [{ name: 'free_task' }, { name: 'free_task_struct' }];
-  const onSelect = jest.fn();
+  const onSelect = vi.fn();
 
   const setup = () => {
     render(

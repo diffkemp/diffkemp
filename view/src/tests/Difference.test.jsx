@@ -85,11 +85,13 @@ const getFile = async (filePath) => (
   filePath
 );
 
-const mockPropsDiffViewWrapper = jest.fn();
-jest.mock('../components/DiffViewWrapper', () => function mockComponentDiffViewWrapper(props) {
-  mockPropsDiffViewWrapper(props);
-  return <mock-DiffViewWrapper />;
-});
+const mockPropsDiffViewWrapper = vi.fn();
+vi.mock('../components/DiffViewWrapper', () => ({
+  default: function mockComponentDiffViewWrapper(props) {
+    mockPropsDiffViewWrapper(props);
+    return <mock-DiffViewWrapper />;
+  },
+}));
 
 const setup = async () => {
   render(

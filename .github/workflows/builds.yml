@@ -88,4 +88,4 @@ jobs:
           sudo apt install python2 python-pip
           python2 -m pip install rpython
       - name: Build cc-wrapper to binary
-        run: python2 -m rpython ${{ github.workspace }}/diffkemp/building/cc_wrapper.py
+        run: python2 -m rpython ${{ github.workspace }}/diffkemp/building/cc_wrapper/cc_wrapper.py

@@ -1,11 +1,20 @@
 root: true
 extends:
-  - react-app
-  - react-app/jest
+  - plugin:vitest-globals/recommended
   - airbnb
+  - plugin:react/recommended
+  - plugin:react-hooks/recommended
+  - plugin:jsx-a11y/recommended
   # From React 17 importing React is not necessary for JSX
   - plugin:react/jsx-runtime
   - plugin:cypress/recommended
+env:
+  "vitest-globals/env": true
+parserOptions:
+  ecmaFeatures:
+    jsx: true
+  ecmaVersion: 14
+  sourceType: module
 ignorePatterns:
   - public/
   - build/

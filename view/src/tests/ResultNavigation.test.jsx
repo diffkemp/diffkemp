@@ -54,8 +54,8 @@ const resultYAML = {
 
 const result = new Result(resultYAML);
 
-const handleCompareFun = jest.fn();
-const handleDiffFun = jest.fn();
+const handleCompareFun = vi.fn();
+const handleDiffFun = vi.fn();
 
 afterEach(() => {
   handleCompareFun.mockClear();

@@ -1,4 +1,4 @@
-set(CC_WRAPPER_SOURCE "${CMAKE_SOURCE_DIR}/diffkemp/building/cc_wrapper.py")
+set(CC_WRAPPER_SOURCE "${CMAKE_SOURCE_DIR}/diffkemp/building/cc_wrapper/cc_wrapper.py")
 add_custom_target(cc-wrapper-source ALL DEPENDS ${CC_WRAPPER_SOURCE})
 install(PROGRAMS ${CC_WRAPPER_SOURCE} RENAME diffkemp-cc-wrapper.py DESTINATION ${CMAKE_INSTALL_BINDIR})
 

@@ -1,5 +1,7 @@
 import argparse
 from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
+from diffkemp.building.build_kernel import build_kernel
+from diffkemp.compare import compare
 import diffkemp.diffkemp
 import os
 
@@ -86,7 +88,7 @@ def make_argument_parser():
         "--no-source-dir",
         action="store_true",
         help="do not store path to the source kernel directory in snapshot")
-    build_kernel_ap.set_defaults(func=diffkemp.diffkemp.build_kernel)
+    build_kernel_ap.set_defaults(func=build_kernel)
 
     # "llvm-to-snapshot" sub-command
     llvm_snapshot_ap = sub_ap.add_parser(
@@ -199,7 +201,7 @@ def make_argument_parser():
                             dest="disable_pattern", const="all",
                             help="disable all built-in patterns")
 
-    compare_ap.set_defaults(func=diffkemp.diffkemp.compare)
+    compare_ap.set_defaults(func=compare)
 
     # "view" sub-command
     view_ap = sub_ap.add_parser("view",

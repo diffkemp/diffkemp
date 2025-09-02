@@ -39,7 +39,7 @@ test('function names should be visible', () => {
 
 test('click on function should return its name', () => {
   const names = ['free', 'malloc', 'printf'];
-  const handleSelect = jest.fn();
+  const handleSelect = vi.fn();
   render(
     <FunctionListing
       headline="Function"

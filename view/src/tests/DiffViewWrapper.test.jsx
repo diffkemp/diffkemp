@@ -2,13 +2,30 @@
 // Author: Lukas Petr
 
 import {
-  cleanup, render, screen, within,
+  cleanup, render, screen, within, waitFor,
 } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
 import DiffViewWrapper from '../components/DiffViewWrapper';
 import Difference from '../components/Difference';
+
+/**
+ * Helper function - returns promise which is resolved after the code block is rendered.
+ * (Rendering code block for function can take a while.)
+ */
+async function waitForCodeRendered() {
+  // If the code is not yet rendered -- 'Loading...' is shown, wait until
+  // the text disappears which mean that the code is rendered.
+  // Make sure 'Loading...' was shown before checking that it disappeared,
+  // otherwise we are too fast and the code is not yet rendered.
+  await waitFor(() => {
+    screen.queryByText('Loading...');
+  }, { timeout: 200 });
+  await waitFor(() => {
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+  });
+}
 
 /**
  * Helper function for testing. It checks that for all displayed lines,
@@ -121,7 +138,7 @@ describe('testing a differing function visualisation', () => {
 }`;
   /* eslint-enable no-tabs */
 
-  const setup = () => {
+  const setup = async () => {
     render(
       <DiffViewWrapper
         oldCode={oldCode}
@@ -132,14 +149,15 @@ describe('testing a differing function visualisation', () => {
         showDiff
       />,
     );
+    await waitForCodeRendered();
   };
 
   afterEach(() => {
     cleanup();
   });
 
-  test('first shown line should be first line of function', () => {
-    setup();
+  test('first shown line should be first line of function', async () => {
+    await setup();
     const rows = screen.getAllByRole('row');
     const cells = within(rows[0]).getAllByRole('cell');
     // in old part
@@ -152,8 +170,8 @@ describe('testing a differing function visualisation', () => {
     );
   });
 
-  test('last shown line should be last line of function', () => {
-    setup();
+  test('last shown line should be last line of function', async () => {
+    await setup();
     const rows = screen.getAllByRole('row');
     const cells = within(rows[rows.length - 1]).getAllByRole('cell');
     // in old part
@@ -162,8 +180,8 @@ describe('testing a differing function visualisation', () => {
     expect(cells[3]).toHaveTextContent(/^}$/);
   });
 
-  test('all differing lines should be shown', () => {
-    setup();
+  test('all differing lines should be shown', async () => {
+    await setup();
     expect(
       screen.getByText((content, element) => (
         element.tagName === 'TD'
@@ -192,8 +210,8 @@ describe('testing a differing function visualisation', () => {
     ).toHaveClass('diff-code-insert');
   });
 
-  test('shown line numbers should match to shown code', () => {
-    setup();
+  test('shown line numbers should match to shown code', async () => {
+    await setup();
     testCodeNumberMatch(
       oldCode,
       newCode,
@@ -201,7 +219,7 @@ describe('testing a differing function visualisation', () => {
   });
 
   test('after all code expansion whole functions should be visible and line numbers should match code', async () => {
-    setup();
+    await setup();
     const LOOP_LIMIT = 5;
     let loop = 0;
     let btns = screen.queryAllByText(/expand/i);
@@ -238,7 +256,7 @@ describe('testing a differing function visualisation', () => {
   });
 }); /* describe - diff visualisation */
 
-describe('testing a caller function visualisation', () => {
+describe('testing a caller function visualisation', async () => {
   const oldStart = 176;
   const newStart = 180;
   const oldEnd = 197;
@@ -299,7 +317,7 @@ describe('testing a caller function visualisation', () => {
 }`;
   /* eslint-enable no-tabs */
 
-  const setup = () => {
+  const setup = async () => {
     render(
       <DiffViewWrapper
         oldCode={oldCode}
@@ -311,8 +329,9 @@ describe('testing a caller function visualisation', () => {
         linesToShow={calling}
       />,
     );
+    await waitForCodeRendered();
   };
-  test('line where function is called should be visible', () => {
+  test('line where function is called should be visible', async () => {
     setup();
     const callingLines = screen.getAllByText((content, element) => (
       element.tagName === 'TD'
@@ -324,7 +343,7 @@ describe('testing a caller function visualisation', () => {
     expect(callingLines[0]).toHaveClass('diff-code-selected');
     expect(callingLines[1]).toHaveClass('diff-code-selected');
   });
-  test('for visible lines should match line numbers with code', () => {
+  test('for visible lines should match line numbers with code', async () => {
     setup();
     testCodeNumberMatch(
       oldCode,
@@ -370,7 +389,7 @@ describe('testing a caller function visualisation', () => {
     };
 
     // Mocking getFile to return the content of the file.
-    const getFile = jest.fn(async (filePath) => {
+    const getFile = vi.fn(async (filePath) => {
       let content = filePath;
       if (filePath === 'src-old/left_file.c') {
         content = oldCode;
@@ -390,11 +409,13 @@ describe('testing a caller function visualisation', () => {
         newFolder=""
       />,
     );
-
+    await waitForCodeRendered();
     const callstack = within(screen.getByTestId('callstack'));
 
     // Selecting function which is only in the old call stack.
     userEvent.click(callstack.getByTitle('left (macro)'));
+    await waitForCodeRendered();
+
     // Waiting for update.
     await screen.findByText(/left_file.c/);
     // Testing that the whole code of the function is shown
@@ -414,6 +435,8 @@ describe('testing a caller function visualisation', () => {
 
     // Selecting function which is only in the new call stack.
     userEvent.click(callstack.getByTitle('right (macro)'));
+    await waitForCodeRendered();
+
     // Waiting for update.
     await screen.findByText(/right_file.c/);
     // Testing that the whole code of the function is shown
