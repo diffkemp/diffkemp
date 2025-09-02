@@ -102,6 +102,20 @@ def test_make_based_with_assembly(tmp_path):
     assert "sub.bc" not in db_file_content
 
 
+def test_make_based_with_linking(tmp_path):
+    """Tests make based project which contains linking of file(s)."""
+    output_dir = str(tmp_path)
+    args = Arguments(MAKE_BASED_PROJECT_DIR, output_dir,
+                     target=["with-linking"])
+    build(args)
+    # When linking *.o files, appropriate .ll files
+    # should be linked with llvm-link and saved as `.bcw`.
+    # Note: The .bcw is not copied to snapshot dir.
+    assert "file.so.bcw" in os.listdir(MAKE_BASED_PROJECT_DIR)
+    db_file_content = get_db_file_content(output_dir)
+    assert "file.so.bcw" in db_file_content
+
+
 def test_build_no_opt_override(tmp_path):
     """Testing 'build' --no-opt-override argument."""
     output_dir = tmp_path
