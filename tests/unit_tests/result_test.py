@@ -129,13 +129,26 @@ def test_yaml_output(result, mocker):
     """Tests YAML representation of compare result made by YamlOutput class."""
     mocker.patch("diffkemp.output.get_end_line", return_value=2958)
 
-    # mock relpath to return original path
+    old_snapshot_dir = "/abs/path/to/old-snapshot"
+    new_snapshot_dir = "/abs/path/to/new-snapshot"
+
+    # Mocking relpath to return original path, because the file paths
+    # in vertices and etc. in conftest.py are not absolute
+    # (does not contain path to snapshot).
     def mock_rel_path(path, start):
         return path
     mocker.patch("os.path.relpath", side_effect=mock_rel_path)
 
-    yaml = YamlOutput("/abs/path/to/old-snapshot", "/abs/path/to/new-snapshot",
-                      result).output
+    # Mocking path.join for the same reason as relpath.
+    # Note: This mock can be problem if diffkemp uses >2 paths in join.
+    def mock_path_join(path1, *path2):
+        if len(path2) == 1 and path1 in [old_snapshot_dir, new_snapshot_dir]:
+            return path2[0]
+        else:
+            return mocker.DEFAULT
+    mocker.patch("os.path.join", side_effect=mock_path_join)
+
+    yaml = YamlOutput(old_snapshot_dir, new_snapshot_dir, result).output
 
     assert yaml["old-snapshot"] == "/abs/path/to/old-snapshot"
     assert yaml["new-snapshot"] == "/abs/path/to/new-snapshot"
@@ -166,8 +179,7 @@ def test_yaml_output(result, mocker):
         assert diff["old-callstack"] == expected_callstack
         assert diff["new-callstack"] == expected_callstack
 
-    # note: definitions does not currently include macros
-    assert len(yaml["definitions"]) == 3
+    assert len(yaml["definitions"]) == 6
     for name, definition in yaml["definitions"].items():
         if name == "main_function":
             def_info = {
@@ -187,6 +199,27 @@ def test_yaml_output(result, mocker):
             }
             assert definition == {
                 "kind": "type", "old": def_info, "new": def_info
+            }
+        elif name == "_MACRO":
+            def_info = {
+                "line": 2, "file": "test.c", "end-line": 2958
+            }
+            assert definition == {
+                "kind": "macro", "old": def_info, "new": def_info
+            }
+        elif name == "__MACRO":
+            def_info = {
+                "line": 3, "file": "test.c", "end-line": 2958
+            }
+            assert definition == {
+                "kind": "macro", "old": def_info, "new": def_info
+            }
+        elif name == "___MACRO":
+            def_info = {
+                "line": 4, "file": "test.c", "end-line": 2958
+            }
+            assert definition == {
+                "kind": "macro", "old": def_info, "new": def_info
             }
 
 
