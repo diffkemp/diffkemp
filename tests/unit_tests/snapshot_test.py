@@ -51,11 +51,11 @@ def test_load_snapshot_from_dir_functions():
           list_kind: function
           list:
           - glob_var: null
-            llvm: net/core/skbuff.ll
+            llvm: net/core/skbuff.bc
             name: ___pskb_trim
             tag: null
           - glob_var: null
-            llvm: mm/page_alloc.ll
+            llvm: mm/page_alloc.bc
             name: __alloc_pages_nodemask
             tag: null
           llvm_source_finder:
@@ -87,10 +87,10 @@ def test_load_snapshot_from_dir_functions():
             assert f.tag is None
             if name == "___pskb_trim":
                 assert os.path.abspath(f.mod.llvm) == snap_dir + \
-                       "/net/core/skbuff.ll"
+                       "/net/core/skbuff.bc"
             elif name == "__alloc_pages_nodemask":
                 assert os.path.abspath(f.mod.llvm) == snap_dir + \
-                       "/mm/page_alloc.ll"
+                       "/mm/page_alloc.bc"
 
 
 def test_load_snapshot_from_dir_sysctls():
@@ -111,13 +111,13 @@ def test_load_snapshot_from_dir_sysctls():
           list:
           - functions:
             - glob_var: null
-              llvm: kernel/sched/fair.ll
+              llvm: kernel/sched/fair.bc
               name: sched_proc_update_handler
               tag: proc handler
             sysctl: kernel.sched_latency_ns
           - functions:
             - glob_var: null
-              llvm: kernel/sysctl.ll
+              llvm: kernel/sysctl.bc
               name: proc_dointvec_minmax
               tag: proc handler
             sysctl: kernel.timer_migration
@@ -145,12 +145,12 @@ def test_load_snapshot_from_dir_sysctls():
                 assert g.functions.keys() == {"sched_proc_update_handler"}
                 f = g.functions["sched_proc_update_handler"]
                 assert os.path.abspath(f.mod.llvm) == snap_dir + \
-                    "/kernel/sched/fair.ll"
+                    "/kernel/sched/fair.bc"
             elif name == "kernel.timer_migration":
                 assert g.functions.keys() == {"proc_dointvec_minmax"}
                 f = g.functions["proc_dointvec_minmax"]
                 assert os.path.abspath(f.mod.llvm) == snap_dir + \
-                    "/kernel/sysctl.ll"
+                    "/kernel/sysctl.bc"
             assert f.tag == "proc handler"
             assert f.glob_var is None
 
@@ -163,7 +163,7 @@ def test_add_fun_none_group():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "function", True, False)
 
-    mod = LlvmModule("net/core/skbuff.ll")
+    mod = LlvmModule("net/core/skbuff.bc")
     snap.add_fun("___pskb_trim", mod)
 
     assert "___pskb_trim" in snap.fun_groups[None].functions
@@ -181,7 +181,7 @@ def test_add_fun_sysctl_group():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "sysctl", True, False)
 
-    mod = LlvmModule("kernel/sched/debug.ll")
+    mod = LlvmModule("kernel/sched/debug.bc")
     snap.add_fun("sched_debug_header",
                  mod,
                  "sysctl_sched_latency",
@@ -210,16 +210,16 @@ def test_get_modules():
                                        "sysctl", True, False)
 
     snap.add_fun("sched_proc_update_handler",
-                 LlvmModule("kernel/sched/fair.ll"), None,
+                 LlvmModule("kernel/sched/fair.bc"), None,
                  "proc_handler", "kernel.sched_latency_ns")
-    snap.add_fun("proc_dointvec_minmax", LlvmModule("kernel/sysctl.ll"),
+    snap.add_fun("proc_dointvec_minmax", LlvmModule("kernel/sysctl.bc"),
                  None,
                  "proc_handler", "kernel.timer_migration")
 
     modules = snap.modules()
     assert len(modules) == 2
-    assert set([m.llvm for m in modules]) == {"kernel/sched/fair.ll",
-                                              "kernel/sysctl.ll"}
+    assert set([m.llvm for m in modules]) == {"kernel/sched/fair.bc",
+                                              "kernel/sysctl.bc"}
 
 
 def test_get_by_name_functions():
@@ -230,8 +230,8 @@ def test_get_by_name_functions():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "function", True, False)
 
-    mod_buff = LlvmModule("net/core/skbuff.ll")
-    mod_alloc = LlvmModule("mm/page_alloc.ll")
+    mod_buff = LlvmModule("net/core/skbuff.bc")
+    mod_alloc = LlvmModule("mm/page_alloc.bc")
     snap.add_fun("___pskb_trim", mod_buff)
     snap.add_fun("__alloc_pages_nodemask", mod_alloc)
 
@@ -250,9 +250,9 @@ def test_get_by_name_sysctls():
                                        "sysctl", True, False)
 
     mod_fair = LlvmModule(
-        "snapshots-sysctl/linux-3.10.0-957.el7/kernel/sched/fair.ll")
+        "snapshots-sysctl/linux-3.10.0-957.el7/kernel/sched/fair.bc")
     mod_sysctl = LlvmModule(
-        "snapshots-sysctl/linux-3.10.0-957.el7/kernel/sysctl.ll")
+        "snapshots-sysctl/linux-3.10.0-957.el7/kernel/sysctl.bc")
     snap.add_fun("sched_proc_update_handler", mod_fair, None, "proc handler",
                  "kernel.sched_latency_ns")
     snap.add_fun("proc_dointvec_minmax", mod_sysctl, None, "proc handler",
@@ -273,9 +273,9 @@ def test_filter():
     snap = Snapshot.create_from_source(source, output_dir,
                                        "function", True, False)
 
-    snap.add_fun("___pskb_trim", LlvmModule("net/core/skbuff.ll"))
+    snap.add_fun("___pskb_trim", LlvmModule("net/core/skbuff.bc"))
     snap.add_fun("__alloc_pages_nodemask",
-                 LlvmModule("mm/page_alloc.ll"))
+                 LlvmModule("mm/page_alloc.bc"))
 
     snap.filter(["__alloc_pages_nodemask"])
     assert len(snap.fun_groups[None].functions) == 1
@@ -299,9 +299,9 @@ def test_to_yaml_functions():
                                        "function", True, False)
 
     snap.add_fun("___pskb_trim", LlvmModule(
-        "snapshots/linux-3.10.0-957.el7/net/core/skbuff.ll"))
+        "snapshots/linux-3.10.0-957.el7/net/core/skbuff.bc"))
     snap.add_fun("__alloc_pages_nodemask", LlvmModule(
-        "snapshots/linux-3.10.0-957.el7/mm/page_alloc.ll"))
+        "snapshots/linux-3.10.0-957.el7/mm/page_alloc.bc"))
 
     yaml_str = snap.to_yaml()
     yaml_snap = yaml.safe_load(yaml_str)
@@ -318,9 +318,9 @@ def test_to_yaml_functions():
 
     for f in yaml_dict["list"]:
         if f["name"] == "___pskb_trim":
-            assert f["llvm"] == "net/core/skbuff.ll"
+            assert f["llvm"] == "net/core/skbuff.bc"
         elif f["name"] == "__alloc_pages_nodemask":
-            assert f["llvm"] == "mm/page_alloc.ll"
+            assert f["llvm"] == "mm/page_alloc.bc"
 
 
 def test_to_yaml_sysctls():
@@ -341,11 +341,11 @@ def test_to_yaml_sysctls():
     snap.add_fun("sched_proc_update_handler",
                  LlvmModule(
                      "snapshots-sysctl/linux-3.10.0-957.el7/"
-                     "kernel/sched/fair.ll"),
+                     "kernel/sched/fair.bc"),
                  None, "proc handler", "kernel.sched_latency_ns")
     snap.add_fun("proc_dointvec_minmax",
                  LlvmModule(
-                     "snapshots-sysctl/linux-3.10.0-957.el7/kernel/sysctl.ll"),
+                     "snapshots-sysctl/linux-3.10.0-957.el7/kernel/sysctl.bc"),
                  None, "proc handler", "kernel.timer_migration")
 
     yaml_str = snap.to_yaml()
@@ -365,14 +365,14 @@ def test_to_yaml_sysctls():
         if g["sysctl"] == "kernel.sched_latency_ns":
             assert g["functions"][0] == {
                 "name": "sched_proc_update_handler",
-                "llvm": "kernel/sched/fair.ll",
+                "llvm": "kernel/sched/fair.bc",
                 "glob_var": None,
                 "tag": "proc handler"
             }
         elif g["sysctl"] == "kernel.timer_migration":
             assert g["functions"][0] == {
                 "name": "proc_dointvec_minmax",
-                "llvm": "kernel/sysctl.ll",
+                "llvm": "kernel/sysctl.bc",
                 "glob_var": None,
                 "tag": "proc handler"
             }
