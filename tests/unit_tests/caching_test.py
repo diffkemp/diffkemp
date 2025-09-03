@@ -207,8 +207,8 @@ def test_populate_predecessor_lists(graph):
     graph.normalize()
     graph.populate_predecessor_lists()
     for side in ComparisonGraph.Side:
-        assert ({v.names for v in graph["main_function"].predecessors[side]}
-                == {dup("looping")})
+        assert ({v.names for v in graph["main_function"].predecessors[side]} ==
+                {dup("looping")})
         assert ({v.names for v in graph["do_check"].predecessors[side]} ==
                 {dup("main_function")})
         assert ({v.names for v in graph["missing"].predecessors[side]} ==
