@@ -1,7 +1,7 @@
 {
   description = "Static analyser of semantic differences in large C projects";
 
-  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/release-23.11"; };
+  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/release-25.05"; };
 
   outputs = { self, nixpkgs, ... }:
     let
