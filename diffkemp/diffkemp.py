@@ -237,7 +237,7 @@ class Viewer:
         # Dir for storing necessary data for a visualisation.
         self.data_dir = os.path.join(self.public_dir, "data")
         if not os.path.exists(self.data_dir):
-            os.mkdir(self.data_dir)
+            os.makedirs(self.data_dir)
         # Preparing source directories
         self.old_out_dir = os.path.join(self.data_dir, "src-old")
         self.new_out_dir = os.path.join(self.data_dir, "src-new")
