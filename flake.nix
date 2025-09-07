@@ -1,9 +1,13 @@
 {
   description = "Static analyser of semantic differences in large C projects";
 
-  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/release-25.05"; };
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/release-25.05";
+    # We need nixpkgs 23.11 to get GCC 7 into the test-kernel-buildenv flake
+    nixpkgs-2311.url = "github:NixOS/nixpkgs/release-23.11";
+  };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, nixpkgs-2311, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -185,6 +189,9 @@
               })
               { inherit system; };
             gnumake381 = oldmake.gnumake381;
+
+            pkgs-2311 = import nixpkgs-2311 { inherit system; };
+            gcc7Stdenv = pkgs-2311.gcc7Stdenv;
           in
 
           gcc7Stdenv.mkDerivation {
