@@ -82,12 +82,12 @@
           let
             rhel_kernel_get = python3Packages.buildPythonApplication {
               pname = "rhel-kernel-get";
-              version = "0.1";
+              version = "0.2";
               src = fetchFromGitHub {
                 owner = "viktormalik";
                 repo = "rhel-kernel-get";
-                rev = "v0.1";
-                sha256 = "0ci5hdkzc2aq7s8grnkqc9ni7zajyndj7b9r5fqqxvbjqvm7lqi7";
+                rev = "v0.2";
+                sha256 = "sha256-7w50rDpNEiCqTLe25rtbotZTyzb9fNCVlkwjB9SNA4A";
               };
               propagatedBuildInputs = [ python3Packages.progressbar ];
             };
