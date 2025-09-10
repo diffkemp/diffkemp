@@ -77,10 +77,10 @@ std::string typeName(const Type *Type);
 void deleteAliasToFun(Module &Mod, Function *Fun);
 
 /// Check if an LLVM name has a .<NUMBER> suffix.
-bool hasSuffix(std::string Name);
+bool hasNumberSuffix(std::string Name);
 
 /// Drop the .<NUMBER> suffix from the LLVM name.
-std::string dropSuffix(std::string Name);
+std::string dropNumberSuffix(std::string Name);
 
 /// Join directory path with a filename in case the filename does not already
 /// contain the directory.

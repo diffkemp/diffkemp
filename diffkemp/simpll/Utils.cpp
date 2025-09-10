@@ -144,16 +144,16 @@ void deleteAliasToFun(Module &Mod, Function *Fun) {
 }
 
 /// Check if the substring behind the last dot ('.') contains only numbers.
-bool hasSuffix(std::string Name) {
+bool hasNumberSuffix(std::string Name) {
     size_t dotPos = Name.find_last_of('.');
     return dotPos != std::string::npos
            && (Name.find_last_not_of("0123456789.") < dotPos
                || Name.substr(dotPos) == ".void");
 }
 
-/// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned
-/// true for the name.
-std::string dropSuffix(std::string Name) {
+/// Remove everything behind the last dot ('.'). Assumes that hasNumberSuffix
+/// returned true for the name.
+std::string dropNumberSuffix(std::string Name) {
     return Name.substr(0, Name.find_last_of('.'));
 }
 
@@ -821,8 +821,10 @@ void copyFunctionProperties(Function *srcFun, Function *destFun) {
 /// are the same or if the DiffKemp pattern name prefixes are used.
 bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
     // Remove number suffixes
-    std::string NameL = hasSuffix(L.str()) ? dropSuffix(L.str()) : L.str();
-    std::string NameR = hasSuffix(R.str()) ? dropSuffix(R.str()) : R.str();
+    std::string NameL =
+            hasNumberSuffix(L.str()) ? dropNumberSuffix(L.str()) : L.str();
+    std::string NameR =
+            hasNumberSuffix(R.str()) ? dropNumberSuffix(R.str()) : R.str();
 
     // Compare the names themselves.
     if (NameL == NameR)

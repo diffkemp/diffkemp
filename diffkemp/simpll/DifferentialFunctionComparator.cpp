@@ -1335,9 +1335,9 @@ int DifferentialFunctionComparator::cmpGlobalValues(GlobalValue *L,
         auto NameR = R->getName();
 
         // Remove number suffixes
-        if (hasSuffix(NameL.str()))
+        if (hasNumberSuffix(NameL.str()))
             NameL = NameL.substr(0, NameL.find_last_of("."));
-        if (hasSuffix(NameR.str()))
+        if (hasNumberSuffix(NameR.str()))
             NameR = NameR.substr(0, NameR.find_last_of("."));
         if (NameL == NameR
             || (isKernelPrintFunction(NameL.str())
@@ -1431,12 +1431,14 @@ void DifferentialFunctionComparator::findTypeDifferences(
             continue;
         if (!STyL->hasName() || !STyR->hasName())
             continue;
-        std::string STyLShortName = hasSuffix(STyL->getName().str())
-                                            ? dropSuffix(STyL->getName().str())
-                                            : STyL->getName().str();
-        std::string STyRShortName = hasSuffix(STyR->getName().str())
-                                            ? dropSuffix(STyR->getName().str())
-                                            : STyR->getName().str();
+        std::string STyLShortName =
+                hasNumberSuffix(STyL->getName().str())
+                        ? dropNumberSuffix(STyL->getName().str())
+                        : STyL->getName().str();
+        std::string STyRShortName =
+                hasNumberSuffix(STyR->getName().str())
+                        ? dropNumberSuffix(STyR->getName().str())
+                        : STyR->getName().str();
         if (STyLShortName != STyRShortName)
             continue;
         findTypeDifference(STyL, STyR, L, R);
