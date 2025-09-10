@@ -1077,6 +1077,7 @@ TEST_F(DFCLlvmIrTest, CustomPatternSkippingInstruction) {
 }
 
 TEST_F(DFCSmtTest, SmtDistributive) {
+    Conf.SmtTimeout = 2500;
     auto left = R"(define i8 @f() {
         %1 = add i8 1, 0
         %2 = add i8 2, 0
