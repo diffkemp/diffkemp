@@ -12,7 +12,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
 
-      llvmVersionMin = 9;
+      llvmVersionMin = 12;
       llvmVersionMax = 17;
       llvmVersions = pkgs.lib.lists.range llvmVersionMin llvmVersionMax;
 
