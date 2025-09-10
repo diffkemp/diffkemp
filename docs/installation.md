@@ -7,7 +7,7 @@ it is possible to build and install DiffKemp also from source.
 
 Currently, DiffKemp runs on Linux and needs the following software installed:
 
-- Clang and LLVM (supported versions are 9 - 17)
+- Clang and LLVM (supported versions are 12 - 17)
 * Z3 SMT solver and its C++ bindings (packages `z3` and `z3-devel` in Fedora)
 - Python 3 with CFFI (package `python3-cffi` in Fedora and Debian)
 - Python packages from `packages` field in `pyproject.toml` (automatically installed when running `pip install .`)
