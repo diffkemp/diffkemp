@@ -32,8 +32,8 @@ PreservedAnalyses
             // Do not merge LLVM intrinsics and SimpLL abstractions.
             continue;
         std::string originalName = Fun.getName().str();
-        std::string strippedName = hasSuffix(originalName)
-                                           ? dropSuffix(originalName)
+        std::string strippedName = hasNumberSuffix(originalName)
+                                           ? dropNumberSuffix(originalName)
                                            : originalName;
         GroupingMap[strippedName].push_back(&Fun);
     }
@@ -57,7 +57,7 @@ PreservedAnalyses
         // If FirstF has a suffix, drop it to ensure that the suffix won't end
         // up anywhere in the output of SimpLL.
         auto name = FirstF->getName().str();
-        name = hasSuffix(name) ? dropSuffix(name) : name;
+        name = hasNumberSuffix(name) ? dropNumberSuffix(name) : name;
         FirstF->setName(name);
     }
 
