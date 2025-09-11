@@ -16,9 +16,7 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/PassManager.h>
-#if LLVM_VERSION_MAJOR >= 11
 #include <llvm/IR/PassManagerImpl.h>
-#endif
 #include <llvm/Passes/PassBuilder.h>
 #include <passes/CalledFunctionsAnalysis.h>
 #include <passes/RemoveUnusedReturnValuesPass.h>

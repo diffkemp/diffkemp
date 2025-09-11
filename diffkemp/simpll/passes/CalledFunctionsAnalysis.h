@@ -16,9 +16,7 @@
 #define DIFFKEMP_SIMPLL_CALLEDFUNCTIONSANALYSIS_H
 
 #include <llvm/IR/PassManager.h>
-#if LLVM_VERSION_MAJOR >= 11
 #include <llvm/IR/PassManagerImpl.h>
-#endif
 #include <set>
 
 using namespace llvm;

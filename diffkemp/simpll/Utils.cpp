@@ -746,11 +746,7 @@ const DIType *getCSourceIdentifierType(std::string expr,
     // local variables.
     auto Glob = Parent->getParent()->getGlobalVariable(expr);
     if (Glob) {
-#if LLVM_VERSION_MAJOR >= 12
         SmallVector<DIGlobalVariableExpression *> GVs;
-#else
-        SmallVector<DIGlobalVariableExpression *, 1> GVs;
-#endif
         Glob->getDebugInfo(GVs);
         if (!GVs.empty())
             return GVs[0]->getVariable()->getType();
@@ -889,10 +885,8 @@ bool inlineCall(CallInst *Call) {
     InlineFunctionInfo ifi;
 #if LLVM_VERSION_MAJOR >= 16
     return InlineFunction(*Call, ifi, false, nullptr, false).isSuccess();
-#elif LLVM_VERSION_MAJOR >= 11
-    return InlineFunction(*Call, ifi, nullptr, false).isSuccess();
 #else
-    return InlineFunction(Call, ifi, nullptr, false);
+    return InlineFunction(*Call, ifi, nullptr, false).isSuccess();
 #endif
 }
 
@@ -915,11 +909,7 @@ std::string makeYellow(std::string text) {
 
 /// Return LLVM struct type of the given name
 StructType *getTypeByName(const Module &Mod, StringRef Name) {
-#if LLVM_VERSION_MAJOR >= 12
     return StructType::getTypeByName(Mod.getContext(), Name);
-#else
-    return Mod.getTypeByName(Name);
-#endif
 }
 
 /// Given an instruction and a pointer value, try to determine whether the
