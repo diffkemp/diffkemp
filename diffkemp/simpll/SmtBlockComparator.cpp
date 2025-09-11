@@ -18,9 +18,6 @@
 #include <llvm/IR/Operator.h>
 #include <sstream>
 #include <z3++.h>
-#if LLVM_VERSION_MAJOR < 11
-#include <llvm/Analysis/OrderedBasicBlock.h>
-#endif
 
 using namespace llvm;
 
@@ -153,22 +150,11 @@ z3::expr SmtBlockComparator::createConstant(z3::context &c,
             return c.bv_val(value, bitWidth);
         }
     } else if (constant->getType()->isFloatTy()) {
-#if LLVM_VERSION_MAJOR < 11
-        return c.fpa_val(
-                dyn_cast<ConstantFP>(constant)->getValueAPF().convertToFloat());
-#else
         return c.fpa_val(
                 dyn_cast<ConstantFP>(constant)->getValue().convertToFloat());
-#endif
     } else if (constant->getType()->isDoubleTy()) {
-#if LLVM_VERSION_MAJOR < 11
-        return c.fpa_val(dyn_cast<ConstantFP>(constant)
-                                 ->getValueAPF()
-                                 .convertToDouble());
-#else
         return c.fpa_val(
                 dyn_cast<ConstantFP>(constant)->getValue().convertToDouble());
-#endif
     } else {
         throw UnsupportedOperationException("Unsupported constant type");
     }
@@ -570,12 +556,7 @@ bool SmtBlockComparator::isOutputVar(BasicBlock::const_iterator Inst,
             Inst->users().begin(), Inst->users().end(), [&End](const User *u) {
                 auto I = dyn_cast<Instruction>(u);
                 if (I && I->getParent() == End->getParent()) {
-#if LLVM_VERSION_MAJOR < 11
-                    OrderedBasicBlock OBB(I->getParent());
-                    return OBB.dominates(&*End, I) || &*End == I;
-#else
                     return End->comesBefore(I) || &*End == I;
-#endif
                 } else {
                     return true;
                 }

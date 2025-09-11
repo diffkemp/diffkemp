@@ -508,9 +508,7 @@ DICompositeType *getVariableTypeInfo(Value *Val) {
 std::string getEnumValue(const DIEnumerator *Enum) {
 #if LLVM_VERSION_MAJOR >= 13
     return toString(Enum->getValue(), 10, false);
-#elif LLVM_VERSION_MAJOR >= 11
-    return Enum->getValue().toString(10, false);
 #else
-    return std::to_string(Enum->getValue());
+    return Enum->getValue().toString(10, false);
 #endif
 }

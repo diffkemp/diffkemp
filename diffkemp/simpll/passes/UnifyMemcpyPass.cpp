@@ -29,39 +29,17 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                 if (CalledFun->getName() == "__memcpy") {
                     // Replace call to __memcpy by llvm.memcpy intrinsic
                     IRBuilder<> builder(&Instr);
-#if LLVM_VERSION_MAJOR < 10
-                    builder.CreateMemCpy(Call->getArgOperand(0),
-                                         0,
-                                         Call->getArgOperand(1),
-                                         0,
-                                         Call->getArgOperand(2));
-#else
                     builder.CreateMemCpy(Call->getArgOperand(0),
                                          MaybeAlign(0),
                                          Call->getArgOperand(1),
                                          MaybeAlign(0),
                                          Call->getArgOperand(2));
-#endif
                     // __memcpy returns pointer to the destination
                     Call->replaceAllUsesWith(Call->getArgOperand(1));
                     toRemove.push_back(Call);
                 } else if (CalledFun->getIntrinsicID() == Intrinsic::memcpy) {
                     // If the alignment parameter is set to 0, set it to 1
                     // (LLVM defines 0 and 1 as no alignment).
-                    // Note: in LLVM 7 and higher, alignment is represented by
-                    // an attribute instead of an argument. The value is set to
-                    // 1 instead of 0 because of a bug in LLVM 7 to 9 which
-                    // breaks setting the alignment to zero.
-#if LLVM_VERSION_MAJOR < 10
-                    for (int i : {0, 1}) {
-                        if (Call->getParamAlignment(i) == 0) {
-                            Call->removeParamAttr(i, Attribute::Alignment);
-                            Call->addParamAttr(i,
-                                               Attribute::getWithAlignment(
-                                                       Call->getContext(), 1));
-                        }
-                    }
-#else
                     for (int i : {0, 1}) {
                         if (Call->getParamAlign(i) == MaybeAlign(0)) {
                             Call->removeParamAttr(i, Attribute::Alignment);
@@ -71,7 +49,6 @@ PreservedAnalyses UnifyMemcpyPass::run(Function &Fun,
                                             Call->getContext(), Align(1)));
                         }
                     }
-#endif
                 }
             }
         }
