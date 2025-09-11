@@ -155,7 +155,7 @@ def wrapper(argv):
         clang = old_clang
         clang_argv = [arg for arg in clang_argv if not arg.endswith(".bc")]
 
-    # Do not continue if output is not .bc
+    # Do not continue if output is not .bc or .bcw
     # Note: this means that this is neither compilation nor linking
     if (output_file is not None and not output_file.endswith(".bc") and
             not output_file.endswith(".bcw")):

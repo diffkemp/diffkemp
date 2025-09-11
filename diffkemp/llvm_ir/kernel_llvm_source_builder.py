@@ -486,8 +486,12 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
 
     @staticmethod
     def _get_build_source(command):
-        """Get name of the object file built by the command."""
-        return command[-1]
+        """
+        Get name of the source file built by the command.
+        The commands start with 'clang -c -emit-llvm' to avoid linking
+        and the source file follows '-c' later in the command.
+        """
+        return command[command.index("-c", 3) + 1]
 
     def _kbuild_object_command(self, object_file):
         """
