@@ -17,7 +17,6 @@ For developing DiffKemp, you can use:
 - [Nix Flake](#nix)
 - Your [local environment](#local-development-environment) (installing
   dependencies directly to your system)
-- [(Docker container)](#docker)
 
 ### Nix
 
@@ -84,39 +83,6 @@ necessary [dependencies](installation.md#dependencies) to your system and then
 you may [build DiffKemp](#build).
 
 The generated executable is then located in `BUILD_DIR/bin/diffkemp`.
-
-### Docker
-
-> [!CAUTION]
-> The docker container is not currently maintained and it is recommended to use
-> [Nix flake](#nix) instead.
-
-We also provide development container image prepared that can be retrieved from
-DockerHub:
-[https://hub.docker.com/r/viktormalik/diffkemp-devel/](https://hub.docker.com/r/viktormalik/diffkemp-devel/)
-
-After that, the container can be run using
-
-```txt
-docker/diffkemp-devel/run-container.py [--llvm-version LLVM_VERSION]
-                                       [--build-dir BUILD_DIR]
-                                       [--diffkemp-dir DIFFKEMP_DIR]
-                                       [--image IMAGE]
-```
-
-The script mounts the current directory as a volume inside the container.
-Then it automatically builds SimpLL in `BUILD_DIR` (default is "build") using
-`LLVM_VERSION` (default is the newest supported version) and installs DiffKemp.
-
-If running multiple containers at the same time, you need to specify a unique
-`BUILD_DIR` for each one.
-
-If running the container from a different directory than the root DiffKemp
-directory, you need to specify where DiffKemp is located using the
-`--diffkemp-dir` option.
-
-By default, the DockerHub image is used, but a custom image may be set using
-the `--image` option.
 
 ## Build
 
