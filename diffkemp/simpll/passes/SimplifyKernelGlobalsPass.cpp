@@ -40,7 +40,7 @@ PreservedAnalyses
 
     for (auto &Glob : Mod.globals()) {
         // Set kernel symbol to be removed
-        if (Glob.hasName() && Glob.getName().startswith("__ksym")
+        if (Glob.hasName() && hasPrefix(Glob.getName(), "__ksym")
             && isa<GlobalVariable>(Glob)) {
             kSymstoDelete.push_back(&Glob);
         }
@@ -62,7 +62,7 @@ PreservedAnalyses
             }
 
             // Check whether the element is a kernel symbol
-            if (!Name.startswith("__ksym"))
+            if (!hasPrefix(Name, "__ksym"))
                 newValues.push_back(dyn_cast<Constant>(C));
         }
 

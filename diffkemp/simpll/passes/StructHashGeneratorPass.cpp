@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "StructHashGeneratorPass.h"
+#include "Utils.h"
 #include <llvm/ADT/Hashing.h>
 #include <llvm/IR/TypeFinder.h>
 #include <llvm/Support/raw_ostream.h>
@@ -23,8 +24,8 @@ PreservedAnalyses StructHashGeneratorPass::run(
 
     for (auto *Ty : Types) {
         if (auto STy = dyn_cast<StructType>(Ty)) {
-            if (!STy->getStructName().startswith("union.anon")
-                && !STy->getStructName().startswith("struct.anon"))
+            if (!hasPrefix(STy->getStructName(), "union.anon")
+                && !hasPrefix(STy->getStructName(), "struct.anon"))
                 continue;
             std::string TypeName = STy->getStructName().str();
             std::string TypeDump;
@@ -38,7 +39,7 @@ PreservedAnalyses StructHashGeneratorPass::run(
                 continue;
             std::string TypeDecl = TypeDump.substr(pos);
             std::string NewTypeName =
-                    (STy->getStructName().startswith("union.anon")
+                    (hasPrefix(STy->getStructName(), "union.anon")
                              ? "union.anon."
                              : "struct.anon.")
                     + std::to_string(hash_value(TypeDecl));

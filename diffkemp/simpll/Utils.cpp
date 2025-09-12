@@ -39,6 +39,26 @@
 #include <set>
 #include <sstream>
 
+#if LLVM_VERSION_MAJOR >= 18
+
+bool hasSuffix(StringRef ref, StringRef suffix) {
+    return ref.ends_with(suffix);
+}
+
+bool hasPrefix(StringRef ref, StringRef prefix) {
+    return ref.starts_with(prefix);
+}
+
+#else
+
+bool hasSuffix(StringRef ref, StringRef suffix) { return ref.endswith(suffix); }
+
+bool hasPrefix(StringRef ref, StringRef prefix) {
+    return ref.startswith(prefix);
+}
+
+#endif // LLVM_VERSION_MAJOR
+
 /// Level of debug indentation. Each level corresponds to two characters.
 static unsigned int debugIndentLevel = 0;
 
@@ -144,23 +164,23 @@ void deleteAliasToFun(Module &Mod, Function *Fun) {
 }
 
 /// Check if the substring behind the last dot ('.') contains only numbers.
-bool hasSuffix(std::string Name) {
+bool hasNumberSuffix(std::string Name) {
     size_t dotPos = Name.find_last_of('.');
     return dotPos != std::string::npos
            && (Name.find_last_not_of("0123456789.") < dotPos
                || Name.substr(dotPos) == ".void");
 }
 
-/// Remove everything behind the last dot ('.'). Assumes that hasSuffix returned
-/// true for the name.
-std::string dropSuffix(std::string Name) {
+/// Remove everything behind the last dot ('.'). Assumes that hasNumberSuffix
+/// returned true for the name.
+std::string dropNumberSuffix(std::string Name) {
     return Name.substr(0, Name.find_last_of('.'));
 }
 
 /// Join directory path with a filename in case the filename does not already
 /// contain the directory.
 std::string joinPath(StringRef DirName, StringRef FileName) {
-    return FileName.startswith(DirName)
+    return hasPrefix(FileName, DirName)
                    ? FileName.str()
                    : DirName.str() + sys::path::get_separator().str()
                              + FileName.str();
@@ -462,9 +482,9 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
 std::string getIdentifierForType(Type *Ty) {
     if (auto STy = dyn_cast<StructType>(Ty)) {
         // Remove prefix and append "struct"
-        if (STy->getStructName().startswith("union"))
+        if (hasPrefix(STy->getStructName(), "union"))
             return "union " + STy->getStructName().str().substr(6);
-        else if (STy->getStructName().startswith("struct"))
+        else if (hasPrefix(STy->getStructName(), "struct"))
             return "struct " + STy->getStructName().str().substr(7);
         else
             return "<unknown>";
@@ -821,8 +841,10 @@ void copyFunctionProperties(Function *srcFun, Function *destFun) {
 /// are the same or if the DiffKemp pattern name prefixes are used.
 bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
     // Remove number suffixes
-    std::string NameL = hasSuffix(L.str()) ? dropSuffix(L.str()) : L.str();
-    std::string NameR = hasSuffix(R.str()) ? dropSuffix(R.str()) : R.str();
+    std::string NameL =
+            hasNumberSuffix(L.str()) ? dropNumberSuffix(L.str()) : L.str();
+    std::string NameR =
+            hasNumberSuffix(R.str()) ? dropNumberSuffix(R.str()) : R.str();
 
     // Compare the names themselves.
     if (NameL == NameR)
@@ -830,7 +852,7 @@ bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
 
     // If no prefix is present, the names are not equal.
     StringRef NameRRef = NameR;
-    if (!NameRRef.startswith(CustomPatternSet::DefaultPrefix))
+    if (!hasPrefix(NameRRef, CustomPatternSet::DefaultPrefix))
         return false;
 
     // Remove all prefixes.
@@ -839,7 +861,7 @@ bool namesMatch(const StringRef &L, const StringRef &R, bool IsLeftSide) {
     StringRef RealNameRRef =
             NameRRef.substr(CustomPatternSet::DefaultPrefix.size());
 
-    if (RealNameRRef.startswith(PrefixR))
+    if (hasPrefix(RealNameRRef, PrefixR))
         RealNameRRef = RealNameRRef.substr(PrefixR.size());
 
     // Compare the names without prefixes.

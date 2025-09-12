@@ -185,7 +185,7 @@ void CustomPatternSet::addPatternFromModule(
     for (auto &Function : PatternModule->getFunctionList()) {
         // Select only defined functions that start with the left prefix.
         if (Function.isDeclaration()
-            || !Function.getName().startswith(FullPrefixL))
+            || !hasPrefix(Function.getName(), FullPrefixL))
             continue;
 
         std::string Name = Function.getName().substr(FullPrefixL.size()).str();
