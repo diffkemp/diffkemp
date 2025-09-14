@@ -20,6 +20,7 @@
 #include "library/SysctlTable.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include <cstring>
+#include <llvm/Support/ManagedStatic.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <unordered_map>
 

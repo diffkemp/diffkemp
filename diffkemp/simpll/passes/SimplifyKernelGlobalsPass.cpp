@@ -25,6 +25,13 @@
 #include "Utils.h"
 
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/SymbolTableListTraits.h>
+
+#if LLVM_VERSION_MAJOR >= 19
+#include <llvm/IR/Analysis.h>
+#endif
 
 /// Check if a global variable with the given name is supported to be merged in
 /// case multiple instances of the same variable with different suffices exist.
