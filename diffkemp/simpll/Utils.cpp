@@ -19,6 +19,7 @@
 #include <iostream>
 #include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/BinaryFormat/Dwarf.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Instruction.h>
@@ -404,6 +405,60 @@ void findAndReplace(std::string &input, std::string find, std::string replace) {
     }
 }
 
+#if LLVM_VERSION_MAJOR >= 19
+
+const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
+    SmallVector<Value *, 4> ValueOperands(CEx->op_begin(), CEx->op_end());
+    ArrayRef<Value *> Ops(ValueOperands);
+
+    switch (CEx->getOpcode()) {
+    case Instruction::Trunc:
+#if LLVM_VERSION_MAJOR >= 21
+    case Instruction::PtrToAddr:
+#endif
+    case Instruction::PtrToInt:
+    case Instruction::IntToPtr:
+    case Instruction::BitCast:
+    case Instruction::AddrSpaceCast:
+        return CastInst::Create((Instruction::CastOps)CEx->getOpcode(),
+                                Ops[0],
+                                CEx->getType(),
+                                "");
+    case Instruction::InsertElement:
+        return InsertElementInst::Create(Ops[0], Ops[1], Ops[2], "");
+    case Instruction::ExtractElement:
+        return ExtractElementInst::Create(Ops[0], Ops[1], "");
+    case Instruction::ShuffleVector:
+        return new ShuffleVectorInst(Ops[0], Ops[1], CEx->getShuffleMask(), "");
+
+    case Instruction::GetElementPtr: {
+        const auto *GO = cast<GEPOperator>(CEx);
+        return GetElementPtrInst::Create(GO->getSourceElementType(),
+                                         Ops[0],
+                                         Ops.slice(1),
+                                         GO->getNoWrapFlags(),
+                                         "");
+    }
+    default:
+        assert(CEx->getNumOperands() == 2 && "Must be binary operator?");
+        BinaryOperator *BO = BinaryOperator::Create(
+                (Instruction::BinaryOps)CEx->getOpcode(), Ops[0], Ops[1], "");
+        if (isa<OverflowingBinaryOperator>(BO)) {
+            BO->setHasNoUnsignedWrap(
+                    CEx->getRawSubclassOptionalData()
+                    & OverflowingBinaryOperator::NoUnsignedWrap);
+            BO->setHasNoSignedWrap(CEx->getRawSubclassOptionalData()
+                                   & OverflowingBinaryOperator::NoSignedWrap);
+        }
+        if (isa<PossiblyExactOperator>(BO))
+            BO->setIsExact(CEx->getRawSubclassOptionalData()
+                           & PossiblyExactOperator::IsExact);
+        return BO;
+    }
+}
+
+#else
+
 /// Convert constant expression to instruction. (Copied from LLVM and modified
 /// to work outside the ConstantExpr class; otherwise the function is the same,
 /// the only purpose of copying the function is making it work on constant
@@ -477,6 +532,8 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
         return BO;
     }
 }
+
+#endif
 
 /// Generates human-readable C-like identifier for type.
 std::string getIdentifierForType(Type *Ty) {
