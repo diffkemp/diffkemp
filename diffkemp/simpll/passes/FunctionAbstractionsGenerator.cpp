@@ -17,9 +17,11 @@
 #include "Logger.h"
 #include "Utils.h"
 #include <Config.h>
+
 #include <llvm/ADT/Hashing.h>
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
 
 AnalysisKey FunctionAbstractionsGenerator::Key;
 

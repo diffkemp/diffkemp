@@ -14,6 +14,9 @@
 #include "StructureSizeAnalysis.h"
 #include "llvm/IR/TypeFinder.h"
 
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Module.h>
+
 AnalysisKey StructureSizeAnalysis::Key;
 
 StructureSizeAnalysis::Result StructureSizeAnalysis::run(
