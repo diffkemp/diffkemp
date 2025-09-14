@@ -198,6 +198,7 @@ the relevant diffs are reported to the user.
 ## Development
 
 - [Development guide](docs/development.md)
+- [Contributing guide](docs/CONTRIBUTING.md)
 
 ## Contributors
 

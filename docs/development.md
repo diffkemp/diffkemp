@@ -11,6 +11,9 @@ information about:
 - [Links to tools for performing experiments](#tools-for-performing-experiments)
 - [Useful links to learn more](#useful-links)
 
+To learn about **how to contribute your changes to the main repository**,
+read [contributing guide](./CONTRIBUTING.md).
+
 ## Development environment
 
 For developing DiffKemp, you can use:
