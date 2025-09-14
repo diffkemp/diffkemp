@@ -7,8 +7,12 @@ information about:
 - [How to build DiffKemp](#build)
 - [How to check code follows the coding style](#coding-style)
 - [Where the tests are located and how to run them](#tests)
+- [How to contribute your changes to the main repository](#contributing)
 - [Links to tools for performing experiments](#tools-for-performing-experiments)
 - [Useful links to learn more](#useful-links)
+
+To learn about **how to contribute your changes to the main repository**,
+read [contributing guide](./CONTRIBUTING.md).
 
 ## Development environment
 
