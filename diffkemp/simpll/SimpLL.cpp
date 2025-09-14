@@ -17,6 +17,8 @@
 #include "Output.h"
 #include "Utils.h"
 
+#include <llvm/Support/ManagedStatic.h>
+
 using namespace llvm;
 
 // Command line options

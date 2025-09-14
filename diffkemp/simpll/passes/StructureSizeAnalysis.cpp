@@ -12,7 +12,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "StructureSizeAnalysis.h"
-#include "llvm/IR/TypeFinder.h"
+
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/TypeFinder.h>
 
 AnalysisKey StructureSizeAnalysis::Key;
 

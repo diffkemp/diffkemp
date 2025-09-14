@@ -155,6 +155,14 @@ void TestComparator::addCustomPatternSet(const CustomPatternSet *PatternSet) {
 /// and prepares DifferentialFunctionComparator.
 DifferentialFunctionComparatorTest::DifferentialFunctionComparatorTest()
         : ::testing::Test() {
+
+// From LLVM 19 there is a new format of debug info, which we do not currently
+// support.
+#if LLVM_VERSION_MAJOR >= 19
+    ModL->convertFromNewDbgValues();
+    ModR->convertFromNewDbgValues();
+#endif
+
     // Create one function in each module for testing purposes.
     FL = Function::Create(FunctionType::get(Type::getVoidTy(CtxL), {}, false),
                           GlobalValue::ExternalLinkage,

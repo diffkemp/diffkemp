@@ -14,7 +14,9 @@
 #ifndef DIFFKEMP_SIMPLL_STRUCTUREDEBUGINFOANALYSIS_H
 #define DIFFKEMP_SIMPLL_STRUCTUREDEBUGINFOANALYSIS_H
 
+#include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/PassManager.h>
+
 #include <set>
 #include <unordered_map>
 
