@@ -93,7 +93,6 @@ class FunctionComparator {
                        const Function *F2,
                        GlobalNumberState *GN)
             : FnL(F1), FnR(F2), GlobalNumbers(GN) {}
-    // virtual ~FunctionComparator() = default;
 
     /// Test whether the two functions have equivalent behaviour.
     virtual int compare();
