@@ -27,9 +27,12 @@ if (${SANITIZE_ADDRESS})
   add_link_options(-fsanitize=address -fno-omit-frame-pointer)
 endif()
 
-exec_program(llvm-config ARGS --libs irreader passes support OUTPUT_VARIABLE llvm_libs)
-exec_program(llvm-config ARGS --system-libs OUTPUT_VARIABLE system_libs)
-string(STRIP ${system_libs} system_libs)
+execute_process(COMMAND llvm-config --libs irreader passes support
+                OUTPUT_VARIABLE llvm_libs
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND llvm-config --system-libs
+                OUTPUT_VARIABLE system_libs
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 # Try to find system-wide Z3 (e.g. local build)
 find_package(Z3 CONFIG)
