@@ -22,8 +22,8 @@ jobs:
       matrix:
         llvm: [12, 13, 14, 15, 16, 17, 18]
         env:
-          - CC: gcc-9
-            CXX: g++-9
+          - CC: gcc
+            CXX: g++
         asan: [OFF]
         regression-tests: [true]
 
@@ -37,8 +37,8 @@ jobs:
 
           - llvm: 18
             env:
-              CC: gcc-9
-              CXX: g++-9
+              CC: gcc
+              CXX: g++
             asan: ON
             regression-tests: false
 
@@ -89,10 +89,10 @@ jobs:
           mkdir -p ${{ github.workspace }}/build
 
       - name: Configure and Build
-        env: ${{ matrix.env }}
         run: >
           nix develop .#diffkemp-llvm${{ matrix.llvm }} --command bash -c
-          "cmake -B build ${{ github.workspace }} -GNinja -DSANITIZE_ADDRESS=${{ matrix.asan }} &&
+          "export CC=${{ matrix.env.CC }} CXX=${{ matrix.env.CXX }} &&
+           cmake -B build ${{ github.workspace }} -GNinja -DSANITIZE_ADDRESS=${{ matrix.asan }} &&
            ninja -C build"
 
       - name: Run SimpLL Unit Tests
