@@ -43,7 +43,7 @@ endif()
 
 add_library(simpll-lib ${srcs} ${passes} ${library})
 target_include_directories(simpll-lib PRIVATE ${Z3_CXX_INCLUDE_DIRS})
-target_link_libraries(simpll-lib PRIVATE ${Z3_LIBRARIES})
+target_link_libraries(simpll-lib PRIVATE ${Z3_LIBRARIES} -lstdc++ -lgcc_s)
 target_compile_options(simpll-lib PRIVATE ${Z3_COMPONENT_CXX_FLAGS})
 add_executable(simpll SimpLL.cpp)
 set_target_properties(simpll PROPERTIES PREFIX "diffkemp-")
