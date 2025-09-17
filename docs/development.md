@@ -246,6 +246,25 @@ npm --prefix view test -- --watchAll
 npm --prefix view run cypress:run
 ```
 
+## Adding a new version of LLVM to the project
+
+Diffkemp is based on augmentation of the
+[`FunctionComparator`](https://llvm.org/doxygen/classllvm_1_1FunctionComparator.html);
+however, this class is not polymorphic in the upstream and because of that we
+have to add it to the project manually. The steps required to do so are:
+
+1. Extract the `FunctionComparator` from the LLVM project monorepo, take the
+   most recent release of your target major version (i.e., prefer 19.4.0 over
+   19.3.0).
+2. Put it to the `llvm-lib` subdirectory of the `SimpLL` library. Use the major
+   version number as the name of the new subdirectory.
+3. Make all methods of `FunctionComparator` and `GlobalNumberState` `virtual`.
+4. Change the path to `FunctionComparator` header in the source file of
+   the version that you are adding (it has to be made local, instead of
+   including the LLVM one).
+5. Update CI and Nix files with your new version.
+6. Make the project compilable and resolve any performance issues.
+
 ## Tools for performing experiments
 
 We have some tools which can be handy when developing DiffKemp:
