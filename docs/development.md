@@ -7,6 +7,7 @@ information about:
 - [How to build DiffKemp](#build)
 - [How to check code follows the coding style](#coding-style)
 - [Where the tests are located and how to run them](#tests)
+- [How to add support for new version of LLVM](#adding-a-new-version-of-llvm-to-the-project)
 - [Links to tools for performing experiments](#tools-for-performing-experiments)
 - [Useful links to learn more](#useful-links)
 
@@ -227,6 +228,50 @@ The result viewer contains unit tests and integration tests located in
 npm --prefix view test -- --watchAll
 npm --prefix view run cypress:run
 ```
+
+## Adding a new version of LLVM to the project
+
+Diffkemp is based on augmentation of the
+[`FunctionComparator`](https://llvm.org/doxygen/classllvm_1_1FunctionComparator.html);
+however, this class is not polymorphic in the upstream and because of that we
+have to add it to the project manually. The steps required to do so are:
+
+1. Extract the
+   [`FunctionComparator.cpp`](https://github.com/llvm/llvm-project/blob/main/llvm/lib/Transforms/Utils/FunctionComparator.cpp)
+   and
+   [`FunctionComparator.h`](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/Transforms/Utils/FunctionComparator.h)
+   from the LLVM project monorepo, take the most recent release of your target
+   major version (i.e., prefer
+   [19.1.7](https://github.com/llvm/llvm-project/releases/tag/llvmorg-19.1.7)
+   over
+   [19.1.6](https://github.com/llvm/llvm-project/releases/tag/llvmorg-19.1.6)).
+2. Create a new subdirectory at path `diffkemp/simpll/llvm-lib/<MAJOR VERSION>`,
+   where `MAJOR VERSION` is the major version of the LLVM that you want to
+   support.
+3. Move all private methods of `FunctionComparator` to protected scope.
+4. Make all methods of `FunctionComparator` and `GlobalNumberState` `virtual`.
+5. Change the path to `FunctionComparator` header in the source file of
+   the version that you are adding (it has to be made local, instead of
+   including the LLVM one).
+   ```diff
+   - #include "llvm/Transforms/Utils/FunctionComparator.h"
+   + #include "FunctionComparator.h"
+   ```
+6. Update CI (i.e., add the new version to the list
+   [here](https://github.com/diffkemp/diffkemp/blob/master/.github/workflows/ci.yml)
+   and change the most recent LLVM version
+   [here](https://github.com/diffkemp/diffkemp/blob/master/.github/workflows/builds.yml)
+   and in the [code style
+   check](https://github.com/diffkemp/diffkemp/blob/master/.github/workflows/code-style.yml))
+   and Nix (change the range of supported version
+   [here](https://github.com/diffkemp/diffkemp/blob/master/flake.nix)) files
+   with your new version. You also have to update the
+   [docs](https://github.com/diffkemp/diffkemp/blob/master/docs/installation.md).
+7. Make the project compilable and resolve any performance issues. However, you
+   have to make sure that the source code of the whole project is working with
+   all supported LLVM versions. This is usually achieved by introduction of
+   preprocessor directives into the code, an example can found
+   [here](https://github.com/diffkemp/diffkemp/commit/8912507d38d3a9591ee55f00a6d7524b204d0255#diff-a89268e38521e9e557604612a43cbf120ef94027230cfeea75fe24fe17f10c81R42).
 
 ## Tools for performing experiments
 
