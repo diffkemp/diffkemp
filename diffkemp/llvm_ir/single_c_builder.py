@@ -22,7 +22,7 @@ class SingleCBuilder(SingleLlvmFinder):
         :param default_optim: use default optimalisations flags
             and run LLVM IR simplification passes
         """
-        llvm_file_name = os.path.splitext(c_file_name)[0] + ".ll"
+        llvm_file_name = os.path.splitext(c_file_name)[0] + ".bc"
         SingleLlvmFinder.__init__(self, source_dir, llvm_file_name)
 
         self.c_file_name = c_file_name
