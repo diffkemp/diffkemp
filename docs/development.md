@@ -202,6 +202,22 @@ by:
 ninja -C build test
 ```
 
+In case the tests fail, enabling logger can simplify the debugging process.
+The logger is enabled by setting the `SIMPLL_VERBOSITY` environment variable to
+a number, where:
+
+- `0`: No logging
+- `1`: Minimal logging
+- `2`: Moderate logging
+- `3` and more: Detailed logging (the most verbose)
+
+For example, to enable moderate logging while running tests with `ninja`, use
+the following command:
+
+```sh
+SIMPLL_VERBOSITY=2 ninja -C build test
+```
+
 ### Tests for the result viewer
 
 The result viewer contains unit tests and integration tests located in
