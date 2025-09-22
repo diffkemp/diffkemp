@@ -83,6 +83,39 @@ void Logger::setIndent(size_t target_level) {
     }
 }
 
+void Logger::setVerbosity(unsigned level) {
+    if (level == 0)
+        return;
+    std::vector<std::string> debugTypes;
+    // Enable debugging output in passes. Intended fallthrough
+    switch (level) {
+    default:
+    case 3:
+        debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE_EXTRA);
+        [[fallthrough]];
+    case 2:
+        debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE);
+        [[fallthrough]];
+    case 1:
+        debugTypes.emplace_back(DEBUG_SIMPLL);
+        break;
+    }
+    setDebugTypes(debugTypes);
+}
+
+void Logger::setDebugTypes(const std::vector<std::string> &debugTypes) {
+    if (!debugTypes.empty()) {
+        DebugFlag = true;
+        // Transform vector of strings into char ** (array of char *)
+        std::vector<const char *> types;
+        std::transform(debugTypes.cbegin(),
+                       debugTypes.cend(),
+                       std::back_inserter(types),
+                       [](const std::string &s) { return s.c_str(); });
+        setCurrentDebugTypes(&types[0], debugTypes.size());
+    }
+}
+
 llvm::raw_ostream &operator<<(llvm::raw_ostream &out,
                               Logger::BufferMessage::Value value) {
     switch (value.message_type) {

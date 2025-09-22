@@ -13,23 +13,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "Config.h"
+#include "Logger.h"
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
-
-/// Sets debug types specified in the vector.
-void Config::setDebugTypes(std::vector<std::string> &debugTypes) {
-    if (!debugTypes.empty()) {
-        DebugFlag = true;
-        // Transform vector of strings into char ** (array of char *)
-        std::vector<const char *> types;
-        std::transform(debugTypes.begin(),
-                       debugTypes.end(),
-                       std::back_inserter(types),
-                       [](const std::string &s) { return s.c_str(); });
-        setCurrentDebugTypes(&types[0], debugTypes.size());
-    }
-}
 
 Config::Config(std::string FirstFunName,
                std::string SecondFunName,
@@ -60,24 +47,7 @@ Config::Config(std::string FirstFunName,
         FirstVar = First->getGlobalVariable(Variable, true);
         SecondVar = Second->getGlobalVariable(Variable, true);
     }
-
-    std::vector<std::string> debugTypes;
-    if (Verbosity > 0) {
-        // Enable debugging output in passes. Intended fallthrough
-        switch (Verbosity) {
-        default:
-        case 3:
-            debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE_EXTRA);
-            [[fallthrough]];
-        case 2:
-            debugTypes.emplace_back(DEBUG_SIMPLL_VERBOSE);
-            [[fallthrough]];
-        case 1:
-            debugTypes.emplace_back(DEBUG_SIMPLL);
-            break;
-        }
-    }
-    setDebugTypes(debugTypes);
+    logger.setVerbosity(Verbosity);
 }
 
 void Config::refreshFunctions() {
