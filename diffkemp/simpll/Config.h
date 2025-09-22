@@ -20,10 +20,6 @@
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/Support/SourceMgr.h>
 
-#define DEBUG_SIMPLL "debug-simpll"
-#define DEBUG_SIMPLL_VERBOSE "debug-simpll-verbose"
-#define DEBUG_SIMPLL_VERBOSE_EXTRA "debug-simpll-verbose-extra"
-
 using namespace llvm;
 
 struct BuiltinPatterns {
