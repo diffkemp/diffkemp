@@ -1176,12 +1176,17 @@ int DifferentialFunctionComparator::cmpBasicBlocksFromInstructions(
                 LOG_UNINDENT();
             }
 
-            if (Res && config.Patterns.SequentialAluOps && !suppressSmt)
+            if (Res && config.Patterns.SequentialAluOps && !suppressSmt) {
+                LOG("Trying to use sequential-alu-ops pattern:\n");
+                LOG_INDENT();
                 try {
                     Res = SmtComparator->compare(InstL, InstR);
+                    LOG((Res == 0 ? "SUCCESS\n" : "FAILURE\n"));
                 } catch (const SmtException &err) {
-                    LOG(err.what());
+                    LOG("ERROR: " << err.what() << "\n");
                 }
+                LOG_UNINDENT();
+            }
 
             if (Res)
                 return Res;
