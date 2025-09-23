@@ -50,12 +50,15 @@ void SmtBlockComparator::findSnippetEnd(BasicBlock::const_iterator &InstL,
             // the snippets are found to be unequal since otherwise, wrong
             // inlining would be done.
             auto tryInlineBackup = fComp->ModComparator->tryInline;
+            LOG_OFF();
             if (fComp->cmpBasicBlocksFromInstructions(
                         BBL, BBR, InstL, InstR, true, true)
                 == 0) {
+                LOG_ON();
                 // Found a synchronization point
                 return;
             }
+            LOG_ON();
             fComp->ModComparator->tryInline = tryInlineBackup;
             fComp->sn_mapL = sn_mapL_backup;
             fComp->sn_mapR = sn_mapR_backup;
@@ -674,6 +677,17 @@ int SmtBlockComparator::compareSnippets(BasicBlock::const_iterator &StartL,
     }
 
     s.add(constructPostCondition(c, StartL, EndL, StartR, EndR));
+
+    LOG_VERBOSE_EXTRA("SMT formula:\n");
+    LOG_INDENT();
+    if (IS_LOG_VERBOSE_EXTRA_ON()) {
+        std::istringstream formulaStream(s.to_smt2());
+        std::string line;
+        while (std::getline(formulaStream, line)) {
+            LOG_VERBOSE_EXTRA(line << "\n");
+        }
+    }
+    LOG_UNINDENT();
 
     auto start = timeSinceEpochMillisec();
     switch (s.check()) {
