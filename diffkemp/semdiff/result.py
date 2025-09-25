@@ -210,7 +210,9 @@ class Result:
         # The graph of the latest inner result is the graph of the outer one.
         # Note: this is true because the graph is built incrementally, reusing
         # the already known results from the previous comparison.
-        self.graph = result.graph
+        # Update the total graph only if the entity changed it (is not None)
+        if result.graph is not None:
+            self.graph = result.graph
 
     def report_symbol_stat(self, show_errors=False):
         """
