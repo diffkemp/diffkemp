@@ -111,6 +111,10 @@
 #define LOGGER_BASE_LEVEL DEBUG_SIMPLL_VERBOSE
 #define LOGGER_FORCE_LEVEL DEBUG_SIMPLL_VERBOSE_EXTRA
 
+// Checks if given logger level is turned on
+#define IS_LOG_VERBOSE_ON() isCurrentDebugType(LOGGER_BASE_LEVEL)
+#define IS_LOG_VERBOSE_EXTRA_ON() isCurrentDebugType(LOGGER_FORCE_LEVEL)
+
 // Temporarily turns off the logger if it is turned on.
 #define LOG_OFF()                                                              \
     do {                                                                       \
@@ -124,7 +128,7 @@
 // If it is then nothing happens.
 #define LOG_OFF_FOR_NO_FORCE()                                                 \
     do {                                                                       \
-        if (!isCurrentDebugType(LOGGER_FORCE_LEVEL)) {                         \
+        if (!IS_LOG_VERBOSE_EXTRA_ON()) {                                      \
             LOG_OFF();                                                         \
         }                                                                      \
     } while (false)
