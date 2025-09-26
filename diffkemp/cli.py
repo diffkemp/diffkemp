@@ -2,6 +2,8 @@ import argparse
 from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
 from diffkemp.building.build_kernel import build_kernel
 from diffkemp.compare import compare
+from diffkemp.utils import get_llvm_version
+from diffkemp.simpll.library import get_llvm_build_version
 import diffkemp.diffkemp
 import diffkemp.viewer
 import os
@@ -219,6 +221,18 @@ def make_argument_parser():
 
 def run_from_cli():
     """Main method to run the tool."""
+
+    llvm_version = get_llvm_version()
+    build_llvm_version = get_llvm_build_version().major
+    if llvm_version != build_llvm_version:
+        raise RuntimeError(
+            "Incompatible LLVM versions: DiffKemp was built with"
+            "{} and the installed version is {}".format(
+                build_llvm_version,
+                llvm_version
+            )
+        )
+
     ap = make_argument_parser()
     args = ap.parse_args()
     if args.verbose or args.debug:
