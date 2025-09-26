@@ -12,8 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "MergeNumberedFunctionsPass.h"
-
-#include "CalledFunctionsAnalysis.h"
 #include "FunctionAbstractionsGenerator.h"
 #include "Utils.h"
 
