@@ -15,9 +15,9 @@
 #ifndef DIFFKEMP_SIMPLL_CONFIG_H
 #define DIFFKEMP_SIMPLL_CONFIG_H
 
-#include "llvm/Support/CommandLine.h"
 #include <llvm/IR/Module.h>
 #include <llvm/IRReader/IRReader.h>
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/SourceMgr.h>
 
 #define DEBUG_SIMPLL "debug-simpll"
