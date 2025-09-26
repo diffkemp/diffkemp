@@ -206,7 +206,7 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
 
             if (MemberNameL == DI->StructFieldNames.end()
                 || MemberNameR == DI->StructFieldNames.end()
-                || !MemberNameL->second.equals(MemberNameR->second))
+                || !(MemberNameL->second == MemberNameR->second))
                 if (int Res = cmpValues(idxL->get(), idxR->get()))
                     RETURN_WITH_LOG(Res);
 
