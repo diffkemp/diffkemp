@@ -326,5 +326,11 @@ void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC) {
     preprocessModule(*LLVMMod, nullptr, nullptr, Patterns);
 }
 
+void getLlvmBuildVersion(int *out) {
+    out[0] = LLVM_VERSION_MAJOR;
+    out[1] = LLVM_VERSION_MINOR;
+    out[2] = LLVM_VERSION_PATCH;
+}
+
 void shutdownSimpLL() { llvm_shutdown(); }
 } // extern "C"

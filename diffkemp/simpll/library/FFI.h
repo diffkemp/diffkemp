@@ -149,6 +149,9 @@ void parseAndRunSimpLL(const char *ModL,
 /// won't be run again when the module is compared.
 void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC);
 
+/// Returns the version of LLVM with which was SimpLL built.
+void getLlvmBuildVersion(int *out);
+
 void shutdownSimpLL();
 
 // CFFI_DECLARATIONS_END
