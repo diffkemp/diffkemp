@@ -149,6 +149,8 @@ void parseAndRunSimpLL(const char *ModL,
 /// won't be run again when the module is compared.
 void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC);
 
+void getLlvmVersion(int *out);
+
 void shutdownSimpLL();
 
 // CFFI_DECLARATIONS_END
