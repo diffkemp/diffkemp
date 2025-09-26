@@ -2,6 +2,7 @@
 Python interface for the SimpLL library.
 """
 from diffkemp.simpll.simpll_lib import ffi, lib
+import collections
 
 
 def _ptrarray_to_list(ptrarray):
@@ -156,3 +157,11 @@ class SimpLLSysctlTable:
 
     def get_data(self, sysctl_name):
         return self._get_global_variable(sysctl_name, lib.getData)
+
+
+def get_llvm_build_version():
+    Version = collections.namedtuple("Version", ["major", "minor", "patch"])
+    version = ffi.new("int[3]")
+
+    lib.getLlvmBuildVersion(version)
+    return Version(version[0], version[1], version[2])
