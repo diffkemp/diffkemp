@@ -41,19 +41,19 @@
 
 #if LLVM_VERSION_MAJOR >= 18
 
-bool hasSuffix(StringRef ref, StringRef suffix) {
+bool hasSuffix(StringRef ref, StringRef suffix) noexcept {
     return ref.ends_with(suffix);
 }
 
-bool hasPrefix(StringRef ref, StringRef prefix) {
+bool hasPrefix(StringRef ref, StringRef prefix) noexcept {
     return ref.starts_with(prefix);
 }
 
 #else
 
-bool hasSuffix(StringRef ref, StringRef suffix) { return ref.endswith(suffix); }
+bool hasSuffix(StringRef ref, StringRef suffix) noexcept { return ref.endswith(suffix); }
 
-bool hasPrefix(StringRef ref, StringRef prefix) {
+bool hasPrefix(StringRef ref, StringRef prefix) noexcept {
     return ref.startswith(prefix);
 }
 
