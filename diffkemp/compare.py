@@ -4,7 +4,7 @@ from diffkemp.llvm_ir.llvm_module import LlvmParam, LlvmModule
 from diffkemp.semdiff.caching import SimpLLCache
 from diffkemp.semdiff.function_diff import functions_diff
 from diffkemp.semdiff.result import Result
-from diffkemp.output import YamlOutput
+from diffkemp.output import YamlOutput, OutputWriter
 from tempfile import mkdtemp
 from timeit import default_timer
 import errno
@@ -264,8 +264,8 @@ class SnapshotComparator:
                     self.config.full_diff and
                     any([x.diff for x in fun_result.inner.values()])):
 
-                writer = self.OutputWriter(output_dir, fun, fun_tag,
-                                           initial_indent)
+                writer = OutputWriter(output_dir, fun, fun_tag,
+                                      initial_indent)
 
                 for called_res in sorted(fun_result.inner.values(),
                                          key=lambda r: r.first.name):
@@ -287,105 +287,6 @@ class SnapshotComparator:
             old_fun_desc.mod.clean_module()
             new_fun_desc.mod.clean_module()
             LlvmModule.clean_all()
-
-        class OutputWriter:
-            """
-            Handles formatted output of function diffs, including indentation
-            and callstack printing, to either a file or stdout.
-            """
-            def __init__(self, output_dir, fun, fun_tag, initial_indent):
-                self.output = None
-                self.indent = 0
-                self._open_output_file_set_indent(output_dir, fun,
-                                                  fun_tag, initial_indent)
-
-            @staticmethod
-            def _text_indent(text, width):
-                """
-                Indent each line in the text by a number of spaces (width)
-                """
-                return ''.join(" "*width + line
-                               for line in text.splitlines(True))
-
-            def _open_output_file_set_indent(self, output_dir, fun,
-                                             fun_tag, initial_indent):
-                if output_dir:
-                    output = open(os.path.join(output_dir,
-                                               "{}.diff".format(fun)), "w")
-                    output.write(
-                        "Found differences in functions called by {}"
-                        .format(fun))
-                    if fun_tag is not None:
-                        output.write(" ({})".format(fun_tag))
-                    output.write("\n\n")
-                    indent = initial_indent + 2
-                else:
-                    output = sys.stdout
-                    if fun_tag is not None:
-                        output.write(
-                            self._text_indent("{} ({}):\n"
-                                              .format(fun, fun_tag),
-                                              initial_indent))
-                    else:
-                        output.write(self._text_indent("{}:\n".format(fun),
-                                     initial_indent))
-                    indent = initial_indent + 4
-
-                self.output = output
-                self.indent = indent
-
-            def write_called_result(self, called_res,
-                                    show_diff, snapshot_dir_old,
-                                    snapshot_dir_new, old_dir_abs_path,
-                                    new_dir_abs_path, output_dir):
-                self.output.write(
-                    self._text_indent(
-                        "{} differs:\n".format(called_res.first.name),
-                        self.indent - 2))
-
-                if not output_dir:
-                    self.output.write(self._text_indent("{{{\n",
-                                                        self.indent - 2))
-
-                if called_res.first.callstack:
-                    self._write_callstack(called_res.first.callstack,
-                                          snapshot_dir_old, old_dir_abs_path)
-                if called_res.second.callstack:
-                    self._write_callstack(called_res.second.callstack,
-                                          snapshot_dir_new, new_dir_abs_path)
-                if show_diff:
-                    self._write_diff(called_res)
-                if not output_dir:
-                    self.output.write(self._text_indent("}}}\n",
-                                                        self.indent - 2))
-                self.output.write("\n")
-
-            def _write_callstack(self, callstack, label, abs_path):
-                self.output.write(
-                    self._text_indent("Callstack ({}):\n".format(label),
-                                      self.indent))
-                self.output.write(
-                    self._text_indent(callstack
-                                      .as_str_with_rel_paths(abs_path),
-                                      self.indent))
-                self.output.write("\n\n")
-
-            def _write_diff(self, called_res):
-                if (called_res.diff.strip() == "" and
-                        called_res.macro_diff is not None):
-                    self.output.write(self._text_indent(
-                        "\n".join(map(str, called_res.macro_diff)),
-                        self.indent))
-                else:
-                    self.output.write(self._text_indent("Diff:\n",
-                                                        self.indent))
-                    self.output.write(
-                        self._text_indent(called_res.diff, self.indent))
-
-            def close_file(self):
-                if self.output is not None and self.output is not sys.stdout:
-                    self.output.close()
-                self.output = None
 
     def _finalize_output(self):
         # Create yaml output
