@@ -7,8 +7,12 @@ information about:
 - [How to build DiffKemp](#build)
 - [How to check code follows the coding style](#coding-style)
 - [Where the tests are located and how to run them](#tests)
+- [How to contribute your changes to the main repository](#contributing)
 - [Links to tools for performing experiments](#tools-for-performing-experiments)
 - [Useful links to learn more](#useful-links)
+
+To learn about **how to contribute your changes to the main repository**,
+read [contributing guide](./CONTRIBUTING.md).
 
 ## Development environment
 
@@ -234,6 +238,7 @@ We have some tools which can be handy when developing DiffKemp:
 
 - [Tool for building and subsequently comparing multiple versions of a provided
    C project](https://github.com/zacikpa/diffkemp-analysis)
+- [Tool for checking semantic equality of several commits using DiffKemp](https://github.com/FrNecas/commit-analysis)
 - [Tool for running DiffKemp with EqBench dataset of equivalent and
    non-equivalent program pairs](https://github.com/diffkemp/EqBench-workflow):
    You can use this tool if you make bigger changes to the SimpLL library to
