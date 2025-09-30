@@ -206,7 +206,7 @@ int DifferentialFunctionComparator::cmpGEPs(const GEPOperator *GEPL,
 
             if (MemberNameL == DI->StructFieldNames.end()
                 || MemberNameR == DI->StructFieldNames.end()
-                || !MemberNameL->second.equals(MemberNameR->second))
+                || !(MemberNameL->second == MemberNameR->second))
                 if (int Res = cmpValues(idxL->get(), idxR->get()))
                     RETURN_WITH_LOG(Res);
 
@@ -516,11 +516,12 @@ int DifferentialFunctionComparator::cmpAllocs(const CallInst *CL,
         RETURN_WITH_LOG(1);
 
     // If the next instruction is a bitcast, compare its type instead
-    const Value *ValL =
-            isa<BitCastInst>(CL->getNextNode()) ? CL->getNextNode() : CL;
-    const Value *ValR =
-            isa<BitCastInst>(CR->getNextNode()) ? CR->getNextNode() : CR;
-
+    const auto *nextInstL = CL->getNextNode();
+    const auto *nextInstR = CR->getNextNode();
+    const bool isNextInstBitcastL = nextInstL && isa<BitCastInst>(nextInstL);
+    const bool isNextInstBitcastR = nextInstR && isa<BitCastInst>(nextInstR);
+    const Value *ValL = isNextInstBitcastL ? nextInstL : CL;
+    const Value *ValR = isNextInstBitcastR ? nextInstR : CR;
     // Retrieve type names and sizes
     TypeInfo TypeInfoL =
             getPointeeStructTypeInfo(ValL, &LayoutL, FnL->getName());

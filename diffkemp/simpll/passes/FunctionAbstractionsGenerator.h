@@ -15,7 +15,10 @@
 #ifndef DIFFKEMP_SIMPLL_FUNCTIONABSTRACTIONSGENERATOR_H
 #define DIFFKEMP_SIMPLL_FUNCTIONABSTRACTIONSGENERATOR_H
 
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/PassManager.h>
+#include <llvm/IR/Value.h>
+
 #include <set>
 #include <unordered_map>
 
