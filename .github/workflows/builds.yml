@@ -13,7 +13,7 @@ jobs:
       - name: Build using nix
         run: nix build
       - name: Run built Diffkemp
-        run: result/bin/diffkemp --help
+        run: nix develop --command result/bin/diffkemp --help
 
   local-build:
     runs-on: ubuntu-22.04
