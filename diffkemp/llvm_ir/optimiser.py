@@ -1,6 +1,6 @@
 """Functions for optimizations of LLVM IR."""
 from diffkemp.utils import get_opt_command
-from diffkemp.simpll.library import get_llvm_version
+from diffkemp.utils import get_llvm_version
 from subprocess import check_call, CalledProcessError
 import os
 
@@ -15,7 +15,7 @@ def opt_llvm(llvm_file):
     Run basic simplification passes and -constmerge to remove
     duplicate constants that might have come from linked files.
     """
-    if get_llvm_version().major < 19:
+    if get_llvm_version() < 19:
         lower_switch_pass_name = "lowerswitch"
     else:
         lower_switch_pass_name = "lower-switch"
