@@ -32,7 +32,7 @@ def compare(args):
 
     config = Config.from_args(args)
     result = Result(Result.Kind.NONE, args.snapshot_dir_old,
-                    args.snapshot_dir_old, start_time=default_timer())
+                    args.snapshot_dir_new, start_time=default_timer())
 
     for group_name, group in sorted(config.snapshot_first.fun_groups.items()):
         group_printed = False
