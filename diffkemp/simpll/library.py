@@ -159,7 +159,7 @@ class SimpLLSysctlTable:
         return self._get_global_variable(sysctl_name, lib.getData)
 
 
-def get_llvm_version():
+def get_llvm_build_version():
     Version = collections.namedtuple("Version", ["major", "minor", "patch"])
     version = ffi.new("int[3]")
 
