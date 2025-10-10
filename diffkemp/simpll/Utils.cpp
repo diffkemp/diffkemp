@@ -19,6 +19,7 @@
 #include <iostream>
 #include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/BinaryFormat/Dwarf.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Instruction.h>
@@ -406,6 +407,60 @@ void findAndReplace(std::string &input, std::string find, std::string replace) {
     }
 }
 
+#if LLVM_VERSION_MAJOR >= 19
+
+const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
+    SmallVector<Value *, 4> ValueOperands(CEx->op_begin(), CEx->op_end());
+    ArrayRef<Value *> Ops(ValueOperands);
+
+    switch (CEx->getOpcode()) {
+    case Instruction::Trunc:
+#if LLVM_VERSION_MAJOR >= 21
+    case Instruction::PtrToAddr:
+#endif
+    case Instruction::PtrToInt:
+    case Instruction::IntToPtr:
+    case Instruction::BitCast:
+    case Instruction::AddrSpaceCast:
+        return CastInst::Create((Instruction::CastOps)CEx->getOpcode(),
+                                Ops[0],
+                                CEx->getType(),
+                                "");
+    case Instruction::InsertElement:
+        return InsertElementInst::Create(Ops[0], Ops[1], Ops[2], "");
+    case Instruction::ExtractElement:
+        return ExtractElementInst::Create(Ops[0], Ops[1], "");
+    case Instruction::ShuffleVector:
+        return new ShuffleVectorInst(Ops[0], Ops[1], CEx->getShuffleMask(), "");
+
+    case Instruction::GetElementPtr: {
+        const auto *GO = cast<GEPOperator>(CEx);
+        return GetElementPtrInst::Create(GO->getSourceElementType(),
+                                         Ops[0],
+                                         Ops.slice(1),
+                                         GO->getNoWrapFlags(),
+                                         "");
+    }
+    default:
+        assert(CEx->getNumOperands() == 2 && "Must be binary operator?");
+        BinaryOperator *BO = BinaryOperator::Create(
+                (Instruction::BinaryOps)CEx->getOpcode(), Ops[0], Ops[1], "");
+        if (isa<OverflowingBinaryOperator>(BO)) {
+            BO->setHasNoUnsignedWrap(
+                    CEx->getRawSubclassOptionalData()
+                    & OverflowingBinaryOperator::NoUnsignedWrap);
+            BO->setHasNoSignedWrap(CEx->getRawSubclassOptionalData()
+                                   & OverflowingBinaryOperator::NoSignedWrap);
+        }
+        if (isa<PossiblyExactOperator>(BO))
+            BO->setIsExact(CEx->getRawSubclassOptionalData()
+                           & PossiblyExactOperator::IsExact);
+        return BO;
+    }
+}
+
+#else
+
 /// Convert constant expression to instruction. (Copied from LLVM and modified
 /// to work outside the ConstantExpr class; otherwise the function is the same,
 /// the only purpose of copying the function is making it work on constant
@@ -479,6 +534,8 @@ const Instruction *getConstExprAsInstruction(const ConstantExpr *CEx) {
         return BO;
     }
 }
+
+#endif
 
 /// Generates human-readable C-like identifier for type.
 std::string getIdentifierForType(Type *Ty) {
@@ -637,38 +694,73 @@ std::string getIdentifierForValue(
         return "<unknown>";
 }
 
-/// Retrieve information about a structured type being pointed to by a value.
-/// Note: There are two completely different approaches used. Up to LLVM 14,
-/// type information can be obtained directly from the value. Since LLVM 15,
-/// type information is obtained from calls to debug intrinsics. It is necessary
-/// to provide current function name to use the correct debug intrinsic call
-/// (there can be multiple different ones).
-TypeInfo getPointeeStructTypeInfo(const Value *Val,
-                                  const DataLayout *Layout,
-                                  [[maybe_unused]] const StringRef &FunName) {
-#if LLVM_VERSION_MAJOR >= 15
-    (void)Layout;
-    // Look for the type of the value in debug intrinsics
-    SmallVector<DbgValueInst *> DbgValues;
-    findDbgValues(DbgValues, const_cast<Value *>(Val));
+#if LLVM_VERSION_MAJOR >= 19
 
+/// Returns the debug type of the given Value based on the provided scope
+/// (function name). Returns nullptr if the type cannot be determined.
+/// In LLVM 19, debug records were introduced. Both debug intrinsics and
+/// records are searched to find the type.
+DIType *getDbgTypeForValue(const Value *Val, const StringRef &FunName) {
+    SmallVector<DbgValueInst *> DbgIntrinsics;
+    SmallVector<DbgVariableRecord *> DbgRecords;
+    findDbgValues(DbgIntrinsics, const_cast<Value *>(Val), &DbgRecords);
+    for (auto &Dbg : DbgRecords) {
+        auto scopeName =
+                Dbg->getVariable()->getScope()->getSubprogram()->getName();
+        if (scopeName == FunName) {
+            return Dbg->getVariable()->getType();
+        }
+    }
+    // If type was not found in debug records, search in debug intrinsics.
+    for (auto &Dbg : DbgIntrinsics) {
+        auto scopeName =
+                Dbg->getVariable()->getScope()->getSubprogram()->getName();
+        if (scopeName == FunName) {
+            return Dbg->getVariable()->getType();
+        }
+    }
+    return nullptr;
+}
+
+#elif LLVM_VERSION_MAJOR >= 15
+
+/// Returns the debug type of the given Value based on the provided scope
+/// (function name). Returns nullptr if the type cannot be determined.
+/// The type of the value is determined using debug intrinsics.
+DIType *getDbgTypeForValue(const Value *Val, const StringRef &FunName) {
+    SmallVector<DbgValueInst *> DbgIntrinsics;
+    findDbgValues(DbgIntrinsics, const_cast<Value *>(Val));
     // There can be potentially multiple different dbg info for the same
     // value. It is necessary to find the one belonging to the current function.
     // The other dbg info can belong to called functions where the value could
     // be provided as (void *) and therefore does not have to contain necessary
     // information about the pointee type.
-    DbgValueInst *DbgValue = nullptr;
-    for (auto &Dbg : DbgValues) {
+    for (auto &Dbg : DbgIntrinsics) {
         auto scopeName =
                 Dbg->getVariable()->getScope()->getSubprogram()->getName();
         if (scopeName == FunName) {
-            DbgValue = Dbg;
-            break;
+            return Dbg->getVariable()->getType();
         }
     }
-    if (!DbgValue)
+    return nullptr;
+}
+
+#endif
+
+#if LLVM_VERSION_MAJOR >= 15
+
+/// Retrieve information about a structured type being pointed to by a value.
+/// Type information is obtained from calls to debug intrinsics/records. It is
+/// necessary to provide current function name to use the correct debug
+/// intrinsic call (there can be multiple different ones). The data layout
+/// parameter is unused.
+TypeInfo getPointeeStructTypeInfo(const Value *Val,
+                                  [[maybe_unused]] const DataLayout *Layout,
+                                  const StringRef &FunName) {
+    auto *Ty = getDbgTypeForValue(Val, FunName);
+    if (!Ty) {
         return {"", 0};
-    const DIType *Ty = DbgValue->getVariable()->getType();
+    }
 
     // Check if it is a pointer type (derived type)
     const DIDerivedType *PtrTy = dyn_cast<DIDerivedType>(Ty);
@@ -707,7 +799,16 @@ TypeInfo getPointeeStructTypeInfo(const Value *Val,
     }
 
     return {typeName, StrTy->getSizeInBits() / 8};
-#else
+}
+
+#else /* LLVM_VERSION_MAJOR < 15 */
+
+/// Retrieve information about a structured type being pointed to by a value.
+/// Type information can be obtained directly from the value and data layout,
+/// the function name is unused.
+TypeInfo getPointeeStructTypeInfo(const Value *Val,
+                                  const DataLayout *Layout,
+                                  [[maybe_unused]] const StringRef &FunName) {
     // Get the type of the value
     Type *Ty = Val->getType();
 
@@ -721,8 +822,9 @@ TypeInfo getPointeeStructTypeInfo(const Value *Val,
         return {"", 0};
 
     return {StrTy->getName(), Layout->getTypeStoreSize(StrTy)};
-#endif
 }
+
+#endif /* LLVM_VERSION_MAJOR < 15 */
 
 /// Retrieves the type of the value based on its C source code expression.
 const DIType *getCSourceIdentifierType(std::string expr,

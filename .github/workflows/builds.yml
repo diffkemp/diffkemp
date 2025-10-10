@@ -2,7 +2,7 @@ name: Builds
 
 on: [push, pull_request]
 env:
-  llvm: 17
+  llvm: 19
 
 jobs:
   nix-build:
@@ -13,7 +13,7 @@ jobs:
       - name: Build using nix
         run: nix build
       - name: Run built Diffkemp
-        run: result/bin/diffkemp --help
+        run: nix develop --command result/bin/diffkemp --help
 
   local-build:
     runs-on: ubuntu-22.04
