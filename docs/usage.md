@@ -31,6 +31,16 @@ list is given, all exported functions from the project are considered).
 The snapshot is stored in `SNAPSHOT_DIR`. Warning: if `SNAPSHOT_DIR` exists,
 it will be overwritten.
 
+If the project has a configure stage (e.g., using GNU Autotools), you
+should configure the project before running this command. If the project
+uses nested configure scripts, it should be specifically reconfigured
+so that this command can also build the nested subprojects into LLVM IR.
+The reconfiguration can be done in two ways:
+- For Autotools, use this command with the `--reconfigure` option.
+- Manually reconfigure the project with the `CC` variable set to the
+  [compiler wrapper script](https://github.com/diffkemp/diffkemp/blob/master/diffkemp/building/cc_wrapper.py)
+  before running this command.
+
 The command can be also used to generate a snapshot from a single C file.
 In this case, the path to the file should be given in place of `PROJ_DIR`.
 
