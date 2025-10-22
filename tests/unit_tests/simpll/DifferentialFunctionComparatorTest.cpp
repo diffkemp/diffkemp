@@ -410,8 +410,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, BBL);
-    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
+    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, CL);
+    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, CR);
 
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 0);
 
@@ -478,8 +478,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     exprR = builderR.createExpression();
     locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, BBL);
-    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
+    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, CL);
+    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, CR);
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 0);
 
     // Repeat the test again, but now with different structure types.
@@ -511,7 +511,7 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     PointerTypeR = builderR.createPointerType(StructTypeR, 64);
     varR = builderR.createAutoVariable(
             FunTypeR, "var", nullptr, 0, PointerTypeR);
-    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, BBR);
+    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, CR);
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 1);
 }
 
@@ -614,8 +614,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
 
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), -1);
 
@@ -635,8 +635,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
                            ConstantInt::get(Type::getInt32Ty(CtxR), STyRSize)},
                           "",
                           BBR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
 
@@ -745,8 +745,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsMultipleDebugMetadata) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllR);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllL);
 
     // Debug metadata describing var from the scope of memset function.
     DIFile *MemsetUnitL = builderL.createFile("memset", "stdlib");
@@ -762,9 +762,9 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsMultipleDebugMetadata) {
     DILocalVariable *memsetVarR = builderR.createAutoVariable(
             MemsetTypeR, "__dest", nullptr, 0, MemsetPointerTypeR);
     builderL.insertDbgValueIntrinsic(
-            AllL, memsetVarL, builderL.createExpression(), locL, BBL);
+            AllL, memsetVarL, builderL.createExpression(), locL, AllL);
     builderR.insertDbgValueIntrinsic(
-            AllR, memsetVarR, builderR.createExpression(), locR, BBR);
+            AllR, memsetVarR, builderR.createExpression(), locR, AllR);
 
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
@@ -837,8 +837,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsVoidPtrType) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
 
     ASSERT_NE(DiffComp->testCmpMemset(CL, CR), 0);
 }
@@ -970,8 +970,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsOfTypedef) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, BBL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, BBR);
+    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
+    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
 
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
