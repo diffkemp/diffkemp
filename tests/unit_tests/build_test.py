@@ -21,15 +21,16 @@ class Arguments:
         self.no_opt_override = no_opt_override
         # Required/used by build_c_project
         self.symbol_list = None
+        self.verbose = 0
         self.build_program = "make"
         self.build_file = None
         self.clang = "clang"
         self.clang_append = []
         self.clang_drop = []
         self.llvm_link = "llvm-link"
+        self.llvm_dis = "llvm-dis"
         self.target = target
         self.reconfigure = False
-        self.no_native_cc_wrapper = False
 
 
 def get_db_file_content(snapshot_dir):
