@@ -1,5 +1,4 @@
-from diffkemp.building.cc_wrapper.cc_wrapper \
-    import get_cc_wrapper_path, wrapper_env_vars
+from diffkemp.utils import get_cc_wrapper_path_w_opts
 from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
 from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
 from diffkemp.llvm_ir.source_tree import SourceTree
@@ -21,23 +20,23 @@ def build_c_project(args):
     # Create temp directory and environment
     tmpdir = mkdtemp()
     db_filename = os.path.join(tmpdir, "diffkemp-wdb")
-    environment = _create_env(args, db_filename)
 
     # Determine make args
-    make_args, make_target_args, make_cc_setting = _make_args(args)
+    make_args, make_target_args, make_cc_setting = _make_args(args,
+                                                              db_filename)
 
     # Clean the project
     config_log_filename = os.path.join(args.source_dir, "config.log")
-    _clean_project(config_log_filename, make_args, environment)
+    _clean_project(config_log_filename, make_args)
 
     # If config.log is present, reconfigure using wrapper
     # Note: this is done to support building with nested configure
     if args.reconfigure and os.path.exists(config_log_filename):
         _reconfigure_using_wrapper(config_log_filename, make_cc_setting,
-                                   args, environment)
+                                   args)
 
     # Build the project using generated wrapper
-    check_call(make_target_args, env=environment)
+    check_call(make_target_args)
 
     # Run LLVM IR simplification passes if the user did not request
     # to use the default project's optimization.
@@ -65,35 +64,11 @@ def build_c_project(args):
     shutil.rmtree(tmpdir)
 
 
-def _create_env(args, db_filename):
-    environment = {
-        wrapper_env_vars["db_filename"]: db_filename,
-        wrapper_env_vars["clang"]: args.clang,
-        wrapper_env_vars["clang_append"]: ",".join(args.clang_append)
-        if args.clang_append is not None
-        else "",
-        wrapper_env_vars["clang_drop"]: ",".join(args.clang_drop)
-        if args.clang_drop is not None
-        else "",
-        wrapper_env_vars["llvm_link"]: args.llvm_link,
-        wrapper_env_vars["no_opt_override"]: ("1" if args.no_opt_override
-                                              else "0")
-    }
-    environment.update(os.environ)
-
-    # Passing down the PYTHONPATH variable to be able to run CC_WRAPPER
-    # even in development mode (without installation of DiffKemp).
-    # Without this the wrapper could not import from DiffKemp package.
-    environment["PYTHONPATH"] = ":".join(sys.path)
-
-    return environment
-
-
-def _make_args(args):
+def _make_args(args, db_filename):
     # Generate wrapper for C/C++ compiler
-    cc_wrapper = get_cc_wrapper_path(args.no_native_cc_wrapper)
+    cc_wrapper, ccw_options = get_cc_wrapper_path_w_opts(args, db_filename)
 
-    make_cc_setting = 'CC="{}"'.format(cc_wrapper)
+    make_cc_setting = f"CC={cc_wrapper}{ccw_options}"
     make_args = [args.build_program, "-C", args.source_dir, make_cc_setting]
     if args.build_file is not None:
         make_args.extend(["-c", args.build_file])
@@ -104,12 +79,12 @@ def _make_args(args):
     return make_args, make_target_args, make_cc_setting
 
 
-def _clean_project(config_log_filename, make_args, environment):
+def _clean_project(config_log_filename, make_args):
     if os.path.exists(config_log_filename):
         # Backup config.log
         os.rename(config_log_filename, config_log_filename + ".bak")
     try:
-        check_call(make_args + ["clean"], env=environment)
+        check_call(make_args + ["clean"])
     except CalledProcessError:
         pass
     if os.path.exists(config_log_filename + ".bak"):
@@ -118,7 +93,7 @@ def _clean_project(config_log_filename, make_args, environment):
 
 
 def _reconfigure_using_wrapper(config_log_filename, make_cc_setting,
-                               args, environment):
+                               args):
     with open(config_log_filename, "r") as config_log:
         # Try to get line with configure command from config.log
         # This line is identified by being the first line containing $
@@ -140,8 +115,7 @@ def _reconfigure_using_wrapper(config_log_filename, make_cc_setting,
                     except (FileNotFoundError, PermissionError):
                         pass
             # Reconfigure with CC wrapper
-            check_call(configure_cmd, cwd=args.source_dir,
-                       env=environment, shell=True)
+            check_call(configure_cmd, cwd=args.source_dir, shell=True)
 
 
 def _llvm_opt(db_filename):

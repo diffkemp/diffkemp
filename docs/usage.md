@@ -40,15 +40,22 @@ In this case, the path to the file should be given in place of `PROJ_DIR`.
 - `SNAPSHOT_DIR`: Output directory for storing the created snapshot.
 - `SYMBOL_LIST`: Path to a file containing a list of symbols (each symbol on
    a single line) which should be prepared for comparison.
+- `--reconfigure`: Reconfigures autotools-based project with `CC=<DiffKemp
+  compiler wrapper>`.
+- `--target TARGET`: Allows specifying `Makefile` targets which should be used
+  to build the snapshot from the project.
+- `--build-program BUILD_PROGRAM`: `make` tool to be used for building
+  (default `make`).
+- `--build-file BUILD_FILE`: Filename of the project's `Makefile` to be used
+  for the build.
+
+##### cc_wrapper options
+
 - `--no-opt-override`: Uses optimisation options provided in the project's
   `Makefile` or specified with `--clang-append="-OX"`. With this option,
   DiffKemp can potentially handle more complex refactoring (report fewer false
   positives). However, this may reduce precision in identifying the exact
   location (e.g. function or macro) of a semantic difference.
-- `--target TARGET`: Allows specifying `Makefile` targets which should be used
-  to build the snapshot from the project.
-- `--reconfigure`: Reconfigures autotools-based project with `CC=<DiffKemp
-  compiler wrapper>`.
 - `--clang-append CLANG_APPEND`: Allows specifying options that will be
   appended to `clang` when compiling source files to LLVM IR (e.g. optimisation
   options).
@@ -58,19 +65,12 @@ In this case, the path to the file should be given in place of `PROJ_DIR`.
   in the project's `Makefile` which would be otherwise used by DiffKemp (e.g.
   options not supported by `clang` which could break generation of the
   snapshot).
-- `--build-program BUILD_PROGRAM`: `make` tool to be used for building
-  (default `make`).
-- `--build-file BUILD_FILE`: Filename of the project's `Makefile` to be used
-  for the build.
 - `--clang CLANG`: `clang` compiler to be used for building the project to
   LLVM IR (default `clang`).
 - `--llvm-link LLVM_LINK`: `llvm-link` to be used for linking of LLVM IR files
   (default `llvm-link`).
 - `--llvm-dis LLVM_DIS`: `llvm-dis` to be used for `bc` file disassembly
   (default `llvm-dis`).
-- `--no-native-cc-wrapper`: Mainly for development purposes, uses the Python
-  version of DiffKemp compiler wrapper (by default, the binary version created
-  by [RPython](https://rpython.readthedocs.io/en) is used if it exists).
 
 ### b) `build-kernel`: snapshot generation from the Linux kernel
 
