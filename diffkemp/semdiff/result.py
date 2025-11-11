@@ -183,8 +183,23 @@ class Result:
             self.diff_kind = diff_kind
             self.covered = covered
 
+    class HierarchyLevel(IntEnum):
+        """Describes position of result instance in result comparison tree"""
+        OVERALL = 0
+        GROUP = 1
+        FUNCTION = 2
+
+    class SymbolStat:
+        def __init__(self):
+            self.total = 0
+            self.eq = 0
+            self.neq = 0
+            self.unkwn = 0
+            self.errs = 0
+            self.empty_diff = 0
+
     def __init__(self, kind, first_name, second_name, start_time=None,
-                 stop_time=None):
+                 stop_time=None, hierarchy_level=HierarchyLevel.FUNCTION):
         self.kind = kind
         self.first = Result.Entity(first_name)
         self.second = Result.Entity(second_name)
@@ -194,6 +209,7 @@ class Result:
         self.inner = dict()
         self.start_time = start_time
         self.stop_time = stop_time
+        self.hierarchy_level = hierarchy_level
 
     def __str__(self):
         return str(self.kind)
@@ -220,42 +236,55 @@ class Result:
         Print numbers of equal, non-equal, unknown, and error results with
         percentage that each has from the total results.
         """
-        total = len(self.inner)
-        eq = len([r for r in iter(self.inner.values())
-                  if r.kind == Result.Kind.EQUAL])
-        neq = len([r for r in iter(self.inner.values())
-                   if r.kind == Result.Kind.NOT_EQUAL])
-        unkwn = len([r for r in iter(self.inner.values())
-                     if r.kind == Result.Kind.UNKNOWN])
-        errs = len([r for r in iter(self.inner.values())
-                    if r.kind in [Result.Kind.ERROR, Result.Kind.TIMEOUT]])
-        empty_diff = len([r for r in iter(self.inner.values()) if all(map(
-            lambda x: x.diff == "", r.inner.values())) and
-            r.kind == Result.Kind.NOT_EQUAL])
-        if total > 0:
-            print("Total symbols: {}".format(total))
-            print("Equal:         {0} ({1:.0f}%)".format(eq, eq / total * 100))
+        stats = Result.SymbolStat()
+        self._populate_symbol_stat(stats)
+
+        if stats.total > 0:
+            print("Total symbols: {}".format(stats.total))
+            print("Equal:         {0} ({1:.0f}%)".format(
+                stats.eq, stats.eq / stats.total * 100))
             print("Not equal:     {0} ({1:.0f}%)".format(
-                  neq, neq / total * 100))
+                stats.neq, stats.neq / stats.total * 100))
             print("(empty diff):  {0} ({1:.0f}%)".format(
-                  empty_diff, empty_diff / total * 100))
-            print("Unknown:       {0} ({1:.0f}%)".format(unkwn,
-                                                         unkwn / total * 100))
-            print("Errors:        {0} ({1:.0f}%)".format(errs,
-                                                         errs / total * 100))
+                stats.empty_diff, stats.empty_diff / stats.total * 100))
+            print("Unknown:       {0} ({1:.0f}%)".format(
+                stats.unkwn, stats.unkwn / stats.total * 100))
+            print("Errors:        {0} ({1:.0f}%)".format(
+                stats.errs, stats.errs / stats.total * 100))
+
         if show_errors:
-            if unkwn > 0:
+            if stats.unkwn > 0:
                 print("\nFunctions that are unknown: ")
-                for f, r in sorted(self.inner.items()):
-                    if r.kind == Result.Kind.UNKNOWN:
-                        print(f)
+                self.print_function_names(Result.Kind.UNKNOWN)
                 print()
-            if errs > 0:
+            if stats.errs > 0:
                 print("\nFunctions whose comparison ended with an error: ")
-                for f, r in sorted(self.inner.items()):
-                    if r.kind == Result.Kind.ERROR:
-                        print(f)
+                self.print_function_names(Result.Kind.ERROR)
                 print()
+
+    def print_function_names(self, kind):
+        for name, result in self.inner.items():
+            if result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+                if result.kind == kind:
+                    print(name)
+            else:
+                result.print_function_names(kind)
+
+    def _populate_symbol_stat(self, stats):
+        """Aggregate statistics about analysed symbols."""
+        for result in self.inner.values():
+            if result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+                stats.total += 1
+                stats.eq += result.kind == Result.Kind.EQUAL
+                stats.neq += result.kind == Result.Kind.NOT_EQUAL
+                stats.unkwn += result.kind == Result.Kind.UNKNOWN
+                stats.errs += result.kind in [Result.Kind.ERROR,
+                                              Result.Kind.TIMEOUT]
+                stats.empty_diff += (all(map(lambda x: x.diff == "",
+                                     result.inner.values())) and
+                                     result.kind == Result.Kind.NOT_EQUAL)
+            else:
+                result._populate_symbol_stat(stats)
 
     def report_object_stat(self):
         """
@@ -276,14 +305,20 @@ class Result:
             def __hash__(self):
                 return hash(self.res.first.name)
 
+        def _populate_unique_diffs(result, unique_diffs):
+            if result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+                for _, inner_res in result.inner.items():
+                    if (inner_res.diff == "" and
+                            inner_res.first.covered):
+                        continue
+                    unique_diffs.add(UniqueDiff(inner_res))
+            else:
+                for _, inner_result in result.inner.items():
+                    _populate_unique_diffs(inner_result, unique_diffs)
+
         # Convert inner result to set of unique diffs
         unique_diffs = set()
-        for _, inner_res_out in self.inner.items():
-            for _, inner_res in inner_res_out.inner.items():
-                if (inner_res.diff == "" and
-                        inner_res.first.covered):
-                    continue
-                unique_diffs.add(UniqueDiff(inner_res))
+        _populate_unique_diffs(self, unique_diffs)
 
         # Generate counts
         compared = len(self.graph.vertices)
