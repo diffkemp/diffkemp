@@ -30,49 +30,66 @@ class YamlOutput:
         """Creates yaml representation of compare result."""
         self.output["old-snapshot"] = self.old_dir
         self.output["new-snapshot"] = self.new_dir
-
-        self._create_results()
+        self.output["results"] = self._create_results(self.result)
         self._create_definitions()
 
-    def _create_results(self):
-        """Creates call stacks of not-equal functions."""
-        # list of all not-equal functions callstacks
-        results = []
-        for fun_name, fun_result in self.result.inner.items():
-            if fun_result.kind != Result.Kind.NOT_EQUAL:
-                continue
-            self.function_names.add(fun_name)
-            # list of not-equal functions callstacks for a function
-            diffs = []
-            for called_res in sorted(fun_result.inner.values(),
-                                     key=lambda r: r.first.name):
-                if called_res.diff == "" and called_res.first.covered:
-                    # Do not add empty diffs
-                    continue
-                # information about a function which is different
-                diff = {}
-                diff["function"] = called_res.first.name
-                # getting callstacks
-                diff["old-callstack"] = called_res.first \
-                    .callstack.to_output_yaml_with_rel_path(self.old_dir) \
-                    if called_res.first.callstack else []
-                diff["new-callstack"] = called_res.second \
-                    .callstack.to_output_yaml_with_rel_path(self.new_dir) \
-                    if called_res.second.callstack else []
-                # updating symbol names
-                if called_res.first.callstack:
-                    function_names, macro_names, type_names = called_res \
-                        .first.callstack.get_symbol_names(fun_name)
-                    self.function_names.update(function_names)
-                    self.macro_names.update(macro_names)
-                    self.type_names.update(type_names)
+    def _create_results(self, current_result, name=None):
+        """:param current_result: node in the result class tree"""
+        if current_result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+            return self._create_function_result(current_result, name)
 
-                diffs.append(diff)
-            results.append({
-                "function": fun_name,
-                "diffs": diffs
-            })
-        self.output["results"] = results
+        inner_results = []
+        for inner_name, inner_result in current_result.inner.items():
+            result = self._create_results(inner_result, inner_name)
+            if result is not None:
+                inner_results.append(result)
+
+        if current_result.hierarchy_level == Result.HierarchyLevel.OVERALL:
+            return inner_results
+        # hierarchy_level == GROUP
+        return {
+            "sysctl": name,  # sysctl is the only usecase of groups
+            "results": inner_results
+        }
+
+    def _create_function_result(self, fun_result, fun_name):
+        """
+        Creates call stacks of not-equal functions.
+        :param fun_result: output of snapshot comparison
+        """
+        if fun_result.kind != Result.Kind.NOT_EQUAL:
+            return
+        self.function_names.add(fun_name)
+        # list of not-equal functions callstacks for a function
+        diffs = []
+        for called_res in sorted(fun_result.inner.values(),
+                                 key=lambda r: r.first.name):
+            if called_res.diff == "" and called_res.first.covered:
+                # Do not add empty diffs
+                continue
+            # information about a function which is different
+            diff = {}
+            diff["function"] = called_res.first.name
+            # getting callstacks
+            diff["old-callstack"] = called_res.first \
+                .callstack.to_output_yaml_with_rel_path(self.old_dir) \
+                if called_res.first.callstack else []
+            diff["new-callstack"] = called_res.second \
+                .callstack.to_output_yaml_with_rel_path(self.new_dir) \
+                if called_res.second.callstack else []
+            # updating symbol names
+            if called_res.first.callstack:
+                function_names, macro_names, type_names = called_res \
+                    .first.callstack.get_symbol_names(fun_name)
+                self.function_names.update(function_names)
+                self.macro_names.update(macro_names)
+                self.type_names.update(type_names)
+
+            diffs.append(diff)
+        return {
+            "function": fun_name,
+            "diffs": diffs
+        }
 
     def _create_definitions(self):
         self.output["definitions"] = {}

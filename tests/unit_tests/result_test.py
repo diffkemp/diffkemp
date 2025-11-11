@@ -109,7 +109,8 @@ def test_callstack_get_symbol_names(callstack):
 
 @pytest.fixture
 def result(graph):
-    result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path")
+    result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
+                    hierarchy_level=Result.HierarchyLevel.OVERALL)
 
     comp1_result = Result(Result.Kind.NONE, "main_function", "main_function")
     objects_to_compare, *_ = \

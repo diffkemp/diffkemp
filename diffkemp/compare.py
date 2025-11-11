@@ -43,6 +43,7 @@ class GroupInfo:
         self.result_graph = None
         self.cache = SimpLLCache(mkdtemp())
         self.module_cache = {}
+        self.group_result = None
 
     def _get_group_dir(self, output_dir):
         if output_dir is not None and self.group_name is not None:
@@ -90,7 +91,8 @@ class SnapshotComparator:
         self.config = Config.from_args(cmd_args)
         self.result = Result(Result.Kind.NONE, cmd_args.snapshot_dir_old,
                              cmd_args.snapshot_dir_new,
-                             start_time=default_timer())
+                             start_time=default_timer(),
+                             hierarchy_level=Result.HierarchyLevel.OVERALL)
         self.regex_pattern = re.compile(cmd_args.regex_filter) \
             if cmd_args.regex_filter else None
         self.output_dir = None
@@ -139,8 +141,25 @@ class SnapshotComparator:
         return 0
 
     def _compare_groups(self, group_info):
+        group_name = group_info.group_name
+        # Checks if there are groups (e.g. for sysctl parameters),
+        # creates group_result to be able to connect results in the group
+        if group_name is not None:
+            group_info.group_result = Result(
+                Result.Kind.NONE,
+                group_name,
+                group_name,
+                hierarchy_level=Result.HierarchyLevel.GROUP)
+        else:
+            group_info.group_result = self.result
+
         for fun, old_fun_desc in sorted(group_info.group.functions.items()):
             self._compare_function(fun, old_fun_desc, group_info)
+
+        # add_inner method modifies result.graph so it has to be called when
+        # group_result.graph is already updated
+        if group_name is not None:
+            self.result.add_inner(group_info.group_result)
 
     def _compare_function(self, fun, old_fun_desc, group_info):
         # Check if the function exists in the other snapshot
@@ -179,16 +198,15 @@ class SnapshotComparator:
 
     def _handle_missing_module(self, fun, old_fun_desc, group_info):
         fun_result = Result(Result.Kind.UNKNOWN, fun, fun)
-        self.result.add_inner(fun_result)
+        group_info.group_result.add_inner(fun_result)
         self._print_fun_result(fun_result, fun, old_fun_desc, group_info)
 
     def _handle_fun_result(self, fun_result, fun, old_fun_desc, group_info):
-
         if self.args.regex_filter is not None:
             # Filter results by regex
             self._filter_result_by_regex(fun_result)
 
-        self.result.add_inner(fun_result)
+        group_info.group_result.add_inner(fun_result)
 
         # Printing information about failures and non-equal functions.
         if fun_result.kind in [Result.Kind.NOT_EQUAL,
