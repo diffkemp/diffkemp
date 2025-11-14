@@ -96,7 +96,7 @@
 #ifndef DIFFKEMP_SIMPLL_LOGGER_H
 #define DIFFKEMP_SIMPLL_LOGGER_H
 
-#include <Config.h>
+#include "Config.h"
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
 #include <llvm/Support/Debug.h>
