@@ -38,13 +38,13 @@ def test_find_llvm_with_symbol_def(builder):
     Test building LLVM module from a source containing a function definition.
     """
     llvm_file = builder.find_llvm_with_symbol_def("__alloc_workqueue_key")
-    assert llvm_file == os.path.join(builder.source_dir, "kernel/workqueue.ll")
+    assert llvm_file == os.path.join(builder.source_dir, "kernel/workqueue.bc")
 
 
 def test_find_llvm_with_symbol_use(builder):
     """Test finding sources using a global variable."""
     srcs = builder.find_llvm_with_symbol_use("net_ratelimit_state")
-    assert srcs == {os.path.join(builder.source_dir, "net/core/utils.ll")}
+    assert srcs == {os.path.join(builder.source_dir, "net/core/utils.bc")}
 
 
 def test_build_cscope_database(builder):
@@ -97,7 +97,7 @@ def test_kbuild_module_commands(builder):
 def test_build_src_to_llvm(builder):
     """Building single object into LLVM."""
     llvm_file = builder._build_source_to_llvm("sound/core/init.c")
-    assert (llvm_file == "sound/core/init.ll")
+    assert (llvm_file == "sound/core/init.bc")
     assert os.path.isfile(os.path.join(builder.source_dir, llvm_file))
 
 
@@ -110,7 +110,7 @@ def test_build_src_to_llvm_fail(builder):
 def test_build_mod_to_llvm(builder):
     """Test building kernel module into LLVM"""
     mod_file = os.path.join(builder.source_dir,
-                            "drivers/firewire/firewire-sbp2.ll")
+                            "drivers/firewire/firewire-sbp2.bc")
     if os.path.isfile(mod_file):
         os.unlink(mod_file)
     builder._build_kernel_mod_to_llvm("drivers/firewire", "firewire-sbp2")
