@@ -19,6 +19,37 @@ def get_simpll_build_dir():
     return "build"
 
 
+def get_cc_wrapper_path_w_opts(args, db_filename):
+    wrapper_bin = "{}/diffkemp/building/cc_wrapper/cc_wrapper-c".format(
+        get_simpll_build_dir())
+    wrapper_bin = os.path.abspath(wrapper_bin)
+
+    wrapper_settings = {
+        "dbf": db_filename,
+        "clang": args.clang,
+        "cla": ",".join(args.clang_append)
+        if args.clang_append is not None
+        else "",
+        "cld": ",".join(args.clang_drop)
+        if args.clang_drop is not None
+        else "",
+        "debug": ("1" if args.verbose > 1 else "0")
+        if args.verbose is not None else "0",
+        "llink": args.llvm_link,
+        "noo": ("1" if args.no_opt_override
+                else "0")
+    }
+
+    options = []
+    for key, value in wrapper_settings.items():
+        options.append(f" --{key}={value}")
+    options.append(" --")
+
+    if not os.path.isfile(wrapper_bin):
+        return "diffkemp-cc-wrapper", ''.join(options)
+    return wrapper_bin, ''.join(options)
+
+
 def get_llvm_version():
     """
     Return the current LLVM major version number.

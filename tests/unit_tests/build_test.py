@@ -21,6 +21,7 @@ class Arguments:
         self.no_opt_override = no_opt_override
         # Required/used by build_c_project
         self.symbol_list = None
+        self.verbose = 0
         self.build_program = "make"
         self.build_file = None
         self.clang = "clang"

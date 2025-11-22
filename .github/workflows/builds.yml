@@ -89,15 +89,3 @@ jobs:
            build/bin/diffkemp build tests/testing_projects/make_based/ new-snapshot &&
            build/bin/diffkemp compare old-snapshot new-snapshot"
 
-  cc-wrapper-build:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Pip3 backup
-        run: python3 -m pip install pip -U
-      - name: RPython installation
-        run: |
-          sudo apt install python2 python-pip
-          python2 -m pip install rpython
-      - name: Build cc-wrapper to binary
-        run: python2 -m rpython ${{ github.workspace }}/diffkemp/building/cc_wrapper/cc_wrapper.py
