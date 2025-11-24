@@ -70,7 +70,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
                 llvm_filename = self._build_source_to_llvm(source_path)
                 if os.path.isfile(llvm_filename):
                     mod = LlvmModule(llvm_filename)
-                    if mod.has_function(symbol) or mod.has_global(symbol):
+                    if mod.has_definition(symbol):
                         break
             except BuildException:
                 pass
@@ -395,9 +395,9 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
             if param.startswith('-D"DEBUG_HASH2='):
                 param = '-D"DEBUG_HASH2=1"'
 
-            # Output name is given by replacing .c by .ll in source name
+            # Output name is given by replacing .c by .bc in source name
             if param.endswith(".c"):
-                output_file = "{}.ll".format(param[:-2])
+                output_file = "{}.bc".format(param[:-2])
 
             command.append(KernelLlvmSourceBuilder._strip_bash_quotes(param))
         if output_file is None:
@@ -414,10 +414,10 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         :param ld_command: Command to convert
         :return Corresponding llvm-link command.
         """
-        command = ["llvm-link", "-S"]
+        command = ["llvm-link"]
         for param in ld_command.split():
             if param.endswith(".o"):
-                command.append("{}.ll".format(param[:-2]))
+                command.append("{}.bc".format(param[:-2]))
             elif param == "-o":
                 command.append(param)
         return command
@@ -486,8 +486,12 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
 
     @staticmethod
     def _get_build_source(command):
-        """Get name of the object file built by the command."""
-        return command[command.index("-c") + 1]
+        """
+        Get name of the source file built by the command.
+        The commands start with 'clang -c -emit-llvm' to avoid linking
+        and the source file follows '-c' later in the command.
+        """
+        return command[command.index("-c", 3) + 1]
 
     def _kbuild_object_command(self, object_file):
         """
@@ -568,7 +572,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         :param source_file: C source to build
         :return: Created LLVM IR file
         """
-        llvm_file = "{}.ll".format(source_file[:-2])
+        llvm_file = "{}.bc".format(source_file[:-2])
         if (not os.path.isfile(llvm_file) or os.path.getmtime(llvm_file) <
                 os.path.getmtime(source_file)):
             cwd = os.getcwd()
@@ -627,7 +631,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
                         obj = self._get_build_object(c)
                         if not os.path.isfile(obj) or built:
                             check_call(c, stderr=stderr)
-            llvm_file = os.path.join(mod_dir, "{}.ll".format(file_name))
+            llvm_file = os.path.join(mod_dir, "{}.bc".format(file_name))
             opt_llvm(llvm_file)
             return llvm_file
         except CalledProcessError:

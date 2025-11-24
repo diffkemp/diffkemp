@@ -1,6 +1,6 @@
 *.o
 
 # Files created by the build command
-*.ll
+*.bc
 function_list
 *.so.llw

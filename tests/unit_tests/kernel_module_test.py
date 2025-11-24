@@ -10,6 +10,7 @@ import os
 import pytest
 import shutil
 import tempfile
+from subprocess import check_output
 
 
 @pytest.fixture
@@ -84,14 +85,16 @@ def test_move_to_other_root_dir(source):
     # Check that source (C and LLVM) files have been moved.
     mod.move_to_other_root_dir(os.path.abspath("kernel/linux-3.10.0-957.el7"),
                                tmp)
-    assert os.path.isfile(os.path.join(tmp, "sound/core/init.ll"))
+    assert os.path.isfile(os.path.join(tmp, "sound/core/init.bc"))
 
     # Check that the llvm file does not contain the original directory.
-    assert mod.llvm == os.path.join(tmp, "sound/core/init.ll")
-    with open(mod.llvm, "r") as llvm:
-        for line in llvm.readlines():
-            assert ("constant" in line or
-                    "kernel/linux-3.10.0-957.el7" not in line)
+    assert mod.llvm == os.path.join(tmp, "sound/core/init.bc")
+    command = ["llvm-dis", mod.llvm, "-o", "-"]
+    source_dir = os.path.dirname(mod.llvm)
+    output = check_output(command, cwd=source_dir).decode()
+    for line in output.splitlines():
+        assert ("constant" in line or
+                "kernel/linux-3.10.0-957.el7" not in line)
 
     shutil.rmtree(tmp)
 
