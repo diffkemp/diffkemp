@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        llvm: [12, 13, 14, 15, 16, 17, 18, 19]
+        llvm: [12, 13, 14, 15, 16, 17, 18, 19, 20]
         env:
           - CC: gcc
             CXX: g++
@@ -28,14 +28,14 @@ jobs:
         regression-tests: [true]
 
         include:
-          - llvm: 19
+          - llvm: 20
             env:
               CC: clang
               CXX: clang++
             asan: OFF
             regression-tests: true
 
-          - llvm: 19
+          - llvm: 20
             env:
               CC: gcc
               CXX: g++
