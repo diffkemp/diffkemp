@@ -40,7 +40,7 @@ class SysctlTable {
 
   public:
     SysctlTable(const Module *Mod, const std::string &CtlTable)
-            : Mod(Mod), CtlTable(CtlTable){};
+            : Mod(Mod), CtlTable(CtlTable) {};
 
     /// Parse all sysctls entries that match the given pattern. Parsed entries
     /// are LLVM objects of type "struct ctl_table" containing the sysctl

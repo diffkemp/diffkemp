@@ -263,9 +263,7 @@ have to add it to the project manually. The steps required to do so are:
 6. Update CI (i.e., add the new version to the list
    [here](https://github.com/diffkemp/diffkemp/blob/master/.github/workflows/ci.yml)
    and change the most recent LLVM version
-   [here](https://github.com/diffkemp/diffkemp/blob/master/.github/workflows/builds.yml)
-   and in the [code style
-   check](https://github.com/diffkemp/diffkemp/blob/master/.github/workflows/code-style.yml))
+   [here](https://github.com/diffkemp/diffkemp/blob/master/.github/workflows/builds.yml))
    and Nix (change the range of supported version
    [here](https://github.com/diffkemp/diffkemp/blob/master/flake.nix)) files
    with your new version. You also have to update the
@@ -275,6 +273,9 @@ have to add it to the project manually. The steps required to do so are:
    all supported LLVM versions. This is usually achieved by introduction of
    preprocessor directives into the code, an example can found
    [here](https://github.com/diffkemp/diffkemp/commit/8912507d38d3a9591ee55f00a6d7524b204d0255#diff-a89268e38521e9e557604612a43cbf120ef94027230cfeea75fe24fe17f10c81R42).
+8. Fix the code formatting according to the new version of `clang-format`. This
+   can be done by running the script `tools/check-clang-format.sh -di` and
+   commiting the changes.
 
 ## Tools for performing experiments
 

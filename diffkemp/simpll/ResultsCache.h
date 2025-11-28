@@ -35,7 +35,8 @@ class ResultsCache {
     void importFileToCacheMap(std::string filename);
 
   public:
-    ResultsCache(std::string cacheDirectory) : cacheDirectory(cacheDirectory){};
+    ResultsCache(std::string cacheDirectory)
+            : cacheDirectory(cacheDirectory) {};
     /// Find the information whether the function pair is cached in the
     /// corresponding file.
     bool isFunctionPairCached(const Function *FunL, const Function *FunR);

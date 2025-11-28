@@ -49,7 +49,7 @@ class InstPatternComparator : protected FunctionComparator {
                           const InstPattern *ParentPattern)
             : FunctionComparator(ModFun, PatFun, nullptr),
               IsLeftSide(PatFun == ParentPattern->PatternL),
-              ParentPattern(ParentPattern){};
+              ParentPattern(ParentPattern) {};
 
     /// Compare the module function and the difference pattern from the starting
     /// module instruction.
