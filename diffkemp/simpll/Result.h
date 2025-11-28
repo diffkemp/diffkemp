@@ -100,7 +100,7 @@ struct NonFunctionDifference {
     CallStack StackL, StackR;
     /// The function in which the difference was found
     std::string function;
-    NonFunctionDifference(DiffKind Kind) : Kind(Kind){};
+    NonFunctionDifference(DiffKind Kind) : Kind(Kind) {};
     NonFunctionDifference(std::string name,
                           CallStack StackL,
                           CallStack StackR,
@@ -128,7 +128,7 @@ struct SyntaxDifference : public NonFunctionDifference {
     // null.
     std::unique_ptr<CodeLocation> diffDefL, diffDefR;
     SyntaxDifference()
-            : NonFunctionDifference(SynDiff), syntaxKind(Kind::UNKNOWN){};
+            : NonFunctionDifference(SynDiff), syntaxKind(Kind::UNKNOWN) {};
     SyntaxDifference(Kind syntaxKind,
                      std::string name,
                      std::string BodyL,

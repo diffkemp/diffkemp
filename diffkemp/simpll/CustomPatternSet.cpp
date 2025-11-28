@@ -142,8 +142,8 @@ std::optional<CustomPatternMetadata>
 void CustomPatternSet::addPatternsFromConfig(std::string &ConfigPath) {
     auto ConfigFile = MemoryBuffer::getFile(ConfigPath);
     if (std::error_code EC = ConfigFile.getError()) {
-        LOG("Failed to open difference "
-            << "pattern configuration " << ConfigPath << ".\n");
+        LOG("Failed to open difference " << "pattern configuration "
+                                         << ConfigPath << ".\n");
         return;
     }
 
@@ -153,8 +153,8 @@ void CustomPatternSet::addPatternsFromConfig(std::string &ConfigPath) {
     YamlFile >> Config;
 
     if (YamlFile.error()) {
-        LOG("Failed to parse difference "
-            << "pattern configuration " << ConfigPath << ".\n");
+        LOG("Failed to parse difference " << "pattern configuration "
+                                          << ConfigPath << ".\n");
         return;
     }
 
@@ -256,8 +256,8 @@ bool CustomPatternSet::initializeInstPattern(InstPattern &Pat) {
 
     // Map input arguments from the left side to the right side.
     if (Pat.PatternL->arg_size() != Pat.PatternR->arg_size()) {
-        LOG("The number of input arguments does not "
-            << "match in pattern " << Pat.Name << ".\n");
+        LOG("The number of input arguments does not " << "match in pattern "
+                                                      << Pat.Name << ".\n");
         return false;
     }
     for (auto L = Pat.PatternL->arg_begin(), R = Pat.PatternR->arg_begin();
@@ -268,8 +268,8 @@ bool CustomPatternSet::initializeInstPattern(InstPattern &Pat) {
 
     // Create references for the expected output instruction mapping.
     if (OutputMappingInfoL.second != OutputMappingInfoR.second) {
-        LOG("The number of output instructions does "
-            << "not match in pattern " << Pat.Name << ".\n");
+        LOG("The number of output instructions does " << "not match in pattern "
+                                                      << Pat.Name << ".\n");
         return false;
     }
     if (OutputMappingInfoL.first && OutputMappingInfoR.first) {

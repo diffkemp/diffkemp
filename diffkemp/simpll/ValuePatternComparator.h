@@ -39,7 +39,7 @@ class ValuePatternComparator : protected FunctionComparator {
                            const ValuePattern *ParentPattern)
             : FunctionComparator(ModFun, PatFun, nullptr),
               IsLeftSide(PatFun == ParentPattern->PatternL),
-              ParentPattern(ParentPattern){};
+              ParentPattern(ParentPattern) {};
 
     /// Compare the given module value with the pattern value.
     int compare() override;
