@@ -134,7 +134,7 @@ checked with the following tools:
 The project contains multiple tests:
 
 - [Python tests](#python-tests),
-- [Tests for SimpLL library](#tests-for-the-simpll-library),
+- [C++ tests](#c-tests),
 - [Tests for the result viewer](#tests-for-the-result-viewer).
 
 ### Python tests
@@ -197,13 +197,20 @@ also be used to download and configure the aforementioned kernels.
 > and using `rhel-kernel-get` inside the environment to retrieve the above
 > kernels.
 
-### Tests for the SimpLL library
+### C++ tests
 
-Tests are located in `tests/unit_tests/simpll/` directory and they can be run
-by:
-
+All C++ tests can be run by the following command:
 ```sh
 ninja -C build test
+```
+
+### Tests for the SimpLL library
+
+Tests are located in `tests/unit_tests/simpll/` directory.
+You can run these tests separately from the rest of the test suite by
+executing their specific binary directly:
+```sh
+`build/tests/unit_tests/simpll/simpllTests`.
 ```
 
 In case the tests fail, enabling logger can simplify the debugging process.
@@ -215,12 +222,20 @@ a number, where:
 - `2`: Moderate logging
 - `3` and more: Detailed logging (the most verbose)
 
-For example, to enable moderate logging while running tests with `ninja`, use
-the following command:
+For example, to enable moderate logging use the following command:
 
 ```sh
-SIMPLL_VERBOSITY=2 ninja -C build test
+SIMPLL_VERBOSITY=2 `build/tests/unit_tests/simpll/simpllTests`
 ```
+
+### Tests for the cc_wrapper
+
+Test are located in `tests/unit_tests/cc_wrapper/` directory.
+You can run these tests separately by executing their specific binary directly:
+```sh
+build/tests/unit_tests/cc_wrapper/ccWrapperTests
+```
+These tests currently don't support logging.
 
 ### Tests for the result viewer
 
