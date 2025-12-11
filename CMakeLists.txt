@@ -80,4 +80,12 @@ if (${BUILD_VIEWER})
   ) # install `data` dir
 endif () # ${BUILD_VIEWER}
 
-add_subdirectory(tests/unit_tests/simpll)
+if(NOT "--output-on-failure" IN_LIST CMAKE_CTEST_ARGUMENTS)
+  list(APPEND CMAKE_CTEST_ARGUMENTS --output-on-failure)
+endif()
+
+# Make `test` build regular targets first
+set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
+
+enable_testing()
+add_subdirectory(tests/unit_tests)

@@ -104,6 +104,9 @@ cmake-build-debug/
 # Vs Code files
 .vscode/
 
+# Temporary files created by ctests
+Testing/
+
 # Temporary files from regression tests. Used for debugging purposes only.
 *.ll
 *.smt2

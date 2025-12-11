@@ -1,19 +1,3 @@
-OPTION(VENDOR_GTEST "Vendor Google Test libraries" OFF)
-if (${VENDOR_GTEST})
-# Download and unpack googletest at configure time
-configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
-execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/googletest-download")
-execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/googletest-download")
-
-# Add googletest directly to our build. This adds the following targets:
-# gtest, gtest_main, gmock and gmock_main
-add_subdirectory("${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
-                 "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
-                 EXCLUDE_FROM_ALL)
- endif(${VENDOR_GTEST})
-
 # Disable RTTI to link with SimpLL correctly.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fvisibility=hidden")
 
@@ -27,7 +11,7 @@ enable_testing()
 include_directories(${CMAKE_SOURCE_DIR}/diffkemp/simpll)
 
 file(GLOB pass_tests passes/*.cpp)
-add_executable(runTests SimpLLTest.cpp DifferentialFunctionComparatorTest.cpp
+add_executable(simpllTests SimpLLTest.cpp DifferentialFunctionComparatorTest.cpp
                FieldAccessUtilsTest.cpp DFCLlvmIrTest.cpp ${pass_tests})
 
 execute_process(COMMAND llvm-config --libs irreader passes support
@@ -44,18 +28,16 @@ if (NOT ${Z3_FOUND})
     find_package(Z3 REQUIRED MODULE)
 endif()
 
-target_include_directories(runTests PRIVATE ${Z3_CXX_INCLUDE_DIRS})
-target_link_libraries(runTests gtest simpll-lib ${llvm_libs} ${Z3_LIBRARIES})
-target_compile_options(runTests PRIVATE ${Z3_COMPONENT_CXX_FLAGS})
+target_include_directories(simpllTests PRIVATE ${Z3_CXX_INCLUDE_DIRS})
+target_link_libraries(simpllTests gtest simpll-lib ${llvm_libs} ${Z3_LIBRARIES})
+target_compile_options(simpllTests PRIVATE ${Z3_COMPONENT_CXX_FLAGS})
+
 if (NOT ${system_libs} STREQUAL "")
-	target_link_libraries(runTests gtest ${system_libs})
+	target_link_libraries(simpllTests gtest ${system_libs})
 endif()
 
 include(GoogleTest)
-gtest_discover_tests(runTests)
-add_custom_target(test
-  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-  DEPENDS runTests)
+gtest_discover_tests(simpllTests)
 
 message(STATUS "Creating pytest tests executable")
 add_custom_target(pytest-test
