@@ -26,9 +26,13 @@ enable_testing()
 
 include_directories(${CMAKE_SOURCE_DIR}/diffkemp/simpll)
 
+include_directories(${CMAKE_SOURCE_DIR}/diffkemp/building/cc_wrapper)
+
 file(GLOB pass_tests passes/*.cpp)
 add_executable(runTests SimpLLTest.cpp DifferentialFunctionComparatorTest.cpp
-               FieldAccessUtilsTest.cpp DFCLlvmIrTest.cpp ${pass_tests})
+               FieldAccessUtilsTest.cpp DFCLlvmIrTest.cpp ${pass_tests}
+               ${CMAKE_SOURCE_DIR}/diffkemp/building/cc_wrapper/cc_wrapper_utils.cpp
+               ${CMAKE_SOURCE_DIR}/tests/unit_tests/cc_wrapper/CcWrapperUtilsTest.cpp)
 
 execute_process(COMMAND llvm-config --libs irreader passes support
                 OUTPUT_VARIABLE llvm_libs
