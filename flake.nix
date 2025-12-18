@@ -56,8 +56,6 @@
                 setuptools
             ];
 
-            WITHOUT_RPYTHON = true;
-
             # Including cmake in nativeBuildInputs automatically runs it during
             # configurePhase so we just need to set correct flags.
             cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" "-GNinja" ];
@@ -130,8 +128,6 @@
               jsonschema
             ];
 
-            WITHOUT_RPYTHON = true;
-
             shellHook = ''
               # Adding current (diffkemp) directory to PYTHONPATH,
               # the `diffkemp build` subcommand does not work without it
@@ -199,8 +195,6 @@
             ];
 
             propagatedBuildInputs = default.propagatedBuildInputs;
-
-            WITHOUT_RPYTHON = true;
           };
       };
     };

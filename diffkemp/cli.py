@@ -65,9 +65,6 @@ def make_argument_parser():
                           action='append')
     build_ap.add_argument("--reconfigure", help="reconfigure autotools-based\
                           project with CC=<wrapper>", action="store_true")
-    build_ap.add_argument("--no-native-cc-wrapper",
-                          help="do not use a native compiler wrapper even if\
-                          present", action="store_true")
     build_ap.add_argument("--no-opt-override",
                           help="use project's default optimization options",
                           action="store_true")
