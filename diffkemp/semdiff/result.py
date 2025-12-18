@@ -194,6 +194,7 @@ class Result:
         self.inner = dict()
         self.start_time = start_time
         self.stop_time = stop_time
+        self.has_inner_groups = False
 
     def __str__(self):
         return str(self.kind)
@@ -220,18 +221,14 @@ class Result:
         Print numbers of equal, non-equal, unknown, and error results with
         percentage that each has from the total results.
         """
-        total = len(self.inner)
-        eq = len([r for r in iter(self.inner.values())
-                  if r.kind == Result.Kind.EQUAL])
-        neq = len([r for r in iter(self.inner.values())
-                   if r.kind == Result.Kind.NOT_EQUAL])
-        unkwn = len([r for r in iter(self.inner.values())
-                     if r.kind == Result.Kind.UNKNOWN])
-        errs = len([r for r in iter(self.inner.values())
-                    if r.kind in [Result.Kind.ERROR, Result.Kind.TIMEOUT]])
-        empty_diff = len([r for r in iter(self.inner.values()) if all(map(
-            lambda x: x.diff == "", r.inner.values())) and
-            r.kind == Result.Kind.NOT_EQUAL])
+        stats = 0, 0, 0, 0, 0, 0
+        if self.has_inner_groups:
+            for group_result in self.inner.values():
+                stats = group_result.group_symbol_stat(stats)
+        else:
+            stats = self.group_symbol_stat(stats)
+        total, eq, neq, unkwn, errs, empty_diff = stats
+
         if total > 0:
             print("Total symbols: {}".format(total))
             print("Equal:         {0} ({1:.0f}%)".format(eq, eq / total * 100))
@@ -257,6 +254,24 @@ class Result:
                         print(f)
                 print()
 
+    def group_symbol_stat(self, stats):
+        total, eq, neq, unkwn, errs, empty_diff = stats
+
+        total += len(self.inner)
+        eq += len([r for r in iter(self.inner.values())
+                  if r.kind == Result.Kind.EQUAL])
+        neq += len([r for r in iter(self.inner.values())
+                   if r.kind == Result.Kind.NOT_EQUAL])
+        unkwn += len([r for r in iter(self.inner.values())
+                     if r.kind == Result.Kind.UNKNOWN])
+        errs += len([r for r in iter(self.inner.values())
+                    if r.kind in [Result.Kind.ERROR, Result.Kind.TIMEOUT]])
+        empty_diff += len([r for r in iter(self.inner.values()) if all(map(
+            lambda x: x.diff == "", r.inner.values())) and
+            r.kind == Result.Kind.NOT_EQUAL])
+
+        return total, eq, neq, unkwn, errs, empty_diff
+
     def report_object_stat(self):
         """
         Report detailed statistics about compared objects.
@@ -276,14 +291,21 @@ class Result:
             def __hash__(self):
                 return hash(self.res.first.name)
 
+        def group_unique_diffs(result, unique_diffs):
+            for _, inner_res_out in result.inner.items():
+                for _, inner_res in inner_res_out.inner.items():
+                    if (inner_res.diff == "" and
+                            inner_res.first.covered):
+                        continue
+                    unique_diffs.add(UniqueDiff(inner_res))
+
         # Convert inner result to set of unique diffs
         unique_diffs = set()
-        for _, inner_res_out in self.inner.items():
-            for _, inner_res in inner_res_out.inner.items():
-                if (inner_res.diff == "" and
-                        inner_res.first.covered):
-                    continue
-                unique_diffs.add(UniqueDiff(inner_res))
+        if self.has_inner_groups:
+            for _, inner_group in self.inner.items():
+                group_unique_diffs(inner_group, unique_diffs)
+        else:
+            group_unique_diffs(self, unique_diffs)
 
         # Generate counts
         compared = len(self.graph.vertices)
