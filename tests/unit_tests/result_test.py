@@ -108,10 +108,7 @@ def test_callstack_get_symbol_names(callstack):
 
 
 @pytest.fixture
-def result(graph):
-    result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
-                    hierarchy_level=Result.HierarchyLevel.OVERALL)
-
+def single_function_result(graph):
     comp1_result = Result(Result.Kind.NONE, "main_function", "main_function")
     objects_to_compare, *_ = \
         graph.graph_to_fun_pair_list("main_function", "main_function", False)
@@ -120,13 +117,60 @@ def result(graph):
         fun_result.first = fun_pair[0]
         fun_result.second = fun_pair[1]
         comp1_result.add_inner(fun_result)
+    yield comp1_result
 
-    result.add_inner(comp1_result)
+
+@pytest.fixture
+def multi_functions_result(graph, single_function_result):
+    result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
+                    hierarchy_level=Result.HierarchyLevel.OVERALL)
+    result.add_inner(single_function_result)
     result.graph = graph
     yield result
 
 
-def test_yaml_output(result, mocker):
+@pytest.fixture
+def sysctl_group_result(graph, single_function_result):
+    result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
+                    hierarchy_level=Result.HierarchyLevel.OVERALL)
+    group_result = Result(Result.Kind.NONE, "group_name", "group_name",
+                          hierarchy_level=Result.HierarchyLevel.GROUP)
+    group_result.add_inner(single_function_result)
+    result.add_inner(group_result)
+    result.graph = graph
+    yield result
+
+
+@pytest.fixture
+def multi_groups_result(graph, single_function_result):
+    result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
+                    hierarchy_level=Result.HierarchyLevel.OVERALL)
+    outer_group_result = Result(Result.Kind.NONE, "outer_name", "outer_name",
+                                hierarchy_level=Result.HierarchyLevel.GROUP)
+    inner_group_result = Result(Result.Kind.NONE, "inner_name", "inner_name",
+                                hierarchy_level=Result.HierarchyLevel.GROUP)
+    inner_group_result.add_inner(single_function_result)
+    outer_group_result.add_inner(inner_group_result)
+    result.add_inner(outer_group_result)
+    result.graph = graph
+    yield result
+
+
+@pytest.fixture
+def result(request):
+    return request.getfixturevalue(request.param)
+
+
+@pytest.mark.parametrize(
+        "result,tree_kind",
+        [
+            ("multi_functions_result",) * 2,
+            ("sysctl_group_result",) * 2,
+            ("multi_groups_result",) * 2
+        ],
+        indirect=["result"]
+)
+def test_yaml_output(result, tree_kind, mocker):
     """Tests YAML representation of compare result made by YamlOutput class."""
     mocker.patch("diffkemp.output.get_end_line", return_value=2958)
 
@@ -142,7 +186,22 @@ def test_yaml_output(result, mocker):
     assert yaml["new-snapshot"] == "/abs/path/to/new-snapshot"
     assert len(yaml["results"]) == 1
 
-    main_function_result = yaml["results"][0]
+    if tree_kind == "multi_functions_result":
+        main_function_result = yaml["results"][0]
+    elif tree_kind == "sysctl_group_result":
+        group_result = yaml["results"][0]
+        assert len(group_result["results"]) == 1
+        assert group_result["sysctl"] == "group_name"
+        main_function_result = group_result["results"][0]
+    else:
+        outer_group_result = yaml["results"][0]
+        assert len(outer_group_result["results"]) == 1
+        assert outer_group_result["sysctl"] == "outer_name"
+        inner_group_result = outer_group_result["results"][0]
+        assert len(inner_group_result["results"]) == 1
+        assert inner_group_result["sysctl"] == "inner_name"
+        main_function_result = inner_group_result["results"][0]
+
     assert main_function_result["function"] == "main_function"
     assert len(main_function_result["diffs"]) == 3
     for diff in main_function_result["diffs"]:
