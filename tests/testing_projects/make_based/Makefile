@@ -6,10 +6,10 @@ CFLAGS = -O2 -std=c99
 
 default: file.o
 
-# Assembly files should not be compiled to `.ll`
+# Assembly files should not be compiled to `.bc`
 with-assembly: default mod.o sub.o
 
-# Compilation with linking, should be compiled to `.llw`
+# Compilation with linking, should be compiled to `.bcw`
 with-linking: default file.so
 
 # Note: mod.o (mod.S) is implicitly compiled using CC, but sub.o (sub.s)
@@ -23,4 +23,4 @@ file.so: file.o
 	$(CC) $(CFLAGS) -o $@ $^ -shared
 
 clean:
-	rm -f *.o *.ll *.so
+	rm -f *.o *.so *.bc

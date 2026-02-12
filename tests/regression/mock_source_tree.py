@@ -22,7 +22,7 @@ class MockSourceTree(SourceTree):
         self.real_source_tree = real_source_tree
 
     def get_module_for_symbol(self, symbol, created_before=None):
-        llvm_file = os.path.join(self.source_dir, "{}.ll".format(symbol))
+        llvm_file = os.path.join(self.source_dir, "{}.bc".format(symbol))
         src_file = os.path.join(self.source_dir, "{}.c".format(symbol))
 
         if not os.path.exists(llvm_file) and self.real_source_tree is not None:
@@ -35,7 +35,7 @@ class MockSourceTree(SourceTree):
         return LlvmModule(llvm_file, src_file)
 
     def get_kernel_module(self, mod_dir, mod_name):
-        llvm_file = os.path.join(self.source_dir, "{}.ll".format(mod_name))
+        llvm_file = os.path.join(self.source_dir, "{}.bc".format(mod_name))
 
         if not os.path.exists(llvm_file):
             assert self.real_source_tree is not None
@@ -45,7 +45,7 @@ class MockSourceTree(SourceTree):
         return LlvmModule(llvm_file)
 
     def get_sysctl_module(self, sysctl):
-        llvm_file = os.path.join(self.source_dir, "{}.ll".format(sysctl))
+        llvm_file = os.path.join(self.source_dir, "{}.bc".format(sysctl))
         table_file = os.path.join(self.source_dir, "table")
 
         if not os.path.exists(llvm_file):
