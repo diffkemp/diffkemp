@@ -13,7 +13,7 @@
       pkgs = import nixpkgs { inherit system; };
 
       llvmVersionMin = 12;
-      llvmVersionMax = 19;
+      llvmVersionMax = 20;
       llvmVersions = pkgs.lib.lists.range llvmVersionMin llvmVersionMax;
 
       mkDiffkemp =
