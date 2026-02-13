@@ -6,12 +6,13 @@ from diffkemp.building.build_utils import (
     generate_from_function_list,
     read_symbol_list,
     EMSG_EMPTY_SYMBOL_LIST)
+from diffkemp.utils import init_logger
 import errno
 import os
 import sys
 
 
-def build_kernel(args):
+def build_kernel(args) -> None:
     """
     Create snapshot of a Linux kernel source tree. Kernel sources are
     compiled into LLVM IR on-the-fly as necessary.
@@ -19,6 +20,7 @@ def build_kernel(args):
       - list of functions (default)
       - list of sysctl options
     """
+    init_logger(args.verbose)
     # Create a new snapshot from the kernel source directory.
     snapshot = _generate_snapshot(args)
 

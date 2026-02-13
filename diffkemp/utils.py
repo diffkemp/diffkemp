@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import re
@@ -6,6 +7,18 @@ import sys
 LLVM_FUNCTION_REGEX = re.compile(r"^define.*@(\w+)\(", flags=re.MULTILINE)
 # Name of YAML output file created by diffkemp compare command.
 CMP_OUTPUT_FILE = "diffkemp-out.yaml"
+
+
+def init_logger(verbose_level: int) -> None:
+    """Initialise logger."""
+    logger_map = {
+        0: logging.ERROR,
+        1: logging.WARNING,
+        2: logging.INFO,
+        3: logging.DEBUG,
+    }
+    logger_level = logger_map.get(verbose_level, logging.DEBUG)
+    logging.basicConfig(level=logger_level)
 
 
 def get_simpll_build_dir():
