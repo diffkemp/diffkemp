@@ -33,7 +33,7 @@ def compare(args):
 
 class GroupInfo:
     def __init__(self, group, group_name, enable_module_cache, config,
-                 output_dir):
+                 output_dir, group_kind):
         self.group = group
         self.group_name = group_name
         self.group_dir = self._get_group_dir(output_dir)
@@ -44,6 +44,7 @@ class GroupInfo:
         self.cache = SimpLLCache(mkdtemp())
         self.module_cache = {}
         self.group_result = None
+        self.group_kind = group_kind
 
     def _get_group_dir(self, output_dir):
         if output_dir is not None and self.group_name is not None:
@@ -92,7 +93,8 @@ class SnapshotComparator:
         self.result = Result(Result.Kind.NONE, cmd_args.snapshot_dir_old,
                              cmd_args.snapshot_dir_new,
                              start_time=default_timer(),
-                             hierarchy_level=Result.HierarchyLevel.OVERALL)
+                             hierarchy=Result.Hierarchy(
+                                        Result.Hierarchy.Level.OVERALL))
         self.regex_pattern = re.compile(cmd_args.regex_filter) \
             if cmd_args.regex_filter else None
         self.output_dir = None
@@ -131,10 +133,12 @@ class SnapshotComparator:
 
     def _compare_snapshots(self):
         for group_name, group in sorted(self.config.snapshot_first
-                                        .fun_groups.items()):
+                                        .fun_groups.items(),
+                                        key=lambda x: (x[0] is not None, x)):
             group_info = GroupInfo(group, group_name,
                                    self.args.enable_module_cache,
-                                   self.config, self.output_dir)
+                                   self.config, self.output_dir,
+                                   self.config.snapshot_first.list_kind)
             self._compare_groups(group_info)
 
         self._finalize_output()
@@ -149,7 +153,9 @@ class SnapshotComparator:
                 Result.Kind.NONE,
                 group_name,
                 group_name,
-                hierarchy_level=Result.HierarchyLevel.GROUP)
+                hierarchy=Result.Hierarchy(
+                            Result.Hierarchy.Level.GROUP,
+                            group_info.group_kind))
         else:
             group_info.group_result = self.result
 

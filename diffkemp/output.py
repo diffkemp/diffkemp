@@ -35,7 +35,7 @@ class YamlOutput:
 
     def _create_results(self, current_result, name=None):
         """:param current_result: node in the result class tree"""
-        if current_result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+        if current_result.hierarchy.level == Result.Hierarchy.Level.FUNCTION:
             return self._create_function_result(current_result, name)
 
         inner_results = []
@@ -44,11 +44,11 @@ class YamlOutput:
             if result is not None:
                 inner_results.append(result)
 
-        if current_result.hierarchy_level == Result.HierarchyLevel.OVERALL:
+        if current_result.hierarchy.level == Result.Hierarchy.Level.OVERALL:
             return inner_results
         # hierarchy_level == GROUP
         return {
-            "sysctl": name,  # sysctl is the only usecase of groups
+            current_result.hierarchy.group_kind: name,
             "results": inner_results
         }
 

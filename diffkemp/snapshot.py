@@ -229,6 +229,9 @@ class Snapshot:
             if "sysctl" in g:
                 group = g["sysctl"]
                 functions = g["functions"]
+            elif "glob_var" in g:
+                group = g["glob_var"]
+                functions = g["functions"]
             else:
                 group = None
                 functions = g
