@@ -183,11 +183,16 @@ class Result:
             self.diff_kind = diff_kind
             self.covered = covered
 
-    class HierarchyLevel(IntEnum):
+    class Hierarchy:
         """Describes position of result instance in result comparison tree"""
-        OVERALL = 0
-        GROUP = 1
-        FUNCTION = 2
+        class Level(IntEnum):
+            OVERALL = 0
+            GROUP = 1
+            FUNCTION = 2
+
+        def __init__(self, level, group_kind=None):
+            self.level = level
+            self.group_kind = group_kind
 
     class SymbolStat:
         def __init__(self):
@@ -199,7 +204,8 @@ class Result:
             self.empty_diff = 0
 
     def __init__(self, kind, first_name, second_name, start_time=None,
-                 stop_time=None, hierarchy_level=HierarchyLevel.FUNCTION):
+                 stop_time=None,
+                 hierarchy=Hierarchy(Hierarchy.Level.FUNCTION)):
         self.kind = kind
         self.first = Result.Entity(first_name)
         self.second = Result.Entity(second_name)
@@ -209,7 +215,7 @@ class Result:
         self.inner = dict()
         self.start_time = start_time
         self.stop_time = stop_time
-        self.hierarchy_level = hierarchy_level
+        self.hierarchy = hierarchy
 
     def __str__(self):
         return str(self.kind)
@@ -264,7 +270,7 @@ class Result:
 
     def print_function_names(self, kind):
         for name, result in self.inner.items():
-            if result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+            if result.hierarchy.level == Result.Hierarchy.Level.FUNCTION:
                 if result.kind == kind:
                     print(name)
             else:
@@ -273,7 +279,7 @@ class Result:
     def _populate_symbol_stat(self, stats):
         """Aggregate statistics about analysed symbols."""
         for result in self.inner.values():
-            if result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+            if result.hierarchy.level == Result.Hierarchy.Level.FUNCTION:
                 stats.total += 1
                 stats.eq += result.kind == Result.Kind.EQUAL
                 stats.neq += result.kind == Result.Kind.NOT_EQUAL
@@ -306,7 +312,7 @@ class Result:
                 return hash(self.res.first.name)
 
         def _populate_unique_diffs(result, unique_diffs):
-            if result.hierarchy_level == Result.HierarchyLevel.FUNCTION:
+            if result.hierarchy.level == Result.Hierarchy.Level.FUNCTION:
                 for _, inner_res in result.inner.items():
                     if (inner_res.diff == "" and
                             inner_res.first.covered):

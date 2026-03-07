@@ -123,7 +123,7 @@ def single_function_result(graph):
 @pytest.fixture
 def multi_functions_result(graph, single_function_result):
     result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
-                    hierarchy_level=Result.HierarchyLevel.OVERALL)
+                    hierarchy=Result.Hierarchy(Result.Hierarchy.Level.OVERALL))
     result.add_inner(single_function_result)
     result.graph = graph
     yield result
@@ -132,9 +132,10 @@ def multi_functions_result(graph, single_function_result):
 @pytest.fixture
 def sysctl_group_result(graph, single_function_result):
     result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
-                    hierarchy_level=Result.HierarchyLevel.OVERALL)
+                    hierarchy=Result.Hierarchy(Result.Hierarchy.Level.OVERALL))
     group_result = Result(Result.Kind.NONE, "group_name", "group_name",
-                          hierarchy_level=Result.HierarchyLevel.GROUP)
+                          hierarchy=Result.Hierarchy(
+                              Result.Hierarchy.Level.GROUP, "sysctl"))
     group_result.add_inner(single_function_result)
     result.add_inner(group_result)
     result.graph = graph
@@ -144,11 +145,13 @@ def sysctl_group_result(graph, single_function_result):
 @pytest.fixture
 def multi_groups_result(graph, single_function_result):
     result = Result(Result.Kind.NONE, "old-snapshot-path", "new-snapshot-path",
-                    hierarchy_level=Result.HierarchyLevel.OVERALL)
+                    hierarchy=Result.Hierarchy(Result.Hierarchy.Level.OVERALL))
     outer_group_result = Result(Result.Kind.NONE, "outer_name", "outer_name",
-                                hierarchy_level=Result.HierarchyLevel.GROUP)
+                                hierarchy=Result.Hierarchy(
+                                    Result.Hierarchy.Level.GROUP, "sysctl"))
     inner_group_result = Result(Result.Kind.NONE, "inner_name", "inner_name",
-                                hierarchy_level=Result.HierarchyLevel.GROUP)
+                                hierarchy=Result.Hierarchy(
+                                    Result.Hierarchy.Level.GROUP, "sysctl"))
     inner_group_result.add_inner(single_function_result)
     outer_group_result.add_inner(inner_group_result)
     result.add_inner(outer_group_result)
