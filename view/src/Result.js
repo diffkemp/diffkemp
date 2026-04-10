@@ -37,16 +37,6 @@ export default class Result {
   newSnapshot;
 
   /**
-   * Comparison results with the following structure:
-   * -results:
-   *   -sysctl: name (this field exists only in case of sysctl comparison)
-   *    results:
-   *     -function: name
-   *       -diffs
-  */
-  results;
-
-  /**
    * Create Result from YAML file.
    * @param {Object} yaml YAML file describing result of diffkemp compare.
    */
@@ -54,56 +44,70 @@ export default class Result {
     this.definitions = yaml.definitions;
     this.oldSnapshot = yaml['old-snapshot'];
     this.newSnapshot = yaml['new-snapshot'];
-    if (yaml.results.length !== 0 && !('function' in yaml.results[0])) {
-      this.results = yaml.results;
-    } else {
-      this.results = [{ results: yaml.results }];
-    }
 
-    // Sort differing functions of each compared function
-    this.results.forEach((groupResult) => {
-      groupResult.results.forEach((result) => {
-        result.diffs.sort((diffA, diffB) => compareFunctionNames(diffA.function, diffB.function));
+    this.#sortDifferingFunctions(yaml);
+    this.#createAllCompAndDiffFuns(yaml);
+  }
+
+  /**
+   * Sort differing functions of each compared function
+   */
+  #sortDifferingFunctions(result) {
+    if ('diffs' in result) {
+      result.diffs.sort((diffA, diffB) => compareFunctionNames(diffA.function, diffB.function));
+    } else {
+      result.results.forEach((subresult) => {
+        this.#sortDifferingFunctions(subresult);
       });
-    });
-    this.#createAllCompAndDiffFuns();
+    }
   }
 
   /**
    * Creates allCompFuns and allDiffFuns fields.
-   * Expects that names of differing functions are sorted in the `results`.
+   * Expects that names of differing functions are sorted in the `result`.
+   * If one function is present in multiple groups, only the first occourrence
+   * is stored in the #allCompFuns Map.
    */
-  #createAllCompAndDiffFuns() {
+  #createAllCompAndDiffFuns(result) {
     // Map(compFunName, Map(diffFunName, diff))
     this.#allCompFuns = new Map();
     // Map(diffFunName, [...compFunNames])
     this.#allDiffFuns = new Map();
-    // foreach group (sysctl or all functions)
-    this.results.forEach((groupResult) => {
-      // foreach result (compared function)
-      groupResult.results.forEach((result) => {
-        if (!this.#allCompFuns.has(result.function)) {
-          // Map(diffFunName, diff)
-          const diffFunsForComp = new Map();
-          // for each diff (differing function)
-          result.diffs.forEach((diff) => {
-            diffFunsForComp.set(diff.function, diff);
-            if (this.#allDiffFuns.has(diff.function)) {
-              this.#allDiffFuns.get(diff.function).push(result.function);
-            } else {
-              this.#allDiffFuns.set(diff.function, [result.function]);
-            }
-          });
-          this.#allCompFuns.set(result.function, diffFunsForComp);
-        }
-      });
-    });
+    // populate allCompFuns and allDiffFuns recursively
+    this.#compAndDiffFunsRec(result);
     // sort all compared functions
     this.#allCompFuns = new Map([...this.#allCompFuns]
       .sort((a, b) => compareFunctionNames(a[0], b[0])));
     // sort keys (differing function names) in the map
     this.#allDiffFuns = new Map([...this.#allDiffFuns]
       .sort((a, b) => compareFunctionNames(a[0], b[0])));
+    // sort compFunNames for each diffFunName
+    this.#allDiffFuns.forEach((compFunNames) => {
+      compFunNames.sort((funA, funB) => compareFunctionNames(funA, funB));
+    });
+  }
+
+  #compAndDiffFunsRec(result) {
+    if (!('diffs' in result)) {
+      result.results.forEach((subresult) => {
+        this.#compAndDiffFunsRec(subresult);
+      });
+      return;
+    }
+    if (!this.#allCompFuns.has(result.function)) {
+      // Map(diffFunName, diff)
+      const diffFunsForComp = new Map();
+      // for each diff (differing function)
+      result.diffs.forEach((diff) => {
+        diffFunsForComp.set(diff.function, diff);
+        if (this.#allDiffFuns.has(diff.function)) {
+          this.#allDiffFuns.get(diff.function).push(result.function);
+        } else {
+          this.#allDiffFuns.set(diff.function, [result.function]);
+        }
+      });
+      this.#allCompFuns.set(result.function, diffFunsForComp);
+    }
   }
 
   /**
