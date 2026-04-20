@@ -5,7 +5,7 @@
 #  Z3_CXX_INCLUDE_DIRS - the z3 C++ include directory
 #  Z3_LIBRARIES - Link these to use libbpf
 
-find_path (Z3_CXX_INCLUDE_DIRS z3++.h)
+find_path (Z3_CXX_INCLUDE_DIRS z3++.h PATH_SUFFIXES z3)
 
 find_library (Z3_LIBRARIES z3)
 

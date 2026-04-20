@@ -21,11 +21,11 @@ execute_process(COMMAND llvm-config --system-libs
                 OUTPUT_VARIABLE system_libs
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-# Try to find system-wide Z3 (e.g. local build)
-find_package(Z3 CONFIG)
+# Use our FindZ3.cmake (e.g. nix build)
+find_package(Z3 MODULE)
 if (NOT ${Z3_FOUND})
-    # Use our FindZ3.cmake (e.g. nix build)
-    find_package(Z3 REQUIRED MODULE)
+  # Try to find system-wide Z3 (e.g. local build)
+  find_package(Z3 REQUIRED CONFIG)
 endif()
 
 target_include_directories(simpllTests PRIVATE ${Z3_CXX_INCLUDE_DIRS})
