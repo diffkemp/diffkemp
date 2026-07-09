@@ -139,6 +139,13 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
             auto calledFirst = getCalledFunction(callFirst);
             auto calledSecond = getCalledFunction(callSecond);
 
+            // Reset the suggestions after being consumed. The next
+            // comparison run must start with a clean slate. The calls
+            // suggested here will be erased by the inlining below, so keeping
+            // them could cause a later run to restore dangling pointers
+            // and end the loop prematurely.
+            tryInline = {nullptr, nullptr};
+
             auto inlineResultFirst = tryToInline(
                     callFirst, Program::First, config.Patterns.FunctionSplits);
             auto inlineResultSecond =
@@ -210,6 +217,12 @@ void ModuleComparator::compareFunctions(Function *FirstFun,
 
                 LOG("} " << Color::makeGreen("equal\n"));
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::EQUAL;
+                // The comparison succeeded. Do not inline any further, even
+                // if the comparison left suggestions behind since they may come
+                // from speculative comparisons made during relocation
+                // matching, and further inlining could break the
+                // established equality.
+                break;
             } else {
                 LOG("} still " << Color::makeRed("not equal\n"));
                 ComparedFuns.at({FirstFun, SecondFun}).kind = Result::NOT_EQUAL;

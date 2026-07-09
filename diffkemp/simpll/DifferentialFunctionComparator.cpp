@@ -50,7 +50,12 @@ int DifferentialFunctionComparator::compare() {
     // The result is 1 (not equal) if there is an unmatched relocation (since
     // that means that one of the functions has some extra code).
     if (Reloc.status != RelocationInfo::None) {
-        ModComparator->tryInline = Reloc.tryInlineBackup;
+        if (Reloc.tryInlineBackup.first != nullptr) {
+            ModComparator->tryInline.first = Reloc.tryInlineBackup.first;
+        }
+        if (Reloc.tryInlineBackup.second != nullptr) {
+            ModComparator->tryInline.second = Reloc.tryInlineBackup.second;
+        }
         return 1;
     }
     if (Res == 0) {
