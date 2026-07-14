@@ -6,10 +6,14 @@ from diffkemp.llvm_ir.llvm_module import LlvmModule
 from diffkemp.llvm_ir.llvm_source_finder import LlvmSourceFinder, \
     SourceNotFoundException
 from diffkemp.llvm_ir.optimiser import opt_llvm, BuildException
+import logging
 import os
 import shutil
-from subprocess import check_call, check_output, CalledProcessError
+from subprocess import (check_call, check_output, CalledProcessError, run,
+                        DEVNULL, PIPE)
 import subprocess
+
+logger = logging.getLogger(__package__)
 
 
 class KernelLlvmSourceBuilder(LlvmSourceFinder):
@@ -489,7 +493,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         """Get name of the object file built by the command."""
         return command[command.index("-c") + 1]
 
-    def _kbuild_object_command(self, object_file):
+    def _kbuild_object_command(self, object_file: str) -> str:
         """
         Check which command would be run by KBuild to build the given object
         file.
@@ -502,11 +506,14 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
         self._clean_object(object_file)
         with open(os.devnull, "w") as stderr:
             try:
-                output = check_output(
-                    ["make", "V=1",
-                     "CFLAGS=-w", "EXTRA_CFLAGS=-w",
-                     object_file,
-                     "--just-print"], stderr=stderr).decode("utf-8")
+                command = [
+                    "make", "V=1",
+                    "CFLAGS=-w", "EXTRA_CFLAGS=-w",
+                    object_file,
+                    "--just-print",
+                ]
+                logger.debug(f"Running command: {command}")
+                output = check_output(command, stderr=stderr).decode("utf-8")
             except CalledProcessError:
                 raise BuildException("Error compiling {}".format(object_file))
             finally:
@@ -560,7 +567,7 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
             os.chdir(cwd)
         raise BuildException("Could not build module {}".format(mod_name))
 
-    def _build_source_to_llvm(self, source_file):
+    def _build_source_to_llvm(self, source_file: str) -> str:
         """
         Build C source file into LLVM IR.
         Gets the Kbuild command that is used for building an object file,
@@ -578,16 +585,23 @@ class KernelLlvmSourceBuilder(LlvmSourceFinder):
             try:
                 # Get GCC command for building the .o file
                 command = self._kbuild_object_command("{}.o".format(name))
+                logger.debug("Extracted gcc command")
                 # Convert the GCC command to a corresponding Clang command
                 command = self._gcc_to_llvm(command)
+                logger.debug("Translated gcc command to llvm")
                 # Run the Clang command
-                with open(os.devnull, "w") as stderr:
-                    try:
-                        check_call(command, stderr=stderr)
-                    except CalledProcessError:
-                        os.chdir(cwd)
-                        raise BuildException(
-                            "Could not build {}".format(llvm_file))
+                try:
+                    logger.debug(f"Running clang: {command}")
+                    run(command, check=True, text=True,
+                        stdout=DEVNULL, stderr=PIPE)
+                except CalledProcessError as e:
+                    os.chdir(cwd)
+                    logger.debug(
+                        f"Could not build {source_file} to {llvm_file}:\n"
+                        f"{e.stderr}"
+                    )
+                    raise BuildException(
+                        "Could not build {}".format(llvm_file))
                 # Run opt with selected optimisations
                 opt_llvm(llvm_file)
             except BuildException:
