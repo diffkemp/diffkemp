@@ -25,8 +25,10 @@
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
 #include <set>
 #include <unordered_set>
@@ -48,9 +50,17 @@ void DifferentialFunctionComparator::beginCompare() {
 int DifferentialFunctionComparator::compare() {
     int Res = FunctionComparator::compare();
     // The result is 1 (not equal) if there is an unmatched relocation (since
-    // that means that one of the functions has some extra code).
-    if (Reloc.status != RelocationInfo::None) {
-        ModComparator->tryInline = Reloc.tryInlineBackup;
+    // that means that one of the functions has some extra code). An exception
+    // is a stored relocation whose every instruction has been resolved as a
+    // duplicate of another instruction - such a block covers no extra
+    // functionality and can be ignored.
+    if (Reloc.status != RelocationInfo::None && !isRelocResolved()) {
+        if (Reloc.tryInlineBackup.first != nullptr) {
+            ModComparator->tryInline.first = Reloc.tryInlineBackup.first;
+        }
+        if (Reloc.tryInlineBackup.second != nullptr) {
+            ModComparator->tryInline.second = Reloc.tryInlineBackup.second;
+        }
         return 1;
     }
     if (Res == 0) {
@@ -581,7 +591,12 @@ bool DifferentialFunctionComparator::maySkipInstruction(
         return maySkipStore(Store);
     }
     if (auto Load = dyn_cast<LoadInst>(Inst)) {
-        return maySkipLoad(Load);
+        if (maySkipLoad(Load))
+            return true;
+        return maySkipDuplicateLoad(Load);
+    }
+    if (isa<SelectInst>(Inst) || isa<ICmpInst>(Inst)) {
+        return maySkipKnownCondition(Inst);
     }
     return false;
 }
@@ -943,6 +958,16 @@ int DifferentialFunctionComparator::cmpBasicBlocks(
         const BasicBlock *BBL, const BasicBlock *BBR) const {
     BasicBlock::const_iterator InstL = BBL->begin();
     BasicBlock::const_iterator InstR = BBR->begin();
+    if (config.Patterns.FunctionSplits) {
+        // Remember which block pair we are comparing. The conditions that
+        // are known to be true or false at their entry are needed only when we
+        // actually try to skip a condition, which is rare. So we let
+        // maySkipKnownCondition compute them lazily on first use, instead of
+        // doing that work eagerly for every block pair here.
+        knownCondsBlockL = BBL;
+        knownCondsBlockR = BBR;
+        knownCondsComputed = false;
+    }
     return cmpBasicBlocksFromInstructions(BBL, BBR, InstL, InstR);
 }
 
@@ -1115,6 +1140,17 @@ int DifferentialFunctionComparator::cmpBasicBlocksFromInstructions(
             }
 
             if (Reloc.status == RelocationInfo::Stored) {
+                // If all instructions of the stored block have been resolved
+                // as duplicates of other instructions (i.e., the block
+                // contains no extra functionality), discard the relocation
+                // and retry the comparison from the current position. This
+                // allows, e.g., finding another relocation.
+                if (isRelocResolved()) {
+                    LOG("Stored relocation resolved as duplicate code\n");
+                    Reloc.status = RelocationInfo::None;
+                    undoLastInstCompare(InstL, InstR);
+                    continue;
+                }
                 // If there is an inequality found and we have previously found
                 // a possibly relocated block, try to match it now.
                 Reloc.status = RelocationInfo::Matching;
@@ -1619,8 +1655,20 @@ int DifferentialFunctionComparator::cmpValues(const Value *L,
     }
 
     auto oldSnMapSize = sn_mapL.size();
+    auto oldSnMapSizeR = sn_mapR.size();
     int result = FunctionComparator::cmpValues(L, R);
     if (result) {
+        // The values are not synchronized with each other. However, one of
+        // them may be a duplicate of the value that the other one is
+        // synchronized with (a single value in one module can correspond to
+        // multiple identical computations in the other one). In such a case,
+        // map the duplicate onto the already synchronized value.
+        if (tryMatchDuplicateValue(L,
+                                   R,
+                                   sn_mapL.size() == oldSnMapSize + 1,
+                                   sn_mapR.size() == oldSnMapSizeR + 1)) {
+            RETURN_WITH_LOG_NEQ(0);
+        }
         if (isa<Constant>(L) && isa<Constant>(R)) {
             auto *ConstantL = dyn_cast<Constant>(L);
             auto *ConstantR = dyn_cast<Constant>(R);
@@ -2139,6 +2187,643 @@ bool DifferentialFunctionComparator::isDependingOnReloc(
         RelocInst++;
     } while (RelocInst != Reloc.end);
 
+    return false;
+}
+
+/// Maximal operand depth that is inspected when checking whether two
+/// instructions are equivalent duplicates.
+static const unsigned DuplicateMaxDepth = 10;
+
+/// Check if the unmatched value is a duplicate of an already-synchronized
+/// value (one-to-many mapping). This handles code that recomputes
+/// a value which the other module computes only once.
+/// Note: this must be called right after a failed synchronisation attempt in
+/// cmpValues since it cleans the serial number that the attempt assigned to
+/// the duplicated value.
+bool DifferentialFunctionComparator::tryMatchDuplicateValue(const Value *L,
+                                                            const Value *R,
+                                                            bool freshL,
+                                                            bool freshR) const {
+    // R is new and L is already synchronized: R may be a duplicate of the
+    // value that L is synchronized with.
+    if (!freshL && freshR) {
+        auto MappedR = dyn_cast_or_null<Instruction>(getMappedValue(L, true));
+        auto InstR = dyn_cast<Instruction>(R);
+        if (MappedR && InstR
+            && isEquivalentDuplicate(InstR, MappedR, DuplicateMaxDepth)) {
+            // Remove the serial number that was assigned to the duplicate by
+            // the failed comparison and map it onto the value that L is
+            // synchronized with.
+            sn_mapR.erase(R);
+            replacedInstructions.emplace(R, MappedR);
+            LOG_VERBOSE("Duplicate value matched in second:\n");
+            LOG_INDENT();
+            LOG_VERBOSE("dup: " << *InstR << "\n");
+            LOG_VERBOSE("of:  " << *MappedR << "\n");
+            LOG_UNINDENT();
+            return true;
+        }
+    }
+    // The symmetric case: L may be a duplicate of the value that R is
+    // synchronized with.
+    if (freshL && !freshR) {
+        auto MappedL = dyn_cast_or_null<Instruction>(getMappedValue(R, false));
+        auto InstL = dyn_cast<Instruction>(L);
+        if (MappedL && InstL
+            && isEquivalentDuplicate(InstL, MappedL, DuplicateMaxDepth)) {
+            sn_mapL.erase(L);
+            replacedInstructions.emplace(L, MappedL);
+            LOG_VERBOSE("Duplicate value matched in first:\n");
+            LOG_INDENT();
+            LOG_VERBOSE("dup: " << *InstL << "\n");
+            LOG_VERBOSE("of:  " << *MappedL << "\n");
+            LOG_UNINDENT();
+            return true;
+        }
+    }
+    return false;
+}
+
+/// Check whether instruction A computes the same value as instruction B. Both
+/// instructions must come from the same function. The check succeeds when the
+/// instructions do the same operation on equivalent operands and their result
+/// is fully determined by those operands. Loads are additionally checked for
+/// conflicting stores. Two calls of the same function with the same arguments
+/// are assumed to return the same value.
+bool DifferentialFunctionComparator::isEquivalentDuplicate(
+        const Instruction *A, const Instruction *B, unsigned Depth) const {
+    if (A == B) {
+        return true;
+    }
+    if (!Depth) {
+        return false;
+    }
+    if (A->getFunction() != B->getFunction()) {
+        return false;
+    }
+    if (!A->isSameOperationAs(B)) {
+        return false;
+    }
+
+    // Only operations whose result is determined by their operands (plus
+    // loads and calls, which are guarded below) may be matched as duplicates.
+    // Note that, e.g., allocas or PHI nodes must never be matched.
+    switch (A->getOpcode()) {
+    case Instruction::GetElementPtr:
+    case Instruction::Select:
+    case Instruction::ICmp:
+    case Instruction::FCmp:
+    case Instruction::ExtractElement:
+    case Instruction::ExtractValue:
+    case Instruction::Load:
+    case Instruction::Call:
+        break;
+    default:
+        if (!A->isBinaryOp() && !A->isCast() && !A->isUnaryOp()) {
+            return false;
+        }
+        break;
+    }
+
+    if (auto LoadA = dyn_cast<LoadInst>(A)) {
+        auto LoadB = dyn_cast<LoadInst>(B);
+        // Only simple loads can be duplicates and there must be no conflicting
+        // store before either of them (within their basic blocks).
+        if (!LoadA->isSimple() || !LoadB->isSimple()) {
+            return false;
+        }
+        if (hasConflictingStoreInBlockPrefix(LoadA)
+            || hasConflictingStoreInBlockPrefix(LoadB)) {
+            return false;
+        }
+    }
+    if (auto CallA = dyn_cast<CallInst>(A)) {
+        auto CalledA = getCalledFunction(CallA);
+        auto CalledB = getCalledFunction(dyn_cast<CallInst>(B));
+        if (!CalledA || CalledA != CalledB || CalledA->isIntrinsic()) {
+            return false;
+        }
+    }
+
+    for (unsigned i = 0, e = A->getNumOperands(); i != e; ++i) {
+        if (!cmpDuplicateOperands(A->getOperand(i), B->getOperand(i), Depth)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/// Check whether two operands coming from the same module represent the same
+/// value - either directly, after replacements, or as equivalent duplicates.
+/// Newly found duplicates are recorded in replacedInstructions so that they
+/// are resolved directly the next time.
+bool DifferentialFunctionComparator::cmpDuplicateOperands(
+        const Value *OpA, const Value *OpB, unsigned Depth) const {
+    if (OpA == OpB) {
+        return true;
+    }
+    auto ResA = resolveReplacements(OpA);
+    auto ResB = resolveReplacements(OpB);
+    if (ResA == ResB) {
+        return true;
+    }
+    auto InstA = dyn_cast<Instruction>(ResA);
+    auto InstB = dyn_cast<Instruction>(ResB);
+    if (!InstA || !InstB || !isEquivalentDuplicate(InstA, InstB, Depth - 1)) {
+        return false;
+    }
+    // Remember the equivalence. To keep the value synchronisation consistent,
+    // an instruction that is already synchronized (has a serial number) must
+    // stay the replacement target, never the replaced one.
+    auto &sn_map = InstA->getFunction() == FnL ? sn_mapL : sn_mapR;
+    if (sn_map.find(InstA) == sn_map.end()) {
+        replacedInstructions.emplace(InstA, InstB);
+    } else if (sn_map.find(InstB) == sn_map.end()) {
+        replacedInstructions.emplace(InstB, InstA);
+    }
+    return true;
+}
+
+/// Follow the chain of replacements stored in replacedInstructions.
+/// The number of steps is limited to avoid potential cycles.
+const Value *DifferentialFunctionComparator::resolveReplacements(
+        const Value *Val) const {
+    unsigned Steps = 0;
+    auto It = replacedInstructions.find(Val);
+    while (It != replacedInstructions.end() && Steps++ < DuplicateMaxDepth) {
+        Val = It->second;
+        It = replacedInstructions.find(Val);
+    }
+    return Val;
+}
+
+/// Check whether every instruction of the currently stored relocation block
+/// has been resolved, i.e., matched as a duplicate of another instruction,
+/// synchronized, skipped, or proven not to affect semantics. Such a relocation
+/// covers no extra functionality (the other module contains all of its
+/// computations, just in different places), hence it does not have to be
+/// matched to a block in the other module and can be discarded.
+bool DifferentialFunctionComparator::isRelocResolved() const {
+    if (Reloc.status != RelocationInfo::Stored) {
+        return false;
+    }
+    auto &sn_map = Reloc.prog == Program::First ? sn_mapL : sn_mapR;
+    for (auto It = Reloc.begin;; ++It) {
+        const Instruction *Inst = &*It;
+        if (!isDebugInfo(*Inst)) {
+            bool resolved = replacedInstructions.find(Inst)
+                                    != replacedInstructions.end()
+                            || sn_map.find(Inst) != sn_map.end()
+                            || skippedInstructions.count(Inst)
+                            || ignoredInstructions.count(Inst)
+                            || (Inst->use_empty() && !Inst->mayHaveSideEffects()
+                                && !Inst->isTerminator());
+            if (!resolved) {
+                return false;
+            }
+        }
+        if (It == Reloc.end) {
+            break;
+        }
+    }
+    return true;
+}
+
+/// Check whether there is a possibly conflicting store between the beginning
+/// of the basic block of the given load and the load itself.
+bool DifferentialFunctionComparator::hasConflictingStoreInBlockPrefix(
+        const LoadInst *Load) const {
+    for (const Instruction &Inst : *Load->getParent()) {
+        if (&Inst == Load) {
+            break;
+        }
+        if (mayClobberPtr(&Inst, Load->getPointerOperand())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/// Decompose a pointer into its base and a path of GEP indices (constant
+/// indices are stored as their values, non-constant ones as nullopt).
+static const Value *decomposePtr(const Value *Ptr,
+                                 std::vector<std::optional<int64_t>> &Path) {
+    while (true) {
+        Ptr = Ptr->stripPointerCasts();
+        auto GEP = dyn_cast<GEPOperator>(Ptr);
+        if (!GEP) {
+            break;
+        }
+        std::vector<std::optional<int64_t>> GEPPath;
+        for (auto &Idx : make_range(GEP->idx_begin(), GEP->idx_end())) {
+            if (auto Const = dyn_cast<ConstantInt>(Idx.get())) {
+                GEPPath.push_back(Const->getSExtValue());
+            } else {
+                GEPPath.push_back(std::nullopt);
+            }
+        }
+        Path.insert(Path.begin(), GEPPath.begin(), GEPPath.end());
+        Ptr = GEP->getPointerOperand();
+    }
+    return Ptr;
+}
+
+/// Check whether two pointers may point to overlapping memory.
+/// Pointers with different bases are assumed not to overlap.
+/// Pointers with the same base are compared field-sensitively:
+/// if the corresponding GEP indices are constant and different,
+/// the pointers point to different fields and do not overlap.
+/// A pointer used directly (without a GEP) is treated as a pointer to the
+/// first field (an all-zero index path).
+bool DifferentialFunctionComparator::ptrsMayOverlap(const Value *PtrA,
+                                                    const Value *PtrB) const {
+    PtrA = resolveReplacements(PtrA);
+    PtrB = resolveReplacements(PtrB);
+    if (PtrA == PtrB) {
+        return true;
+    }
+
+    std::vector<std::optional<int64_t>> PathA, PathB;
+    auto BaseA = decomposePtr(PtrA, PathA);
+    auto BaseB = decomposePtr(PtrB, PathB);
+    if (BaseA != BaseB) {
+        return false;
+    }
+
+    // Pad the shorter path with zeros (direct pointer = first field).
+    auto MaxSize = std::max(PathA.size(), PathB.size());
+    PathA.resize(MaxSize, 0);
+    PathB.resize(MaxSize, 0);
+    for (unsigned i = 0; i < MaxSize; ++i) {
+        if (PathA[i] && PathB[i] && *PathA[i] != *PathB[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/// Check whether the given instruction may overwrite the memory that
+/// a load from the given pointer reads. Stores are checked field-sensitively.
+/// A call is considered clobbering when any of its pointer arguments may
+/// overlap with the given pointer. Note the pragmatic assumption here:
+/// a function cannot access the memory unless it receives a pointer to it
+/// (globals and pointers stored in other structures are not considered).
+bool DifferentialFunctionComparator::mayClobberPtr(const Instruction *Inst,
+                                                   const Value *Ptr) const {
+    if (auto Store = dyn_cast<StoreInst>(Inst)) {
+        return ptrsMayOverlap(Store->getPointerOperand(), Ptr);
+    }
+    if (auto Call = dyn_cast<CallInst>(Inst)) {
+        if (isDebugInfo(*Call)) {
+            return false;
+        }
+        if (auto Intr = dyn_cast<IntrinsicInst>(Call)) {
+            // Lifetime markers and assumptions do not write memory.
+            if (Intr->getIntrinsicID() == Intrinsic::lifetime_start
+                || Intr->getIntrinsicID() == Intrinsic::lifetime_end
+                || Intr->getIntrinsicID() == Intrinsic::assume) {
+                return false;
+            }
+        }
+        for (const auto &Arg : Call->args()) {
+            if (Arg->getType()->isPointerTy() && ptrsMayOverlap(Arg, Ptr)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return Inst->mayWriteToMemory();
+}
+
+/// Try to find a value that the given load must yield: either a previous load
+/// from the same pointer or a value stored to the pointer by a previous store
+/// (store-to-load forwarding). This is a generalisation of maySkipLoad: all
+/// backward CFG paths from the load must lead to a single such value and
+/// there must be no conflicting store (checked by mayClobberPtr) on any of
+/// the paths.
+const Value *DifferentialFunctionComparator::findLoadReplacement(
+        const LoadInst *Load) const {
+    if (!Load->isSimple()) {
+        return nullptr;
+    }
+    auto BB = Load->getParent();
+    if (!BB) {
+        return nullptr;
+    }
+    auto Ptr = resolveReplacements(Load->getPointerOperand());
+
+    bool first = true;
+    const Value *Replacement = nullptr;
+    std::deque<const BasicBlock *> blockQueue = {BB};
+    std::unordered_set<const BasicBlock *> visitedBlocks = {BB};
+    while (!blockQueue.empty()) {
+        BB = blockQueue.front();
+        blockQueue.pop_front();
+
+        bool checkPredecessors = true;
+        for (auto it = BB->rbegin(); it != BB->rend(); ++it) {
+            // Skip all instructions after the compared load when in the first
+            // block (note that we are iterating in reverse).
+            if (first) {
+                if (&*it == Load) {
+                    first = false;
+                }
+                continue;
+            }
+
+            const Value *ReplacementCandidate = nullptr;
+            if (auto PreviousLoad = dyn_cast<LoadInst>(&*it)) {
+                if (PreviousLoad->isSimple()
+                    && PreviousLoad->getType() == Load->getType()
+                    && resolveReplacements(PreviousLoad->getPointerOperand())
+                               == Ptr) {
+                    // Found a load of the same pointer.
+                    ReplacementCandidate = PreviousLoad;
+                }
+            } else if (auto Store = dyn_cast<StoreInst>(&*it)) {
+                if (Store->isSimple()
+                    && Store->getValueOperand()->getType() == Load->getType()
+                    && resolveReplacements(Store->getPointerOperand()) == Ptr) {
+                    // Found a store of the loaded pointer - the load must
+                    // yield the stored value.
+                    ReplacementCandidate = Store->getValueOperand();
+                }
+            }
+            if (ReplacementCandidate) {
+                if (Replacement && Replacement != ReplacementCandidate) {
+                    // If a different replacement has been found previously in
+                    // another CFG path, fail. We need a single one.
+                    return nullptr;
+                }
+                Replacement = ReplacementCandidate;
+                checkPredecessors = false;
+                break;
+            } else if (mayClobberPtr(&*it, Ptr)) {
+                return nullptr;
+            }
+        }
+
+        if (checkPredecessors) {
+            auto BBPredecessors = predecessors(BB);
+            if (BBPredecessors.begin() == BBPredecessors.end()) {
+                // Reached the top of the function without a replacement.
+                return nullptr;
+            }
+            for (auto PredBB : BBPredecessors) {
+                if (visitedBlocks.find(PredBB) == visitedBlocks.end()) {
+                    visitedBlocks.insert(PredBB);
+                    blockQueue.push_back(PredBB);
+                }
+            }
+        }
+    }
+    return Replacement;
+}
+
+/// Check whether the given load can be skipped because it is guaranteed to
+/// yield a value that is already available. This handles loads
+/// duplicated by moving code into a function which receives a struct by
+/// pointer and re-reads its fields (which the original code had in registers).
+bool DifferentialFunctionComparator::maySkipDuplicateLoad(
+        const LoadInst *Load) const {
+    auto Replacement = findLoadReplacement(Load);
+    if (!Replacement) {
+        return false;
+    }
+    LOG_VERBOSE("Skipping duplicate load:\n");
+    LOG_INDENT();
+    LOG_VERBOSE("load:        " << *Load << "\n");
+    LOG_VERBOSE("replacement: " << *Replacement << "\n");
+    LOG_UNINDENT();
+    replacedInstructions.insert({Load, Replacement});
+    return true;
+}
+
+/// Collect conditions whose boolean values are known at the entry of the
+/// given basic block. The facts are derived from conditional branches taken
+/// on the way to the block: the walk goes up as long as blocks have a single
+/// predecessor, so every visited branch is guaranteed to have been taken.
+void DifferentialFunctionComparator::computeKnownConds(
+        const BasicBlock *BB,
+        std::unordered_map<const Value *, bool> &Conds,
+        std::unordered_set<const BasicBlock *> &Blocks) const {
+    Conds.clear();
+    Blocks.clear();
+    Blocks.insert(BB);
+    unsigned Depth = 8;
+    while (Depth--) {
+        auto Pred = BB->getSinglePredecessor();
+        if (!Pred) {
+            break;
+        }
+        auto Branch = dyn_cast<BranchInst>(Pred->getTerminator());
+        if (Branch && Branch->isConditional()
+            && Branch->getSuccessor(0) != Branch->getSuccessor(1)) {
+            // The guard above skips branches whose two successors are the same
+            // block. There, reaching BB does not tell us which way the branch
+            // went, so we must not derive any fact from it. Such a branch is
+            // usually optimised away. With the guard, BB is exactly one of the
+            // two successors, so we know how the condition evaluated.
+            if (Branch->getSuccessor(0) == BB) {
+                addKnownCond(Branch->getCondition(), true, Conds, 8);
+            } else {
+                addKnownCond(Branch->getCondition(), false, Conds, 8);
+            }
+        }
+        Blocks.insert(Pred);
+        BB = Pred;
+    }
+}
+
+/// Record the known value of a condition and propagate it through boolean
+/// operations (selects used as and/or, i1 binary operations).
+void DifferentialFunctionComparator::addKnownCond(
+        const Value *Cond,
+        bool Val,
+        std::unordered_map<const Value *, bool> &Conds,
+        unsigned Depth) const {
+    if (!Depth) {
+        return;
+    }
+    if (!Conds.emplace(Cond, Val).second) {
+        return;
+    }
+
+    auto isConstBool = [](const Value *V, bool B) {
+        auto Const = dyn_cast<ConstantInt>(V);
+        return Const && Const->getType()->isIntegerTy(1) && Const->isOne() == B;
+    };
+    if (auto Select = dyn_cast<SelectInst>(Cond)) {
+        auto C = Select->getCondition();
+        auto T = Select->getTrueValue();
+        auto F = Select->getFalseValue();
+        if (Val) {
+            // select(c, t, false) == true => c == true && t == true
+            if (isConstBool(F, false)) {
+                addKnownCond(C, true, Conds, Depth - 1);
+                addKnownCond(T, true, Conds, Depth - 1);
+            }
+            // select(c, false, f) == true => c == false && f == true
+            if (isConstBool(T, false)) {
+                addKnownCond(C, false, Conds, Depth - 1);
+                addKnownCond(F, true, Conds, Depth - 1);
+            }
+        } else {
+            // select(c, true, f) == false => c == false && f == false
+            if (isConstBool(T, true)) {
+                addKnownCond(C, false, Conds, Depth - 1);
+                addKnownCond(F, false, Conds, Depth - 1);
+            }
+            // select(c, t, true) == false => c == true && t == false
+            if (isConstBool(F, true)) {
+                addKnownCond(C, true, Conds, Depth - 1);
+                addKnownCond(T, false, Conds, Depth - 1);
+            }
+        }
+    } else if (auto BinOp = dyn_cast<BinaryOperator>(Cond)) {
+        if (BinOp->getOpcode() == Instruction::And && Val) {
+            addKnownCond(BinOp->getOperand(0), true, Conds, Depth - 1);
+            addKnownCond(BinOp->getOperand(1), true, Conds, Depth - 1);
+        } else if (BinOp->getOpcode() == Instruction::Or && !Val) {
+            addKnownCond(BinOp->getOperand(0), false, Conds, Depth - 1);
+            addKnownCond(BinOp->getOperand(1), false, Conds, Depth - 1);
+        } else if (BinOp->getOpcode() == Instruction::Xor) {
+            if (isConstBool(BinOp->getOperand(1), true)) {
+                addKnownCond(BinOp->getOperand(0), !Val, Conds, Depth - 1);
+            }
+        }
+    }
+}
+
+/// Get the known boolean value of the given condition at the current position
+/// in the given program. Apart from a direct fact lookup, the value of an
+/// integer comparison can be derived from a fact about another comparison of
+/// the same operands (e.g. when one is the inverse of the other).
+std::optional<bool>
+        DifferentialFunctionComparator::getKnownCondValue(const Value *Cond,
+                                                          Program prog) const {
+    auto &Conds = prog == Program::First ? knownCondsL : knownCondsR;
+
+    Cond = resolveReplacements(Cond);
+    if (auto Const = dyn_cast<ConstantInt>(Cond)) {
+        if (Const->getType()->isIntegerTy(1)) {
+            return Const->isOne();
+        }
+        return std::nullopt;
+    }
+
+    auto Direct = Conds.find(Cond);
+    if (Direct != Conds.end()) {
+        return Direct->second;
+    }
+
+    auto Cmp = dyn_cast<ICmpInst>(Cond);
+    if (!Cmp) {
+        return std::nullopt;
+    }
+    auto Op0 = resolveValueThroughLoads(Cmp->getOperand(0));
+    auto Op1 = resolveValueThroughLoads(Cmp->getOperand(1));
+    for (auto &&Fact : Conds) {
+        auto FactCmp = dyn_cast<ICmpInst>(Fact.first);
+        if (!FactCmp) {
+            continue;
+        }
+        auto FactOp0 = resolveValueThroughLoads(FactCmp->getOperand(0));
+        auto FactOp1 = resolveValueThroughLoads(FactCmp->getOperand(1));
+
+        auto FactPred = FactCmp->getPredicate();
+        if (Op0 == FactOp1 && Op1 == FactOp0) {
+            FactPred = ICmpInst::getSwappedPredicate(FactPred);
+        } else if (Op0 != FactOp0 || Op1 != FactOp1) {
+            continue;
+        }
+
+        if (Cmp->getPredicate() == FactPred) {
+            return Fact.second;
+        }
+        if (Cmp->getPredicate() == ICmpInst::getInversePredicate(FactPred)) {
+            return !Fact.second;
+        }
+    }
+    return std::nullopt;
+}
+
+/// Resolve the given value through replacements and load-forwarding (a load
+/// is replaced by the value it must yield, see findLoadReplacement). Used to
+/// compare values of condition operands.
+const Value *DifferentialFunctionComparator::resolveValueThroughLoads(
+        const Value *Val) const {
+    Val = resolveReplacements(Val);
+    unsigned Depth = DuplicateMaxDepth;
+    while (Depth--) {
+        auto Load = dyn_cast<LoadInst>(Val);
+        if (!Load) {
+            break;
+        }
+        auto Replacement = findLoadReplacement(Load);
+        if (!Replacement) {
+            break;
+        }
+        Val = resolveReplacements(Replacement);
+    }
+    return Val;
+}
+
+/// Check whether the given instruction computes a condition (or selects a
+/// value based on a condition) whose result is known at the current position
+/// in its program. If so, the instruction is replaced by its known result
+/// and can be skipped. This handles conditions that one of the compilers
+/// evaluated statically using the branching context (e.g. when a condition
+/// from the original code is re-checked by code moved into a function).
+bool DifferentialFunctionComparator::maySkipKnownCondition(
+        const Instruction *Inst) const {
+    Program prog =
+            Inst->getFunction() == FnL ? Program::First : Program::Second;
+    // Compute the known conditions for the current block pair on first demand
+    // (cmpBasicBlocks only records the blocks). They are needed only when a
+    // condition actually has to be skipped, which is rare.
+    if (!knownCondsComputed && knownCondsBlockL && knownCondsBlockR) {
+        computeKnownConds(knownCondsBlockL, knownCondsL, knownCondsBlocksL);
+        computeKnownConds(knownCondsBlockR, knownCondsR, knownCondsBlocksR);
+        knownCondsComputed = true;
+    }
+    auto &Blocks =
+            prog == Program::First ? knownCondsBlocksL : knownCondsBlocksR;
+    // The collected facts are only valid for the blocks they were computed
+    // for (the comparison may currently be at a different position, e.g.
+    // when matching a relocation).
+    if (Blocks.find(Inst->getParent()) == Blocks.end()) {
+        return false;
+    }
+
+    if (auto Select = dyn_cast<SelectInst>(Inst)) {
+        auto CondVal = getKnownCondValue(Select->getCondition(), prog);
+        if (!CondVal) {
+            return false;
+        }
+        auto Arm = *CondVal ? Select->getTrueValue() : Select->getFalseValue();
+        LOG_VERBOSE("Skipping select with a known condition:\n");
+        LOG_INDENT();
+        LOG_VERBOSE("select: " << *Select << "\n");
+        LOG_VERBOSE("value:  " << *Arm << "\n");
+        LOG_UNINDENT();
+        replacedInstructions.insert({Select, Arm});
+        return true;
+    }
+    if (isa<ICmpInst>(Inst)) {
+        auto Known = getKnownCondValue(Inst, prog);
+        if (!Known) {
+            return false;
+        }
+        LOG_VERBOSE("Skipping comparison with a known value:\n");
+        LOG_INDENT();
+        LOG_VERBOSE("cmp:   " << *Inst << "\n");
+        LOG_VERBOSE("value: " << (*Known ? "true" : "false") << "\n");
+        LOG_UNINDENT();
+        replacedInstructions.insert(
+                {Inst, ConstantInt::getBool(Inst->getContext(), *Known)});
+        return true;
+    }
     return false;
 }
 

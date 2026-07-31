@@ -23,6 +23,7 @@
 #include "ModuleComparator.h"
 #include "SmtBlockComparator.h"
 #include "Utils.h"
+#include <optional>
 
 using namespace llvm;
 
@@ -196,6 +197,21 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// value comparison to prevent infinite recursion.
     mutable std::set<std::pair<const Value *, const Value *>> assumedEqual;
 
+    /// Conditions whose true/false value is known at the entry of the basic
+    /// blocks currently being compared (one map per module), together with the
+    /// blocks that these facts hold for.
+    mutable std::unordered_map<const Value *, bool> knownCondsL, knownCondsR;
+    mutable std::unordered_set<const BasicBlock *> knownCondsBlocksL,
+            knownCondsBlocksR;
+
+    /// The block pair that the known conditions above belong to, and a flag
+    /// saying whether they have been computed yet. We compute the facts only on
+    /// first use (see maySkipKnownCondition), because most block pairs never
+    /// need them.
+    mutable const BasicBlock *knownCondsBlockL = nullptr,
+                             *knownCondsBlockR = nullptr;
+    mutable bool knownCondsComputed = false;
+
     /// Relocation information type. Supports relocation of a sequential block
     /// of code.
     struct RelocationInfo {
@@ -316,6 +332,100 @@ class DifferentialFunctionComparator : public FunctionComparator {
     /// (any instruction within it) access the same pointer and one of the
     /// accesses is a store and the other one is a load.
     bool isDependingOnReloc(const Instruction &Inst) const;
+
+    /// Check whether one of the given values is a duplicate of the value that
+    /// the other one is already matched with (a one-to-many mapping). It counts
+    /// as a duplicate when the two come from the same function and do the same
+    /// operation on equivalent operands. On success, the duplicate reuses the
+    /// serial number of the value it duplicates.
+    /// \param L      Value from the first module.
+    /// \param R      Value from the second module.
+    /// \param freshL True if L was given a new serial number by the last
+    ///               (failed) matching attempt.
+    /// \param freshR Same for R.
+    bool tryMatchDuplicateValue(const Value *L,
+                                const Value *R,
+                                bool freshL,
+                                bool freshR) const;
+
+    /// Check whether instruction A computes the same value as instruction B.
+    /// Both instructions must be from the same function. Newly found
+    /// equivalent instruction pairs are recorded in replacedInstructions.
+    bool isEquivalentDuplicate(const Instruction *A,
+                               const Instruction *B,
+                               unsigned Depth) const;
+
+    /// Check whether two operands coming from the same module represent the
+    /// same value (directly or as equivalent duplicates).
+    bool cmpDuplicateOperands(const Value *OpA,
+                              const Value *OpB,
+                              unsigned Depth) const;
+
+    /// Follow the chain of replacements stored in replacedInstructions.
+    const Value *resolveReplacements(const Value *Val) const;
+
+    /// Check whether every instruction of the currently stored relocation
+    /// block has been resolved, i.e., matched as a duplicate of another
+    /// instruction, synchronized, or otherwise proven not to affect
+    /// semantics. Such a relocation does not have to be matched to a block
+    /// in the other module and can be discarded.
+    bool isRelocResolved() const;
+
+    /// Check whether there is a possibly conflicting store between the
+    /// beginning of the basic block of the given load and the load itself.
+    bool hasConflictingStoreInBlockPrefix(const LoadInst *Load) const;
+
+    /// Check whether two pointers may point to overlapping memory.
+    /// Pointers with the same base are compared field-sensitively using
+    /// constant GEP indices.
+    bool ptrsMayOverlap(const Value *PtrA, const Value *PtrB) const;
+
+    /// Check whether the given instruction may overwrite the memory
+    /// that a load from the given pointer reads.
+    bool mayClobberPtr(const Instruction *Inst, const Value *Ptr) const;
+
+    /// Try to find a value that the given load must yield: either a previous
+    /// load from the same pointer or a value stored to the pointer by
+    /// a previous store (store-to-load forwarding). All backward paths must
+    /// lead to a single such value with no conflicting store in between.
+    const Value *findLoadReplacement(const LoadInst *Load) const;
+
+    /// Check whether the given load can be skipped because it is guaranteed
+    /// to yield a value that is already available.
+    /// If so, the replacement is recorded in replacedInstructions.
+    bool maySkipDuplicateLoad(const LoadInst *Load) const;
+
+    /// Collect conditions whose boolean values are known at the entry of the
+    /// given basic block (based on the branches taken on the way to it).
+    /// The facts are stored into the given map, visited blocks into the set.
+    void computeKnownConds(
+            const BasicBlock *BB,
+            std::unordered_map<const Value *, bool> &Conds,
+            std::unordered_set<const BasicBlock *> &Blocks) const;
+
+    /// Record the known value of a condition and propagate it through
+    /// boolean operations (selects, and, or, xor).
+    void addKnownCond(const Value *Cond,
+                      bool Val,
+                      std::unordered_map<const Value *, bool> &Conds,
+                      unsigned Depth) const;
+
+    /// Get the known boolean value of the given condition at the current
+    /// position in the given program, if it can be derived from the branches
+    /// taken to reach the currently compared basic block.
+    std::optional<bool> getKnownCondValue(const Value *Cond,
+                                          Program prog) const;
+
+    /// Resolve the given value through replacements and load-forwarding
+    /// (a load is replaced by the value it must yield, see
+    /// findLoadReplacement). Used to compare values of condition operands.
+    const Value *resolveValueThroughLoads(const Value *Val) const;
+
+    /// Check whether the given instruction computes a condition (or selects
+    /// a value based on a condition) whose value is known at the current
+    /// position. If so, the instruction is replaced by its known result and
+    /// can be skipped.
+    bool maySkipKnownCondition(const Instruction *Inst) const;
 
     /// Recursively collect operands of reorderable binary operators.
     /// Leafs must be constants or already synchronized values.
