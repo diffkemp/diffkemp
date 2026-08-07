@@ -108,7 +108,8 @@ cmake-build-debug/
 Testing/
 
 # Temporary files from regression tests. Used for debugging purposes only.
-*.ll
+*.bc
+*.bcw
 *.smt2
 *.pdf
 

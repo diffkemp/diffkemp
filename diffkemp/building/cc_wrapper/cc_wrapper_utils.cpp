@@ -28,7 +28,7 @@ bool endsWith(const std::string &str, const std::string &suffix) noexcept {
 // in diffkemp/llvm_ir/compiler.py
 std::vector<std::string> getClangDefaultOptions(bool defaultOptim) {
     std::vector<std::string> options = {
-            "-S", "-emit-llvm", "-g", "-fdebug-macro", "-Wno-format-security"};
+            "-c", "-emit-llvm", "-g", "-fdebug-macro", "-Wno-format-security"};
     if (defaultOptim) {
         options.push_back("-O1");
         options.push_back("-Xclang");

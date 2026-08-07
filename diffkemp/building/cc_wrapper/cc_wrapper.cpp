@@ -103,17 +103,17 @@ int wrapper(int argc, char *argv[]) {
         containsSource = containsSource || isSourceFile;
         if (i > 0 && wrapperArgs.cFlags[i - 1] == "-o") {
             if (isObjFile && !linking) {
-                // Compiling to object file: swap .o with .ll
-                arg = arg.substr(0, arg.rfind('.')) + ".ll";
+                // Compiling to object file: swap .o with .bc
+                arg = arg.substr(0, arg.rfind('.')) + ".bc";
             }
             if (!isObjFile && linking) {
-                // Linking: add a .llw suffix (LLVM IR whole)
-                arg = arg + ".llw";
+                // Linking: add a .bcw suffix (LLVM IR whole)
+                arg = arg + ".bcw";
             }
             outputFile = arg;
         } else if (isObjFile && linking) {
-            // Input to linking phase: change suffix to .ll
-            arg = arg.substr(0, arg.rfind('.')) + ".ll";
+            // Input to linking phase: change suffix to .bc
+            arg = arg.substr(0, arg.rfind('.')) + ".bc";
             clangBin = wrapperArgs.llvmLink;
         } else if (isSourceFile && linking) {
             // Mark as linking with sources to detect hybrid mode
@@ -130,19 +130,19 @@ int wrapper(int argc, char *argv[]) {
         std::copy_if(clangArgv.begin(),
                      clangArgv.end(),
                      std::back_inserter(tmp),
-                     [](const auto &arg) { return !endsWith(arg, ".ll"); });
+                     [](const auto &arg) { return !endsWith(arg, ".bc"); });
         clangArgv = std::move(tmp);
     }
 
-    // Do not continue if output is not .ll or .llw
+    // Do not continue if output is not .bc or .bcw
     // Note: this means that this is netiher compilation nor linking
     if (outputFile.empty()
-        || (!endsWith(outputFile, ".ll") && !endsWith(outputFile, ".llw"))) {
+        || (!endsWith(outputFile, ".bc") && !endsWith(outputFile, ".bcw"))) {
         return 0;
     }
 
     // Do not run clang on conftest files
-    if (outputFile == "conftest.ll" || outputFile == "conftest.llw"
+    if (outputFile == "conftest.bc" || outputFile == "conftest.bcw"
         || isInVector("conftest.c", wrapperArgs.cFlags)) {
         return 0;
     }
@@ -163,7 +163,7 @@ int wrapper(int argc, char *argv[]) {
         for (const std::string &arg : clangArgv) {
             if (!endsWith(arg, ".c")) {
                 fs::path p(arg);
-                p.replace_extension(".ll");
+                p.replace_extension(".bc");
                 dbEntries.push_back("o:" + (fs::current_path() / p).string());
             }
         }
@@ -184,7 +184,7 @@ int wrapper(int argc, char *argv[]) {
         // Keep only arguments with input files (and llvm-link itself)
         std::vector<std::string> tempArgs;
         for (const auto &arg : clangArgv) {
-            if (endsWith(arg, ".ll") || endsWith(arg, ".llw") || arg == "-o") {
+            if (endsWith(arg, ".bc") || endsWith(arg, ".bcw") || arg == "-o") {
                 tempArgs.push_back(arg);
             }
         }

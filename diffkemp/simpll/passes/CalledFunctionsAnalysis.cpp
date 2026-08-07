@@ -27,6 +27,9 @@ CalledFunctionsAnalysis::Result CalledFunctionsAnalysis::run(
         AnalysisManager<Module, Function *> & /*mam*/,
         Function *Main) {
     Result result;
+    if (!Main) {
+        return result;
+    }
     collectCalled(Main, result);
     ProcessedValues.clear();
     return result;
@@ -37,6 +40,7 @@ CalledFunctionsAnalysis::Result CalledFunctionsAnalysis::run(
 /// operands to some instructions in Fun are collected.
 void CalledFunctionsAnalysis::collectCalled(const Function *Fun,
                                             Result &Called) {
+
     if (!Called.insert(Fun).second)
         return;
 

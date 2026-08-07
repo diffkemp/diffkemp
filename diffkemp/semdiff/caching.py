@@ -333,6 +333,9 @@ class ComparisonGraph:
         the edge used to get to its vertex in the BFS algorithm is recorded, so
         the parent vertex and the call site can be retrieved.
         """
+        if start_fun_name not in self.vertices:
+            return set(), dict()
+
         start_fun = self[start_fun_name]
         original_source_files = start_fun.files
         visited = set()
