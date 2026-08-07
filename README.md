@@ -199,6 +199,7 @@ the relevant diffs are reported to the user.
 
 - [Development guide](docs/development.md)
 - [Contributing guide](docs/CONTRIBUTING.md)
+- [Architecture documentation](docs/architecture/overview.md)
 
 ## Contributors
 
