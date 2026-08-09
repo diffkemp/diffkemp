@@ -2,7 +2,7 @@ name: Builds
 
 on: [push, pull_request]
 env:
-  llvm: 19
+  llvm: 20
 
 jobs:
   nix-build:
