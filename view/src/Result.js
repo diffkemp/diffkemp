@@ -44,29 +44,57 @@ export default class Result {
     this.definitions = yaml.definitions;
     this.oldSnapshot = yaml['old-snapshot'];
     this.newSnapshot = yaml['new-snapshot'];
-    // Sort results by compared function name
-    yaml.results.sort((resultA, resultB) => (
-      compareFunctionNames(resultA.function, resultB.function)
-    ));
-    // Sort differing functions of each compared function
-    yaml.results.forEach((result) => {
+
+    this.#sortDifferingFunctions(yaml);
+    this.#createAllCompAndDiffFuns(yaml);
+  }
+
+  /**
+   * Sort differing functions of each compared function
+   */
+  #sortDifferingFunctions(result) {
+    if ('diffs' in result) {
       result.diffs.sort((diffA, diffB) => compareFunctionNames(diffA.function, diffB.function));
-    });
-    this.#createAllCompAndDiffFuns(yaml.results);
+    } else {
+      result.results.forEach((subresult) => {
+        this.#sortDifferingFunctions(subresult);
+      });
+    }
   }
 
   /**
    * Creates allCompFuns and allDiffFuns fields.
-   * Expects that names of compared and differing functions are sorted in the `results`.
-   * @param results - Differences found by DiffKemp compare phase.
+   * Expects that names of differing functions are sorted in the `result`.
+   * If one function is present in multiple groups, only the first occourrence
+   * is stored in the #allCompFuns Map.
    */
-  #createAllCompAndDiffFuns(results) {
+  #createAllCompAndDiffFuns(result) {
     // Map(compFunName, Map(diffFunName, diff))
     this.#allCompFuns = new Map();
     // Map(diffFunName, [...compFunNames])
     this.#allDiffFuns = new Map();
-    // foreach result (compared function)
-    results.forEach((result) => {
+    // populate allCompFuns and allDiffFuns recursively
+    this.#compAndDiffFunsRec(result);
+    // sort all compared functions
+    this.#allCompFuns = new Map([...this.#allCompFuns]
+      .sort((a, b) => compareFunctionNames(a[0], b[0])));
+    // sort keys (differing function names) in the map
+    this.#allDiffFuns = new Map([...this.#allDiffFuns]
+      .sort((a, b) => compareFunctionNames(a[0], b[0])));
+    // sort compFunNames for each diffFunName
+    this.#allDiffFuns.forEach((compFunNames) => {
+      compFunNames.sort((funA, funB) => compareFunctionNames(funA, funB));
+    });
+  }
+
+  #compAndDiffFunsRec(result) {
+    if (!('diffs' in result)) {
+      result.results.forEach((subresult) => {
+        this.#compAndDiffFunsRec(subresult);
+      });
+      return;
+    }
+    if (!this.#allCompFuns.has(result.function)) {
       // Map(diffFunName, diff)
       const diffFunsForComp = new Map();
       // for each diff (differing function)
@@ -79,10 +107,7 @@ export default class Result {
         }
       });
       this.#allCompFuns.set(result.function, diffFunsForComp);
-    });
-    // sort keys (differing function names) in the map
-    this.#allDiffFuns = new Map([...this.#allDiffFuns]
-      .sort((a, b) => compareFunctionNames(a[0], b[0])));
+    }
   }
 
   /**

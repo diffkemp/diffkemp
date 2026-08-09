@@ -226,12 +226,13 @@ class Snapshot:
             groups = yaml_dict["list"]
 
         for g in groups:
-            if "sysctl" in g:
-                group = g["sysctl"]
-                functions = g["functions"]
-            else:
-                group = None
-                functions = g
+            group = None
+            functions = g
+            for list_kind in ["sysctl", "glob_var", "module:param"]:
+                if list_kind in g:
+                    group = g[list_kind]
+                    functions = g["functions"]
+                    break
             for f in functions:
                 self.add_fun(f["name"],
                              LlvmModule(

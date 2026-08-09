@@ -10,7 +10,7 @@ include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 set(CMAKE_CXX_STANDARD 17)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 include(GNUInstallDirs)
 
@@ -80,4 +80,12 @@ if (${BUILD_VIEWER})
   ) # install `data` dir
 endif () # ${BUILD_VIEWER}
 
-add_subdirectory(tests/unit_tests/simpll)
+if(NOT "--output-on-failure" IN_LIST CMAKE_CTEST_ARGUMENTS)
+  list(APPEND CMAKE_CTEST_ARGUMENTS --output-on-failure)
+endif()
+
+# Make `test` build regular targets first
+set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
+
+enable_testing()
+add_subdirectory(tests/unit_tests)

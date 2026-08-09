@@ -65,9 +65,6 @@ def make_argument_parser():
                           action='append')
     build_ap.add_argument("--reconfigure", help="reconfigure autotools-based\
                           project with CC=<wrapper>", action="store_true")
-    build_ap.add_argument("--no-native-cc-wrapper",
-                          help="do not use a native compiler wrapper even if\
-                          present", action="store_true")
     build_ap.add_argument("--no-opt-override",
                           help="use project's default optimization options",
                           action="store_true")
@@ -87,6 +84,11 @@ def make_argument_parser():
         "--sysctl",
         action="store_true",
         help="interpret symbol list as a list of sysctl parameters")
+    build_kernel_ap.add_argument(
+        "--module-params",
+        action="store_true",
+        help="interpret symbol list as a list of kernel module parameters in \
+        the form module_path:parameter")
     build_kernel_ap.add_argument(
         "--no-source-dir",
         action="store_true",

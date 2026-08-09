@@ -240,7 +240,7 @@ class Logger {
                       const Value right)
                 : level{level}, label{label}, left{left}, right{right} {};
     };
-    Logger(){};
+    Logger() {};
     // prepare message for logging
     void prepLog(const char *label,
                  const class BufferMessage::Value left,

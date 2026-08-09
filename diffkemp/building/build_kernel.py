@@ -4,8 +4,11 @@ from diffkemp.llvm_ir.kernel_source_tree import KernelSourceTree
 from diffkemp.snapshot import Snapshot
 from diffkemp.building.build_utils import (
     generate_from_function_list,
+    add_funcs_for_globvar,
+    add_funcs_for_globvar_from_module,
     read_symbol_list,
     EMSG_EMPTY_SYMBOL_LIST)
+from pathlib import Path
 import errno
 import os
 import sys
@@ -31,6 +34,8 @@ def build_kernel(args):
     # Generate snapshot contents
     if args.sysctl:
         generate_from_sysctl_list(snapshot, symbol_list)
+    elif args.module_params:
+        generate_from_module_param_list(snapshot, symbol_list)
     else:
         generate_from_function_list(snapshot, symbol_list)
 
@@ -45,7 +50,12 @@ def _generate_snapshot(args):
         sys.exit(errno.EINVAL)
 
     source = KernelSourceTree(args.source_dir, source_finder)
-    list_kind = "sysctl" if args.sysctl else "function"
+    if args.sysctl:
+        list_kind = "sysctl"
+    elif args.module_params:
+        list_kind = "module:param"
+    else:
+        list_kind = "function"
 
     return Snapshot.create_from_source(source,
                                        args.output_dir,
@@ -97,7 +107,28 @@ def generate_from_sysctl_list(snapshot, sysctl_list):
             # Proc handler function for sysctl
             _add_proc_handler(snapshot, sysctl, proc_fun)
             # Adds functions which use the sysctl data variable
-            _add_funcs_for_data(snapshot, sysctl, sysctl_mod, proc_fun)
+            data = sysctl_mod.get_data(sysctl)
+            add_funcs_for_globvar(snapshot, sysctl, data, proc_fun)
+
+
+def generate_from_module_param_list(snapshot, module_param_list):
+    """
+    Generate a snapshot from a list of pairs path:param.
+    :param snapshot: Existing Snapshot object to fill
+    :param module_param_list: List of pairs path_to_module:parameter_name.
+    """
+    for pair in module_param_list:
+        try:
+            path_str, param = pair.split(":")
+            path = Path(path_str)
+            module = snapshot.source_tree.get_kernel_module(str(path.parent),
+                                                            path.name)
+            data = module.find_param_var(param)
+        except (ValueError, SourceNotFoundException):
+            print("{}: modul:param not supported".format(pair))
+            continue
+
+        add_funcs_for_globvar_from_module(snapshot, data.name, data, module)
 
 
 def _add_proc_handler(snapshot, sysctl, proc_fun):
@@ -118,34 +149,3 @@ def _add_proc_handler(snapshot, sysctl, proc_fun):
                             snapshot.source_tree.source_dir)))
     except SourceNotFoundException:
         print("  could not build proc handler")
-
-
-def _add_funcs_for_data(snapshot, sysctl, sysctl_mod, proc_fun):
-    data = sysctl_mod.get_data(sysctl)
-
-    if not data:
-        return
-
-    for module in \
-            snapshot.source_tree.get_modules_using_symbol(data.name):
-        # For now, we only support the x86 architecture in kernel
-        if "/arch/" in module.llvm and \
-                "/arch/x86/" not in module.llvm:
-            continue
-
-        curr_mod_path = os.path.relpath(module.llvm,
-                                        snapshot.source_tree.source_dir)
-        for func in module.get_functions_using_param(data):
-            if func == proc_fun:
-                continue
-
-            snapshot.add_fun(
-                name=func,
-                llvm_mod=module,
-                glob_var=data.name,
-                tag="using data variable \"{}\"".format(data.name),
-                group=sysctl)
-            print("  {}: {} (using data variable \"{}\")".format(
-                func,
-                curr_mod_path,
-                data.name))
