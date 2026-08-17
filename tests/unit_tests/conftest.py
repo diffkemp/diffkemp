@@ -13,29 +13,57 @@ def graph():
     g = ComparisonGraph()
     # Vertices
     g["main_function"] = ComparisonGraph.Vertex(
-        dup("main_function"), Result.Kind.EQUAL, dup("app/main.c"), dup(51)
+        dup("main_function"), Result.Kind.EQUAL, dup(None), dup("app/main.c"),
+        dup(51)
     )
     g["side_function"] = ComparisonGraph.Vertex(
-        dup("side_function"), Result.Kind.EQUAL, dup("app/main.c"), dup(255)
+        dup("side_function"), Result.Kind.EQUAL, dup(None), dup("app/main.c"),
+        dup(255)
     )
     g["do_check"] = ComparisonGraph.Vertex(
-        dup("do_check"), Result.Kind.NOT_EQUAL, dup("app/main.c"), dup(105)
+        dup("do_check"), Result.Kind.NOT_EQUAL, dup(None), dup("app/main.c"),
+        dup(105)
     )
     g["missing"] = ComparisonGraph.Vertex(
-        dup("missing"), Result.Kind.ASSUMED_EQUAL, dup("app/mod.c"), dup(665)
+        dup("missing"), Result.Kind.ASSUMED_EQUAL, dup(None), dup("app/mod.c"),
+        dup(665)
     )
     g["looping"] = ComparisonGraph.Vertex(
-        dup("looping"), Result.Kind.EQUAL, dup("app/main.c"), (81, 82)
+        dup("looping"), Result.Kind.EQUAL, dup(None), dup("app/main.c"),
+        (81, 82)
     )
     # Weak variant of "strength" function vertex (e.g. void-returning on the
     # right side)
     g["strength.void"] = ComparisonGraph.Vertex(
-        ("strength", "strength.void"), Result.Kind.EQUAL, dup("app/main.c"),
-        (5, 5)
+        ("strength", "strength.void"), Result.Kind.EQUAL, dup(None),
+        dup("app/main.c"), (5, 5)
     )
     # Strong variant of "strength" functin vertex
     g["strength"] = ComparisonGraph.Vertex(
-        ("strength", "strength"), Result.Kind.EQUAL, dup("app/test.h"), (5, 5)
+        ("strength", "strength"), Result.Kind.EQUAL, dup(None),
+        dup("app/test.h"), (5, 5)
+    )
+    # Function with non-default global variable
+    g[("with_glob", "glob1")] = ComparisonGraph.Vertex(
+        dup("with_glob"), Result.Kind.EQUAL, dup("glob1"), dup("app/main.c"),
+        dup(142)
+    )
+    g["with_glob"] = ComparisonGraph.Vertex(
+        dup("with_glob"), Result.Kind.EQUAL, dup(None), dup("app/main.c"),
+        dup(152)
+    )
+    g["hidden"] = ComparisonGraph.Vertex(
+        dup("hidden"), Result.Kind.EQUAL, dup(None), dup("app/main.c"),
+        dup(162)
+    )
+    # Dotted function with non-default global variable
+    g[("with_glob.void", "glob2")] = ComparisonGraph.Vertex(
+        ("with_glob", "with_glob.void"), Result.Kind.EQUAL, dup("glob2"),
+        dup("app/main.c"), (500, 500)
+    )
+    g[("with_glob", "glob2")] = ComparisonGraph.Vertex(
+        ("with_glob", "with_glob"), Result.Kind.EQUAL, dup("glob2"),
+        dup("app/test.h"), (500, 500)
     )
     # Non-function differences
     g["do_check"].nonfun_diffs.append(ComparisonGraph.SyntaxDiff(
@@ -57,23 +85,37 @@ def graph():
     # Edges
     for side in ComparisonGraph.Side:
         g.add_edge(g["main_function"], side,
-                   ComparisonGraph.Edge("do_check", "app/main.c", 58))
+                   ComparisonGraph.Edge("do_check", None, "app/main.c", 58))
         g.add_edge(g["main_function"], side,
-                   ComparisonGraph.Edge("side_function", "app/main.c", 59))
+                   ComparisonGraph.Edge("side_function", None, "app/main.c",
+                                        59))
+        g.add_edge(g["main_function"], side,
+                   ComparisonGraph.Edge("with_glob", "glob1", "app/main.c",
+                                        57))
         g.add_edge(g["do_check"], side,
-                   ComparisonGraph.Edge("missing", "app/main.c", 60))
+                   ComparisonGraph.Edge("missing", None, "app/main.c", 60))
         g.add_edge(g["do_check"], side,
-                   ComparisonGraph.Edge("looping", "app/main.c", 74))
+                   ComparisonGraph.Edge("looping", None, "app/main.c", 74))
         g.add_edge(g["looping"], side,
-                   ComparisonGraph.Edge("main_function", "app/main.c", 85))
+                   ComparisonGraph.Edge("main_function", None, "app/main.c",
+                                        85))
+        g.add_edge(g["with_glob"], side,
+                   ComparisonGraph.Edge("hidden", None, "app/main.c",
+                                        157))
         # Strong call of "strength"
         g.add_edge(g["looping"], side,
-                   ComparisonGraph.Edge("strength", "app/main.c", 86))
+                   ComparisonGraph.Edge("strength", None, "app/main.c", 86))
         g.add_edge(g["strength"], side,
-                   ComparisonGraph.Edge("missing", "app/w.c", 6))
+                   ComparisonGraph.Edge("missing", None, "app/w.c", 6))
     # Weak call of "strength"
     g.add_edge(g["side_function"], ComparisonGraph.Side.LEFT,
-               ComparisonGraph.Edge("strength", "app/main.c", 260))
+               ComparisonGraph.Edge("strength", None, "app/main.c", 260))
     g.add_edge(g["side_function"], ComparisonGraph.Side.RIGHT,
-               ComparisonGraph.Edge("strength.void", "app/main.c", 260))
+               ComparisonGraph.Edge("strength.void", None, "app/main.c", 260))
+    # Weak call of "with_glob"
+    g.add_edge(g["side_function"], ComparisonGraph.Side.LEFT,
+               ComparisonGraph.Edge("with_glob", "glob2", "app/main.c", 56))
+    g.add_edge(g["side_function"], ComparisonGraph.Side.RIGHT,
+               ComparisonGraph.Edge("with_glob.void", "glob2",
+                                    "app/main.c", 56))
     yield g

@@ -11,11 +11,13 @@ from conftest import dup
 def test_add_vertex_strong(graph):
     """Tests adding a strong vertex to the graph."""
     graph["test"] = ComparisonGraph.Vertex(
-        dup("test"), Result.Kind.EQUAL, dup("app/main.c"), (81, 82)
+        dup("test"), Result.Kind.EQUAL, dup(None), dup("app/main.c"), (81, 82)
     )
-    assert "test" in graph.vertices
+    assert "test" in graph
+    assert ("test", None) in graph.vertices
     assert graph["test"].names == dup("test")
     assert graph["test"].result == Result.Kind.EQUAL
+    assert graph["test"].glob_vars == dup(None)
     assert graph["test"].files == dup("app/main.c")
     assert graph["test"].lines == (81, 82)
     assert graph["test"] not in graph._weak_vertex_cache
@@ -24,11 +26,14 @@ def test_add_vertex_strong(graph):
 def test_add_vertex_weak(graph):
     """Tests adding a weak vertex to the graph."""
     graph["test.void"] = ComparisonGraph.Vertex(
-        ("test", "test.void"), Result.Kind.EQUAL, dup("app/main.c"), (81, 82)
+        ("test", "test.void"), Result.Kind.EQUAL, dup(None), dup("app/main.c"),
+        (81, 82)
     )
-    assert "test.void" in graph.vertices
+    assert "test.void" in graph
+    assert ("test.void", None) in graph.vertices
     assert graph["test.void"].names == ("test", "test.void")
     assert graph["test.void"].result == Result.Kind.EQUAL
+    assert graph["test.void"].glob_vars == dup(None)
     assert graph["test.void"].files == dup("app/main.c")
     assert graph["test.void"].lines == (81, 82)
     assert graph["test.void"] in graph._weak_vertex_cache
@@ -38,7 +43,7 @@ def test_add_edge_strong(graph):
     """Tests adding a strong edge to a graph."""
     for side in ComparisonGraph.Side:
         graph.add_edge(graph["main_function"], side,
-                       ComparisonGraph.Edge("missing", "app/main.c", 61))
+                       ComparisonGraph.Edge("missing", None, "app/main.c", 61))
         assert "missing" in [edge.target_name for edge in
                              graph["main_function"].successors[side]]
         assert "missing" not in [edge.target_name for edge in
@@ -48,9 +53,10 @@ def test_add_edge_strong(graph):
 def test_add_edge_weak(graph):
     """Tests adding a weak edge to a graph."""
     graph.add_edge(graph["main_function"], ComparisonGraph.Side.LEFT,
-                   ComparisonGraph.Edge("strength", "app/main.c", 61))
+                   ComparisonGraph.Edge("strength", None, "app/main.c", 61))
     graph.add_edge(graph["main_function"], ComparisonGraph.Side.RIGHT,
-                   ComparisonGraph.Edge("strength.void", "app/main.c", 61))
+                   ComparisonGraph.Edge("strength.void", None,
+                                        "app/main.c", 61))
     left_succesor_names = [edge.target_name for edge in
                            graph["main_function"].successors[
                                                   ComparisonGraph.Side.LEFT]]
@@ -73,20 +79,22 @@ def test_reachable_from_basic(graph):
                                               "do_check")
     assert (set([v.names[ComparisonGraph.Side.LEFT] for v in reachable_l]) ==
             {"do_check", "looping", "strength", "main_function",
-            "side_function"})
+            "side_function", "with_glob"})
     # Note: in the right module the void-returning variant "strength.void" is
     # used alongside the original one.
     # This is solved by normalization (and tested later).
+    # Same for with_glob.void
     assert (set([v.names[ComparisonGraph.Side.RIGHT] for v in reachable_r]) ==
             {"do_check", "looping", "strength", "main_function",
-             "side_function", "strength.void"})
+             "side_function", "strength.void", "with_glob", "with_glob.void"})
     # Test backtracking graphs for callstack generation.
     assert (set([v.names for v in map_l.keys()]) ==
             {dup("looping"), dup("main_function"), dup("strength"),
-             dup("side_function")})
+             dup("side_function"), dup("with_glob")})
     assert (set([v.names for v in map_r.keys()]) ==
             {dup("looping"), dup("main_function"), dup("side_function"),
-             dup("strength"), ("strength", "strength.void")})
+             dup("strength"), ("strength", "strength.void"),
+             dup("with_glob"), ("with_glob", "with_glob.void")})
     for backtracking_map in [map_l, map_r]:
         assert (backtracking_map[graph["looping"]].parent_vertex.names ==
                 dup("do_check"))
@@ -96,6 +104,8 @@ def test_reachable_from_basic(graph):
                 dup("looping"))
         assert (backtracking_map[graph["side_function"]].parent_vertex.names ==
                 dup("main_function"))
+        assert (backtracking_map[graph[("with_glob", "glob1")]].
+                parent_vertex.names == dup("main_function"))
 
 
 def test_absort_graph(graph):
@@ -104,21 +114,25 @@ def test_absort_graph(graph):
     new_graph = ComparisonGraph()
     # This vertex should replace the old one (which is assumed equal).
     new_graph["missing"] = ComparisonGraph.Vertex(
-        dup("missing"), Result.Kind.NOT_EQUAL, dup("app/mod.c"), dup(665)
+        dup("missing"), Result.Kind.NOT_EQUAL, dup(None), dup("app/mod.c"),
+        dup(665)
     )
     # This vertex should not replace the old one.
     new_graph["do_check"] = ComparisonGraph.Vertex(
-        dup("do_check"), Result.Kind.EQUAL, dup("app/mod.c"), dup(665)
+        dup("do_check"), Result.Kind.EQUAL, dup(None), dup("app/mod.c"),
+        dup(665)
     )
     # This vertex should replace the old one (it has more successors).
     new_graph["strength"] = ComparisonGraph.Vertex(
-        dup("strength"), Result.Kind.NOT_EQUAL, dup("app/test.h"), (5, 5)
+        dup("strength"), Result.Kind.NOT_EQUAL, dup(None), dup("app/test.h"),
+        (5, 5)
     )
     for side in ComparisonGraph.Side:
         new_graph.add_edge(new_graph["strength"], side,
-                           ComparisonGraph.Edge("missing", "app/w.c", 6))
+                           ComparisonGraph.Edge("missing", None, "app/w.c", 6))
         new_graph.add_edge(new_graph["strength"], side,
-                           ComparisonGraph.Edge("main_function", "app/w.c", 7))
+                           ComparisonGraph.Edge("main_function", None,
+                                                "app/w.c", 7))
     graph.absorb_graph(new_graph)
     assert graph["missing"].result == Result.Kind.NOT_EQUAL
     assert graph["do_check"].result == Result.Kind.NOT_EQUAL
@@ -133,7 +147,7 @@ def test_normalize(graph):
     assert all(["." not in v.names[side] for v in graph.vertices.values()
                 for side in ComparisonGraph.Side])
     # Check whether all edges point to existing vertices.
-    assert all([e.target_name in graph.vertices
+    assert all([e.dict_key() in graph.vertices
                for side in ComparisonGraph.Side
                for vertex in graph.vertices.values()
                for e in vertex.successors[side]])
@@ -145,7 +159,8 @@ def test_normalize(graph):
     assert any([e.kind == ComparisonGraph.DependencyKind.WEAK
                 for side in ComparisonGraph.Side
                 for e in graph["side_function"].successors[side]
-                if e.target_name == "strength"])
+                if e.target_name == "strength" or
+                e.target_name == "with_glob"])
 
 
 def test_reachable_from_extended(graph):
@@ -158,6 +173,7 @@ def test_reachable_from_extended(graph):
     for side in ComparisonGraph.Side:
         reachable, _ = graph.reachable_from(side, "side_function")
         # The weakly dependent "strength" function should not be in the set.
+        # Same for "with_glob"
         assert (set([v.names[side] for v in reachable]) ==
                 {"side_function"})
 
@@ -217,6 +233,14 @@ def test_populate_predecessor_lists(graph):
                 {dup("do_check")})
         assert ({v.names for v in graph["strength"].predecessors[side]} ==
                 {dup("looping"), dup("side_function")})
+        assert ({v.names for v in graph["with_glob"].predecessors[side]} ==
+                set())
+        assert ({v.names for v
+                 in graph[("with_glob", "glob1")].predecessors[side]} ==
+                {dup("main_function")})
+        assert ({v.names for v
+                 in graph[("with_glob", "glob2")].predecessors[side]} ==
+                {dup("side_function")})
 
 
 @pytest.fixture
@@ -224,18 +248,19 @@ def graph_uncachable():
     """Graph used to test the marking of uncachable vertices."""
     graph = ComparisonGraph()
     graph["f1"] = ComparisonGraph.Vertex(
-        dup("f1"), Result.Kind.EQUAL, dup("app/f1.c"), dup(10)
+        dup("f1"), Result.Kind.EQUAL, dup(None), dup("app/f1.c"), dup(10)
     )
     graph["f2"] = ComparisonGraph.Vertex(
-        dup("f2"), Result.Kind.EQUAL, dup("include/h1.h"), dup(20)
+        dup("f2"), Result.Kind.EQUAL, dup(None), dup("include/h1.h"), dup(20)
     )
     graph["f3"] = ComparisonGraph.Vertex(
-        dup("f3"), Result.Kind.ASSUMED_EQUAL, dup("app/f2.c"), dup(20)
+        dup("f3"), Result.Kind.ASSUMED_EQUAL, dup(None),
+        dup("app/f2.c"), dup(20)
     )
     for side in ComparisonGraph.Side:
-        graph.add_edge(graph["f1"], side, ComparisonGraph.Edge("f2",
+        graph.add_edge(graph["f1"], side, ComparisonGraph.Edge("f2", None,
                        "app/f1.c", 11))
-        graph.add_edge(graph["f2"], side, ComparisonGraph.Edge("f3",
+        graph.add_edge(graph["f2"], side, ComparisonGraph.Edge("f3", None,
                        "include/h1.c", 21))
     yield graph
 
@@ -261,7 +286,7 @@ def test_cachability_reset_after_absorb(graph_uncachable):
     assert not graph_uncachable["f2"].cachable
     graph_to_merge = ComparisonGraph()
     graph_to_merge["f3"] = ComparisonGraph.Vertex(
-        dup("f3"), Result.Kind.NOT_EQUAL, dup("app/f2.c"), dup(20)
+        dup("f3"), Result.Kind.NOT_EQUAL, dup(None), dup("app/f2.c"), dup(20)
     )
     graph_uncachable.absorb_graph(graph_to_merge)
     assert graph_uncachable["f2"].cachable
@@ -302,12 +327,15 @@ def simpll_cache():
 def vertices():
     yield [ComparisonGraph.Vertex(dup("f"),
                                   Result.Kind.EQUAL,
+                                  dup(None),
                                   ("/test/f1/1.ll", "/test/f2/2.ll")),
            ComparisonGraph.Vertex(dup("h"),
                                   Result.Kind.NOT_EQUAL,
+                                  dup(None),
                                   ("/test/f1/1.ll", "/test/f2/3.ll")),
            ComparisonGraph.Vertex(dup("g"),
                                   Result.Kind.NOT_EQUAL,
+                                  dup(None),
                                   ("/test/f1/1.ll", "/test/f2/2.ll"))]
 
 

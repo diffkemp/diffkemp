@@ -253,10 +253,12 @@ def functions_diff(mod_first, mod_second,
                              if v.result not in [Result.Kind.UNKNOWN,
                                                  Result.Kind.ASSUMED_EQUAL]])
 
+        glob_var_name = glob_var.name if glob_var else None
         objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
-            curr_result_graph.graph_to_fun_pair_list(fun_first,
-                                                     fun_second,
-                                                     config.full_diff)
+            curr_result_graph.graph_to_fun_pair_list(fun_first, fun_second,
+                                                     config.full_diff,
+                                                     glob_var_name,
+                                                     glob_var_name)
 
         mod_first.restore_unlinked_llvm()
         mod_second.restore_unlinked_llvm()

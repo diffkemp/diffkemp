@@ -200,18 +200,18 @@ def run_simpll(first, second, fun_first, fun_second, var, config, suffix=None,
                     # Create the vertex from the result and insert it into
                     # the graph.
                     vertex = ComparisonGraph.Vertex.from_yaml(
-                        fun_result, result_graph)
+                        fun_result, var, result_graph)
                     # Prefer pointed name to ensure that a difference
                     # contaning the variant function as either the left or
                     # the right side has its name in the key.
                     # This is useful because one can tell this is a weak
                     # vertex from its name.
                     if "." in vertex.names[ComparisonGraph.Side.LEFT]:
-                        result_graph[vertex.names[
-                            ComparisonGraph.Side.LEFT]] = vertex
+                        result_graph[vertex.dict_key(
+                            ComparisonGraph.Side.LEFT)] = vertex
                     else:
-                        result_graph[vertex.names[
-                            ComparisonGraph.Side.RIGHT]] = vertex
+                        result_graph[vertex.dict_key(
+                            ComparisonGraph.Side.RIGHT)] = vertex
             result_graph.normalize()
             result_graph.populate_predecessor_lists()
             result_graph.mark_uncachable_from_assumed_equal()

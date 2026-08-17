@@ -33,14 +33,14 @@ def compare(args):
 
 class GroupInfo:
     def __init__(self, group, group_name, enable_module_cache, config,
-                 output_dir, group_kind):
+                 output_dir, group_kind, result_graph):
         self.group = group
         self.group_name = group_name
         self.group_dir = self._get_group_dir(output_dir)
         self.group_printed = False
         self.modules_to_cache = \
             self._get_modules_to_cache_if_enabled(enable_module_cache, config)
-        self.result_graph = None
+        self.result_graph = result_graph
         self.cache = SimpLLCache(mkdtemp())
         self.module_cache = {}
         self.group_result = None
@@ -140,7 +140,8 @@ class SnapshotComparator:
             group_info = GroupInfo(group, group_name,
                                    self.args.enable_module_cache,
                                    self.config, self.output_dir,
-                                   self.config.snapshot_first.list_kind)
+                                   self.config.snapshot_first.list_kind,
+                                   self.result.graph)
             self._compare_groups(group_info)
 
         self._finalize_output()
@@ -195,6 +196,7 @@ class SnapshotComparator:
             module_cache=group_info.module_cache,
             modules_to_cache=group_info.modules_to_cache)
         group_info.result_graph = fun_result.graph
+        fun_result.glob_var = old_fun_desc.glob_var
 
         self._handle_fun_result(fun_result, fun, old_fun_desc, group_info)
         self._cleanup_modules(old_fun_desc, new_fun_desc)

@@ -205,7 +205,8 @@ class Result:
 
     def __init__(self, kind, first_name, second_name, start_time=None,
                  stop_time=None,
-                 hierarchy=Hierarchy(Hierarchy.Level.FUNCTION)):
+                 hierarchy=Hierarchy(Hierarchy.Level.FUNCTION),
+                 glob_var=None):
         self.kind = kind
         self.first = Result.Entity(first_name)
         self.second = Result.Entity(second_name)
@@ -216,6 +217,7 @@ class Result:
         self.start_time = start_time
         self.stop_time = stop_time
         self.hierarchy = hierarchy
+        self.glob_var = glob_var
 
     def __str__(self):
         return str(self.kind)
