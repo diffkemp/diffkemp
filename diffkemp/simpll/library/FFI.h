@@ -50,6 +50,10 @@ struct config {
     int PrintCallStacks;
     int ExtendedStat;
     int Verbosity;
+    int FirstFixedParamIndex;
+    int SecondFixedParamIndex;
+    unsigned long long FirstFixedParamValue;
+    unsigned long long SecondFixedParamValue;
 };
 
 struct ptr_array {

@@ -50,11 +50,15 @@ def test_load_snapshot_from_dir_functions():
           diffkemp_version: '0.1'
           list_kind: function
           list:
-          - glob_var: null
+          - fixed_index: -1
+            fixed_val: 0
+            glob_var: null
             llvm: net/core/skbuff.ll
             name: ___pskb_trim
             tag: null
-          - glob_var: null
+          - fixed_index: -1
+            fixed_val: 0
+            glob_var: null
             llvm: mm/page_alloc.ll
             name: __alloc_pages_nodemask
             tag: null
@@ -85,6 +89,7 @@ def test_load_snapshot_from_dir_functions():
         for name, f in snap.fun_groups[None].functions.items():
             assert f.glob_var is None
             assert f.tag is None
+            assert f.fixed_param_index == -1
             if name == "___pskb_trim":
                 assert os.path.abspath(f.mod.llvm) == snap_dir + \
                        "/net/core/skbuff.ll"
@@ -110,13 +115,17 @@ def test_load_snapshot_from_dir_sysctls():
           list_kind: sysctl
           list:
           - functions:
-            - glob_var: null
+            - fixed_index: -1
+              fixed_val: 0
+              glob_var: null
               llvm: kernel/sched/fair.ll
               name: sched_proc_update_handler
               tag: proc handler
             sysctl: kernel.sched_latency_ns
           - functions:
-            - glob_var: null
+            - fixed_index: -1
+              fixed_val: 0
+              glob_var: null
               llvm: kernel/sysctl.ll
               name: proc_dointvec_minmax
               tag: proc handler
@@ -153,6 +162,7 @@ def test_load_snapshot_from_dir_sysctls():
                     "/kernel/sysctl.ll"
             assert f.tag == "proc handler"
             assert f.glob_var is None
+            assert f.fixed_param_index == -1
 
 
 def test_add_fun_none_group():
@@ -171,6 +181,7 @@ def test_add_fun_none_group():
     assert fun_desc.mod is mod
     assert fun_desc.glob_var is None
     assert fun_desc.tag is None
+    assert fun_desc.fixed_param_index == -1
 
 
 def test_add_fun_sysctl_group():
@@ -195,6 +206,7 @@ def test_add_fun_sysctl_group():
     assert fun_desc.mod is mod
     assert fun_desc.glob_var == "sysctl_sched_latency"
     assert fun_desc.tag == "using_data_variable \"sysctl_sched_latency\""
+    assert fun_desc.fixed_param_index == -1
 
 
 def test_get_modules():
@@ -288,8 +300,8 @@ def test_to_yaml_functions():
     Dump a snapshot with a single "None" group into YAML.
     YAML string should contain the version of Diffkemp, source kernel
     directory, a simple list of functions, each one having the "name",
-    "llvm", "glob_var" and "tag" fields set, and the kind of this list,
-    which should be a function list.
+    "llvm", "glob_var", "tag", "fixed_index" and "fixed_val" fields set,
+    and the kind of this list, which should be a function list.
     The LLVM paths in the YAML should be relative to the snapshot directory.
     """
     kernel_dir = "kernel/linux-3.10.0-957.el7"
@@ -321,6 +333,7 @@ def test_to_yaml_functions():
             assert f["llvm"] == "net/core/skbuff.ll"
         elif f["name"] == "__alloc_pages_nodemask":
             assert f["llvm"] == "mm/page_alloc.ll"
+        assert f["fixed_index"] == -1
 
 
 def test_to_yaml_sysctls():
@@ -328,9 +341,10 @@ def test_to_yaml_sysctls():
     Dump a snapshot with multiple sysctl groups into YAML.
     YAML string should contain the version of Diffkemp, source kernel
     directory, a simple list of function groups, each one containing a
-    function list with the "name", "llvm", "glob_var" and "tag" fields set,
-    and the kind of this list, which should be a group list.
-    The LLVM paths in the YAML should be relative to the snapshot directory.
+    function list with the "name", "llvm", "glob_var", "tag", "fixed_index"
+    and "fixed_val" fields set, and the kind of this list, which should be
+    a group list. The LLVM paths in the YAML should be relative to the
+    snapshot directory.
     """
     kernel_dir = "kernel/linux-3.10.0-957.el7"
     output_dir = "snapshots-sysctl/linux-3.10.0-957.el7"
@@ -367,12 +381,16 @@ def test_to_yaml_sysctls():
                 "name": "sched_proc_update_handler",
                 "llvm": "kernel/sched/fair.ll",
                 "glob_var": None,
-                "tag": "proc handler"
+                "tag": "proc handler",
+                "fixed_index": -1,
+                "fixed_val": 0
             }
         elif g["sysctl"] == "kernel.timer_migration":
             assert g["functions"][0] == {
                 "name": "proc_dointvec_minmax",
                 "llvm": "kernel/sysctl.ll",
                 "glob_var": None,
-                "tag": "proc handler"
+                "tag": "proc handler",
+                "fixed_index": -1,
+                "fixed_val": 0
             }

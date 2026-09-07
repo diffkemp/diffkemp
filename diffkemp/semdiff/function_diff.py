@@ -163,7 +163,8 @@ def functions_diff(mod_first, mod_second,
                    prev_result_graph=None,
                    function_cache=None,
                    module_cache=None,
-                   modules_to_cache=None):
+                   modules_to_cache=None,
+                   fixed_params=None):
     """
     Compare two functions for equality.
 
@@ -185,6 +186,8 @@ def functions_diff(mod_first, mod_second,
     :param module_cache: Cache containing modules that have been already parsed
     and loaded
     :param modules_to_cache: List of modules that should be pre-loaded
+    :param fixed_params: tuple[int, int, int, int], tells indicies of fixed
+    parameters and the fixed values
     """
     result = Result(Result.Kind.NONE, fun_first, fun_second)
     curr_result_graph = None
@@ -219,7 +222,8 @@ def functions_diff(mod_first, mod_second,
                                cache_dir=function_cache.directory
                                if function_cache else None,
                                module_cache=module_cache,
-                               modules_to_cache=modules_to_cache)
+                               modules_to_cache=modules_to_cache,
+                               fixed_params=fixed_params)
                 if missing_defs:
                     # If there are missing function definitions, try to find
                     # their implementation, link them to the current modules,

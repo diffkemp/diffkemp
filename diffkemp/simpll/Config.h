@@ -80,6 +80,12 @@ class Config {
     bool PrintCallStacks;
     // Track more advanced statistics (e.g. line count)
     bool ExtendedStat;
+    // Function parameter to be replaced with constant, -1 means no parameter
+    int FirstFixedParamIndex;
+    int SecondFixedParamIndex;
+    // The value of the constant replacing parameter on FixedParamIndex
+    uint64_t FirstFixedParamValue;
+    uint64_t SecondFixedParamValue;
 
     Config(std::string FirstFunName,
            std::string SecondFunName,
@@ -96,7 +102,11 @@ class Config {
            bool PrintAsmDiffs = true,
            bool PrintCallStacks = true,
            bool ExtendedStat = false,
-           int Verbosity = 0);
+           int Verbosity = 0,
+           int FirstFixedParamIndex = -1,
+           int SecondFixedParamIndex = -1,
+           uint64_t FirstFixedParamValue = 0,
+           uint64_t SecondFixedParamValue = 0);
 
     // Constructor without module loading (for tests).
     Config(std::string FirstFunName,

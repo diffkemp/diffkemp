@@ -32,6 +32,14 @@ def generate_from_function_list(snapshot, fun_list):
     """
     for symbol in fun_list:
         try:
+            if ":" in symbol:
+                symbol, fixed_index, fixed_val = symbol.split(":")
+                fixed_index = int(fixed_index)
+                fixed_val = int(fixed_val)
+            else:
+                fixed_index = -1
+                fixed_val = 0
+
             sys.stdout.write("{}: ".format(symbol))
             sys.stdout.flush()
 
@@ -39,9 +47,20 @@ def generate_from_function_list(snapshot, fun_list):
             # the snapshot
             llvm_mod = snapshot.source_tree.get_module_for_symbol(symbol)
             if llvm_mod.has_function(symbol):
-                snapshot.add_fun(symbol, llvm_mod)
-                print(os.path.relpath(llvm_mod.llvm,
-                                      snapshot.source_tree.source_dir))
+                snapshot.add_fun(name=symbol,
+                                 llvm_mod=llvm_mod,
+                                 glob_var=None,
+                                 tag=None,
+                                 group=None,
+                                 fixed_param_index=fixed_index,
+                                 fixed_param_value=fixed_val)
+                sys.stdout.write(os.path.relpath(
+                    llvm_mod.llvm, snapshot.source_tree.source_dir))
+                if fixed_index != -1:
+                    sys.stdout.write(" (value of parameter {} "
+                                     "fixed to {})".format(fixed_index,
+                                                           fixed_val))
+                print()
             elif llvm_mod.has_global(symbol):
                 print()
                 if add_funcs_for_globvar(snapshot, symbol, LlvmParam(symbol)):
@@ -49,7 +68,7 @@ def generate_from_function_list(snapshot, fun_list):
             else:
                 snapshot.add_fun(symbol, None)
                 print("not a function nor a global variable")
-        except SourceNotFoundException:
+        except (ValueError, SourceNotFoundException):
             print("source not found")
             snapshot.add_fun(symbol, None)
 

@@ -193,7 +193,11 @@ class SnapshotComparator:
             prev_result_graph=group_info.result_graph,
             function_cache=group_info.cache,
             module_cache=group_info.module_cache,
-            modules_to_cache=group_info.modules_to_cache)
+            modules_to_cache=group_info.modules_to_cache,
+            fixed_params=(old_fun_desc.fixed_param_index,
+                          new_fun_desc.fixed_param_index,
+                          old_fun_desc.fixed_param_value,
+                          new_fun_desc.fixed_param_value))
         group_info.result_graph = fun_result.graph
 
         self._handle_fun_result(fun_result, fun, old_fun_desc, group_info)

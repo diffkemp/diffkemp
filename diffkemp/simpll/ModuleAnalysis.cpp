@@ -22,6 +22,7 @@
 #include "Utils.h"
 #include "passes/CalledFunctionsAnalysis.h"
 #include "passes/ControlFlowSlicer.h"
+#include "passes/FixParameterPass.h"
 #include "passes/FunctionAbstractionsGenerator.h"
 #include "passes/MergeNumberedFunctionsPass.h"
 #include "passes/ReduceFunctionMetadataPass.h"
@@ -42,6 +43,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
 #include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Transforms/Scalar/InstSimplifyPass.h>
 #include <llvm/Transforms/Scalar/LowerExpectIntrinsic.h>
 /// Preprocessing functions run on each module at the beginning.
 /// The following transformations are applied:
@@ -58,7 +60,9 @@
 void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
-                      BuiltinPatterns Patterns) {
+                      BuiltinPatterns Patterns,
+                      int FixedParamIndex,
+                      uint64_t FixedParamValue) {
     LOG_NO_INDENT("Preprocessing " << Mod.getName() << "...\n");
     LOG_INDENT();
     if (Var) {
@@ -78,6 +82,19 @@ void preprocessModule(Module &Mod,
     }
 
     // Function passes
+    // FixParameterPass is applied only to Main function, unlike any other pass
+    if (FixedParamIndex >= 0 && Main) {
+        FunctionPassManager fpmFixed;
+        FunctionAnalysisManager famFixed;
+        PassBuilder pbFixed;
+        pbFixed.registerFunctionAnalyses(famFixed);
+
+        fpmFixed.addPass(FixParameterPass{
+                static_cast<unsigned>(FixedParamIndex), FixedParamValue});
+        fpmFixed.addPass(InstSimplifyPass{});
+        fpmFixed.run(*Main, famFixed);
+    }
+
     FunctionPassManager fpm;
     FunctionAnalysisManager fam;
     PassBuilder pb;
@@ -243,12 +260,18 @@ void writeIRToFile(Module &Mod, StringRef FileName) {
 /// in config.
 void processAndCompare(Config &config, OverallResult &Result) {
     // Run transformations
-    preprocessModule(
-            *config.First, config.FirstFun, config.FirstVar, config.Patterns);
+    preprocessModule(*config.First,
+                     config.FirstFun,
+                     config.FirstVar,
+                     config.Patterns,
+                     config.FirstFixedParamIndex,
+                     config.FirstFixedParamValue);
     preprocessModule(*config.Second,
                      config.SecondFun,
                      config.SecondVar,
-                     config.Patterns);
+                     config.Patterns,
+                     config.SecondFixedParamIndex,
+                     config.SecondFixedParamValue);
     config.refreshFunctions();
 
     simplifyModulesDiff(config, Result);

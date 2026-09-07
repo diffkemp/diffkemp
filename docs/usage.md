@@ -69,6 +69,15 @@ In this case, the path to the file should be given in place of `PROJ_DIR`.
 - `--llvm-dis LLVM_DIS`: `llvm-dis` to be used for `bc` file disassembly
   (default `llvm-dis`).
 
+#### Parameter value fixation
+
+DiffKemp can also compare the semantics of a function while a chosen
+parameter is set to a constant value. This method of comparison is
+invoked by adding an entry to `SYMBOL_LIST` in the format
+`symbol:index:value`, where `index` is the index of a parameter in the
+function signature and `value` is the constant value that will replace
+all occurrences of the parameter in the function body.
+
 ### b) `build-kernel`: snapshot generation from the Linux kernel
 
 ```sh

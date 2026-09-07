@@ -36,7 +36,9 @@ using namespace llvm;
 void preprocessModule(Module &Mod,
                       Function *Main,
                       GlobalVariable *Var,
-                      BuiltinPatterns Patterns);
+                      BuiltinPatterns Patterns,
+                      int FixedParamIndex,
+                      uint64_t FixedParamValue);
 
 /// Simplify two corresponding modules for the purpose of their subsequent
 /// semantic difference analysis. Tries to remove all the code that is

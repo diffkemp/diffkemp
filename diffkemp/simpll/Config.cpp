@@ -33,14 +33,22 @@ Config::Config(std::string FirstFunName,
                bool PrintAsmDiffs,
                bool PrintCallStacks,
                bool ExtendedStat,
-               int Verbosity)
+               int Verbosity,
+               int FirstFixedParamIndex,
+               int SecondFixedParamIndex,
+               uint64_t FirstFixedParamValue,
+               uint64_t SecondFixedParamValue)
         : FirstFunName(FirstFunName), SecondFunName(SecondFunName),
           First(FirstModule), Second(SecondModule), FirstOutFile(FirstOutFile),
           SecondOutFile(SecondOutFile), CacheDir(CacheDir),
           CustomPatternConfigPath(CustomPatternConfigPath),
           SmtTimeout(SmtTimeout), Patterns(Patterns),
           OutputLlvmIR(OutputLlvmIR), PrintAsmDiffs(PrintAsmDiffs),
-          PrintCallStacks(PrintCallStacks), ExtendedStat(ExtendedStat) {
+          PrintCallStacks(PrintCallStacks), ExtendedStat(ExtendedStat),
+          FirstFixedParamIndex(FirstFixedParamIndex),
+          SecondFixedParamIndex(SecondFixedParamIndex),
+          FirstFixedParamValue(FirstFixedParamValue),
+          SecondFixedParamValue(SecondFixedParamValue) {
     refreshFunctions();
 
     if (!Variable.empty()) {

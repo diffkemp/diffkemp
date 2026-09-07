@@ -261,7 +261,11 @@ void runSimpLL(void *ModL,
                   Conf.PrintAsmDiffs,
                   Conf.PrintCallStacks,
                   Conf.ExtendedStat,
-                  Conf.Verbosity);
+                  Conf.Verbosity,
+                  Conf.FirstFixedParamIndex,
+                  Conf.SecondFixedParamIndex,
+                  Conf.FirstFixedParamValue,
+                  Conf.SecondFixedParamValue);
 
     OverallResult Result;
     processAndCompare(config, Result);
@@ -322,7 +326,8 @@ void parseAndRunSimpLL(const char *ModL,
 void preprocessModuleC(void *Mod, struct builtin_patterns PatternsC) {
     Module *LLVMMod = (Module *)Mod;
     BuiltinPatterns Patterns = BuiltinPatternsFromC(PatternsC);
-    preprocessModule(*LLVMMod, nullptr, nullptr, Patterns);
+    // -1, 0 are "default" values for FixedParamIndex and FixedParamValue
+    preprocessModule(*LLVMMod, nullptr, nullptr, Patterns, -1, 0);
 }
 
 void getLlvmBuildVersion(int *out) {

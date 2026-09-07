@@ -34,10 +34,13 @@ class Snapshot:
         and a tag.
         """
 
-        def __init__(self, mod, glob_var, tag):
+        def __init__(self, mod, glob_var, tag,
+                     fixed_param_index, fixed_param_value):
             self.mod = mod
             self.glob_var = glob_var
             self.tag = tag
+            self.fixed_param_index = fixed_param_index
+            self.fixed_param_value = fixed_param_value
 
     class FunctionGroup:
         """
@@ -131,7 +134,8 @@ class Snapshot:
                                "snapshot.yaml"), "w") as snapshot_yaml:
             snapshot_yaml.write(self.to_yaml())
 
-    def add_fun(self, name, llvm_mod, glob_var=None, tag=None, group=None):
+    def add_fun(self, name, llvm_mod, glob_var=None, tag=None, group=None,
+                fixed_param_index=-1, fixed_param_value=0):
         """
         Add function to the function list.
         :param name: Name of the function.
@@ -140,12 +144,15 @@ class Snapshot:
                          function.
         :param tag: Function tag.
         :param group: Group to put the function to.
+        :param fixed_param_index: Index of parameter to be replaced with
+        constant.
+        :param fixed_param_value: Constant value for replacing parameter.
         """
         if group not in self.fun_groups:
             self.fun_groups[group] = self.FunctionGroup()
-        self.fun_groups[group].functions[name] = self.FunctionDesc(llvm_mod,
-                                                                   glob_var,
-                                                                   tag)
+        self.fun_groups[group].functions[name] = \
+            self.FunctionDesc(llvm_mod, glob_var, tag, fixed_param_index,
+                              fixed_param_value)
 
     def modules(self):
         """
@@ -242,7 +249,9 @@ class Snapshot:
                              if f["llvm"] else None,
                              f["glob_var"],
                              f["tag"],
-                             group)
+                             group,
+                             f["fixed_index"],
+                             f["fixed_val"])
 
     def get_diffkemp_version(self):
         try:
@@ -272,7 +281,9 @@ class Snapshot:
                                         self.snapshot_tree.source_dir)
                 if fun_desc.mod else None,
                 "glob_var": fun_desc.glob_var,
-                "tag": fun_desc.tag
+                "tag": fun_desc.tag,
+                "fixed_index": fun_desc.fixed_param_index,
+                "fixed_val": fun_desc.fixed_param_value
             } for fun_name, fun_desc in g.functions.items()]
         } for group_name, g in self.fun_groups.items()
         ]
