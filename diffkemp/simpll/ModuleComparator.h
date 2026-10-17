@@ -24,7 +24,11 @@
 #include "Utils.h"
 #include "passes/StructureDebugInfoAnalysis.h"
 #include "passes/StructureSizeAnalysis.h"
+#include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/Analysis/GlobalsModRef.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <set>
 
 using namespace llvm;
@@ -73,11 +77,16 @@ class ModuleComparator {
               StructSizeMapL(StructSizeMapL), StructSizeMapR(StructSizeMapR),
               StructDIMapL(StructDIMapL), StructDIMapR(StructDIMapR), DI(DI),
               ResCache(config.CacheDir),
-              CustomPatterns(config.CustomPatternConfigPath), MacroDiffs() {}
+              CustomPatterns(config.CustomPatternConfigPath), MacroDiffs() {
+        setUpAliasAnalysis();
+    }
 
     /// Semantically compare two functions.
     /// The result of the comparison is stored into the ComparedFuns map.
     void compareFunctions(Function *FirstFun, Function *SecondFun);
+
+    /// Get alias analysis results (including GlobalsAA) for Fun's module.
+    AAResults &getAA(const Function *Fun);
 
     /// Pointer to a function that is called just by one of the compared
     /// functions and needs to be inlined.
@@ -96,6 +105,18 @@ class ModuleComparator {
 
     static void updateStats(Result &result,
                             const DifferentialFunctionComparator &fComp);
+
+  private:
+    /// Analysis managers backing getAA(), one pair per module.
+    /// FAMs must be declared before MAMs, so that the MAMs (whose proxies
+    /// clear the FAMs) are destroyed first.
+    FunctionAnalysisManager FamFirst;
+    FunctionAnalysisManager FamSecond;
+    ModuleAnalysisManager MamFirst;
+    ModuleAnalysisManager MamSecond;
+
+    /// Set up GlobalsAA + AAManager for both modules.
+    void setUpAliasAnalysis();
 };
 
 #endif // DIFFKEMP_SIMPLL_MODULECOMPARATOR_H

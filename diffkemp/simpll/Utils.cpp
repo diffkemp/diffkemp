@@ -18,6 +18,9 @@
 #include <algorithm>
 #include <iostream>
 #include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/Analysis/BasicAliasAnalysis.h>
+#include <llvm/Analysis/ScopedNoAliasAA.h>
+#include <llvm/Analysis/TypeBasedAliasAnalysis.h>
 #include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DIBuilder.h>
@@ -318,7 +321,15 @@ void simplifyFunction(Function *Fun) {
     PassBuilder pb;
     FunctionPassManager fpm;
     FunctionAnalysisManager fam;
-    fam.registerPass([] { return AAManager(); });
+    // No GlobalsAA here: no module analysis manager to back it with.
+    // Must run before registerFunctionAnalyses() (registerPass is first-wins).
+    fam.registerPass([] {
+        AAManager AA;
+        AA.registerFunctionAnalysis<BasicAA>();
+        AA.registerFunctionAnalysis<ScopedNoAliasAA>();
+        AA.registerFunctionAnalysis<TypeBasedAA>();
+        return AA;
+    });
     pb.registerFunctionAnalyses(fam);
     fpm.addPass(SimplifyCFGPass{});
     fpm.addPass(DCEPass{});
@@ -1036,57 +1047,6 @@ std::string makeYellow(std::string text) {
 /// Return LLVM struct type of the given name
 StructType *getTypeByName(const Module &Mod, StringRef Name) {
     return StructType::getTypeByName(Mod.getContext(), Name);
-}
-
-/// Given an instruction and a pointer value, try to determine whether the
-/// instruction may store to the memory pointed to by the pointer. This can
-/// happen only if the instruction is a store or a function call.
-bool mayStoreTo(const Instruction *Inst, const Value *Ptr) {
-    if (auto Store = dyn_cast<StoreInst>(Inst)) {
-        // If the instruction is a store, we check whether its pointer operand
-        // may alias the given pointer.
-        return mayAlias(Store->getPointerOperand(), Ptr);
-    }
-    if (auto Call = dyn_cast<CallInst>(Inst)) {
-        // If the instruction is a call, we preventively return true
-        // unless it is a debug call.
-        return !isDebugInfo(*Call);
-    }
-    return false;
-}
-
-/// Given two pointer values, try do determine whether they may alias. The
-/// function currently supports only simple aliasing of local memory.
-bool mayAlias(const Value *PtrL, const Value *PtrR) {
-    auto AllocaL = getAllocaFromPtr(PtrL);
-    auto AllocaR = getAllocaFromPtr(PtrR);
-    if (!AllocaL || !AllocaR)
-        // If any of the two pointers does not directly point to local memory,
-        // do not continue; more advanced alias analysis would be necessary.
-        return true;
-    if (AllocaL != AllocaR)
-        // If the underlying allocas are different, the pointers cannot alias.
-        return false;
-    auto GEPL = dyn_cast<GetElementPtrInst>(PtrL);
-    auto GEPR = dyn_cast<GetElementPtrInst>(PtrR);
-    if (!GEPL || !GEPR)
-        // At this point, we know that the pointers point to the same alloca.
-        // If any of the pointers is the alloca itself, the pointers alias.
-        return true;
-    auto GEPLIdxIt = GEPL->idx_begin(), GEPLIdxE = GEPL->idx_end();
-    auto GEPRIdxIt = GEPR->idx_begin(), GEPRIdxE = GEPR->idx_end();
-    // Go through the indices of both GEPs in parallel. If they diverge at some
-    // point, the pointers do not alias.
-    while (GEPLIdxIt != GEPLIdxE && GEPRIdxIt != GEPRIdxE) {
-        auto ConstantIdxL = dyn_cast<ConstantInt>(GEPLIdxIt->get());
-        auto ConstantIdxR = dyn_cast<ConstantInt>(GEPRIdxIt->get());
-        if (ConstantIdxL && ConstantIdxR
-            && ConstantIdxL->getSExtValue() != ConstantIdxR->getSExtValue())
-            return false;
-        GEPLIdxIt++;
-        GEPRIdxIt++;
-    }
-    return true;
 }
 
 /// Given a pointer value, return the instruction which allocated the memory

@@ -205,16 +205,6 @@ TypeInfo getPointeeStructTypeInfo(const Value *Val,
                                   const DataLayout *Layout,
                                   const StringRef &FunName);
 
-/// Given an instruction and a pointer value, try to determine whether the
-/// instruction may store to the memory pointed to by the pointer. This is
-/// currently implemented only as a set of heuristics - if they do not suffice,
-/// we return true.
-bool mayStoreTo(const Instruction *Inst, const Value *Ptr);
-
-/// Given two pointer values, try do determine whether they may alias. The
-/// function currently supports only simple aliasing of local memory.
-bool mayAlias(const Value *PtrL, const Value *PtrR);
-
 /// Given a pointer value, return the instruction which allocated the memory
 /// where the pointer points. Return a null pointer if the alloca is not found.
 const AllocaInst *getAllocaFromPtr(const Value *Ptr);
